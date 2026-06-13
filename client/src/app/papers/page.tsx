@@ -1,0 +1,201 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AppLayout from '@/components/app-layout';
+import { api } from '@/lib/api';
+
+export default function PapersPage() {
+  const router = useRouter();
+  const [papers, setPapers] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [showAnswer, setShowAnswer] = useState<any>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await api.papers.list();
+      setPapers(data.items || []);
+      setTotal(data.total);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const statusLabel = (s: string) => {
+    switch (s) {
+      case 'OFFICIAL': return '正式考卷';
+      case 'FINALIZED': return '已定稿';
+      default: return '草稿';
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('确认删除此试卷？')) return;
+    await api.papers.delete(id);
+    load();
+  };
+
+  const openAnswer = async (p: any) => {
+    try { const full = await api.papers.get(p.id); setShowAnswer(full); }
+    catch { setShowAnswer(p); }
+  };
+
+  const handleDownload = (paperId: number, format: 'word' | 'pdf') => {
+    const a = document.createElement('a');
+    a.href = `/api/papers/${paperId}/export-${format}`;
+    a.click();
+  };
+
+  const handleUploadWord = async (file: File, paperId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`/api/papers/${paperId}/upload-word`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('上传失败');
+      alert('Word 上传成功，PDF 已生成');
+    } catch (e: any) {
+      alert('上传失败：' + e.message);
+    }
+  };
+
+  const draftCount = papers.filter(p => p.status === 'DRAFT').length;
+  const finalizedCount = papers.filter(p => p.status === 'FINALIZED').length;
+  const officialCount = papers.filter(p => p.status === 'OFFICIAL').length;
+
+  return (
+    <AppLayout>
+      <div className="flex items-start justify-between mb-7">
+        <div>
+          <h1 className="page-title">试卷管理</h1>
+          <p className="page-subtitle">
+            草稿 {draftCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => router.push('/generate')} className="btn btn-gold btn-sm">+ 新建组卷</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+      ) : papers.length === 0 ? (
+        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
+          <p className="mb-3">暂无试卷</p>
+          <button onClick={() => router.push('/generate')} className="btn btn-gold btn-sm">去创建第一份试卷</button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
+          {papers.map((p: any) => (
+            <div key={p.id} className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--gold)]">
+              <div className="flex justify-between items-start gap-3 mb-3">
+                <h3 className="font-serif font-bold text-sm leading-snug" style={{ color: 'var(--ink-800)' }}>{p.name}</h3>
+                <span className={`tag ${
+                  p.status === 'OFFICIAL' ? 'tag-verm' :
+                  p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
+                }`}>{statusLabel(p.status)}</span>
+              </div>
+
+              <p className="text-xs mb-3" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</p>
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mb-4" style={{ color: 'var(--ink-400)' }}>
+                <span>{new Date(p.createdAt).toLocaleDateString('zh-CN')}</span>
+                <span>{p.creator?.displayName || '—'}</span>
+                <span>{p.totalScore}分 · {p._count?.questions || 0}题</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <button onClick={() => router.push(`/papers/${p.id}`)} className="btn btn-ink btn-xs">查看</button>
+                {p.status === 'DRAFT' && (
+                  <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-outline btn-xs">修改配置</button>
+                )}
+                <button onClick={() => openAnswer(p)} className="btn btn-outline btn-xs">答案</button>
+                <button onClick={() => handleDownload(p.id, 'word')} className="btn btn-outline btn-xs">Word</button>
+                <button onClick={() => handleDownload(p.id, 'pdf')} className="btn btn-outline btn-xs">PDF</button>
+                {p.status === 'FINALIZED' && (
+                  <button onClick={() => { api.papers.promote(p.id); load(); }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
+                )}
+                <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-ghost btn-xs">复制</button>
+                <button onClick={() => handleDelete(p.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
+              </div>
+
+              {(p.status === 'FINALIZED' || p.status === 'OFFICIAL') && (
+                <div className="mt-3 pt-3 border-t border-dashed" style={{ borderColor: 'var(--ink-100)' }}>
+                  <label className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <span className="cursor-pointer hover:text-[var(--gold)] transition-colors">↑ 上传编辑版 Word 生成印刷 PDF</span>
+                    <input type="file" accept=".docx" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadWord(f, p.id); }} />
+                  </label>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Answer Key Modal */}
+      {showAnswer && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAnswer(null); }}>
+          <div className="modal-card animate-fadeSlide">
+            <div className="modal-header">
+              <div>
+                <h3 className="font-serif font-bold text-base">试卷答案</h3>
+                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>{showAnswer.name} · {showAnswer.paperNumber}</p>
+              </div>
+              <span className="tag tag-verm">仅供命题人查阅</span>
+            </div>
+
+            <div className="modal-body">
+              {(() => {
+                const grouped: Record<string, any[]> = {};
+                showAnswer.questions?.forEach((pq: any) => {
+                  const section = pq.typeSection || 'Other';
+                  if (!grouped[section]) grouped[section] = [];
+                  grouped[section].push(pq);
+                });
+                return Object.entries(grouped).map(([section, items]) => (
+                  <div key={section} className="mb-4">
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink-500)' }}>{section}</h4>
+                    <div className="space-y-1">
+                      {items.map((pq: any, i: number) => {
+                        const q = pq.question;
+                        let answer = '—';
+                        if (q?.type === 'SINGLE_CHOICE') {
+                          const correct = q.options?.find((o: any) => o.isCorrect);
+                          answer = correct?.label || '—';
+                        } else if (q?.type === 'MULTIPLE_CHOICE') {
+                          answer = q.options?.filter((o: any) => o.isCorrect).map((o: any) => o.label).join(', ') || '—';
+                        } else if (q?.type === 'TRUE_FALSE') {
+                          const correct = q.options?.[0];
+                          answer = correct?.isCorrect ? '✓' : '✗';
+                        } else if (q?.type === 'FILL_BLANK') {
+                          answer = q.blanks?.map((b: any) => b.answer).join(' / ') || '—';
+                        } else {
+                          answer = '见参考答案详情';
+                        }
+                        return (
+                          <div key={pq.id} className="flex gap-3 text-xs py-1 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
+                            <span style={{ color: 'var(--ink-300)' }}>{i + 1}.</span>
+                            <span style={{ color: 'var(--cyan)' }}>{answer}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => setShowAnswer(null)} className="btn btn-ink btn-sm">关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AppLayout>
+  );
+}

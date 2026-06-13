@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════
+// 枚举
+// ═══════════════════════════════════════════
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_BLANK
+  SHORT_ANSWER
+  CASE_STUDY
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM_EASY
+  MEDIUM_HARD
+  HARD
+}
+
+enum QuestionSource {
+  MANUAL
+  AI_IMPORT
+  BATCH_IMPORT
+}
+
+enum QuestionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PaperStatus {
+  DRAFT
+  FINALIZED
+  OFFICIAL
+}
+
+enum ChapterStrategy {
+  EVEN
+  WEIGHTED
+  RANDOM
+}
+
+// ═══════════════════════════════════════════
+// 用户
+// ═══════════════════════════════════════════
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String   @map("display_name") @db.VarChar(100)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  papers    Paper[]
+  templates PaperTemplate[]
+  aiConfigs AiConfig[]
+
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════
+// 数据字典（科目编码维护）
+// ═══════════════════════════════════════════
+
+model DataDictionary {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20) // DTM, DTC, DTGV, DTA
+  name      String   @db.VarChar(100) // 数智化管理师
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  subjects Subject[]
+
+  @@map("data_dictionaries")
+}
+
+// ═══════════════════════════════════════════
+// 科目
+// ═══════════════════════════════════════════
+
+model Subject {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(200)
+  code         String   @db.VarChar(20)
+  dictionaryId Int      @map("dictionary_id")
+  sortOrder    Int      @default(0) @map("sort_order")
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  dictionary      DataDictionary   @relation(fields: [dictionaryId], references: [id])
+  chapters        Chapter[]
+  questions       Question[]
+  templates       PaperTemplate[]
+  papers          Paper[]
+  knowledgeChunks KnowledgeChunk[]
+  paperNumberSeq  Int              @default(1) @map("paper_number_seq") // 当前编号序号
+
+  @@map("subjects")
+}
+
+// ═══════════════════════════════════════════
+// 章节
+// ═══════════════════════════════════════════
+
+model Chapter {
+  id          Int      @id @default(autoincrement())
+  subjectId   Int      @map("subject_id")
+  name        String   @db.VarChar(200)
+  sortOrder   Int      @default(0) @map("sort_order")
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subject         Subject          @relation(fields: [subjectId], references: [id])
+  questions       Question[]
+  knowledgeChunks KnowledgeChunk[]
+
+  @@map("chapters")
+}
+
+// ═══════════════════════════════════════════
+// 标签
+// ═══════════════════════════════════════════
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  type      String   @db.VarChar(20) // domain / general
+  createdAt DateTime @default(now()) @map("created_at")
+
+  questions QuestionTag[]
+
+  @@map("tags")
+}
+
+// ═══════════════════════════════════════════
+// 试题-标签 多对多
+// ═══════════════════════════════════════════
+
+model QuestionTag {
+  questionId Int @map("question_id")
+  tagId      Int @map("tag_id")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@map("question_tags")
+}
+
+// ═══════════════════════════════════════════
+// 试题（核心表，通过 type 区分题型，关联不同选项表）
+// ═══════════════════════════════════════════
+
+model Question {
+  id         Int            @id @default(autoincrement())
+  subjectId  Int            @map("subject_id")
+  chapterId  Int            @map("chapter_id")
+  type       QuestionType
+  content    String         @db.Text // 题干（填空题含 {{_}} 标记）
+  analysis   String?        @db.Text // 试题解析
+  difficulty Difficulty
+  source     QuestionSource @default(MANUAL)
+  status     QuestionStatus @default(PUBLISHED)
+  usageCount Int            @default(0) @map("usage_count")
+  isPublic   Boolean        @default(false) @map("is_public") // 通用/公共题
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  subject Subject       @relation(fields: [subjectId], references: [id])
+  chapter Chapter       @relation(fields: [chapterId], references: [id])
+  tags    QuestionTag[]
+
+  options      QuestionOption[]
+  blanks       QuestionBlank[]
+  subQuestions QuestionSubQuestion[]
+
+  paperQuestions  PaperQuestion[]
+  coolDownRecords CoolDownRecord[]
+
+  @@map("questions")
+}
+
+// 单选题/多选题选项
+model QuestionOption {
+  id         Int     @id @default(autoincrement())
+  questionId Int     @map("question_id")
+  label      String  @db.VarChar(10) // A, B, C, D, E
+  content    String  @db.Text
+  isCorrect  Boolean @default(false) @map("is_correct")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+// 填空题空格
+model QuestionBlank {
+  id         Int    @id @default(autoincrement())
+  questionId Int    @map("question_id")
+  blankIndex Int    @map("blank_index") // 第几个空
+  answer     String @db.VarChar(500)
+  sortOrder  Int    @default(0) @map("sort_order")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_blanks")
+}
+
+// 案例题子问题
+model QuestionSubQuestion {
+  id         Int     @id @default(autoincrement())
+  questionId Int     @map("question_id")
+  content    String  @db.Text
+  answer     String? @db.Text
+  score      Int? // 子问题分值（可选）
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_sub_questions")
+}
+
+// ═══════════════════════════════════════════
+// 试卷模板（组卷配置）
+// ═══════════════════════════════════════════
+
+model PaperTemplate {
+  id              Int     @id @default(autoincrement())
+  name            String  @db.VarChar(200)
+  subjectId       Int     @map("subject_id")
+  totalScore      Int     @map("total_score")
+  durationMinutes Int     @default(90) @map("duration_minutes")
+  isOpenBook      Boolean @default(false) @map("is_open_book")
+
+  // 难度比例，JSON: { "EASY": 20, "MEDIUM_EASY": 30, "MEDIUM_HARD": 30, "HARD": 20 }
+  difficultyDistribution Json @map("difficulty_distribution")
+
+  chapterStrategy ChapterStrategy @default(EVEN) @map("chapter_strategy")
+  sourceMix       Int             @default(80) @map("source_mix") // 科目专用% (0-100)
+
+  isPublic  Boolean  @default(false) @map("is_public")
+  createdBy Int      @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  subject Subject @relation(fields: [subjectId], references: [id])
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  typeConfigs PaperTemplateType[]
+  papers      Paper[]
+
+  @@map("paper_templates")
+}
+
+// 模板题型配置
+model PaperTemplateType {
+  id               Int          @id @default(autoincrement())
+  templateId       Int          @map("template_id")
+  questionType     QuestionType @map("question_type")
+  count            Int // 该题型题数
+  scorePerQuestion Int          @map("score_per_question") // 每题分值
+  sortOrder        Int          @default(0) @map("sort_order")
+
+  template PaperTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("paper_template_types")
+}
+
+// ═══════════════════════════════════════════
+// 试卷
+// ═══════════════════════════════════════════
+
+model Paper {
+  id              Int         @id @default(autoincrement())
+  name            String      @db.VarChar(200)
+  paperNumber     String      @unique @map("paper_number") @db.VarChar(50) // DT+DTM-20260324-001
+  subjectId       Int         @map("subject_id")
+  templateId      Int?        @map("template_id")
+  totalScore      Int         @map("total_score")
+  durationMinutes Int         @default(90) @map("duration_minutes")
+  isOpenBook      Boolean     @default(false) @map("is_open_book")
+  status          PaperStatus @default(DRAFT)
+  createdBy       Int         @map("created_by")
+  finalizedAt     DateTime?   @map("finalized_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  subject  Subject        @relation(fields: [subjectId], references: [id])
+  template PaperTemplate? @relation(fields: [templateId], references: [id])
+  creator  User           @relation(fields: [createdBy], references: [id])
+
+  questions       PaperQuestion[]
+  coolDownRecords CoolDownRecord[]
+
+  @@map("papers")
+}
+
+// 试卷-试题关联（含快照）
+model PaperQuestion {
+  id          Int     @id @default(autoincrement())
+  paperId     Int     @map("paper_id")
+  questionId  Int     @map("question_id")
+  sortOrder   Int     @map("sort_order")
+  score       Int // 该题在本次试卷中的分值
+  typeSection String? @map("type_section") // 属于哪个题型区段（如 "SINGLE_CHOICE"）
+  // 快照：定稿时冻结的试题内容（防止题库修改影响已定稿试卷）
+  snapshot    Json? // { content, analysis, options, blanks, subQuestions }
+
+  paper    Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@map("paper_questions")
+}
+
+// ═══════════════════════════════════════════
+// 冷却记录（试题使用历史，避免近期重复）
+// ═══════════════════════════════════════════
+
+model CoolDownRecord {
+  id         Int      @id @default(autoincrement())
+  questionId Int      @map("question_id")
+  paperId    Int?     @map("paper_id")
+  usedAt     DateTime @default(now()) @map("used_at")
+
+  question Question @relation(fields: [questionId], references: [id])
+  paper    Paper?   @relation(fields: [paperId], references: [id])
+
+  @@map("cool_down_records")
+}
+
+// ═══════════════════════════════════════════
+// AI 模型配置
+// ═══════════════════════════════════════════
+
+model AiConfig {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100) // 配置名称
+  provider     String   @db.VarChar(50) // DeepSeek, Kimi, GLM
+  apiBaseUrl   String   @map("api_base_url") @db.VarChar(500)
+  apiKey       String   @map("api_key") @db.VarChar(500)
+  modelVersion String   @map("model_version") @db.VarChar(100)
+  temperature  Float    @default(0.7)
+  topP         Float    @default(0.9) @map("top_p")
+  maxTokens    Int      @default(4096) @map("max_tokens")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("ai_configs")
+}
+
+// ═══════════════════════════════════════════
+// 教材知识块（用于 AI 出题参考）
+// ═══════════════════════════════════════════
+
+model KnowledgeChunk {
+  id         Int      @id @default(autoincrement())
+  subjectId  Int      @map("subject_id")
+  chapterId  Int?     @map("chapter_id")
+  title      String   @db.VarChar(500) // 来源标题（教材章节名）
+  content    String   @db.Text // 分块后的文本
+  chunkIndex Int      @map("chunk_index") // 块序号
+  source     String?  @db.VarChar(200) // 来源文件名
+  tokenCount Int?     @map("token_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  subject Subject  @relation(fields: [subjectId], references: [id])
+  chapter Chapter? @relation(fields: [chapterId], references: [id])
+
+  @@map("knowledge_chunks")
+}
