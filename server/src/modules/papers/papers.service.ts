@@ -775,7 +775,7 @@ export class PapersService {
     if (singleCount > 0) {
       children.push(p(`单选题（每题${singleChoice.scorePerQ}分，共${singleCount}题，共${singleChoice.totalScore}分）        表2`, { size: 10, bold: true, spacing: { after: 80 } }));
 
-      // Create 4 rows × 10 cols grid
+      // Create answer grid: 10 cols per row, with auto row count
       const gridNumRow = (start: number) => new TableRow({
         children: Array.from({ length: 10 }, (_, i) => gridNumCell(start + i)),
       });
@@ -785,7 +785,7 @@ export class PapersService {
       });
 
       const rows: TableRow[] = [];
-      for (let r = 0; r < 4 && r * 10 < singleCount; r++) {
+      for (let r = 0; r * 10 < singleCount; r++) {
         const start = r * 10 + 1;
         rows.push(gridNumRow(start));
         rows.push(gridAnswerRow());
@@ -804,13 +804,17 @@ export class PapersService {
     if (tfCount > 0) {
       children.push(p(`判断题（每题${tf.scorePerQ}分，共${tfCount}题，共${tf.totalScore}分  请填写"√"或"×"）        表3`, { size: 10, bold: true, spacing: { after: 40 } }));
 
+      const tfCols = Math.min(5, tfCount);
+      const tfRows = Math.ceil(tfCount / tfCols);
+      const tfCellWidth = Math.floor(9000 / tfCols);
+
       const tfNumCell = (num: number) => new TableCell({
         children: [new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 100, after: 100 },
           children: [new TextRun({ text: String(num), size: 18, font: { name: 'SimSun', eastAsia: 'SimSun' }, bold: true })],
         })],
-        width: { size: 2000, type: WidthType.DXA },
+        width: { size: tfCellWidth, type: WidthType.DXA },
       });
       const tfAnsCell = () => new TableCell({
         children: [new Paragraph({
@@ -818,18 +822,23 @@ export class PapersService {
           spacing: { before: 60, after: 60 },
           children: [new TextRun({ text: '', size: 20 })],
         })],
-        width: { size: 2000, type: WidthType.DXA },
+        width: { size: tfCellWidth, type: WidthType.DXA },
       });
 
-      const tfRow = new TableRow({
-        children: Array.from({ length: tfCount }, (_, i) => tfNumCell(i + 1)),
-      });
-      const tfAnswerRow = new TableRow({
-        children: Array.from({ length: tfCount }, () => tfAnsCell()),
-      });
+      const tfRowsData: TableRow[] = [];
+      for (let r = 0; r < tfRows; r++) {
+        const start = r * tfCols + 1;
+        const count = Math.min(tfCols, tfCount - start + 1);
+        tfRowsData.push(new TableRow({
+          children: Array.from({ length: count }, (_, i) => tfNumCell(start + i)),
+        }));
+        tfRowsData.push(new TableRow({
+          children: Array.from({ length: count }, () => tfAnsCell()),
+        }));
+      }
 
       children.push(new Table({
-        rows: [tfRow, tfAnswerRow],
+        rows: tfRowsData,
         width: { size: 100, type: WidthType.PERCENTAGE },
       }));
       children.push(p('', { spacing: { after: 120 } }));
@@ -848,7 +857,7 @@ export class PapersService {
       children.push(p(`填空题（每空${fill.scorePerQ}分，共${blankTotal}空，共${fill.totalScore}分）        表4`, { size: 10, bold: true, spacing: { after: 40 } }));
 
       for (let i = 1; i <= blankTotal; i++) {
-        children.push(p(`${i}. ________________________`, { size: 10, spacing: { before: 12, after: 12 } }));
+        children.push(p(`${i}. ____________________________________________`, { size: 10, spacing: { before: 12, after: 12 } }));
       }
       children.push(p('', { spacing: { after: 120 } }));
     }
@@ -914,6 +923,7 @@ export class PapersService {
       sections: [{
         properties: {
           page: {
+            size: { width: 11906, height: 16838 }, // A4
             margin: {
               top: convertMillimetersToTwip(20),
               bottom: convertMillimetersToTwip(20),
