@@ -70,16 +70,15 @@ export default function PaperDetailPage() {
 
   const handleFinalize = async () => {
     if (!paper) return;
+    const qLen = paper.questions?.length || 0;
+    // 验证：至少1题
+    if (qLen === 0) {
+      alert('试卷没有试题，请至少添加一道题后再定稿。');
+      return;
+    }
     // 验证：总分必须匹配
     if (actualTotal !== paper.totalScore) {
       alert(`总分不匹配：当前试题总分 ${actualTotal}分 ≠ 试卷设定总分 ${paper.totalScore}分，请调整试题后再定稿。`);
-      return;
-    }
-    // 验证：每种题型至少1题
-    const emptyTypes = Object.keys(actualCounts).filter(k => actualCounts[k] === 0);
-    if (emptyTypes.length > 0) {
-      const names = emptyTypes.map(t => TYPE_NAMES[t] || t).join('、');
-      alert(`以下题型没有试题：${names}，请添加后再定稿。`);
       return;
     }
     await api.papers.finalize(paper.id);
@@ -111,6 +110,8 @@ export default function PaperDetailPage() {
     load();
   };
 
+  const [replaceTarget, setReplaceTarget] = useState<{ pqId: number; section: string } | null>(null);
+
   const handleReplaceQuestion = async (pqId: number, section: string, score: number) => {
     // 打开选题弹窗，从同题型题库中选择替换
     const data = await api.questions.list({ type: section, status: 'PUBLISHED', subjectId: String(paper.subjectId), pageSize: '200' });
@@ -120,14 +121,11 @@ export default function PaperDetailPage() {
       alert('没有可替换的试题（该题型下所有试题已在试卷中）');
       return;
     }
-    // 简易替换：选第一个可用题
-    const replaceQ = available[0];
-    await fetch(`/api/papers/${paperId}/questions/${pqId}/replace`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newQuestionId: replaceQ.id }),
-    });
-    load();
+    setAvailableQuestions(available);
+    setPickingSection(section);
+    setPickingScore(score);
+    setReplaceTarget({ pqId, section });
+    setShowPickModal(true);
   };
 
   const openPickModal = async (section: string, score: number) => {
@@ -140,11 +138,22 @@ export default function PaperDetailPage() {
   };
 
   const handleAddQuestion = async (questionId: number) => {
-    await fetch(`/api/papers/${paperId}/questions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId, score: pickingScore, typeSection: pickingSection }),
-    });
+    if (replaceTarget) {
+      // 替换模式
+      await fetch(`/api/papers/${paperId}/questions/${replaceTarget.pqId}/replace`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newQuestionId: questionId }),
+      });
+      setReplaceTarget(null);
+    } else {
+      // 加题模式
+      await fetch(`/api/papers/${paperId}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, score: pickingScore, typeSection: pickingSection }),
+      });
+    }
     setShowPickModal(false);
     load();
   };
@@ -194,7 +203,7 @@ export default function PaperDetailPage() {
           {canEdit && (
             <>
               <button onClick={() => router.push(`/generate?copyFrom=${paper.id}`)} className="btn btn-outline btn-sm">修改配置</button>
-              <button onClick={() => router.push('/papers')} className="btn btn-outline btn-sm">💾 存为草稿</button>
+              <button onClick={() => router.push('/papers')} className="btn btn-outline btn-sm">← 返回列表</button>
               <button onClick={handleFinalize} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>定稿并冻结</button>
             </>
           )}
@@ -409,11 +418,11 @@ export default function PaperDetailPage() {
 
       {/* 从题库选题弹窗 */}
       {showPickModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowPickModal(false); }}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowPickModal(false); setReplaceTarget(null); } }}>
           <div className="modal-card max-w-[600px] animate-fadeSlide">
             <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">从题库选题 — {TYPE_NAMES[pickingSection] || pickingSection}</h3>
-              <button onClick={() => setShowPickModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <h3 className="font-serif font-bold text-base">{replaceTarget ? '替换试题' : '从题库选题'} — {TYPE_NAMES[pickingSection] || pickingSection}</h3>
+              <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body max-h-[400px] overflow-y-auto">
               {availableQuestions.length === 0 ? (
@@ -436,7 +445,7 @@ export default function PaperDetailPage() {
               )}
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowPickModal(false)} className="btn btn-ink btn-sm">取消</button>
+              <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="btn btn-ink btn-sm">取消</button>
             </div>
           </div>
         </div>

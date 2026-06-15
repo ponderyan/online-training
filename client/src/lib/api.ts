@@ -64,7 +64,7 @@ export const api = {
   },
 
   papers: {
-    list: (page = 1) => request<{ items: any[]; total: number }>(`/papers?page=${page}`),
+    list: (page = 1) => request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/papers?page=${page}`),
     get: (id: number) => request<any>(`/papers/${id}`),
     generate: (data: any) => request<any>('/papers/generate', { method: 'POST', body: JSON.stringify(data) }),
     removeQuestion: (paperId: number, pqId: number) => request(`/papers/${paperId}/questions/${pqId}`, { method: 'DELETE' }),

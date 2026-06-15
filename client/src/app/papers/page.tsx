@@ -9,20 +9,28 @@ export default function PapersPage() {
   const router = useRouter();
   const [papers, setPapers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState<any>(null);
+  const [paginationInfo, setPaginationInfo] = useState<any>(null);
 
-  const load = async () => {
+  const load = async (p: number = page) => {
     setLoading(true);
     try {
-      const data = await api.papers.list();
+      const data = await api.papers.list(p);
       setPapers(data.items || []);
       setTotal(data.total);
+      setPage(data.page);
+      setTotalPages(data.totalPages);
+      setPaginationInfo(data);
     } catch {}
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(1); }, []);
+
+  const goPage = (p: number) => { if (p >= 1 && p <= totalPages) load(p); };
 
   const statusLabel = (s: string) => {
     switch (s) {
@@ -79,6 +87,7 @@ export default function PapersPage() {
           <h1 className="page-title">🦊 试卷管理</h1>
           <p className="page-subtitle">
             草稿 {draftCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
+            {totalPages > 1 && <span className="ml-3 text-xs opacity-50">第 {page}/{totalPages} 页</span>}
           </p>
         </div>
         <div className="flex gap-3">
@@ -142,6 +151,32 @@ export default function PapersPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8 mb-4">
+          <button onClick={() => goPage(page - 1)} disabled={page <= 1}
+            className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.3 : 1 }}>
+            ‹ 上一页
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .map((p, idx, arr) => (
+              <span key={p} className="flex items-center">
+                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="mx-1 text-xs" style={{ color: 'var(--ink-300)' }}>…</span>}
+                <button onClick={() => goPage(p)}
+                  className={`btn btn-xs ${p === page ? 'btn-fox' : 'btn-ghost'}`}
+                  style={p === page ? {} : {}}>
+                  {p}
+                </button>
+              </span>
+            ))}
+          <button onClick={() => goPage(page + 1)} disabled={page >= totalPages}
+            className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>
+            下一页 ›
+          </button>
         </div>
       )}
 
