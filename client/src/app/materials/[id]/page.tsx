@@ -31,6 +31,7 @@ export default function MaterialDetailPage() {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [importing, setImporting] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -140,6 +141,26 @@ export default function MaterialDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {material?.chapters?.some((ch: any) => ch.content) && !['PROCESSING', 'GENERATING'].includes(material?.status) && (
+            <button onClick={async () => {
+              if (!confirm('确认使用大模型生成试题？将覆盖该教材之前生成的所有试题。')) return;
+              setGenerating(true);
+              try {
+                const res = await fetch(`/api/materials/${materialId}/generate`, { method: 'POST' });
+                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                const data = await res.json();
+                alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);
+                load();
+              } catch (e: any) { alert('出题失败：' + e.message); }
+              setGenerating(false);
+            }} disabled={generating}
+              className="btn btn-outline btn-sm">
+              {generating ? '🤖 出题中…' : '🤖 AI生成试题'}
+            </button>
+          )}
+          {material?.status === 'PROCESSING' && (
+            <span className="text-xs self-center" style={{ color: 'var(--gold)' }}>⏳ 正在生成试题…</span>
+          )}
           {reviewCounts.pending > 0 && (
             <button onClick={handleBatchImport} disabled={importing}
               className="btn btn-fox btn-sm">

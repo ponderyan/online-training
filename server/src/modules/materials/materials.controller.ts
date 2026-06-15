@@ -66,6 +66,11 @@ export class MaterialsController {
     return this.service.batchReview(id, data);
   }
 
+  @Post(':id/generate')
+  generateQuestions(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateQuestions(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
