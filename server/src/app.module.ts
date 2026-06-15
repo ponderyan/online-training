@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { DataDictionaryModule } from './modules/data-dictionary/data-dictionary.module.js';
 import { TagsModule } from './modules/tags/tags.module.js';
 import { MaterialsModule } from './modules/materials/materials.module.js';
+import { StudentsModule } from './modules/students/students.module.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
 
 @Module({
@@ -26,6 +27,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     PapersModule,
     AiConfigModule,
     MaterialsModule,
+    StudentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: PermissionGuard },

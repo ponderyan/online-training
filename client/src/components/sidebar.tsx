@@ -9,6 +9,7 @@ const navItems = [
   { path: '/materials', label: '教材出题', icon: '📖' },
   { path: '/generate', label: '智能组卷', icon: '✨' },
   { path: '/papers', label: '试卷管理', icon: '📄' },
+  { path: '/students', label: '学员管理', icon: '👥' },
   { path: '/settings', label: '系统设置', icon: '⚙️' },
 ];
 

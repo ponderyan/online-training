@@ -77,6 +77,20 @@ export const api = {
     delete: (id: number) => request(`/papers/${id}`, { method: 'DELETE' }),
   },
 
+  students: {
+    list: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/students${qs}`);
+    },
+    get: (id: number) => request<any>(`/students/${id}`),
+    create: (data: any) => request<any>('/students', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: any) => request<any>(`/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    batchCreate: (data: { students: any[] }) => request<any>('/students/batch', { method: 'POST', body: JSON.stringify(data) }),
+    groups: () => request<any[]>('/students/groups/all'),
+    createGroup: (data: { name: string; note?: string }) => request<any>('/students/groups', { method: 'POST', body: JSON.stringify(data) }),
+    deleteGroup: (id: number) => request<any>(`/students/groups/${id}`, { method: 'DELETE' }),
+  },
+
   materials: {
     list: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';

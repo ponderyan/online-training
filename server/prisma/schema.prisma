@@ -52,7 +52,7 @@ enum ChapterStrategy {
 }
 
 // ═══════════════════════════════════════════
-// 用户
+// 用户（管理员 + 学员）
 // ═══════════════════════════════════════════
 
 model User {
@@ -60,7 +60,15 @@ model User {
   username     String   @unique @db.VarChar(50)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   displayName  String   @map("display_name") @db.VarChar(100)
-  role         String   @default("SUPER_ADMIN") @db.VarChar(20) // Role 枚举
+  role         String   @default("SUPER_ADMIN") @db.VarChar(20) // SUPER_ADMIN / STUDENT
+
+  // 学员扩展字段
+  studentNumber String?  @map("student_number") @unique @db.VarChar(50) // 学号
+  phone         String?  @db.VarChar(20)
+  email         String?  @db.VarChar(100)
+  organization  String?  @db.VarChar(200) // 工作单位/机构
+  groupId       Int?     @map("group_id") // 所属分组
+
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -69,8 +77,26 @@ model User {
   templates PaperTemplate[]
   aiConfigs AiConfig[]
   materials Material[]
+  group     StudentGroup? @relation(fields: [groupId], references: [id])
 
   @@map("users")
+}
+
+// ═══════════════════════════════════════════
+// 学员分组
+// ═══════════════════════════════════════════
+
+model StudentGroup {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100) // 分组名称（如 "DTM一期班"）
+  note      String?  @db.Text // 说明
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members User[]
+
+  @@map("student_groups")
 }
 
 // ═══════════════════════════════════════════
