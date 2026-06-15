@@ -227,7 +227,10 @@ export default function QuestionsPage() {
               <tr key={q.id}
                 onDoubleClick={() => handleRowDoubleClick(q)}
                 className="cursor-pointer"
-                style={{ background: selectedIds.has(q.id) ? 'var(--fox-pale)' : undefined }}>
+                style={{
+                  background: selectedIds.has(q.id) ? 'var(--fox-pale)' : undefined,
+                  opacity: q.status === 'ARCHIVED' ? 0.5 : undefined,
+                }}>
                 <td className="text-center" onClick={e => e.stopPropagation()}>
                   <input type="checkbox" checked={selectedIds.has(q.id)} onChange={() => toggleSelect(q.id)}
                     style={{ cursor: 'pointer', accentColor: '#e87a30' }} />
@@ -248,8 +251,8 @@ export default function QuestionsPage() {
                   {q.createdAt ? new Date(q.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) : '—'}
                 </td>
                 <td>
-                  <span className={`tag ${q.status === 'PUBLISHED' ? 'tag-cyan' : 'tag-verm'}`}>
-                    {q.status === 'PUBLISHED' ? '启用' : '停用'}
+                  <span className={`tag ${q.status === 'PUBLISHED' ? 'tag-cyan' : 'tag-ink'}`}>
+                    {q.status === 'PUBLISHED' ? '启用' : '已停用'}
                   </span>
                 </td>
                 <td>
