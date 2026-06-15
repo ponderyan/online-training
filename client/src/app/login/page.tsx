@@ -115,10 +115,6 @@ export default function LoginPage() {
           >
             {loading ? '登录中…' : '登 录'}
           </button>
-
-          <p className="text-xs text-center" style={{ color: 'var(--ink-300)' }}>
-            测试账户：admin / admin_temp
-          </p>
         </div>
       </div>
 

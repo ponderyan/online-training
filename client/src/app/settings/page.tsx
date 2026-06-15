@@ -28,6 +28,7 @@ export default function SettingsPage() {
   const [model, setModel] = useState('deepseek-v4-flash');
   const [useCustomModel, setUseCustomModel] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [keyEditing, setKeyEditing] = useState(false);
   const [temp, setTemp] = useState(0.7);
   const [topP, setTopP] = useState(0.9);
   const [maxTokens, setMaxTokens] = useState(4096);
@@ -46,7 +47,8 @@ export default function SettingsPage() {
         setSavedConfigId(cfg.id);
         setProvider(cfg.provider || 'DeepSeek');
         setApiBase(cfg.apiBaseUrl || 'https://api.deepseek.com');
-        setApiKey(cfg.apiKey || '');
+        setApiKey(cfg.apiKey || ''); // 后端已遮罩，显示 sk****e54 格式
+        setKeyEditing(false);
         setModel(cfg.modelVersion || 'deepseek-v4-flash');
         if (cfg.temperature) setTemp(cfg.temperature);
         if (cfg.topP) setTopP(cfg.topP);
@@ -95,22 +97,36 @@ export default function SettingsPage() {
     api.dataDictionaries.list().then(setDictionaries).catch(() => {});
   }, []);
 
+  const loadKey = async () => {
+    try {
+      const list = await api.aiConfigs.list();
+      if (list.length > 0) { setApiKey(list[0].apiKey || ''); setKeyEditing(false); }
+    } catch {}
+  };
+
   const saveAiConfig = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const payload = {
+      // 如果 Key 还处于遮罩状态（含星号），不提交到后端（后端不会更新已存在的 Key）
+      const submitKey = apiKey.includes('****') && savedConfigId ? '' : apiKey;
+      const payload: any = {
         name: `${provider} 配置`,
-        provider, apiBaseUrl: apiBase, apiKey,
-        modelVersion: model, temperature: temp, topP, maxTokens,
+        provider, apiBaseUrl: apiBase, modelVersion: model,
+        temperature: temp, topP, maxTokens,
         createdBy: user.id || 1,
       };
+      if (submitKey) payload.apiKey = submitKey;
+      if (!savedConfigId && !submitKey) {
+        alert('请先输入 API Key'); return;
+      }
       if (savedConfigId) {
         await api.aiConfigs.update(savedConfigId, payload);
       } else {
-        const created = await api.aiConfigs.create(payload);
+        const created = await api.aiConfigs.create({ ...payload, apiKey: submitKey });
         setSavedConfigId(created.id);
       }
       alert('AI 配置已保存');
+      loadKey(); // 重新加载遮罩值
     } catch (e: any) { alert('保存失败：' + e.message); }
   };
 
@@ -187,10 +203,29 @@ export default function SettingsPage() {
               <input value={apiBase} onChange={e => setApiBase(e.target.value)} className="input" />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>API Key</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+                API Key
+                {savedConfigId && !keyEditing && (
+                  <button onClick={() => { setKeyEditing(true); setApiKey(''); }}
+                    className="ml-2 text-[10px] bg-transparent border-none cursor-pointer"
+                    style={{ color: 'var(--fox)' }}>[ 修改 Key ]</button>
+                )}
+                {savedConfigId && keyEditing && (
+                  <button onClick={() => { setKeyEditing(false); loadKey(); }}
+                    className="ml-2 text-[10px] bg-transparent border-none cursor-pointer"
+                    style={{ color: 'var(--ink-300)' }}>[ 取消 ]</button>
+                )}
+              </label>
               <div className="relative">
-                <input type={showApiKey ? 'text' : 'password'} value={apiKey} onChange={e => setApiKey(e.target.value)}
-                  className="input" style={{ paddingRight: '40px' }} />
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={e => { setApiKey(e.target.value); if (savedConfigId && !keyEditing) setKeyEditing(true); }}
+                  className="input"
+                  style={{ paddingRight: '40px' }}
+                  placeholder={savedConfigId && !keyEditing ? '已加密，点击"修改 Key"重新输入' : '输入 API Key'}
+                  readOnly={!!savedConfigId && !keyEditing}
+                />
                 <button type="button" onClick={() => setShowApiKey(!showApiKey)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer flex items-center justify-center p-1 rounded"
                   style={{ color: 'var(--ink-300)' }}

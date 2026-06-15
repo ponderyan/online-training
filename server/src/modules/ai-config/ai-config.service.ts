@@ -5,23 +5,41 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class AiConfigService {
   constructor(private prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.aiConfig.findMany({ orderBy: { createdAt: 'desc' } });
+  // 遮罩 API Key：只显示前后各2位，中间用星号
+  private maskKey(key: string): string {
+    if (!key || key.length < 8) return '****';
+    return key.slice(0, 4) + '****' + key.slice(-4);
   }
 
-  create(data: {
+  // 返回给前端时脱敏
+  private sanitize(config: any) {
+    return { ...config, apiKey: this.maskKey(config.apiKey) };
+  }
+
+  async findAll() {
+    const configs = await this.prisma.aiConfig.findMany({ orderBy: { createdAt: 'desc' } });
+    return configs.map(c => this.sanitize(c));
+  }
+
+  async create(data: {
     name: string; provider: string; apiBaseUrl: string; apiKey: string;
     modelVersion: string; createdBy: number;
     temperature?: number; topP?: number; maxTokens?: number;
   }) {
-    return this.prisma.aiConfig.create({ data });
+    const created = await this.prisma.aiConfig.create({ data });
+    return this.sanitize(created);
   }
 
-  update(id: number, data: any) {
-    return this.prisma.aiConfig.update({ where: { id }, data });
+  async update(id: number, data: any) {
+    // 如果前端传了遮罩值（含星号），视为未修改，不更新 Key
+    if (data.apiKey && data.apiKey.includes('****')) {
+      delete data.apiKey;
+    }
+    const updated = await this.prisma.aiConfig.update({ where: { id }, data });
+    return this.sanitize(updated);
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return this.prisma.aiConfig.delete({ where: { id } });
   }
 
