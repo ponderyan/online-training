@@ -65,6 +65,27 @@ export default function QuestionsPage() {
     load();
   };
 
+  const handleDelete = async (q: any) => {
+    // 先查引用
+    try {
+      const refs = await api.questions.getReferencedPapers(q.id);
+      if (refs.count > 0) {
+        alert(`该试题已被 ${refs.count} 份试卷引用，无法删除。\n\n建议：使用「停用」功能将其归档，已引用的试卷不受影响。`);
+        return;
+      }
+    } catch {}
+
+    if (!confirm(`确认永久删除此题？\n\n「${q.content?.slice(0, 40)}…」\n\n此操作不可撤销！`)) return;
+    if (!confirm('⚠️ 再次确认：删除后数据不可恢复，确定要永久删除吗？')) return;
+
+    try {
+      await api.questions.delete(q.id);
+      load();
+    } catch (e: any) {
+      alert('删除失败：' + e.message);
+    }
+  };
+
   const openEditModal = async (q: any) => {
     setEditingLoading(true);
     try {
@@ -254,6 +275,10 @@ export default function QuestionsPage() {
                       <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
                         className="btn btn-xs" style={{ color: 'var(--cyan)' }}>启用</button>
                     )}
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
+                      className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
                   </div>
                 </td>
               </tr>

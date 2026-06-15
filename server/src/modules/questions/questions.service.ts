@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma, QuestionType } from '@prisma/client';
 
@@ -94,6 +94,21 @@ export class QuestionsService {
 
   async remove(id: number) {
     await this.findOne(id);
+
+    // 引用保护：被试卷引用的试题不能删除
+    const paperCount = await this.prisma.paperQuestion.count({ where: { questionId: id } });
+    if (paperCount > 0) {
+      throw new BadRequestException(
+        `该试题已被 ${paperCount} 份试卷引用，无法删除。建议使用「停用」功能归档。`
+      );
+    }
+
+    // 解除教材审核关联（如果有）
+    await this.prisma.materialQuestion.updateMany({
+      where: { questionId: id },
+      data: { questionId: null },
+    });
+
     return this.prisma.question.delete({ where: { id } });
   }
 
