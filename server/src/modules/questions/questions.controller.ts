@@ -31,6 +31,11 @@ export class QuestionsController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
 
+  @Get(':id/referenced-papers')
+  getReferencedPapers(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getReferencedPapers(id);
+  }
+
   @Post()
   create(@Body() data: any) { return this.service.create(data); }
 

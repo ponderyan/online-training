@@ -97,6 +97,33 @@ export class QuestionsService {
     return this.prisma.question.delete({ where: { id } });
   }
 
+  async getReferencedPapers(questionId: number) {
+    const q = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      include: {
+        paperQuestions: {
+          include: {
+            paper: {
+              select: { id: true, name: true, paperNumber: true, status: true, totalScore: true },
+            },
+          },
+        },
+      },
+    });
+    if (!q) throw new NotFoundException(`Question ${questionId} not found`);
+    return {
+      count: q.paperQuestions.length,
+      papers: q.paperQuestions.map(pq => ({
+        paperId: pq.paper.id,
+        name: pq.paper.name,
+        paperNumber: pq.paper.paperNumber,
+        status: pq.paper.status,
+        score: pq.score,
+        sortOrder: pq.sortOrder,
+      })),
+    };
+  }
+
   async batchCreate(questions: any[]) {
     const results: { index: number; success: boolean; id?: number; error?: string }[] = [];
 

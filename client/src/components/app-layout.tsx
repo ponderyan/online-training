@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) { setUser(JSON.parse(u)); setLoading(false); }
-    else { router.push('/login'); }
+    else { router.replace('/login'); }
   }, [router]);
 
   if (loading) return null;

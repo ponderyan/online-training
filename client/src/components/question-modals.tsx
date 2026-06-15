@@ -287,16 +287,16 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
 export function ViewQuestionModal({ open, onClose, question }: { open: boolean; onClose: () => void; question: any }) {
   const [papers, setPapers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (question && open) {
-      fetch('/api/papers').then(r => r.json()).then((data: any) => {
-        const items = data.items || [];
-        const related = items.filter((p: any) =>
-          p.questions?.some?.((q: any) => q.questionId === question.id)
-        );
-        setPapers(related);
-      }).catch(() => {});
+      setLoading(true);
+      fetch(`/api/questions/${question.id}/referenced-papers`)
+        .then(r => r.json())
+        .then(data => setPapers(data.papers || []))
+        .catch(() => setPapers([]))
+        .finally(() => setLoading(false));
     }
   }, [question, open]);
 
@@ -304,6 +304,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
 
   const typeName = TYPE_NAMES[question.type] || question.type;
   const diffName = DIFF_NAMES[question.difficulty] || question.difficulty;
+  const sourceMap: Record<string, string> = { MANUAL: '手动录入', AI_IMPORT: 'AI生成', BATCH_IMPORT: '批量导入' };
 
   const diffTag = (d: string) => {
     switch (d) {
@@ -315,70 +316,136 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
     }
   };
 
+  const fmtDate = (d: string) => d ? new Date(d).toLocaleString('zh-CN') : '—';
+
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-card animate-fadeSlide">
+      <div className="modal-card max-w-[640px] animate-fadeSlide">
         <div className="modal-header">
           <h3 className="font-serif font-bold text-base">试题详情</h3>
+          <button onClick={onClose} className="text-lg bg-transparent border-none cursor-pointer"
+            style={{ color: 'var(--ink-300)' }}>✕</button>
         </div>
 
         <div className="modal-body space-y-4">
+          {/* 元数据标签行 */}
           <div className="flex flex-wrap gap-2">
             <span className="tag tag-ink">{typeName}</span>
             <span className={`tag ${diffTag(question.difficulty)}`}>{diffName}</span>
             <span className="tag tag-gold">{question.subject?.code}</span>
+            {question.chapter && <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>{question.chapter.name}</span>}
+            <span className="tag tag-ink">{sourceMap[question.source] || question.source}</span>
+            <span className={`tag ${question.status === 'PUBLISHED' ? 'tag-cyan' : 'tag-verm'}`}>
+              {question.status === 'PUBLISHED' ? '启用' : '停用'}
+            </span>
           </div>
 
+          {/* 题干 */}
           <div className="p-4 rounded text-sm leading-relaxed" style={{ background: 'var(--paper)' }}>
             {question.content}
           </div>
 
+          {/* 选项（选择题） */}
           {question.options?.length > 0 && (
             <div className="space-y-1.5">
+              <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>选项</div>
               {question.options.map((o: any) => (
-                <div key={o.id} className={`px-3 py-2 rounded text-sm ${o.isCorrect ? 'border' : ''}`}
+                <div key={o.id} className="px-3 py-2 rounded text-sm"
                   style={{
-                    background: o.isCorrect ? 'var(--cyan-glow)' : 'transparent',
-                    borderColor: o.isCorrect ? 'rgba(0, 201, 182, 0.3)' : 'transparent',
+                    background: o.isCorrect ? 'var(--cyan-glow)' : 'var(--paper)',
+                    border: o.isCorrect ? '1px solid rgba(0, 201, 182, 0.3)' : '1px solid transparent',
                   }}>
                   <span className="font-medium">{o.label}.</span> {o.content}
-                  {o.isCorrect && <span className="ml-1" style={{ color: 'var(--cyan)' }}>✓</span>}
+                  {o.isCorrect && <span className="ml-1 text-xs" style={{ color: 'var(--cyan)' }}>✓ 正确答案</span>}
                 </div>
               ))}
             </div>
           )}
 
+          {/* 填空 */}
           {question.blanks?.length > 0 && (
-            <div className="space-y-1.5">
-              {question.blanks.map((b: any) => (
-                <div key={b.id} className="text-sm">
-                  <span className="font-medium">填空 {b.blankIndex + 1}:</span> {b.answer}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {question.analysis && (
             <div>
-              <span className="font-medium text-xs" style={{ color: 'var(--ink-500)' }}>解析：</span>
-              <span className="text-sm" style={{ color: 'var(--ink-300)' }}>{question.analysis}</span>
-            </div>
-          )}
-
-          <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-            <span className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>引用记录：已使用 {question.usageCount || 0} 次</span>
-            {papers.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {papers.map((p: any) => (
-                  <div key={p.id} className="text-xs" style={{ color: 'var(--ink-300)' }}>· {p.name} ({p.paperNumber})</div>
+              <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>填空答案</div>
+              <div className="flex flex-wrap gap-2">
+                {question.blanks.map((b: any, i: number) => (
+                  <span key={b.id} className="tag tag-gold">空{i + 1}: {b.answer}</span>
                 ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
 
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn btn-ink btn-sm">关闭</button>
+          {/* 简答/案例 参考答案 */}
+          {['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && question.analysis && (
+            <div>
+              <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>参考答案</div>
+              <div className="p-3 rounded text-sm" style={{ background: 'var(--cyan-glow)', color: 'var(--ink-700)' }}>
+                {question.analysis}
+              </div>
+            </div>
+          )}
+
+          {/* 解析 */}
+          {question.analysis && !['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && (
+            <div>
+              <div className="text-xs font-medium mb-1" style={{ color: 'var(--fox)' }}>解析</div>
+              <div className="p-3 rounded text-sm" style={{ background: 'var(--fox-pale)', color: 'var(--ink-700)' }}>
+                {question.analysis}
+              </div>
+            </div>
+          )}
+
+          {/* 子问题（案例题） */}
+          {question.subQuestions?.length > 0 && (
+            <div>
+              <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>子问题</div>
+              <div className="space-y-2">
+                {question.subQuestions.map((sq: any, i: number) => (
+                  <div key={sq.id} className="p-3 rounded text-sm" style={{ background: 'var(--paper)' }}>
+                    <div className="font-medium mb-1">({i + 1}) {sq.content}{sq.score ? `（${sq.score}分）` : ''}</div>
+                    {sq.answer && <div className="text-xs" style={{ color: 'var(--cyan)' }}>答案：{sq.answer}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 元信息 */}
+          <div className="pt-4 border-t text-xs space-y-1.5" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-400)' }}>
+            <div className="flex justify-between">
+              <span>创建时间</span>
+              <span>{fmtDate(question.createdAt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>最后修改</span>
+              <span>{fmtDate(question.updatedAt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>使用次数</span>
+              <span>{question.usageCount || 0} 次</span>
+            </div>
+            <div className="flex justify-between">
+              <span>引用试卷</span>
+              <span>{papers.length} 份</span>
+            </div>
+          </div>
+
+          {/* 引用试卷列表 */}
+          {papers.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>出现在以下试卷中：</div>
+              {papers.map((p: any, i: number) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2 rounded text-xs"
+                  style={{ background: 'var(--paper)' }}>
+                  <span className="truncate flex-1" style={{ color: 'var(--ink-600)' }}>{p.name}</span>
+                  <span className="ml-3" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</span>
+                  <span className={`tag ml-2 ${
+                    p.status === 'OFFICIAL' ? 'tag-verm' :
+                    p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
+                  }`}>{p.status === 'OFFICIAL' ? '正式' : p.status === 'FINALIZED' ? '定稿' : '草稿'}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -60,6 +60,7 @@ model User {
   username     String   @unique @db.VarChar(50)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   displayName  String   @map("display_name") @db.VarChar(100)
+  role         String   @default("SUPER_ADMIN") @db.VarChar(20) // Role 枚举
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -67,6 +68,7 @@ model User {
   papers    Paper[]
   templates PaperTemplate[]
   aiConfigs AiConfig[]
+  materials Material[]
 
   @@map("users")
 }
@@ -109,6 +111,7 @@ model Subject {
   templates       PaperTemplate[]
   papers          Paper[]
   knowledgeChunks KnowledgeChunk[]
+  materials       Material[]
   paperNumberSeq  Int              @default(1) @map("paper_number_seq") // 当前编号序号
 
   @@map("subjects")
@@ -193,6 +196,7 @@ model Question {
 
   paperQuestions  PaperQuestion[]
   coolDownRecords CoolDownRecord[]
+  materialQuestions MaterialQuestion[]
 
   @@map("questions")
 }
@@ -389,4 +393,106 @@ model KnowledgeChunk {
   chapter Chapter? @relation(fields: [chapterId], references: [id])
 
   @@map("knowledge_chunks")
+}
+
+// ═══════════════════════════════════════════
+// 教材管理（AI 出题 pipeline）
+// ═══════════════════════════════════════════
+
+enum MaterialStatus {
+  UPLOADED
+  PROCESSING
+  OCR_DONE
+  GENERATING
+  GENERATED
+  REVIEWING
+  COMPLETED
+  FAILED
+}
+
+model Material {
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(200) // 教材名称
+  fileName     String         @map("file_name") @db.VarChar(500) // 原始文件名
+  fileSize     Int            @map("file_size") // 文件大小（字节）
+  filePath     String         @map("file_path") @db.VarChar(500) // 存储路径
+  subjectId    Int            @map("subject_id")
+  subject      Subject        @relation(fields: [subjectId], references: [id])
+  batchNote    String?        @map("batch_note") @db.Text // 批次说明
+  totalPages   Int?           @map("total_pages")
+  status       MaterialStatus @default(UPLOADED)
+  errorMessage String?        @map("error_message") @db.Text
+  createdBy    Int            @map("created_by")
+  creator      User           @relation(fields: [createdBy], references: [id])
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  chapters MaterialChapter[]
+  questions MaterialQuestion[]
+
+  @@map("materials")
+}
+
+enum MaterialChapterStatus {
+  PENDING
+  GENERATING
+  GENERATED
+}
+
+model MaterialChapter {
+  id            Int                   @id @default(autoincrement())
+  materialId    Int                   @map("material_id")
+  material      Material              @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  title         String                @db.VarChar(500) // 章节标题
+  chapterIndex  Int                   @map("chapter_index") // 章节序号
+  content       String?               @db.Text // 该章节的完整文本（OCR结果）
+  status        MaterialChapterStatus @default(PENDING)
+  questionCount Int                   @default(0) @map("question_count")
+  sortOrder     Int                   @default(0) @map("sort_order")
+
+  questions MaterialQuestion[]
+
+  @@map("material_chapters")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EDITED
+}
+
+model MaterialQuestion {
+  id            Int          @id @default(autoincrement())
+  materialId    Int          @map("material_id")
+  material      Material     @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  chapterId     Int?         @map("chapter_id")
+  chapter       MaterialChapter? @relation(fields: [chapterId], references: [id])
+
+  type          QuestionType
+  difficulty    Difficulty
+  knowledgePoint String?     @map("knowledge_point") @db.VarChar(200)
+  sourceChunk   String?      @map("source_chunk") @db.VarChar(200) // 来源章节路径
+
+  content       String       @db.Text // 题干
+  options       Json?        // [{label, content, isCorrect}]
+  blanks        Json?        // [{position, answer}]
+  answer        String?      @db.Text // 简答/案例参考答案
+  explanation   String?      @db.Text // 解析
+
+  // 建议分组
+  suggestedGroup String?     @default("EXAM_GROUP") @map("suggested_group") // PRACTICE_GROUP / EXAM_GROUP / COMMON_GROUP
+
+  // 审核
+  reviewStatus  ReviewStatus @default(PENDING) @map("review_status")
+  reviewNote    String?      @map("review_note") @db.Text
+
+  // 如果通过入库，关联到正式试题
+  questionId    Int?         @map("question_id")
+  question      Question?    @relation(fields: [questionId], references: [id])
+
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("material_questions")
 }

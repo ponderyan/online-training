@@ -49,6 +49,13 @@ export default function PapersPage() {
     a.click();
   };
 
+  const handleAnswerSheet = (paperId: number) => {
+    const a = document.createElement('a');
+    a.href = `/api/papers/${paperId}/export-answer-sheet`;
+    a.download = `answer-sheet-${paperId}.docx`;
+    a.click();
+  };
+
   const handleUploadWord = async (file: File, paperId: number) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -69,27 +76,27 @@ export default function PapersPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-7">
         <div>
-          <h1 className="page-title">试卷管理</h1>
+          <h1 className="page-title">🦊 试卷管理</h1>
           <p className="page-subtitle">
             草稿 {draftCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
           </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => router.push('/generate')} className="btn btn-gold btn-sm">+ 新建组卷</button>
+          <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">+ 小狐狸，组个卷</button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
       ) : papers.length === 0 ? (
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
-          <p className="mb-3">暂无试卷</p>
-          <button onClick={() => router.push('/generate')} className="btn btn-gold btn-sm">去创建第一份试卷</button>
+          <p className="mb-3">小狐狸还没找到试卷呢 🦊</p>
+          <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">让小狐狸组一份</button>
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
           {papers.map((p: any) => (
-            <div key={p.id} className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--gold)]">
+            <div key={p.id} className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--fox)]">
               <div className="flex justify-between items-start gap-3 mb-3">
                 <h3 className="font-serif font-bold text-sm leading-snug" style={{ color: 'var(--ink-800)' }}>{p.name}</h3>
                 <span className={`tag ${
@@ -112,7 +119,8 @@ export default function PapersPage() {
                   <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-outline btn-xs">修改配置</button>
                 )}
                 <button onClick={() => openAnswer(p)} className="btn btn-outline btn-xs">答案</button>
-                <button onClick={() => handleDownload(p.id, 'word')} className="btn btn-outline btn-xs">Word</button>
+                <button onClick={() => handleDownload(p.id, 'word')} className="btn btn-outline btn-xs">试卷</button>
+                <button onClick={() => handleAnswerSheet(p.id)} className="btn btn-fox btn-xs">答题卡</button>
                 <button onClick={() => handleDownload(p.id, 'pdf')} className="btn btn-outline btn-xs">PDF</button>
                 {p.status === 'FINALIZED' && (
                   <button onClick={() => { api.papers.promote(p.id); load(); }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>

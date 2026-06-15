@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════
-   墨韵·知性 — 设计系统
-   Scholarly Minimal Design System
+   FoxLearn · 狐学 — 设计系统
+   知性学术基底 + 小狐狸温暖点缀
    ══════════════════════════════════════ */
 
 :root {
+  /* 墨色基底 (保留学术调性) */
   --ink-900: #1a1712;
   --ink-800: #231f1a;
   --ink-700: #2c261e;
@@ -14,21 +15,37 @@
   --ink-300: #8b8174;
   --ink-200: #a89d8e;
   --ink-100: #c4bcb0;
+
+  /* 纸张质感 */
   --paper: #efe9dc;
   --paper-light: #f6f1e8;
   --paper-alt: #f0ece1;
   --paper-dark: #e4dccd;
   --paper-bright: #faf6ef;
+
+  /* 点缀色 */
   --gold: #c9a03a;
   --gold-dark: #a67f2a;
   --gold-light: #dbb95c;
   --gold-glow: rgba(201, 160, 58, 0.12);
+
+  /* 狐狸橙 — 温暖主色调 */
+  --fox: #e87a30;
+  --fox-dark: #c9601e;
+  --fox-light: #f5a061;
+  --fox-pale: #fce6d3;
+  --fox-glow: rgba(232, 122, 48, 0.12);
+  --fox-glow-strong: rgba(232, 122, 48, 0.2);
+
+  /* 辅助色 */
   --verm: #d9364a;
   --verm-light: #ff4d5e;
   --verm-glow: rgba(217, 54, 74, 0.08);
   --cyan: #00897b;
   --cyan-light: #00c9b6;
   --cyan-glow: rgba(0, 137, 123, 0.08);
+
+  /* 尺寸 */
   --radius: 8px;
   --radius-lg: 12px;
   --shadow-sm: 0 1px 3px rgba(26, 23, 18, 0.06);
@@ -113,7 +130,7 @@ h1, h2, h3, h4, h5 {
   display: inline-block;
   width: 16px;
   height: 2px;
-  background: var(--gold);
+  background: var(--fox);
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -144,8 +161,10 @@ h1, h2, h3, h4, h5 {
 .btn-ink:hover { background: var(--ink-700); box-shadow: var(--shadow-md); }
 .btn-gold { background: var(--gold); color: var(--ink-900); }
 .btn-gold:hover { background: var(--gold-light); box-shadow: 0 4px 12px var(--gold-glow); }
+.btn-fox { background: var(--fox); color: #fff; }
+.btn-fox:hover { background: var(--fox-dark); box-shadow: 0 4px 12px var(--fox-glow); }
 .btn-outline { background: transparent; color: var(--ink-500); border: 1px solid var(--ink-100); }
-.btn-outline:hover { border-color: var(--gold); color: var(--gold-dark); background: var(--gold-glow); }
+.btn-outline:hover { border-color: var(--fox); color: var(--fox-dark); background: var(--fox-glow); }
 .btn-ghost { background: transparent; color: var(--ink-400); border: none; }
 .btn-ghost:hover { color: var(--ink-900); background: var(--paper-dark); }
 .btn-verm { background: var(--verm); color: #fff; }
@@ -170,7 +189,7 @@ h1, h2, h3, h4, h5 {
   outline: none;
   transition: var(--transition);
 }
-.input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+.input:focus { border-color: var(--fox); box-shadow: 0 0 0 3px var(--fox-glow); }
 .input::placeholder { color: var(--ink-200); }
 
 .select {
@@ -181,7 +200,7 @@ h1, h2, h3, h4, h5 {
   padding-right: 32px;
   cursor: pointer;
 }
-.select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+.select:focus { border-color: var(--fox); box-shadow: 0 0 0 3px var(--fox-glow); }
 
 .textarea {
   resize: vertical;
@@ -206,6 +225,7 @@ h1, h2, h3, h4, h5 {
 }
 .tag-ink { background: var(--paper-dark); color: var(--ink-500); }
 .tag-gold { background: var(--gold-glow); color: var(--gold-dark); }
+.tag-fox { background: var(--fox-glow); color: var(--fox-dark); }
 .tag-verm { background: var(--verm-glow); color: var(--verm); }
 .tag-cyan { background: var(--cyan-glow); color: var(--cyan); }
 
@@ -236,7 +256,7 @@ h1, h2, h3, h4, h5 {
   line-height: 1.5;
 }
 .list-table tr:last-child td { border-bottom: none; }
-.list-table tr:hover td { background: var(--gold-glow); }
+.list-table tr:hover td { background: var(--fox-glow); }
 
 /* ══════════════════════════════════════
    统计卡片
@@ -253,7 +273,7 @@ h1, h2, h3, h4, h5 {
 }
 .stat-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--gold);
+  border-color: var(--fox);
 }
 .stat-card-value {
   font-family: 'Noto Serif SC', serif;

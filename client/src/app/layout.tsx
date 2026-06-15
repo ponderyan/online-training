@@ -2,8 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '墨卷 · 智能组卷系统',
-  description: '面向培训机构的一站式教考分离解决方案',
+  title: 'FoxLearn · 狐学 — 智能组卷系统',
+  description: '跟着小狐狸，高效出卷，精准组卷',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

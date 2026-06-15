@@ -17,6 +17,7 @@ function GeneratePageContent() {
   const router = useRouter();
   const [user, setUser] = useState<any>({ id: 1 });
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [subjectId, setSubjectId] = useState<number>(1);
   const [paperName, setPaperName] = useState('');
   const [totalScore, setTotalScore] = useState(100);
@@ -39,8 +40,47 @@ function GeneratePageContent() {
     EASY: 10, MEDIUM_EASY: 40, MEDIUM_HARD: 30, HARD: 20,
   });
   const [sourceMix, setSourceMix] = useState(70);
+  const [includeIds, setIncludeIds] = useState<number[]>([]);
+  const [lockedTypes, setLockedTypes] = useState<string[]>([]);
+  const [lockedCounts, setLockedCounts] = useState<Record<string, number>>({});
   const [questionCounts, setQuestionCounts] = useState<{ subject: number; public: number } | null>(null);
   const [countsLoading, setCountsLoading] = useState(false);
+
+  // 锁定题型始终在 enabled 列表中
+  useEffect(() => {
+    if (lockedTypes.length > 0) {
+      setEnabledTypes(prev => {
+        const merged = new Set([...prev, ...lockedTypes]);
+        return [...merged];
+      });
+    }
+  }, [lockedTypes]);
+
+  const applyTemplate = (tpl: any) => {
+    setPaperName(`DT+ ${subjects.find(s => s.id === tpl.subjectId)?.name || ''} 模拟卷`);
+    setSubjectId(tpl.subjectId);
+    setTotalScore(tpl.totalScore);
+    setDuration(tpl.durationMinutes || 90);
+    setIsOpenBook(tpl.isOpenBook || false);
+    setChapterStrategy(tpl.chapterStrategy || 'EVEN');
+    setSourceMix(tpl.sourceMix ?? 80);
+    if (tpl.difficultyDistribution) setDifficulty(tpl.difficultyDistribution);
+
+    const configs: Record<string, any> = {};
+    const enabled: string[] = [];
+    for (const tc of tpl.typeConfigs) {
+      enabled.push(tc.questionType);
+      const score = tc.scorePerQuestion;
+      const blanksPerQ = 1;
+      configs[tc.questionType] = {
+        count: tc.count,
+        score: tc.questionType === 'FILL_BLANK' ? score : score,
+        blanksPerQ,
+      };
+    }
+    setEnabledTypes(enabled);
+    setTypeConfigs(prev => ({ ...prev, ...configs }));
+  };
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -61,12 +101,72 @@ function GeneratePageContent() {
   const [generated, setGenerated] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const searchParams = useSearchParams();
+
+  const saveAsTemplate = async () => {
+    const name = prompt('请输入模板名称：', `DT+ ${subjects.find(s => s.id === subjectId)?.name || ''} 标准模板`);
+    if (!name) return;
+    setSavingTemplate(true);
+    try {
+      await api.templates.create({
+        name,
+        subjectId,
+        totalScore,
+        durationMinutes: duration,
+        isOpenBook,
+        createdBy: user.id,
+        chapterStrategy,
+        sourceMix,
+        difficultyDistribution: difficulty,
+        typeConfigs: enabledTypes.filter(t => typeConfigs[t]?.count > 0).map(t => ({
+          questionType: t,
+          count: typeConfigs[t].count,
+          scorePerQuestion: t === 'FILL_BLANK'
+            ? typeConfigs[t].score * (typeConfigs[t].blanksPerQ || 1)
+            : typeConfigs[t].score,
+        })),
+      });
+      const tpls = await api.templates.list();
+      setTemplates(tpls);
+    } catch (e: any) { alert('保存失败：' + e.message); }
+    setSavingTemplate(false);
+  };
+
+  const deleteTemplate = async (id: number, name: string) => {
+    if (!confirm(`确认删除模板"${name}"？`)) return;
+    try {
+      await api.templates.delete(id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    } catch (e: any) { alert('删除失败：' + e.message); }
+  };
 
   useEffect(() => {
     try { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.id) setUser(u); } catch {}
-    api.subjects.list().then(subs => {
+    // 读取必选题（含题型数据，用于锁定题型）
+    try {
+      const saved = localStorage.getItem('selectedQuestionData');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data) && data.length > 0) {
+          const ids = data.map((d: any) => d.id);
+          const types = [...new Set(data.map((d: any) => d.type))] as string[];
+          const counts: Record<string, number> = {};
+          data.forEach((d: any) => { counts[d.type] = (counts[d.type] || 0) + 1; });
+          setIncludeIds(ids);
+          setLockedTypes(types);
+          setLockedCounts(counts);
+        }
+        localStorage.removeItem('selectedQuestionData');
+        localStorage.removeItem('selectedQuestionIds');
+      }
+    } catch {}
+    Promise.all([
+      api.subjects.list(),
+      api.templates.list(),
+    ]).then(([subs, tpls]) => {
       setSubjects(subs);
+      setTemplates(tpls);
       if (subs.length > 0) {
         const copyFrom = searchParams.get('copyFrom');
         if (copyFrom) {
@@ -84,7 +184,7 @@ function GeneratePageContent() {
                 configs[tc.questionType] = {
                   count: tc.count,
                   score: tc.scorePerQuestion,
-                  blanksPerQ: tc.blanksPerQuestion || 1,
+                  blanksPerQ: 1,
                 };
               }
               setEnabledTypes(enabled);
@@ -94,8 +194,8 @@ function GeneratePageContent() {
             if (p.chapterStrategy) setChapterStrategy(p.chapterStrategy);
             if (p.sourceMix !== undefined) setSourceMix(p.sourceMix);
           }).catch(() => {
-            setPaperName(`DT+ ${subs[0].name} 模拟卷`);
             setSubjectId(subs[0].id);
+            setPaperName(`DT+ ${subs[0].name} 模拟卷`);
           });
         } else {
           setSubjectId(subs[0].id);
@@ -106,12 +206,18 @@ function GeneratePageContent() {
   }, []);
 
   const toggleType = (t: string) => {
+    // 必选题对应的题型不可取消
+    if (lockedTypes.includes(t)) return;
     setEnabledTypes(prev =>
       prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
     );
   };
 
   const updateTypeConfig = (t: string, field: string, value: number) => {
+    // 必选题数量限制：题数不能少于已选必选题的数量
+    if (field === 'count' && lockedCounts[t]) {
+      value = Math.max(value, lockedCounts[t]);
+    }
     setTypeConfigs(prev => ({ ...prev, [t]: { ...prev[t], [field]: value } }));
   };
 
@@ -143,13 +249,32 @@ function GeneratePageContent() {
 
   const handleGenerate = async () => {
     if (!scoreValid) { setError(`题型总分 ${totalFromTypes()} ≠ 试卷总分 ${totalScore}`); return; }
+    // 必选题数量检查
+    for (const [type, minCount] of Object.entries(lockedCounts)) {
+      if ((typeConfigs[type]?.count || 0) < minCount) {
+        setError(`${TYPE_NAMES[type]} 题数不能少于 ${minCount} 道（已选 ${minCount} 道必选题）`);
+        return;
+      }
+    }
+    // 来源比例检查
+    if (questionCounts) {
+      if (sourceMix > 0 && questionCounts.subject === 0) {
+        setError('当前科目没有已发布的试题，无法组卷。请先录入试题或调整来源比例。');
+        return;
+      }
+      if (sourceMix < 100 && questionCounts.public === 0) {
+        setError('公共题库为空，无法抽取公共试题。请先将试题标记为"公共"或调整来源比例为全部专用。');
+        return;
+      }
+    }
     setError('');
     setGenerating(true);
     try {
-      const payload = {
+      const payload: any = {
         name: paperName, subjectId, totalScore, durationMinutes: duration, isOpenBook,
         createdBy: user.id, chapterStrategy, sourceMix,
         difficultyDistribution: difficulty,
+        includeQuestionIds: includeIds.length > 0 ? includeIds : undefined,
         typeConfigs: enabledTypes.filter(t => typeConfigs[t]?.count > 0).map(t => ({
           questionType: t, count: typeConfigs[t].count,
           scorePerQuestion: t === 'FILL_BLANK'
@@ -158,29 +283,44 @@ function GeneratePageContent() {
         })),
       };
       const result = await api.papers.generate(payload);
-      setGenerated(result);
+      // 生成后直接跳转到可编辑的试卷详情页
+      setIncludeIds([]);
+      localStorage.removeItem('selectedQuestionIds');
+      router.push(`/papers/${result.id}`);
     } catch (e: any) {
       setError(e.message);
     } finally { setGenerating(false); }
   };
 
-  const handleFinalize = async () => {
-    if (!generated) return;
-    await api.papers.finalize(generated.id);
-    router.push('/papers');
-  };
-
   return (
     <AppLayout>
       <div className="mb-7">
-        <h1 className="page-title">智能组卷</h1>
-        <p className="page-subtitle">配置试卷参数 · 系统自动抽题生成</p>
+        <h1 className="page-title">🦊 智能组卷</h1>
+        <p className="page-subtitle">告诉小狐狸你的需求，剩下的交给它 🐾</p>
       </div>
 
       <div className="grid grid-cols-[1fr_400px] gap-6 items-start" style={{ gridTemplateColumns: '1fr 400px' }}>
         {/* 左侧：配置面板 */}
         <div className="card p-6">
           <h3 className="section-title">组卷配置</h3>
+
+          {/* 预设模板 */}
+          {templates.length > 0 && (
+            <div className="mb-5 p-4 rounded-lg" style={{ background: 'var(--paper)' }}>
+              <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>预设模板</label>
+              <div className="flex gap-2">
+                <select onChange={e => {
+                  const tpl = templates.find(t => t.id === Number(e.target.value));
+                  if (tpl) applyTemplate(tpl);
+                }} className="input select flex-1" defaultValue="">
+                  <option value="" disabled>选择模板自动填充配置</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} · {t.subject?.code} · {t.totalScore}分{t.isOpenBook ? '·开卷' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* 科目 + 名称 */}
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -205,11 +345,11 @@ function GeneratePageContent() {
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>总分值</label>
-              <input type="number" value={totalScore} onChange={e => setTotalScore(Number(e.target.value))} className="input" />
+              <input value={String(totalScore)} onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; setTotalScore(v); }} className="input" inputMode="numeric" />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试时间（分）</label>
-              <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} className="input" />
+              <input value={String(duration)} onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; setDuration(v); }} className="input" inputMode="numeric" />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>开卷/闭卷</label>
@@ -235,21 +375,28 @@ function GeneratePageContent() {
             {allTypes.map(t => {
               const checked = enabledTypes.includes(t);
               return (
-                <div key={t} onClick={() => toggleType(t)}
-                  className="flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg cursor-pointer text-sm transition-all"
+                <div key={t}
+                  onClick={() => toggleType(t)}
+                  className={`flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg text-sm transition-all ${lockedTypes.includes(t) ? '' : 'cursor-pointer'}`}
                   style={{
-                    borderColor: checked ? 'var(--gold)' : 'var(--ink-100)',
-                    background: checked ? 'var(--gold-glow)' : 'transparent',
+                    borderColor: checked ? 'var(--fox)' : 'var(--ink-100)',
+                    background: checked ? 'var(--fox-glow)' : 'transparent',
+                    opacity: lockedTypes.includes(t) ? 1 : undefined,
                   }}>
                   <span className="w-4 h-4 rounded border flex items-center justify-center text-[7px] transition-all flex-shrink-0"
                     style={{
-                      borderColor: checked ? 'var(--gold)' : 'var(--ink-100)',
-                      background: checked ? 'var(--gold)' : 'transparent',
+                      borderColor: checked ? 'var(--fox)' : 'var(--ink-100)',
+                      background: checked ? 'var(--fox)' : 'transparent',
                       color: checked ? '#fff' : 'transparent',
                     }}>
                     ✓
                   </span>
-                  {TYPE_NAMES[t]}
+                  <span>{TYPE_NAMES[t]}</span>
+                  {lockedTypes.includes(t) && (
+                    <span className="text-[10px] ml-auto whitespace-nowrap flex-shrink-0" style={{ color: 'var(--fox)' }}>
+                      📌 含必选题
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -264,22 +411,31 @@ function GeneratePageContent() {
               </div>
               <div className="grid grid-cols-[1fr_1fr_1fr_60px] gap-3 p-4 border-t border-[var(--ink-100)]">
                 <div>
-                  <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>题数</label>
-                  <input type="number" value={typeConfigs[t]?.count || 0}
-                    onChange={e => updateTypeConfig(t, 'count', Number(e.target.value))} className="input" />
+                  <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>
+                    题数
+                    {lockedCounts[t] > 0 && (
+                      <span className="ml-1 text-[10px]" style={{ color: 'var(--fox)' }}>
+                        （最低 {lockedCounts[t]} 题）
+                      </span>
+                    )}
+                  </label>
+                  <input value={String(typeConfigs[t]?.count ?? 0)}
+                    onChange={e => updateTypeConfig(t, 'count', parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
+                    className="input" inputMode="numeric"
+                    style={lockedCounts[t] > 0 && (typeConfigs[t]?.count || 0) < lockedCounts[t] ? { borderColor: 'var(--verm)' } : {}} />
                 </div>
                 <div>
                   <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>
                     {t === 'FILL_BLANK' ? '每空分值' : '每题分值'}
                   </label>
-                  <input type="number" value={typeConfigs[t]?.score || 0}
-                    onChange={e => updateTypeConfig(t, 'score', Number(e.target.value))} className="input" />
+                  <input value={String(typeConfigs[t]?.score ?? 0)}
+                    onChange={e => updateTypeConfig(t, 'score', parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)} className="input" inputMode="numeric" />
                 </div>
                 {t === 'FILL_BLANK' && (
                   <div>
                     <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>每空数</label>
-                    <input type="number" value={typeConfigs[t]?.blanksPerQ || 1}
-                      onChange={e => updateTypeConfig(t, 'blanksPerQ', Number(e.target.value))} className="input" />
+                    <input value={String(typeConfigs[t]?.blanksPerQ ?? 1)}
+                      onChange={e => updateTypeConfig(t, 'blanksPerQ', parseInt(e.target.value.replace(/\D/g, ''), 10) || 1)} className="input" inputMode="numeric" />
                   </div>
                 )}
                 <div className="flex items-end pb-1.5">
@@ -345,7 +501,7 @@ function GeneratePageContent() {
               <input type="range" min={0} max={100} value={sourceMix}
                 onChange={e => setSourceMix(Number(e.target.value))}
                 className="flex-1 h-1.5 rounded cursor-pointer"
-                style={{ accentColor: '#c9a03a' }} />
+                style={{ accentColor: '#e87a30' }} />
               <span className="tag tag-ink">公共 {100 - sourceMix}%</span>
             </div>
             {questionCounts && !countsLoading && (
@@ -368,8 +524,8 @@ function GeneratePageContent() {
           {error && <div className="text-sm mb-3" style={{ color: 'var(--verm)' }}>{error}</div>}
 
           <button onClick={handleGenerate} disabled={generating || !scoreValid}
-            className="btn btn-gold w-full py-3 text-sm">
-            {generating ? '生成中…' : generated ? '重新生成' : '生成试卷'}
+            className="btn btn-fox w-full py-3 text-sm">
+            {generating ? '小狐狸正在出题… 🦊' : generated ? '重新生成' : '让小狐狸出卷 ✨'}
           </button>
         </div>
 
@@ -393,29 +549,59 @@ function GeneratePageContent() {
             </div>
           </div>
 
-          {/* 生成结果 */}
+          {/* 生成结果提示 */}
           {generated && (
-            <div className="card p-6">
-              <h3 className="section-title mb-3">生成结果</h3>
-              <div className="space-y-2 text-sm mb-4" style={{ color: 'var(--ink-700)' }}>
-                <p>编号：<span className="font-medium">{generated.paperNumber}</span></p>
-                <p>试题：<span className="font-medium">{generated.questions?.length || 0}</span> 题</p>
-                <p>状态：<span className="tag tag-ink">草稿</span></p>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={handleFinalize}
-                  className="btn btn-ink flex-1 text-sm">直接定稿</button>
-                <button onClick={() => router.push('/papers')}
-                  className="btn btn-outline flex-1 text-sm">保存为草稿</button>
+            <div className="card p-6 text-center animate-fadeSlide" style={{ borderLeft: '3px solid var(--cyan)' }}>
+              <p className="text-sm mb-2" style={{ color: 'var(--cyan)' }}>✅ 试卷已生成，即将跳转到编辑页面</p>
+              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                编号：{generated.paperNumber} · {generated.questions?.length || 0} 题
+              </p>
+            </div>
+          )}
+
+          {/* 必选题提示 */}
+          {includeIds.length > 0 && (
+            <div className="card p-4" style={{ borderLeft: '3px solid var(--fox)', background: 'var(--fox-pale)' }}>
+              <div className="flex items-center gap-2 text-sm">
+                <span>📌</span>
+                <span style={{ color: 'var(--fox-dark)' }}>
+                  已从题库选定 <strong>{includeIds.length}</strong> 道必选题，将优先放入试卷
+                </span>
+                <button onClick={() => setIncludeIds([])} className="btn btn-ghost btn-xs ml-auto"
+                  style={{ color: 'var(--ink-300)' }}>清除</button>
               </div>
             </div>
           )}
 
+          {/* 模板管理 */}
           <div className="card p-5">
-            <p className="text-sm font-medium mb-1" style={{ color: 'var(--ink-500)' }}>ⓘ 提示</p>
-            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
-              生成后可在试卷管理查看完整试卷。<br />
-              已引用试题设有冷却阈值，避免近期重复。
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="section-title mb-0">模板管理</h3>
+              <button onClick={saveAsTemplate} disabled={savingTemplate}
+                className="btn btn-outline btn-xs">{savingTemplate ? '保存…' : '+ 保存当前'}</button>
+            </div>
+            {templates.length === 0 ? (
+              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无模板</p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {templates.map(t => (
+                  <div key={t.id} className="flex items-center justify-between gap-2 p-2 rounded text-xs"
+                    style={{ background: 'var(--paper)', color: 'var(--ink-500)' }}>
+                    <span className="truncate flex-1">{t.name}</span>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => applyTemplate(t)}
+                        className="btn btn-ghost btn-xs" style={{ color: 'var(--gold)' }}>应用</button>
+                      <button onClick={() => deleteTemplate(t.id, t.name)}
+                        className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs mt-3" style={{ color: 'var(--ink-300)' }}>
+              模板不含试卷名称，应用后可按需调整。
             </p>
           </div>
         </div>

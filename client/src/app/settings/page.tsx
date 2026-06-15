@@ -137,8 +137,8 @@ export default function SettingsPage() {
   return (
     <AppLayout>
       <div className="mb-7">
-        <h1 className="page-title">系统设置</h1>
-        <p className="page-subtitle">大模型配置 · 数据字典 · 系统参数</p>
+        <h1 className="page-title">🦊 系统设置</h1>
+        <p className="page-subtitle">告诉小狐狸怎么干活</p>
       </div>
 
       {/* Tabs */}
@@ -151,7 +151,7 @@ export default function SettingsPage() {
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="px-5 py-2.5 text-sm font-medium cursor-pointer border-b-2 transition-colors bg-transparent"
             style={{
-              borderColor: activeTab === tab.key ? 'var(--gold)' : 'transparent',
+              borderColor: activeTab === tab.key ? 'var(--fox)' : 'transparent',
               color: activeTab === tab.key ? 'var(--ink-800)' : 'var(--ink-300)',
             }}>
             {tab.label}
@@ -303,7 +303,7 @@ export default function SettingsPage() {
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>名称</label>
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="如 数智化管理师" className="input" />
             </div>
-            <button onClick={addDictionary} className="btn btn-gold btn-sm">添加</button>
+            <button onClick={addDictionary} className="btn btn-fox btn-sm">添加</button>
           </div>
         </div>
       )}

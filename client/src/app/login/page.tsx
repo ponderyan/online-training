@@ -2,6 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FoxLogo from '@/components/fox-logo';
+
+function DecorativeLine() {
+  return (
+    <svg viewBox="0 0 200 2" className="w-full">
+      <line x1="0" y1="1" x2="60" y2="1" stroke="#e87a30" strokeWidth="1" opacity="0.4" />
+      <circle cx="70" cy="1" r="1.5" fill="#e87a30" opacity="0.5" />
+      <line x1="75" y1="1" x2="125" y2="1" stroke="#5a5348" strokeWidth="0.5" opacity="0.3" />
+      <circle cx="130" cy="1" r="1.5" fill="#e87a30" opacity="0.5" />
+      <line x1="135" y1="1" x2="200" y2="1" stroke="#e87a30" strokeWidth="1" opacity="0.4" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +36,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('用户名或密码错误');
       const data = await res.json();
       localStorage.setItem('user', JSON.stringify(data));
-      router.push('/');
+      router.push('/dashboard');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -32,29 +45,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center"
-      style={{ background: 'linear-gradient(135deg, #efe9dc 0%, #e4dccd 50%, #f6f1e8 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: 'linear-gradient(135deg, #f6f1e8 0%, #efe9dc 50%, #e4dccd 100%)',
+      }}>
       {/* 顶部装饰线 */}
       <div className="fixed top-0 left-0 w-full h-[3px]"
-        style={{ background: 'linear-gradient(90deg, #c9a03a, #d9364a, #c9a03a)' }} />
+        style={{ background: 'linear-gradient(90deg, transparent, #e87a30 20%, #f5a061 50%, #e87a30 80%, transparent)' }} />
 
-      <div className="card w-[380px] p-8 animate-fadeSlide">
-        {/* 品牌区 */}
+      <div className="card w-[400px] p-10 animate-fadeSlide">
+        {/* ── 品牌区 ── */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-4"
-            style={{
-              background: 'linear-gradient(135deg, #d9364a 0%, #b52a3a 100%)',
-              boxShadow: '0 4px 16px rgba(217, 54, 74, 0.3)',
-            }}>
-            墨
+          {/* LOGO：狐狸图标 + 品牌名 */}
+          <div className="flex justify-center mb-5">
+            <FoxLogo.Light size={44} />
           </div>
-          <h1 className="text-2xl font-serif font-bold tracking-wider" style={{ color: 'var(--ink-800)' }}>墨卷</h1>
-          <p className="text-sm mt-1.5" style={{ color: 'var(--ink-400)' }}>智能组卷系统</p>
+          <p className="text-xs tracking-[0.2em]" style={{ color: 'var(--ink-300)' }}>
+            智 能 组 卷 系 统
+          </p>
+          <div className="w-32 mx-auto my-4">
+            <DecorativeLine />
+          </div>
+          <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
+            跟着小狐狸，知识不迷路 🐾
+          </p>
         </div>
 
+        {/* ── 表单 ── */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>用户名</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              用户名
+            </label>
             <input
               type="text"
               value={username}
@@ -66,7 +88,9 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>密码</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              密码
+            </label>
             <input
               type="password"
               value={password}
@@ -78,15 +102,16 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
-              {error}
+            <div className="text-xs px-4 py-2.5 rounded-lg flex items-center gap-2"
+              style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+              <span>⚠</span> {error}
             </div>
           )}
 
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="btn btn-ink w-full py-3 text-sm"
+            className="btn btn-fox w-full py-3 text-sm tracking-wider"
           >
             {loading ? '登录中…' : '登 录'}
           </button>
@@ -96,6 +121,11 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* 底部版权 */}
+      <p className="fixed bottom-6 text-xs" style={{ color: 'var(--ink-200)' }}>
+        FoxLearn · 跟着小狐狸，知识不迷路 🐾
+      </p>
     </div>
   );
 }
