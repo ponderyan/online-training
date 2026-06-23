@@ -18,9 +18,19 @@ export class PapersController {
     });
   }
 
+  @Get('export-preview/:id')
+  @RequirePermission(Permissions.PAPER_VIEW)
+  async exportPreview(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
+  }
+
   @Get(':id')
   @RequirePermission(Permissions.PAPER_EDIT)
   findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+
+  @Post()
+  @RequirePermission(Permissions.PAPER_GENERATE)
+  create(@Body() data: any) { return this.service.create(data); }
 
   @Post('generate')
   @RequirePermission(Permissions.PAPER_GENERATE)

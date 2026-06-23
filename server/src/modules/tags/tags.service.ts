@@ -13,6 +13,10 @@ export class TagsService {
     return this.prisma.tag.create({ data });
   }
 
+  update(id: number, data: { name?: string }) {
+    return this.prisma.tag.update({ where: { id }, data });
+  }
+
   remove(id: number) {
     return this.prisma.tag.delete({ where: { id } });
   }

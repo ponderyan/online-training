@@ -73,7 +73,7 @@ export default function MaterialsPage() {
             <div key={m.id}
               className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--fox)] cursor-pointer"
               onClick={() => {
-                if (['GENERATED', 'REVIEWING', 'COMPLETED'].includes(m.status)) {
+                if (['OCR_DONE', 'GENERATED', 'REVIEWING', 'COMPLETED'].includes(m.status)) {
                   router.push(`/materials/${m.id}`);
                 }
               }}>
@@ -104,16 +104,18 @@ export default function MaterialsPage() {
               )}
 
               <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                {['GENERATED', 'REVIEWING', 'COMPLETED'].includes(m.status) && (
+                {['OCR_DONE', 'GENERATED', 'REVIEWING', 'COMPLETED'].includes(m.status) && (
                   <button onClick={e => { e.stopPropagation(); router.push(`/materials/${m.id}`); }}
-                    className="btn btn-fox btn-xs flex-1">去审核</button>
+                    className="btn btn-fox btn-xs flex-1">
+                    {m.status === 'OCR_DONE' ? '🤖 AI出题' : '去审核'}
+                  </button>
                 )}
                 {m.status === 'UPLOADED' && (
                   <span className="text-xs flex-1 text-center py-1.5" style={{ color: 'var(--ink-300)' }}>
                     等待处理…
                   </span>
                 )}
-                {(['PROCESSING', 'OCR_DONE', 'GENERATING']).includes(m.status) && (
+                {(['PROCESSING', 'GENERATING']).includes(m.status) && (
                   <span className="text-xs flex-1 text-center py-1.5" style={{ color: 'var(--gold)' }}>
                     ⏳ 小狐狸正在处理中…
                   </span>

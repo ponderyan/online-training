@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import FoxLogo from '@/components/fox-logo';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 function DecorativeLine() {
   return (
@@ -18,27 +19,56 @@ function DecorativeLine() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const settings = useSiteSettings();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaId, setCaptchaId] = useState('');
+  const [captchaSvg, setCaptchaSvg] = useState('');
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const fetchCaptcha = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/captcha');
+      const data = await res.json();
+      setCaptchaId(data.id);
+      setCaptchaSvg(data.svg);
+    } catch {
+      // 验证码服务不可用时静默失败
+    }
+  }, []);
+
+  useEffect(() => { fetchCaptcha(); }, [fetchCaptcha]);
+
   async function handleLogin() {
     if (!username || !password) { setError('请输入用户名和密码'); return; }
+    if (!captchaAnswer) { setError('请输入验证码'); return; }
     setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, captchaId, captchaAnswer }),
       });
-      if (!res.ok) throw new Error('用户名或密码错误');
       const data = await res.json();
-      localStorage.setItem('user', JSON.stringify(data));
+      if (data.error) {
+        setError(data.error);
+        fetchCaptcha();
+        setCaptchaAnswer('');
+        return;
+      }
+      if (!res.ok) throw new Error('用户名或密码错误');
+      // 保存 JWT token + 用户信息
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      // 角色分流
       router.push('/dashboard');
     } catch (e: any) {
       setError(e.message);
+      fetchCaptcha();
+      setCaptchaAnswer('');
     } finally {
       setLoading(false);
     }
@@ -56,18 +86,17 @@ export default function LoginPage() {
       <div className="card w-[400px] p-10 animate-fadeSlide">
         {/* ── 品牌区 ── */}
         <div className="text-center mb-8">
-          {/* LOGO：狐狸图标 + 品牌名 */}
           <div className="flex justify-center mb-5">
-            <FoxLogo.Light size={44} />
+            {settings?.siteLogo ? <img src={settings.siteLogo} alt="logo" style={{ height: 44 }} /> : <FoxLogo.Light size={44} />}
           </div>
           <p className="text-xs tracking-[0.2em]" style={{ color: 'var(--ink-300)' }}>
-            智 能 组 卷 系 统
+            {settings?.siteTitle || '智 能 组 卷 系 统'}
           </p>
           <div className="w-32 mx-auto my-4">
             <DecorativeLine />
           </div>
           <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
-            跟着小狐狸，知识不迷路 🐾
+            {settings?.footerText || '跟着小狐狸，知识不迷路 🐾'}
           </p>
         </div>
 
@@ -101,6 +130,33 @@ export default function LoginPage() {
             />
           </div>
 
+          {/* ── 验证码 ── */}
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              验证码
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={captchaAnswer}
+                onChange={e => setCaptchaAnswer(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                placeholder="计算结果"
+                className="input flex-1"
+                maxLength={4}
+              />
+              <button
+                type="button"
+                onClick={() => { fetchCaptcha(); setCaptchaAnswer(''); }}
+                className="flex-shrink-0 rounded-lg overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ borderColor: 'var(--ink-200)', background: '#faf8f5' }}
+                title="换一张"
+              >
+                <div dangerouslySetInnerHTML={{ __html: captchaSvg }} className="w-[120px] h-[44px] flex items-center justify-center" />
+              </button>
+            </div>
+          </div>
+
           {error && (
             <div className="text-xs px-4 py-2.5 rounded-lg flex items-center gap-2"
               style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
@@ -118,10 +174,20 @@ export default function LoginPage() {
         </div>
       </div>
 
+      <div className="text-center mt-4">
+        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>还没有账号？</span>
+        <button onClick={() => router.push('/register')}
+          className="text-xs bg-transparent border-none cursor-pointer ml-1" style={{ color: 'var(--fox)' }}>
+          立即注册
+        </button>
+      </div>
+
+
       {/* 底部版权 */}
-      <p className="fixed bottom-6 text-xs" style={{ color: 'var(--ink-200)' }}>
-        FoxLearn · 跟着小狐狸，知识不迷路 🐾
-      </p>
+      <div className="fixed bottom-6 text-xs text-center" style={{ color: 'var(--ink-200)' }}>
+        <a href="/verify-certificate" className="inline-block mb-1 bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)', textDecoration: 'none' }}>🔍 证书验证</a>
+        <p>{settings?.footerText || 'FoxLearn · 跟着小狐狸，知识不迷路 🐾'}{settings?.icpBeian ? ` · ${settings.icpBeian}` : ''}</p>
+      </div>
     </div>
   );
 }

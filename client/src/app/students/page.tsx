@@ -5,6 +5,19 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 
+const ROLE_NAMES: Record<string, string> = {
+  SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
+  LECTURER: '讲师', PROCTOR: '监考员', STUDENT: '学员',
+};
+const ROLE_COLORS: Record<string, string> = {
+  SUPER_ADMIN: 'var(--verm)', ORG_ADMIN: 'var(--fox)',
+  LECTURER: 'var(--cyan)', PROCTOR: '#7b1fa2', STUDENT: 'var(--ink-400)',
+};
+const ROLE_BGS: Record<string, string> = {
+  SUPER_ADMIN: 'var(--verm-glow)', ORG_ADMIN: 'var(--fox-pale)',
+  LECTURER: 'var(--cyan-glow)', PROCTOR: '#7b1fa218', STUDENT: 'transparent',
+};
+
 export default function StudentsPage() {
   const router = useRouter();
   const [students, setStudents] = useState<any[]>([]);
@@ -15,6 +28,7 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [filterGroup, setFilterGroup] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   // Modal state
   const [showAdd, setShowAdd] = useState(false);
@@ -26,7 +40,10 @@ export default function StudentsPage() {
   const [form, setForm] = useState({
     username: '', displayName: '', password: '123456',
     studentNumber: '', phone: '', email: '', organization: '', groupId: '',
+    role: 'STUDENT',
   });
+  const [selectedRolesStu, setSelectedRolesStu] = useState<string[]>(['STUDENT']);
+  const [allRolesStu, setAllRolesStu] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Group form
@@ -57,7 +74,7 @@ export default function StudentsPage() {
     try { setGroups(await api.students.groups()); } catch {}
   };
 
-  useEffect(() => { load(1); loadGroups(); }, []);
+  useEffect(() => { load(1); loadGroups(); api.permissions.getRoles().then(setAllRolesStu).catch(() => {}); }, []);
 
   // ── 搜索 ──
   useEffect(() => {
@@ -68,13 +85,14 @@ export default function StudentsPage() {
   const resetForm = () => setForm({
     username: '', displayName: '', password: '123456',
     studentNumber: '', phone: '', email: '', organization: '', groupId: '',
+    role: 'STUDENT',
   });
 
   const handleSave = async () => {
     if (!form.username || !form.displayName) { alert('用户名和姓名不能为空'); return; }
     setSaving(true);
     try {
-      const payload = { ...form, groupId: form.groupId ? Number(form.groupId) : undefined };
+      const payload = { ...form, roles: selectedRolesStu, groupId: form.groupId ? Number(form.groupId) : undefined };
       if (editStudent) {
         await api.students.update(editStudent.id, payload);
       } else {
@@ -105,6 +123,68 @@ export default function StudentsPage() {
     setBatchImporting(false);
   };
 
+  const RoleBadge = ({ roles: r }: { roles: string[] }) => (
+    <div className="flex flex-wrap gap-1">
+      {(r || ['STUDENT']).map((role: string) => (
+        <span key={role} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{
+          background: ROLE_BGS[role] || 'transparent',
+          color: ROLE_COLORS[role] || 'var(--ink-400)',
+          border: `1px solid ${ROLE_COLORS[role] || 'var(--ink-200)'}`,
+        }}>
+          {ROLE_NAMES[role] || role}
+        </span>
+      ))}
+    </div>
+  );
+
+  const StudentCard = ({ s }: { s: any }) => (
+    <div key={s.id} className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
+      style={{ background: 'white', border: '1px solid var(--ink-100)' }}
+      onClick={() => router.push(`/students/${s.id}`)}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+            style={{ background: s.isActive ? 'var(--fox-pale)' : 'var(--ink-100)', color: s.isActive ? 'var(--fox)' : 'var(--ink-300)' }}>
+            {s.displayName?.charAt(0) || '?'}
+          </div>
+          <div>
+            <div className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{s.displayName}</div>
+            <div className="text-xs" style={{ color: 'var(--ink-300)' }}>@{s.username}</div>
+          </div>
+        </div>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
+          {s.isActive ? '正常' : '已停用'}
+        </span>
+      </div>
+      <div className="flex gap-3 text-xs flex-wrap" style={{ color: 'var(--ink-400)' }}>
+        {s.studentNumber && <span>🎓 {s.studentNumber}</span>}
+        {s.phone && <span>📞 {s.phone}</span>}
+        {s.email && <span>✉️ {s.email}</span>}
+        {s.organization && <span>🏢 {s.organization}</span>}
+        {s.group?.name && <span>📂 {s.group.name}</span>}
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+        <RoleBadge roles={s.roleAssignments?.map((ra: any) => ra.role.code) || [s.role || 'STUDENT']} />
+        <div className="flex gap-1">
+          <button onClick={e => { e.stopPropagation();
+            setForm({
+              username: s.username, displayName: s.displayName, password: '',
+              studentNumber: s.studentNumber || '', phone: s.phone || '',
+              email: s.email || '', organization: s.organization || '',
+              groupId: s.groupId ? String(s.groupId) : '',
+              role: s.role || 'STUDENT',
+            });
+            setEditStudent(s); setShowAdd(true);
+          }} className="btn btn-ghost btn-xs">编辑</button>
+          <button onClick={e => { e.stopPropagation(); handleToggleActive(s); }}
+            className="btn btn-ghost btn-xs" style={{ color: s.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
+            {s.isActive ? '停用' : '启用'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
@@ -113,6 +193,22 @@ export default function StudentsPage() {
           <p className="page-subtitle">共 {total} 名学员{totalPages > 1 && <span className="ml-2 text-xs opacity-50">第 {page}/{totalPages} 页</span>}</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const res = await fetch(`/api/students/export-csv`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) throw new Error('导出失败');
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `学员数据_${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch (e: any) { alert('导出失败：' + e.message); }
+          }} className="btn btn-outline btn-sm">📤 导出CSV</button>
           <button onClick={() => { setShowGroup(true); setGroupForm({ name: '', note: '' }); }}
             className="btn btn-outline btn-sm">📂 分组管理</button>
           <button onClick={() => { setShowImport(true); setBatchResult(null); setBatchText(''); }}
@@ -122,17 +218,29 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-5">
+      {/* Filters + View toggle */}
+      <div className="flex gap-3 mb-5 items-center">
         <input value={keyword} onChange={e => setKeyword(e.target.value)}
           placeholder="搜索姓名/用户名/学号/手机号…" className="input" style={{ maxWidth: 320 }} />
         <select value={filterGroup} onChange={e => setFilterGroup(e.target.value)} className="input select" style={{ maxWidth: 180 }}>
           <option value="">全部班级</option>
           {groups.map((g: any) => <option key={g.id} value={g.id}>{g.name} ({g._count?.members || 0}人)</option>)}
         </select>
+        <div className="ml-auto flex border rounded-lg overflow-hidden" style={{ borderColor: 'var(--ink-200)' }}>
+          <button onClick={() => setViewMode('table')}
+            className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+            style={{ background: viewMode === 'table' ? 'var(--fox)' : 'transparent', color: viewMode === 'table' ? '#fff' : 'var(--ink-400)', border: 'none' }}>
+            📋 表格
+          </button>
+          <button onClick={() => setViewMode('card')}
+            className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+            style={{ background: viewMode === 'card' ? 'var(--fox)' : 'transparent', color: viewMode === 'card' ? '#fff' : 'var(--ink-400)', border: 'none' }}>
+            🃏 卡片
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
+      {/* Content */}
       {loading ? (
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
       ) : students.length === 0 ? (
@@ -140,58 +248,73 @@ export default function StudentsPage() {
           <p className="mb-3">还没有学员记录</p>
           <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">添加第一位学员</button>
         </div>
-      ) : (
+      ) : viewMode === 'table' ? (
+        /* ── 表格视图 ── */
         <div className="card overflow-hidden">
-          <table className="list-table">
-            <thead>
-              <tr>
-                <th>学号</th>
-                <th>姓名</th>
-                <th>用户名</th>
-                <th>手机号</th>
-                <th>单位</th>
-                <th>班级</th>
-                <th>状态</th>
-                <th style={{ width: 140 }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((s: any) => (
-                <tr key={s.id}>
-                  <td><span className="font-medium" style={{ color: 'var(--ink-500)' }}>{s.studentNumber || '—'}</span></td>
-                  <td><span className="font-medium">{s.displayName}</span></td>
-                  <td style={{ color: 'var(--ink-400)' }}>{s.username}</td>
-                  <td>{s.phone || '—'}</td>
-                  <td className="max-w-[160px] truncate">{s.organization || '—'}</td>
-                  <td>{s.group?.name || '—'}</td>
-                  <td>
-                    <span className={`tag ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
-                      {s.isActive ? '正常' : '已停用'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex gap-1">
-                      <button onClick={() => {
-                        setForm({
-                          username: s.username, displayName: s.displayName, password: '',
-                          studentNumber: s.studentNumber || '', phone: s.phone || '',
-                          email: s.email || '', organization: s.organization || '',
-                          groupId: s.groupId ? String(s.groupId) : '',
-                        });
-                        setEditStudent(s);
-                        setShowAdd(true);
-                      }} className="btn btn-ghost btn-xs">编辑</button>
-                      <button onClick={() => handleToggleActive(s)}
-                        className="btn btn-ghost btn-xs"
-                        style={{ color: s.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
-                        {s.isActive ? '停用' : '启用'}
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th>学号</th>
+                  <th>姓名</th>
+                  <th>用户名</th>
+                  <th>角色</th>
+                  <th>手机号</th>
+                  <th>邮箱</th>
+                  <th>单位</th>
+                  <th>班级</th>
+                  <th>注册时间</th>
+                  <th>状态</th>
+                  <th style={{ width: 140 }}>操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {students.map((s: any) => (
+                  <tr key={s.id}>
+                    <td><span className="font-medium" style={{ color: 'var(--ink-500)' }}>{s.studentNumber || '—'}</span></td>
+                    <td><span className="font-medium"><a onClick={() => router.push(`/students/${s.id}`)} className="cursor-pointer hover:underline" style={{ color: 'var(--fox)' }}>{s.displayName}</a></span></td>
+                    <td style={{ color: 'var(--ink-400)' }}>{s.username}</td>
+                    <td><RoleBadge roles={s.roleAssignments?.map((ra: any) => ra.role.code) || [s.role || 'STUDENT']} /></td>
+                    <td>{s.phone || '—'}</td>
+                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{s.email || '—'}</td>
+                    <td className="max-w-[160px] truncate text-xs" style={{ color: 'var(--ink-400)' }}>{s.organization || '—'}</td>
+                    <td className="text-xs">{s.group?.name || '—'}</td>
+                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
+                    <td>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
+                        {s.isActive ? '正常' : '已停用'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex gap-1">
+                        <button onClick={() => {
+                          setForm({
+                            username: s.username, displayName: s.displayName, password: '',
+                            studentNumber: s.studentNumber || '', phone: s.phone || '',
+                            email: s.email || '', organization: s.organization || '',
+                            groupId: s.groupId ? String(s.groupId) : '',
+                            role: s.role || 'STUDENT',
+                          });
+                          setEditStudent(s);
+                          setShowAdd(true);
+                        }} className="btn btn-ghost btn-xs">编辑</button>
+                        <button onClick={() => handleToggleActive(s)}
+                          className="btn btn-ghost btn-xs"
+                          style={{ color: s.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
+                          {s.isActive ? '停用' : '启用'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* ── 卡片视图 ── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {students.map(s => <StudentCard key={s.id} s={s} />)}
         </div>
       )}
 
@@ -243,6 +366,23 @@ export default function StudentsPage() {
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学号</label>
                   <input value={form.studentNumber} onChange={e => setForm({...form, studentNumber: e.target.value})}
                     className="input" placeholder="如 DTM2026001" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>角色（可多选）</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allRolesStu.map((r: any) => (
+                      <label key={r.id} className="flex items-center gap-1 px-2.5 py-1.5 rounded cursor-pointer text-xs transition-all"
+                        style={{
+                          background: selectedRolesStu.includes(r.code) ? 'var(--fox-pale)' : 'var(--paper)',
+                          border: '1px solid ' + (selectedRolesStu.includes(r.code) ? 'var(--fox)' : 'var(--ink-100)'),
+                        }}>
+                        <input type="checkbox" checked={selectedRolesStu.includes(r.code)}
+                          onChange={e => { e.target.checked ? setSelectedRolesStu([...selectedRolesStu, r.code]) : setSelectedRolesStu(selectedRolesStu.filter(c => c !== r.code)); }}
+                          className="cursor-pointer accent-[#e87a30]" />
+                        {r.name}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>

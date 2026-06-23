@@ -52,6 +52,57 @@ enum ChapterStrategy {
 }
 
 // ═══════════════════════════════════════════
+// 机构（协会/企业）
+// ═══════════════════════════════════════════
+
+model Organization {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(200)
+  code         String   @unique @db.VarChar(50)
+  contactName  String?  @map("contact_name") @db.VarChar(100)
+  contactPhone String?  @map("contact_phone") @db.VarChar(20)
+  contactEmail String?  @map("contact_email") @db.VarChar(100)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  users    User[]
+  programs TrainingProgram[]
+
+  @@map("organizations")
+}
+
+// ═══════════════════════════════════════════
+// 培训班批次（一个培训班的一次开办）
+// ═══════════════════════════════════════════
+
+model ProgramBatch {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)  // 批次名称，如"2026年第一期"
+
+  programId Int      @map("program_id")
+  program   TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  headTeacherId Int?  @map("head_teacher_id")
+  headTeacher   User? @relation("BatchHeadTeacher", fields: [headTeacherId], references: [id])
+
+  startedAt DateTime? @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  description String? @db.Text
+  note        String? @db.Text
+  isActive    Boolean @default(true) @map("is_active")
+
+  members User[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([programId])
+  @@map("program_batches")
+}
+
+// ═══════════════════════════════════════════
 // 用户（管理员 + 学员）
 // ═══════════════════════════════════════════
 
@@ -60,43 +111,164 @@ model User {
   username     String   @unique @db.VarChar(50)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   displayName  String   @map("display_name") @db.VarChar(100)
-  role         String   @default("SUPER_ADMIN") @db.VarChar(20) // SUPER_ADMIN / STUDENT
+  avatar       String?  @db.VarChar(500)   // 头像URL
+
+  // ── 机构归属 ──
+  orgId       Int?          @map("org_id")
+  org         Organization? @relation(fields: [orgId], references: [id])
+
+  // ── 批次归属（原 groupId → batchId） ──
+  batchId     Int?          @map("batch_id")
+  batch       ProgramBatch? @relation(fields: [batchId], references: [id])
 
   // 学员扩展字段
   studentNumber String?  @map("student_number") @unique @db.VarChar(50) // 学号
   phone         String?  @db.VarChar(20)
   email         String?  @db.VarChar(100)
-  organization  String?  @db.VarChar(200) // 工作单位/机构
-  groupId       Int?     @map("group_id") // 所属分组
+  organization  String?  @db.VarChar(200) // 工作单位/机构（文本，非机构关联）
+
+  // ── 新增基础扩展字段 ──
+  title         String?  @db.VarChar(100)  // 职务/职位
+  gender        String?  @db.VarChar(10)   // 性别: M / F
+  idCard        String?  @unique @db.VarChar(18) @map("id_card")  // 身份证号
+  source        String?  @db.VarChar(50)   // 来源：自主报名/机构推荐/单位委派/定向邀请
+  remark        String?  @db.Text          // 备注
+
+  // ── 教育背景 ──
+  education         String?   @db.VarChar(20)   @map("education")            // 学历：本科/硕士/博士
+  educationSchool   String?   @db.VarChar(200)  @map("education_school")     // 毕业院校
+  major             String?   @db.VarChar(200)  @map("major")                // 专业
+  graduationDate    DateTime? @map("graduation_date")                        // 毕业时间
+
+  // ── 职称信息（区别于 title 职务）──
+  professionalTitle  String?  @db.VarChar(100) @map("professional_title")    // 职称：高级工程师
+  professionalLevel  String?  @db.VarChar(20)  @map("professional_level")    // 职称等级：正高级/副高级/中级/初级
+
+  // ── 协会场景专用 ──
+  feeStatus     String?  @default("UNPAID") @db.VarChar(20) @map("fee_status")  // UNPAID / PAID / PARTIAL / REFUNDED
+  enrolledAt    DateTime? @map("enrolled_at")  // 入学/注册日期
+  graduatedAt   DateTime? @map("graduated_at") // 结业日期
+
+  // ── 审计追踪 ──
+  lastLoginAt   DateTime? @map("last_login_at")
+  loginCount    Int       @default(0) @map("login_count")
+
+  // ── 标签 ──
+  tags          Json?     // ["VIP学员","2026春季班"]
 
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  papers    Paper[]
-  templates PaperTemplate[]
-  aiConfigs AiConfig[]
-  materials Material[]
-  group     StudentGroup? @relation(fields: [groupId], references: [id])
+  papers       Paper[]
+  propositionedPapers Paper[] @relation("PropositionBy")
+  templates    PaperTemplate[]
+  aiConfigs    AiConfig[]
+  materials    Material[]
+  batchHeadTeacherOf ProgramBatch[] @relation("BatchHeadTeacher")
+  // group        StudentGroup? @relation(fields: [groupId], references: [id])  // ✅ 已迁移
+  examSessions ExamSession[]
+  feeRecords   FeeRecord[]    // 缴费记录
+  roleAssignments UserRoleAssignment[]
+  attachments    Attachment[]
+  gradingAssignments GradingAssignment[]
+  gradingReviews     GradingReview[]
+  instructor         Instructor?
+  appeals            ScoreAppeal[]      @relation("AppealStudent")
+  appealReviews      ScoreAppeal[]      @relation("AppealReviewer")
+  evaluations        Evaluation[]
+  notifications      Notification[]
+  importLogs         ImportLog[]
+  exportLogs         ExportLog[]
+  programEnrollments ProgramEnrollment[]
+  programStatusLogs  ProgramStatusLog[]
+  evidenceUploads    BusinessEvidence[]
+  attendanceRecords  AttendanceRecord[] @relation("AttendanceStudent")
+  attendanceModified AttendanceRecord[] @relation("AttendanceModifier")
+  enrollmentSubmissions EnrollmentAgencyEnrollment[] @relation("FilingSubmitter")
+  enrollmentReviews    EnrollmentAgencyEnrollment[] @relation("FilingReviewer")
+  certificateTraces    CertificateTrace[]
+  videoProgresses      VideoProgress[]
+  videoCourseLogs      VideoCourseLog[]
+  learningHourRecords  LearningHourRecord[]
 
   @@map("users")
 }
 
-// ═══════════════════════════════════════════
-// 学员分组
-// ═══════════════════════════════════════════
-
-model StudentGroup {
+// 用户-角色多对多
+model UserRoleAssignment {
   id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100) // 分组名称（如 "DTM一期班"）
-  note      String?  @db.Text // 说明
-  isActive  Boolean  @default(true) @map("is_active")
+  userId    Int      @map("user_id")
+  roleId    Int      @map("role_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
 
-  members User[]
+  @@unique([userId, roleId])
+  @@map("user_role_assignments")
+}
 
-  @@map("student_groups")
+// 附件（身份证/职称证/证书等材料）
+model Attachment {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  category      String   @db.VarChar(50)   // ID_CARD / CERTIFICATE / DEGREE / OTHER
+  fileName      String   @map("file_name") @db.VarChar(200)
+  filePath      String   @map("file_path") @db.VarChar(500)
+  fileSize      Int      @map("file_size")
+  mimeType      String   @map("mime_type") @db.VarChar(100)
+  description   String?  @db.Text
+  isVerified    Boolean  @default(false) @map("is_verified")
+  verifiedBy    Int?     @map("verified_by")
+  verifiedAt    DateTime? @map("verified_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("attachments")
+}
+
+
+// 缴费记录
+model FeeRecord {
+  id            Int       @id @default(autoincrement())
+  studentId     Int       @map("student_id")
+  examId        Int?      @map("exam_id")       // 关联考试/培训
+  type          String    // TRAINING_FEE / EXAM_FEE / CERTIFICATE_FEE
+  amount        Float     // 金额
+  status        String    // UNPAID / PAID / REFUNDED / PARTIAL
+  paidAt        DateTime? @map("paid_at")
+  method        String?   // 支付方式：银行转账/微信/支付宝/现金
+  invoiceNo     String?   @map("invoice_no") @db.VarChar(100) // 发票号
+  note          String?   @db.Text
+  operatorId    Int?      @map("operator_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@map("fee_records")
+}
+
+// 审计日志
+model AuditLog {
+  id            Int       @id @default(autoincrement())
+  entityType    String    @map("entity_type") @db.VarChar(50)  // User / Exam / Certificate
+  entityId      Int       @map("entity_id")
+  action        String    @db.VarChar(20)      // CREATE / UPDATE / DELETE
+  before        Json?                           // 修改前（可选）
+  after         Json?                           // 修改后（可选）
+  operatorId    Int?      @map("operator_id")
+  operatorName  String?   @map("operator_name") @db.VarChar(100)
+  ip            String?   @map("ip") @db.VarChar(45)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 // ═══════════════════════════════════════════
@@ -170,13 +342,48 @@ model Chapter {
 model Tag {
   id        Int      @id @default(autoincrement())
   name      String   @db.VarChar(100)
-  type      String   @db.VarChar(20) // domain / general
+  color     String?  @db.VarChar(7)   // 颜色 #e87a30
+  type      String   @db.VarChar(20) // domain / general / student
   createdAt DateTime @default(now()) @map("created_at")
 
   questions QuestionTag[]
 
   @@map("tags")
 }
+
+// 动态角色表
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  color       String?  @db.VarChar(7)   // 角色显示颜色 #e87a30
+  isSystem    Boolean  @default(false) @map("is_system")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  permissions  RolePermission[]
+  assignments  UserRoleAssignment[]
+
+
+  @@map("roles")
+}
+
+// 角色权限映射
+model RolePermission {
+  id          Int      @id @default(autoincrement())
+  roleId      Int      @map("role_id")
+  role        Role     @relation(fields: [roleId], references: [id])
+  permission  String   @db.VarChar(100)
+  isGranted   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([roleId, permission])
+  @@map("role_permissions")
+}
+
 
 // ═══════════════════════════════════════════
 // 试题-标签 多对多
@@ -339,7 +546,10 @@ model Paper {
 
   questions       PaperQuestion[]
   coolDownRecords CoolDownRecord[]
+  exams           Exam[]
 
+    propositionById  Int?      @map("proposition_by_id")
+  propositionBy   User?     @relation("PropositionBy", fields: [propositionById], references: [id])
   @@map("papers")
 }
 
@@ -521,4 +731,890 @@ model MaterialQuestion {
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
   @@map("material_questions")
+}
+
+// ═══════════════════════════════════════════
+// 考试场次
+// ═══════════════════════════════════════════
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+enum ExamAccessType {
+  UNIFIED       // 统一开考
+  FLEXIBLE      // 随到随考
+}
+
+// ═══════════════════════════════════════════
+// Phase 1: 培训班状态机
+// ═══════════════════════════════════════════
+
+enum TrainingProgramStatus {
+  PREPARING
+  ENROLLING
+  IN_PROGRESS
+  REVIEWING
+  CERTIFYING
+  COMPLETED
+  CANCELLED
+}
+
+enum FilingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ═══════════════════════════════════════════
+// Phase E: 消息通知
+// ═══════════════════════════════════════════
+
+enum NotificationType {
+  EXAM_PUBLISHED
+  EXAM_CONFIRMED
+  APPEAL_SUBMITTED
+  APPEAL_RESOLVED
+  GRADING_ASSIGNED
+  CERT_ISSUED
+  CERT_APPROVED
+  CERT_REJECTED
+  CERT_APPLICATION
+  SYSTEM_NOTICE
+  ANNOUNCEMENT
+}
+
+model Notification {
+  id              Int              @id @default(autoincrement())
+  userId          Int              @map("user_id")
+  type            NotificationType
+  title           String           @db.VarChar(200)
+  message         String           @db.Text
+  referenceId     Int?             @map("reference_id")
+  referenceType   String?          @map("reference_type")
+  isRead          Boolean          @default(false) @map("is_read")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  readAt          DateTime?        @map("read_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Exam {
+  id              Int            @id @default(autoincrement())
+  title           String         @db.VarChar(200)
+  paperId         Int            @map("paper_id")
+  paper           Paper          @relation(fields: [paperId], references: [id])
+
+  startTime       DateTime       @map("start_time")
+  endTime         DateTime       @map("end_time")
+  durationMinutes Int            @map("duration_minutes")
+
+  accessType      ExamAccessType @default(UNIFIED) @map("access_type")
+  maxAttempts     Int            @default(1) @map("max_attempts")
+  password        String?        @db.VarChar(50)
+
+  // ── Phase A: 培训班关联 ──
+  programId         Int?                   @map("program_id")
+  program           TrainingProgram?       @relation(fields: [programId], references: [id])
+
+  // ── Phase A: 考试规则 ──
+  isOpenBook        Boolean   @default(false) @map("is_open_book")
+  openBookRules     String?   @map("open_book_rules") @db.Text
+  lateEntryMinutes  Int?      @map("late_entry_minutes")
+  earlyExitMinutes  Int?      @map("early_exit_minutes")
+
+  shuffleQuestions Boolean @default(true) @map("shuffle_questions")
+  shuffleOptions   Boolean @default(true) @map("shuffle_options")
+
+  status           ExamStatus @default(DRAFT)
+  totalStudents    Int        @default(0) @map("total_students")
+  submittedCount   Int        @default(0) @map("submitted_count")
+
+  // ── 二期新增字段 ──
+  passingScore        Float?   @map("passing_score")         // 通过分数线，null=自动按60%算
+  maxRetakeAttempts   Int?     @map("max_retake_attempts")   // 最大补考次数，null=不限
+  retakeWindowDays    Int?     @map("retake_window_days")    // 补考时间窗口（天），null=不限
+
+  // ── 三期预留（阅卷配置） ──
+  scoringMode         String   @default("MIXED") @map("scoring_mode")  // AUTO | MANUAL | AI_ASSISTED | MIXED
+  scorePublishMode    String   @default("MANUAL") @map("score_publish_mode") // AUTO | MANUAL | SCHEDULED
+  publishAt           DateTime? @map("publish_at")
+
+  // ── Phase D: 申诉配置 ──
+  appealDeadlineHours Int?    @default(72) @map("appeal_deadline_hours") // 申诉截止（小时），0=不允许申诉
+
+  createdBy        Int      @map("created_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  sessions         ExamSession[]
+  gradingAssignments GradingAssignment[]
+  gradingReviews     GradingReview[]
+  instructorId       Int?               @map("instructor_id")
+  instructor         Instructor?        @relation(fields: [instructorId], references: [id])
+  appeals            ScoreAppeal[]
+
+  @@map("exams")
+}
+
+// 考试场次-学员关联
+model ExamSession {
+  id              Int       @id @default(autoincrement())
+  examId          Int       @map("exam_id")
+  exam            Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId       Int       @map("student_id")
+  student         User      @relation(fields: [studentId], references: [id])
+
+  status          String    @default("ASSIGNED") // ASSIGNED / ACTIVE / PAUSED / SUBMITTED
+
+  startedAt       DateTime? @map("started_at")
+  submittedAt     DateTime? @map("submitted_at")
+  remainingTime   Int?      @map("remaining_time")
+
+  suspicionLevel  Int       @default(0) @map("suspicion_level")
+  violationLog    Json?     @map("violation_log")
+  lastHeartbeatAt DateTime? @map("last_heartbeat_at")
+  proctorActions  Json?     @map("proctor_actions")
+
+  totalScore      Float?    @map("total_score")
+  subjectiveScore Float?    @map("subjective_score")
+  finalScore      Float?    @map("final_score")
+  scoreBreakdown    Json?     @map("score_breakdown")    // 各题型得分明细
+
+  isPassed        Boolean?  @map("is_passed")
+
+  // ── 二期：独立阅卷状态（与 status 分开） ──
+  scoringStatus        String?   @default("PENDING") @map("scoring_status")
+  // PENDING:   已交卷，客观题已自动判完
+  // GRADING:   有主观题正在被评分
+  // GRADED:    所有题已评分完毕
+  // ADJUSTED:  发布后被人为调整
+  // PUBLISHED: 成绩已对学员可见
+  scoringPublishedAt   DateTime? @map("scoring_published_at")
+    confirmedAt     DateTime? @map("confirmed_at")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  answers         ExamAnswer[]
+  certificateApplications CertificateApplication[]
+  gradingReviews           GradingReview[]
+  scoreAppeal      ScoreAppeal?
+
+
+  @@unique([examId, studentId])
+  @@map("exam_sessions")
+}
+
+// 学员答案
+model ExamAnswer {
+  id              Int       @id @default(autoincrement())
+  sessionId       Int       @map("session_id")
+  session         ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId      Int       @map("question_id")
+  paperQuestionId Int       @map("paper_question_id")
+
+  answer          Json      // 按题型不同格式
+
+  isCorrect       Boolean?  @map("is_correct")
+  score           Float?
+  graderNote      String?   @map("grader_note") @db.Text
+
+  // ── 三期预留（AI 辅助评分） ──
+  aiScore         Float?    @map("ai_score")          // AI 建议分
+  aiComment       String?   @map("ai_comment") @db.Text // AI 评语
+  aiScoreDetail   Json?     @map("ai_score_detail")    // AI 评分明细
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  gradingReviews GradingReview[]
+
+  @@unique([sessionId, paperQuestionId])
+  @@map("exam_answers")
+}
+
+// 成绩调整审计日志
+model ScoreAuditLog {
+  id              Int       @id @default(autoincrement())
+  examId          Int       @map("exam_id")
+  sessionId       Int?      @map("session_id")
+  studentId       Int       @map("student_id")
+  action          String    @db.VarChar(50)
+  fieldName       String?   @map("field_name") @db.VarChar(50)
+  oldValue        Float?    @map("old_value")
+  newValue        Float?    @map("new_value")
+  reason          String?   @db.Text
+  operatorId      Int       @map("operator_id")
+  operatorName    String?   @map("operator_name") @db.VarChar(100)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([examId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("score_audit_logs")
+}
+
+// 证书
+model Certificate {
+  id                Int      @id @default(autoincrement())
+  examSessionId     Int      @map("exam_session_id")
+  studentId         Int      @map("student_id")
+  certificateNo     String   @unique @db.VarChar(64)    // 唯一编号 FX-日期-流水号
+  studentName       String   @db.VarChar(100)           // 冗余，查询无需登录
+  courseName        String   @db.VarChar(200)           // 冗余
+  issueDate         DateTime @default(now()) @map("issue_date")
+  isRevoked         Boolean  @default(false) @map("is_revoked")
+  revokedAt         DateTime? @map("revoked_at")
+  revokeReason      String?  @map("revoke_reason") @db.Text
+
+  // ── Phase A: 审批流程 ──
+  approvalStatus    String   @default("APPROVED") @map("approval_status") @db.VarChar(20)
+  // DRAFT / PENDING / APPROVED / REJECTED / REVOKED
+  approvedBy        Int?     @map("approved_by")
+  approvedAt        DateTime? @map("approved_at")
+  rejectReason      String?  @map("reject_reason") @db.Text
+  verificationCode  String   @unique @db.VarChar(128)   // 防伪码
+  metadata          Json?                               // 扩展信息
+  programId         Int?     @map("program_id")
+  program           TrainingProgram? @relation(fields: [programId], references: [id])
+  traces            CertificateTrace[]
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([examSessionId])
+  @@index([studentId])
+  @@map("certificates")
+}
+
+// 证书查询日志
+model CertificateVerificationLog {
+  id              Int      @id @default(autoincrement())
+  certificateId   Int      @map("certificate_id")
+  queryType       String   @map("query_type")    // PUBLIC | ADMIN
+  queriedAt       DateTime @default(now()) @map("queried_at")
+  ipAddress       String?  @map("ip_address") @db.VarChar(45)
+  userAgent       String?  @map("user_agent") @db.Text
+
+  @@index([certificateId])
+  @@map("certificate_verification_logs")
+}
+
+
+// ═══════════════════════════════════════════
+// Phase A: 培训班管理
+// ═══════════════════════════════════════════
+
+model TrainingProgram {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(200)
+  code          String    @unique @db.VarChar(50)
+  courseName    String    @map("course_name") @db.VarChar(200)
+
+  // ── 机构归属（新加） ──
+  orgId         Int?          @map("org_id")
+  org           Organization? @relation(fields: [orgId], references: [id])
+
+  // ── 批次关联（新加） ──
+  batches       ProgramBatch[]
+
+  // Phase 1b: 关联课程
+  courseId      Int?      @map("course_id")
+  course        Course?   @relation(fields: [courseId], references: [id])
+
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  enrollStart   DateTime  @map("enroll_start")
+  enrollEnd     DateTime  @map("enroll_end")
+
+  tuitionFee    Float?    @map("tuition_fee")
+  examFee       Float?    @map("exam_fee")
+  certFee       Float?    @map("cert_fee")
+
+  subjectId     Int       @map("subject_id")
+  createdBy     Int       @map("created_by")
+
+  status        TrainingProgramStatus @default(PREPARING)
+  description   String?   @db.Text
+  location      String?   @db.VarChar(200)
+  maxStudents   Int?      @map("max_students")
+  // headTeacher   String?   @map("head_teacher")  // ✅ 已迁移到 ProgramBatch.headTeacherId
+  remark        String?   @db.Text
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  enrollments   ProgramEnrollment[]
+  exams         Exam[]
+  schedules     Schedule[]
+  evaluations   Evaluation[]
+  statusLogs    ProgramStatusLog[]
+  evidences     BusinessEvidence[]
+  attendanceRecords AttendanceRecord[]
+  filingEnrollments  EnrollmentAgencyEnrollment[]
+  certificates      Certificate[]
+  learningHourRecords LearningHourRecord[]
+
+  @@map("training_programs")
+}
+
+model EnrollmentAgency {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(200)
+  shortName     String?   @map("short_name") @db.VarChar(50)
+  contactPerson String?   @map("contact_person") @db.VarChar(100)
+  contactPhone  String?   @map("contact_phone") @db.VarChar(20)
+  contactEmail  String?   @map("contact_email") @db.VarChar(100)
+
+  totalEnrolled Int       @default(0) @map("total_enrolled")
+  isActive      Boolean   @default(true) @map("is_active")
+  remark        String?   @db.Text
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  enrollments   ProgramEnrollment[]
+
+  @@map("enrollment_agencies")
+}
+
+model ProgramEnrollment {
+  id            Int       @id @default(autoincrement())
+  programId     Int       @map("program_id")
+  program       TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  studentId     Int       @map("student_id")
+  student       User      @relation(fields: [studentId], references: [id])
+
+  agencyId      Int?      @map("agency_id")
+  agency        EnrollmentAgency? @relation(fields: [agencyId], references: [id])
+
+  enrollSource  String?   @map("enroll_source") @db.VarChar(50)
+  enrollNote    String?   @map("enroll_note") @db.Text
+
+  feeStatus     String    @default("UNPAID") @map("fee_status") @db.VarChar(20)
+  feeAmount     Float?    @map("fee_amount")
+  paidAt        DateTime? @map("paid_at")
+
+  status        String    @default("ENROLLED") @db.VarChar(20)
+  completedAt   DateTime? @map("completed_at")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([programId, studentId])
+  @@index([programId])
+  @@index([studentId])
+  @@index([agencyId])
+  @@map("program_enrollments")
+}
+
+// ═══════════════════════════════════════════
+// Phase A: 证书申请与审批
+// ═══════════════════════════════════════════
+
+model CertificateApplication {
+  id            Int       @id @default(autoincrement())
+  sessionId     Int       @map("session_id")
+  session       ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId     Int       @map("student_id")
+
+  status        String    @default("PENDING") @db.VarChar(20)
+  applyNote     String?   @map("apply_note") @db.Text
+  appliedAt     DateTime  @default(now()) @map("applied_at")
+
+  reviewedBy    Int?      @map("reviewed_by")
+  reviewedAt    DateTime? @map("reviewed_at")
+  reviewNote    String?   @map("review_note") @db.Text
+
+  certificateId Int?      @map("certificate_id")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("certificate_applications")
+}
+
+model CertificateApprovalLog {
+  id            Int       @id @default(autoincrement())
+  certificateId Int       @map("certificate_id")
+  action        String    @db.VarChar(20)
+  operatorId    Int       @map("operator_id")
+  operatorName  String    @map("operator_name") @db.VarChar(100)
+  note          String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([certificateId])
+  @@map("certificate_approval_logs")
+}
+
+
+// ═══════════════════════════════════════════
+// Phase B: 阅卷指派
+// ═══════════════════════════════════════════
+
+model GradingAssignment {
+  id              Int       @id @default(autoincrement())
+  examId          Int       @map("exam_id")
+  graderId        Int       @map("grader_id")
+  paperQuestionId Int?      @map("paper_question_id")
+  status          String    @default("PENDING") @db.VarChar(20)
+  assignedAt      DateTime  @default(now()) @map("assigned_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  exam   Exam  @relation(fields: [examId], references: [id])
+  grader User  @relation(fields: [graderId], references: [id])
+
+  @@unique([examId, graderId, paperQuestionId])
+  @@map("grading_assignments")
+}
+
+model GradingReview {
+  id              Int       @id @default(autoincrement())
+  examId          Int       @map("exam_id")
+  sessionId       Int       @map("session_id")
+  answerId        Int       @map("answer_id")
+  reason           String   @db.VarChar(200)
+  originalScore    Float    @map("original_score")
+  reviewedScore    Float?   @map("reviewed_score")
+  reviewerId       Int?     @map("reviewer_id")
+  reviewerNote     String?  @map("reviewer_note") @db.Text
+  status           String   @default("PENDING") @db.VarChar(20)
+  assignedAt       DateTime @default(now()) @map("assigned_at")
+  resolvedAt       DateTime? @map("resolved_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  exam    Exam        @relation(fields: [examId], references: [id])
+  session ExamSession @relation(fields: [sessionId], references: [id])
+  answer  ExamAnswer  @relation(fields: [answerId], references: [id])
+  reviewer User?      @relation(fields: [reviewerId], references: [id])
+
+  @@index([examId])
+  @@index([sessionId])
+  @@map("grading_reviews")
+}
+
+
+// ═══════════════════════════════════════════
+// Phase C: 讲师管理 + 课程排课
+// ═══════════════════════════════════════════
+
+model Instructor {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id])
+  realName        String    @map("real_name") @db.VarChar(100)
+  title           String?   @db.VarChar(100)
+  phone           String?   @db.VarChar(20)
+  email           String?   @db.VarChar(100)
+  avatar          String?   @db.VarChar(500)
+  bio             String?   @db.Text
+  expertise       String?   @db.VarChar(500)
+  qualification   String?   @db.VarChar(500)
+  level           String?   @default("JUNIOR") @db.VarChar(20)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+  isGrader        Boolean   @default(true) @map("is_grader")
+  remark          String?   @db.Text
+
+  // ⭐ 新增字段（2026-06-23 竞品调研后）
+  instructorNo    String?   @unique @db.VarChar(50)  @map("instructor_no")  // 讲师编号：INS20260623001
+  type            String    @default("INTERNAL") @db.VarChar(20)            // INTERNAL | EXTERNAL
+  workUnit        String?   @db.VarChar(200)  @map("work_unit")             // 工作单位
+  education       String?   @db.VarChar(20)                                 // 最高学历
+  school          String?   @db.VarChar(200)                                // 毕业院校
+  gender          String?   @db.VarChar(10)                                 // 性别
+  idCard          String?   @unique @db.VarChar(18)  @map("id_card")        // 身份证号
+  bankAccount     String?   @db.VarChar(50)  @map("bank_account")           // 银行账户
+  contractExpire  DateTime? @map("contract_expire")                          // 签约有效期
+
+  schedules       Schedule[]
+  exams           Exam[]
+  evaluations     Evaluation[]
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([workUnit])
+  @@map("instructors")
+}
+
+model Course {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(200)
+  code        String?   @unique @db.VarChar(50)
+  description String?   @db.Text
+  hours       Float?
+  syllabus    Json?
+  status      String    @default("ACTIVE") @db.VarChar(20)
+  remark      String?   @db.Text
+
+  // Phase 1b: 课程类型
+  type            String   @default("STANDARD") @db.VarChar(20) // STANDARD | CUSTOM
+  parentCourseId  Int?     @map("parent_course_id")             // 定制课基于的标准课 ID
+  isReviewed      Boolean  @default(true) @map("is_reviewed")   // 定制课件是否经协会审核
+
+  schedules   Schedule[]
+  evaluations Evaluation[]
+
+  // Phase 1b: 新增关联
+  parentCourse    Course?              @relation("CourseHierarchy", fields: [parentCourseId], references: [id])
+  childCourses    Course[]             @relation("CourseHierarchy")
+  programs        TrainingProgram[]
+  videos          CourseVideo[]        // ← 即将废弃，迁移到 VideoCourse
+  videoCourseLinks VideoCourseCourse[] // ← Phase 2: 视频-课程多对多关联
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([type])
+  @@map("courses")
+}
+
+// Phase 1b: 课程视频
+model CourseVideo {
+  id            Int      @id @default(autoincrement())
+  courseId      Int      @map("course_id")
+  course        Course   @relation(fields: [courseId], references: [id])
+  title         String   @db.VarChar(200)
+  url           String   @db.VarChar(500)          // 本地路径或 COS URL
+  duration      Int      @default(0)               // 视频总时长（秒）
+  requiredPct   Float    @default(80)              // 看完多少比例算完成（%）
+  sortOrder     Int      @default(0) @map("sort_order")
+  isPublic      Boolean  @default(false) @map("is_public")  // 公共课还是专项课
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([courseId])
+  @@map("course_videos")
+}
+
+// Phase 1b: 视频进度 — 即将迁移到 VideoCourse
+model VideoProgress {
+  id            Int      @id @default(autoincrement())
+  videoId       Int      @map("video_id")
+  video         VideoCourse @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  studentId     Int      @map("student_id")
+  student       User     @relation(fields: [studentId], references: [id])
+  progress      Float    @default(0)               // 已看百分比（0~100）
+  lastPosition  Int      @default(0) @map("last_position")   // 上次播放位置（秒）
+  completed     Boolean  @default(false)
+  completedAt   DateTime? @map("completed_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([videoId, studentId])
+  @@map("video_progresses")
+}
+
+// Phase 2: 视频课程（独立实体）
+model VideoCourse {
+  id                    Int       @id @default(autoincrement())
+  name                  String    @db.VarChar(200)              // 视频课程名称
+  description           String?   @db.Text                      // 内容简介
+  instructorName        String?   @db.VarChar(100)              // 讲师姓名（自由填写）
+  instructorLevel       String?   @db.VarChar(50)               // 讲师级别（可配置）
+  instructorId          Int?      @map("instructor_id")         // 可选关联系统 Instructor
+  hours                 Float?                                  // 课时数
+  url                   String?   @db.VarChar(500)              // 视频文件 URL（可空，允许先建后传）
+  duration              Int       @default(0)                   // 视频时长（秒）
+  type                  String    @default("PUBLIC") @db.VarChar(20) // PUBLIC | SPECIALIZED
+  isContinuingEducation Boolean   @default(false) @map("is_continuing_education") // 是否计入继续教育学分
+  sortOrder             Int       @default(0) @map("sort_order")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  courseLinks   VideoCourseCourse[]
+  logs          VideoCourseLog[]
+  progresses    VideoProgress[]              // 学员播放进度
+
+  @@index([type])
+  @@map("video_courses")
+}
+
+// Phase 2: 视频-课程多对多关联
+model VideoCourseCourse {
+  id            Int      @id @default(autoincrement())
+  videoCourseId Int      @map("video_course_id")
+  courseId      Int      @map("course_id")
+  feature       String?  @db.VarChar(50)     // 特性标记（待用户确认值）
+
+  videoCourse   VideoCourse @relation(fields: [videoCourseId], references: [id], onDelete: Cascade)
+  course        Course      @relation(fields: [courseId], references: [id])
+
+  @@unique([videoCourseId, courseId])
+  @@map("video_course_courses")
+}
+
+// Phase 2: 视频操作日志（时间线记录）
+model VideoCourseLog {
+  id            Int      @id @default(autoincrement())
+  videoCourseId Int      @map("video_course_id")
+  action        String   @db.VarChar(100)     // "创建" "修改讲师" "关联课程DTM-101" 等
+  operatorId    Int?     @map("operator_id")
+  detail        String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  videoCourse   VideoCourse @relation(fields: [videoCourseId], references: [id], onDelete: Cascade)
+  operator      User?       @relation(fields: [operatorId], references: [id])
+
+  @@index([videoCourseId])
+  @@map("video_course_logs")
+}
+
+// Phase 1b: 学时记录（保留，关联 sourceId 指向 VideoCourse.id）
+model LearningHourRecord {
+  id            Int      @id @default(autoincrement())
+  studentId     Int      @map("student_id")
+  student       User     @relation(fields: [studentId], references: [id])
+  programId     Int?     @map("program_id")
+  program       TrainingProgram? @relation(fields: [programId], references: [id])
+  source        String   @db.VarChar(20)             // VIDEO | OFFLINE
+  sourceId      Int?     @map("source_id")            // video_id or schedule_id
+  hours         Float                                 // 学时数
+  recordedAt    DateTime @default(now()) @map("recorded_at")
+
+  @@index([studentId, programId])
+  @@map("learning_hour_records")
+}
+
+model Schedule {
+  id                Int       @id @default(autoincrement())
+  programId         Int       @map("program_id")
+  program           TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  courseId          Int       @map("course_id")
+  course            Course    @relation(fields: [courseId], references: [id])
+  instructorId      Int?      @map("instructor_id")
+  instructor        Instructor? @relation(fields: [instructorId], references: [id])
+  startTime         DateTime  @map("start_time")
+  endTime           DateTime  @map("end_time")
+  location          String?   @db.VarChar(200)
+  remark            String?   @db.Text
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([programId])
+  @@index([courseId])
+  @@index([instructorId])
+  @@map("schedules")
+}
+
+// ═══════════════════════════════════════════
+// Phase D: 成绩申诉
+// ═══════════════════════════════════════════
+
+model ScoreAppeal {
+  id            Int       @id @default(autoincrement())
+  examId        Int       @map("exam_id")
+  exam          Exam      @relation(fields: [examId], references: [id])
+  sessionId     Int       @unique @map("session_id")
+  session       ExamSession @relation(fields: [sessionId], references: [id])
+  studentId     Int       @map("student_id")
+  student       User      @relation("AppealStudent", fields: [studentId], references: [id])
+  reason        String    @db.VarChar(200)
+  description   String    @db.Text
+  oldScore      Float?
+  newScore      Float?
+  status        String    @default("PENDING") @db.VarChar(20)  // PENDING / APPROVED / REJECTED
+  reviewerId    Int?      @map("reviewer_id")
+  reviewer      User?     @relation("AppealReviewer", fields: [reviewerId], references: [id])
+  reviewNote    String?   @db.Text
+  reviewedAt    DateTime? @map("reviewed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+}
+
+// ═══════════════════════════════════════════
+// Phase D: 评价体系
+// ═══════════════════════════════════════════
+
+model Evaluation {
+  id             Int       @id @default(autoincrement())
+  programId      Int       @map("program_id")
+  program        TrainingProgram @relation(fields: [programId], references: [id])
+  studentId      Int       @map("student_id")
+  student        User      @relation(fields: [studentId], references: [id])
+  isAnonymous    Boolean   @default(false) @map("is_anonymous")
+
+  contentRating     Int  @map("content_rating")
+  instructorRating  Int  @map("instructor_rating")
+  organizationRating Int? @map("organization_rating")
+  overallRating     Int  @map("overall_rating")
+
+  comment       String?   @db.Text
+
+  instructorId  Int?      @map("instructor_id")
+  instructor    Instructor? @relation(fields: [instructorId], references: [id])
+  courseId      Int?      @map("course_id")
+  course        Course?   @relation(fields: [courseId], references: [id])
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@unique([programId, studentId])
+  @@map("evaluations")
+}
+
+// ═══════════════════════════════════════════
+// Phase G: 品牌设置
+// ═══════════════════════════════════════════
+
+model SiteSetting {
+  id          Int      @id @default(autoincrement())
+  siteName    String   @default("FoxLearn") @db.VarChar(100)
+  siteTitle   String   @default("FoxLearn · 狐学") @db.VarChar(200)
+  siteLogo    String?  @db.VarChar(500)
+  favicon     String?  @db.VarChar(500)
+  footerText  String?  @db.Text
+  icpBeian    String?  @db.VarChar(100)
+  publicRegistration Boolean @default(false)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+// ═══════════════════════════════════════════
+// Phase G: 数据导入导出
+// ═══════════════════════════════════════════
+
+model ImportLog {
+  id          Int      @id @default(autoincrement())
+  module      String   @db.VarChar(50)
+  fileName    String   @db.VarChar(500)
+  totalRows   Int      @default(0)
+  successRows Int      @default(0)
+  failRows    Int      @default(0)
+  errors      Json?
+  operatorId  Int      @map("operator_id")
+  operator    User     @relation(fields: [operatorId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("import_logs")
+}
+
+model ExportLog {
+  id          Int      @id @default(autoincrement())
+  module      String   @db.VarChar(50)
+  totalRows   Int      @default(0)
+  operatorId  Int      @map("operator_id")
+  operator    User     @relation(fields: [operatorId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("export_logs")
+}
+
+// ═══════════════════════════════════════════
+// Phase 1: 状态变更日志
+// ═══════════════════════════════════════════
+
+model ProgramStatusLog {
+  id          Int                  @id @default(autoincrement())
+  programId   Int                  @map("program_id")
+  program     TrainingProgram      @relation(fields: [programId], references: [id])
+  fromStatus  TrainingProgramStatus? @map("from_status")
+  toStatus    TrainingProgramStatus  @map("to_status")
+  operatorId  Int                  @map("operator_id")
+  operator    User                 @relation(fields: [operatorId], references: [id])
+  reason      String?              @db.Text
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  @@map("program_status_logs")
+}
+
+// ═══════════════════════════════════════════
+// Phase 1: 签到系统
+// ═══════════════════════════════════════════
+
+model BusinessEvidence {
+  id              Int      @id @default(autoincrement())
+  programId       Int      @map("program_id")
+  program         TrainingProgram @relation(fields: [programId], references: [id])
+  evidenceType    String   @db.VarChar(50)
+  fileName        String   @db.VarChar(500)
+  fileUrl         String   @db.VarChar(500)
+  fileSize        Int      @map("file_size")
+  fileType        String   @db.VarChar(100)
+  uploadedById    Int      @map("uploaded_by_id")
+  uploadedBy      User     @relation(fields: [uploadedById], references: [id])
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("business_evidences")
+}
+
+model AttendanceRecord {
+  id              Int      @id @default(autoincrement())
+  programId       Int      @map("program_id")
+  program         TrainingProgram @relation(fields: [programId], references: [id])
+  studentId       Int      @map("student_id")
+  student         User     @relation("AttendanceStudent", fields: [studentId], references: [id])
+  totalDays       Int      @default(0) @map("total_days")
+  actualDays      Int      @default(0) @map("actual_days")
+  attendanceRate  Float?   @map("attendance_rate")
+  source          String   @default("MANUAL") @db.VarChar(20)
+  modifiedById    Int?     @map("modified_by_id")
+  modifiedBy      User?    @relation("AttendanceModifier", fields: [modifiedById], references: [id])
+  modifiedReason  String?  @map("modified_reason") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([programId, studentId])
+  @@map("attendance_records")
+}
+
+// ═══════════════════════════════════════════
+// Phase 1: 开班备案
+// ═══════════════════════════════════════════
+
+model EnrollmentAgencyEnrollment {
+  id                Int          @id @default(autoincrement())
+  programId         Int          @map("program_id")
+  program           TrainingProgram @relation(fields: [programId], references: [id])
+  agencyName        String       @db.VarChar(200)
+  agencyContact     String       @db.VarChar(100)
+  agencyPhone       String       @db.VarChar(20)
+  status            FilingStatus @default(PENDING)
+  submittedById     Int          @map("submitted_by_id")
+  submittedBy       User         @relation("FilingSubmitter", fields: [submittedById], references: [id])
+  reviewedById      Int?         @map("reviewed_by_id")
+  reviewedBy        User?        @relation("FilingReviewer", fields: [reviewedById], references: [id])
+  reviewComment     String?      @db.Text
+  submittedAt       DateTime     @default(now()) @map("submitted_at")
+  reviewedAt        DateTime?    @map("reviewed_at")
+
+  @@map("enrollment_agency_enrollments")
+}
+
+// ═══════════════════════════════════════════
+// Phase 1: 证书追溯
+// ═══════════════════════════════════════════
+
+model CertificateTrace {
+  id              Int      @id @default(autoincrement())
+  certificateId   Int      @map("certificate_id")
+  certificate     Certificate @relation(fields: [certificateId], references: [id])
+  snapshotData    Json     @map("snapshot_data")
+  traceType       String   @default("ISSUE") @db.VarChar(20)
+  operatorId      Int      @map("operator_id")
+  operator        User     @relation(fields: [operatorId], references: [id])
+  reason          String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("certificate_traces")
 }

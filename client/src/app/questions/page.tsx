@@ -124,8 +124,13 @@ export default function QuestionsPage() {
     return pages;
   };
 
-  const handleRowDoubleClick = (q: any) => {
-    setViewQuestion(q);
+  const handleRowDoubleClick = async (q: any) => {
+    try {
+      const full = await api.questions.get(q.id);
+      setViewQuestion(full);
+    } catch {
+      setViewQuestion(q);
+    }
   };
 
   // 选题模式
@@ -201,7 +206,7 @@ export default function QuestionsPage() {
               <th style={{ width: '32px', textAlign: 'center' }}>
                 <input type="checkbox" checked={selectMode} onChange={() => {
                   if (selectMode) { setSelectedIds(new Set()); setSelectMode(false); }
-                  else { setSelectMode(true); setSelectedIds(new Set(questions.map(q => q.id))); }
+                  else { setSelectMode(true); setSelectedIds(new Set(questions.filter(q => q.status !== 'ARCHIVED').map(q => q.id))); }
                 }}
                   style={{ cursor: 'pointer', accentColor: '#e87a30' }} />
               </th>
@@ -232,8 +237,11 @@ export default function QuestionsPage() {
                   opacity: q.status === 'ARCHIVED' ? 0.5 : undefined,
                 }}>
                 <td className="text-center" onClick={e => e.stopPropagation()}>
-                  <input type="checkbox" checked={selectedIds.has(q.id)} onChange={() => toggleSelect(q.id)}
-                    style={{ cursor: 'pointer', accentColor: '#e87a30' }} />
+                  <input type="checkbox"
+                    checked={selectedIds.has(q.id)}
+                    onChange={() => q.status !== 'ARCHIVED' && toggleSelect(q.id)}
+                    disabled={q.status === 'ARCHIVED'}
+                    style={{ cursor: q.status === 'ARCHIVED' ? 'not-allowed' : 'pointer', accentColor: '#e87a30', opacity: q.status === 'ARCHIVED' ? 0.3 : 1 }} />
                 </td>
                 <td className="text-center text-xs" style={{ color: 'var(--ink-300)', fontFamily: 'monospace' }}>
                   {(page - 1) * pageSize + idx + 1}
@@ -267,7 +275,7 @@ export default function QuestionsPage() {
                 </td>
                 <td>
                   <div className="flex gap-1.5">
-                    <button onClick={(e) => { e.stopPropagation(); setViewQuestion(q); }}
+                    <button onClick={async (e) => { e.stopPropagation(); try { const full = await api.questions.get(q.id); setViewQuestion(full); } catch { setViewQuestion(q); } }}
                       className="btn btn-xs btn-ghost">详情</button>
                     <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
                       className="btn btn-xs btn-ghost">{editingLoading ? '…' : '修改'}</button>

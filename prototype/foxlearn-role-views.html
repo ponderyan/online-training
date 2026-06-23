@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoxLearn · 狐学 — 角色视图原型</title>
+<style>
+:root{--ink-900:#1a1712;--ink-800:#231f1a;--ink-700:#2c261e;--ink-500:#5a5348;--ink-400:#736a5c;--ink-300:#8b8174;--ink-200:#a89d8e;--ink-100:#c4bcb0;--paper:#efe9dc;--paper-light:#f6f1e8;--paper-bright:#faf6ef;--paper-dark:#e4dccd;--gold:#c9a03a;--gold-dark:#a67f2a;--gold-glow:rgba(201,160,58,.12);--fox:#e87a30;--fox-dark:#c9601e;--fox-light:#f5a061;--fox-pale:#fce6d3;--fox-glow:rgba(232,122,48,.12);--verm:#d9364a;--verm-glow:rgba(217,54,74,.08);--cyan:#00897b;--cyan-light:#00c9b6;--cyan-glow:rgba(0,137,123,.08);--green:#2e7d32;--green-glow:rgba(46,125,50,.08);--radius:8px;--radius-lg:12px;--shadow-sm:0 1px 3px rgba(26,23,18,.06);--shadow-md:0 4px 16px rgba(26,23,18,.07);--shadow-lg:0 8px 32px rgba(26,23,18,.09);--sb:248px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC','PingFang SC',-apple-system,sans-serif;background:var(--paper);color:var(--ink-900);font-size:14px;min-height:100vh}
+
+/* Role switcher bar */
+.role-bar{position:fixed;top:0;left:0;right:0;height:44px;background:var(--ink-800);display:flex;align-items:center;gap:6px;padding:0 20px;z-index:999;border-bottom:1px solid rgba(255,255,255,.1)}
+.role-bar .rb-lbl{font-size:10px;color:rgba(255,255,255,.35);margin-right:8px;letter-spacing:.1em}
+.role-btn{padding:5px 12px;border:none;border-radius:5px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;font-family:inherit;transition:all .12s}
+.role-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.role-btn.active{background:var(--fox);color:#fff}
+.role-btn .rb-count{font-size:9px;opacity:.5;margin-left:3px}
+
+/* Student bar is different */
+.role-bar.student-mode{background:var(--cyan)}
+.role-bar.student-mode .role-btn.active{background:#fff;color:var(--cyan)}
+.role-bar.student-mode .rb-lbl{color:rgba(255,255,255,.5)}
+
+/* Layout */
+.app{display:flex;margin-top:44px;min-height:calc(100vh - 44px)}.sidebar{width:var(--sb);background:var(--ink-800);flex-shrink:0;min-height:calc(100vh - 44px);display:flex;flex-direction:column;position:sticky;top:44px;height:calc(100vh - 44px);overflow-y:auto}
+.main{flex:1}
+.sb-brand{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-brand h1{font-family:'Noto Serif SC',serif;font-size:19px;color:#fff;letter-spacing:.02em}
+.sb-brand .sb-sub{font-size:10px;color:var(--fox-light);letter-spacing:.2em;margin-top:1px}
+.sb-brand .sb-role{font-size:9px;color:rgba(255,255,255,.35);margin-top:4px}
+
+.nav{padding:8px 0;flex:1}
+.ng{padding:0 12px;margin-bottom:2px}
+.ng-lbl{font-size:9px;color:rgba(255,255,255,.2);letter-spacing:.1em;padding:8px 8px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:5px;color:rgba(255,255,255,.5);text-decoration:none;font-size:12px;cursor:pointer;transition:all .12s}
+.ni:hover{color:#fff;background:rgba(255,255,255,.06)}
+.ni.active{color:var(--fox-light);background:rgba(232,122,48,.12)}
+.ni .ico{width:18px;text-align:center;font-size:14px}
+.ni .nb{margin-left:auto;font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.25)}
+.ni .nb.done{background:var(--green-glow);color:#66bb6a}
+.ni.nv .nb{color:var(--fox-light)}
+.sb-ft{padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.12);display:flex;align-items:center;gap:4px}
+
+/* Main topbar */
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--paper-bright);border-bottom:1px solid var(--ink-100);flex-shrink:0}
+.top h2{font-size:16px}.top .bc{font-size:10px;color:var(--ink-300);margin-top:1px}
+
+.cont{padding:16px 24px}
+
+/* Cards */
+.card{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sh h3{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--ink-700)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.stat{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:16px}
+.stat .sl{font-size:10px;color:var(--ink-400);margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.stat .sv{font-size:22px;font-weight:700;font-family:'Noto Serif SC',serif;color:var(--ink-800)}
+.stat.fox .sv{color:var(--fox)}.stat.gold .sv{color:var(--gold-dark)}.stat.cyan .sv{color:var(--cyan)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:1000px){.stats{grid-template-columns:1fr 1fr}.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;font-weight:600;color:var(--ink-400);padding:7px 10px;border-bottom:2px solid var(--ink-100);letter-spacing:.03em;text-transform:uppercase}
+td{padding:8px 10px;border-bottom:1px solid var(--ink-100);font-size:12px;vertical-align:middle}
+tr:hover{background:var(--fox-pale)}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 6px;border-radius:4px}.tag-fox{background:var(--fox-pale);color:var(--fox-dark)}.tag-cyan{background:var(--cyan-glow);color:var(--cyan)}.tag-gold{background:var(--gold-glow);color:var(--gold-dark)}.tag-ink{background:var(--ink-100);color:var(--ink-500)}.tag-verm{background:var(--verm-glow);color:var(--verm)}
+
+/* Status */
+.st{display:inline-flex;align-items:center;gap:2px;font-size:10px;padding:1px 7px;border-radius:10px}
+.st.draft{background:var(--paper-dark);color:var(--ink-500)}.st.active{background:var(--cyan-glow);color:var(--cyan)}.st.ended{background:var(--ink-100);color:var(--ink-300)}.st.pending{background:var(--gold-glow);color:var(--gold-dark)}.st.grading{background:var(--fox-pale);color:var(--fox-dark)}.st.ok{background:var(--green-glow);color:var(--green)}
+
+.btn{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border:none;border-radius:5px;font-size:10px;cursor:pointer;transition:all .12s;font-family:inherit}
+.btn-pri{background:var(--fox);color:#fff}.btn-pri:hover{background:var(--fox-dark)}
+.btn-out{background:transparent;border:1px solid var(--ink-100);color:var(--ink-500)}.btn-out:hover{border-color:var(--fox);color:var(--fox)}
+.btn-ghost{background:transparent;color:var(--ink-400)}.btn-ghost:hover{color:var(--fox);background:var(--fox-glow)}
+.btn-sm{padding:2px 7px;font-size:10px}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--ink-100);margin-bottom:14px}
+.tab{padding:7px 16px;font-size:11px;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab:hover{color:var(--ink-700)}.tab.active{color:var(--fox);border-bottom-color:var(--fox)}
+
+/* Page views */
+.view{display:none}.view.active{display:block}
+
+/* Student card grid */
+.scard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.scard{border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all .12s;background:var(--paper-bright)}
+.scard:hover{border-color:var(--fox);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.scard .sico{font-size:28px;margin-bottom:6px}.scard .sn{font-size:13px;font-weight:600}.scard .sd{font-size:10px;color:var(--ink-300);margin-top:2px}.scard .smeta{font-size:10px;color:var(--ink-400);margin-top:6px;display:flex;gap:8px}
+
+/* Course list */
+.cl-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--ink-100)}
+.cl-item:last-child{border-bottom:none}
+.cl-thumb{width:48px;height:36px;background:var(--ink-100);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+.cl-info{flex:1}
+.cl-info .cln{font-size:12px;font-weight:600}.cl-info .clp{font-size:10px;color:var(--ink-300);margin-top:1px}
+.cl-prog{width:80px}.pbar{height:4px;background:var(--ink-100);border-radius:2px;overflow:hidden}.pbar-f{height:100%;background:var(--fox);border-radius:2px}
+
+/* Video player */
+.video-placeholder{width:100%;aspect-ratio:16/9;background:var(--ink-800);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);font-size:40px;margin-bottom:12px}
+
+/* Practice */
+.practice-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--ink-100);font-size:12px}
+.practice-item:last-child{border-bottom:none}
+.practice-item .pi-type{width:50px;flex-shrink:0;font-size:10px;color:var(--ink-300)}
+.practice-item .pi-q{flex:1}
+.practice-item .pi-res{font-size:11px}
+.pi-res.correct{color:var(--cyan)}.pi-res.wrong{color:var(--verm)}
+
+/* Result card */
+.result-card{border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:20px;text-align:center;margin-bottom:14px;background:var(--paper-bright)}
+.result-card .rc-score{font-size:36px;font-weight:700;font-family:'Noto Serif SC',serif;color:var(--cyan)}
+.result-card .rc-sub{font-size:11px;color:var(--ink-300);margin-top:2px}
+.result-card .rc-meta{display:flex;justify-content:center;gap:24px;margin-top:12px;padding-top:12px;border-top:1px solid var(--ink-100);font-size:11px;color:var(--ink-400)}
+</style>
+</head>
+<body>
+
+<!-- ═══ ROLE SWITCHER ═══ -->
+<div class="role-bar" id="role-bar">
+  <span class="rb-lbl">👤 切换角色</span>
+  <button class="role-btn active" onclick="switchRole('super_admin')">🛡️ 超级管理员</button>
+  <button class="role-btn" onclick="switchRole('org_admin')">🏢 机构管理员</button>
+  <button class="role-btn" onclick="switchRole('question_setter')">📝 出题人</button>
+  <button class="role-btn" onclick="switchRole('reviewer')">🔍 审核人</button>
+  <button class="role-btn" onclick="switchRole('paper_maker')">📄 组卷人</button>
+  <button class="role-btn" onclick="switchRole('lecturer')">👨‍🏫 讲师</button>
+  <button class="role-btn" onclick="switchRole('class_advisor')">📅 班主任</button>
+  <button class="role-btn" onclick="switchRole('proctor')">👁️ 监考员</button>
+  <button class="role-btn" onclick="switchRole('grader')">✓ 判分员</button>
+  <button class="role-btn" onclick="switchRole('student')" style="background:var(--cyan);color:#fff">🎓 学员</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: SUPER ADMIN (default admin view with all modules) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view active" id="v-super_admin">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">🛡️ 超级管理员 · 全权限</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">资源中心 <span style="color:var(--green);font-size:8px;">已实现</span></div>
+        <div class="ni"><span class="ico">📝</span> 题库管理 <span class="nb done">已有</span></div>
+        <div class="ni"><span class="ico">✨</span> 智能组卷 <span class="nb done">已有</span></div>
+        <div class="ni"><span class="ico">📄</span> 试卷管理 <span class="nb done">已有</span></div>
+        <div class="ni"><span class="ico">🎬</span> 课程管理 <span class="nb" style="color:var(--fox-light)">新</span></div>
+      </div>
+      <div class="ng"><div class="ng-lbl">教务中心</div>
+        <div class="ni"><span class="ico">🏢</span> 机构管理</div>
+        <div class="ni"><span class="ico">👨‍🏫</span> 讲师管理</div>
+        <div class="ni"><span class="ico">📅</span> 开班管理</div>
+        <div class="ni"><span class="ico">📋</span> 考试管理</div>
+        <div class="ni"><span class="ico">👁️</span> 在线监考</div>
+        <div class="ni"><span class="ico">✓</span> 判分中心</div>
+        <div class="ni"><span class="ico">📊</span> 成绩分析</div>
+        <div class="ni"><span class="ico">🏅</span> 认证中心</div>
+        <div class="ni"><span class="ico">📋</span> 质量监督</div>
+      </div>
+      <div class="ng"><div class="ng-lbl">系统</div>
+        <div class="ni"><span class="ico">⚙️</span> 系统管理</div>
+        <div class="ni"><span class="ico">🔐</span> 角色权限</div>
+        <div class="ni"><span class="ico">📜</span> 审计日志</div>
+      </div>
+    </div>
+    <div class="sb-ft">🦊 全权限·可管理所有模块</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">FoxLearn / 概览</div></div><div class="user-badge">🛡️ 超级管理员</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--fox);background:var(--fox-pale);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--fox-dark);">🛡️ <strong>超级管理员</strong> — 你拥有系统全部权限，包括机构审核、系统设置、审计日志等管理功能。</div>
+      </div>
+      <div class="stats">
+        <div class="stat fox"><div class="sl">📝 总试题</div><div class="sv">1,284</div><div class="sl" style="margin-top:1px;">较上月 +47</div></div>
+        <div class="stat gold"><div class="sl">🏢 注册机构</div><div class="sv">3</div><div class="sl" style="margin-top:1px;">待审核 1</div></div>
+        <div class="stat cyan"><div class="sl">📋 考试场次</div><div class="sv">12</div><div class="sl" style="margin-top:1px;">进行中 2</div></div>
+      </div>
+      <!-- 待办事项里有只有超管才有的项 -->
+      <div class="card"><div class="sh"><h3>📌 待办</h3></div>
+        <div style="font-size:11px;line-height:2;">
+          <div>🔴 1 个机构注册待审核 <span style="float:right;color:var(--ink-300);">北京数智英才科技</span></div>
+          <div>🔴 3 道主观题待批阅 <span style="float:right;color:var(--ink-300);">DT+ 6月考</span></div>
+          <div>🟠 讲师"张力"证书即将到期 <span style="float:right;color:var(--ink-300);">2026-12</span></div>
+          <div>🟡 1 份试卷待定稿 <span style="float:right;color:var(--ink-300);">数智化期中卷</span></div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="card"><div class="sh"><h3>📊 平台概览</h3></div>
+          <div style="font-size:11px;line-height:2;">
+            总讲师 15 人 · 总学员 427 人 · 总培训班 8 期<br>
+            平均通过率 83.5% · 学员满意度 4.3/5.0<br>
+            系统运行天数 186 天 · 数据存储量 2.3GB
+          </div>
+        </div>
+        <div class="card"><div class="sh"><h3>⚡ 快捷操作（超管专属）</h3></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-out btn-sm">➕ 创建新机构</button>
+            <button class="btn btn-out btn-sm">👤 配置角色权限</button>
+            <button class="btn btn-out btn-sm">📜 查看审计日志</button>
+            <button class="btn btn-out btn-sm">⚙️ 系统参数设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: ORG_ADMIN -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-org_admin">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">🏢 中电标协培训中心 · 机构管理员</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">教务中心</div>
+        <div class="ni"><span class="ico">👨‍🏫</span> 讲师管理</div>
+        <div class="ni"><span class="ico">📅</span> 开班管理</div>
+        <div class="ni"><span class="ico">👥</span> 学员管理</div>
+        <div class="ni"><span class="ico">📋</span> 考试管理</div>
+        <div class="ni"><span class="ico">👁️</span> 在线监考</div>
+        <div class="ni"><span class="ico">✓</span> 判分中心</div>
+        <div class="ni"><span class="ico">📊</span> 成绩分析</div>
+        <div class="ni"><span class="ico">🏅</span> 认证中心</div>
+      </div>
+      <div class="ng"><div class="ng-lbl">系统</div>
+        <div class="ni"><span class="ico">📋</span> 数据字典</div>
+      </div>
+    </div>
+    <!-- 无系统管理 -->
+    <div class="sb-ft">🏢 本机构权限 · 不可管理系统级功能</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">中电标协培训中心 / 概览</div></div><div class="user-badge">🏢 机构管理员</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--gold);background:var(--gold-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--gold-dark);">🏢 <strong>中电标协培训中心</strong> — 你只能管理本机构的讲师、学员、培训班和考试。系统权限和机构审核不可用。</div>
+      </div>
+      <div class="stats">
+        <div class="stat fox"><div class="sl">👨‍🏫 本机构讲师</div><div class="sv">12</div><div class="sl" style="margin-top:1px;">高级3·讲师6·助理3</div></div>
+        <div class="stat gold"><div class="sl">📅 本机构培训班</div><div class="sv">5</div><div class="sl" style="margin-top:1px;">进行中2·已结束3</div></div>
+        <div class="stat cyan"><div class="sl">👥 本机构学员</div><div class="sv">256</div><div class="sl" style="margin-top:1px;">3个培训班</div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="card"><div class="sh"><h3>📌 待办</h3></div>
+          <div style="font-size:11px;line-height:2;">
+            🔴 1 个开班申请待提交备案材料<br>
+            🟠 3 位讲师证书即将到期需续期<br>
+            🟡 1 场考试待创建（领航者模块二）<br>
+            🔵 2 份学员满意度问卷待查看
+          </div>
+        </div>
+        <div class="card"><div class="sh"><h3>⚡ 快捷操作</h3></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-out btn-sm">📅 提交开班申请</button>
+            <button class="btn btn-out btn-sm">👥 导入学员</button>
+            <button class="btn btn-out btn-sm">📋 创建考试</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: QUESTION_SETTER (出题人) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-question_setter">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">📝 出题人 · 题库+教材</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">资源中心</div>
+        <div class="ni"><span class="ico">📝</span> 题库管理</div>
+        <div class="ni"><span class="ico">📚</span> 教材管理</div>
+      </div>
+    </div>
+    <!-- 只有题库+教材 -->
+    <div class="sb-ft">📝 只可见题库和教材管理</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">出题人 / 概览</div></div><div class="user-badge">📝 出题人</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--cyan);background:var(--cyan-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--cyan);">📝 <strong>出题人</strong> — 你负责创建和编辑试题、上传教材并管理AI出题。没有组卷和教务权限。</div>
+      </div>
+      <div class="stats">
+        <div class="stat cyan"><div class="sl">📝 已出试题</div><div class="sv">1,284</div><div class="sl" style="margin-top:1px;">本月新增 47</div></div>
+        <div class="stat gold"><div class="sl">⏳ 待审核</div><div class="sv">23</div><div class="sl" style="margin-top:1px;">来自AI出题Pipeline</div></div>
+        <div class="stat fox"><div class="sl">📚 已上传教材</div><div class="sv">8</div><div class="sl" style="margin-top:1px;">本月新增 2</div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="card"><div class="sh"><h3>📌 待办</h3></div>
+          <div style="font-size:11px;line-height:2;">
+            🔴 23 道AI生成试题待审核 <span style="float:right;color:var(--ink-300);">《数据治理》教材</span><br>
+            🟡 1 本教材AI出题未启动 <span style="float:right;color:var(--ink-300);">《安全合规》</span>
+          </div>
+        </div>
+        <div class="card"><div class="sh"><h3>⚡ 快捷操作</h3></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-out btn-sm">➕ 新建试题</button>
+            <button class="btn btn-out btn-sm">📥 批量导入</button>
+            <button class="btn btn-out btn-sm">📤 上传教材</button>
+            <button class="btn btn-out btn-sm">🤖 AI出题</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: REVIEWER (审核人) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-reviewer">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">🔍 审核人 · 试题审核</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">资源中心</div>
+        <div class="ni"><span class="ico">📝</span> 题库管理 <span class="nb">只读</span></div>
+        <div class="ni"><span class="ico">📚</span> AI出题审核</div>
+      </div>
+    </div>
+    <div class="sb-ft">🔍 只可见试题审核，题库只读</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">审核人 / 概览</div></div><div class="user-badge">🔍 审核人</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--gold);background:var(--gold-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--gold-dark);">🔍 <strong>审核人</strong> — 你负责审核AI生成的试题。可查看题库但不可修改。不可组卷和参与教务。</div>
+      </div>
+      <div class="stats">
+        <div class="stat gold"><div class="sl">⏳ 待审核</div><div class="sv">23</div><div class="sl" style="margin-top:1px;">来自《数据治理》教材</div></div>
+        <div class="stat cyan"><div class="sl">✅ 本月已审</div><div class="sv">156</div><div class="sl" style="margin-top:1px;">通过142·拒绝14</div></div>
+      </div>
+      <div class="card"><div class="sh"><h3>📌 待审核题目</h3></div>
+        <div class="tw"><table>
+          <tr><th>题目</th><th>题型</th><th>难度</th><th>来源</th><th>操作</th></tr>
+          <tr><td>数据治理的核心原则包括？</td><td>多选题</td><td>易</td><td>第3章·2节</td><td><button class="btn btn-pri btn-sm">审核</button></td></tr>
+          <tr><td>简述DCMM模型</td><td>简答题</td><td>中</td><td>第5章·1节</td><td><button class="btn btn-pri btn-sm">审核</button></td></tr>
+          <tr><td>以下哪个不是数据安全措施？</td><td>单选题</td><td>易</td><td>第7章·3节</td><td><button class="btn btn-pri btn-sm">审核</button></td></tr>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: PAPER_MAKER (组卷人) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-paper_maker">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">📄 组卷人 · 组卷+试卷</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">资源中心</div>
+        <div class="ni"><span class="ico">📝</span> 题库管理 <span class="nb">只读</span></div>
+        <div class="ni"><span class="ico">✨</span> 智能组卷</div>
+        <div class="ni"><span class="ico">📄</span> 试卷管理</div>
+      </div>
+    </div>
+    <div class="sb-ft">📄 只可见组卷和试卷管理</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">组卷人 / 概览</div></div><div class="user-badge">📄 组卷人</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--fox);background:var(--fox-pale);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--fox-dark);">📄 <strong>组卷人</strong> — 你负责组卷和试卷管理。可查看题库但不可编辑。不可参与出题和教务。</div>
+      </div>
+      <div class="stats">
+        <div class="stat fox"><div class="sl">📄 已创建试卷</div><div class="sv">36</div><div class="sl" style="margin-top:1px;">草稿8·定稿28</div></div>
+        <div class="stat cyan"><div class="sl">✨ 可用模板</div><div class="sv">12</div><div class="sl" style="margin-top:1px;">覆盖全部科目</div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="card"><div class="sh"><h3>📌 待办</h3></div>
+          <div style="font-size:11px;line-height:2;">
+            🟡 1 份试卷待定稿（数智化期中A卷）<br>
+            📋 班主任申请为领航者班创建模块二试卷
+          </div>
+        </div>
+        <div class="card"><div class="sh"><h3>⚡ 快捷操作</h3></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-out btn-sm">✨ 智能组卷</button>
+            <button class="btn btn-out btn-sm">📄 查看试卷列表</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: LECTURER (讲师) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-lecturer">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">👨‍🏫 讲师 · 教学</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">资源中心</div>
+        <div class="ni"><span class="ico">🎬</span> 课程管理</div>
+      </div>
+      <div class="ng"><div class="ng-lbl">学习中心</div>
+        <div class="ni"><span class="ico">📊</span> 学员成绩 <span class="nb">只读</span></div>
+      </div>
+    </div>
+    <div class="sb-ft">👨‍🏫 只可见课程和学员成绩</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">讲师 / 概览</div></div><div class="user-badge">👨‍🏫 王建国·高级讲师</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--cyan);background:var(--cyan-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--cyan);">👨‍🏫 <strong>讲师</strong> — 你负责课程教学。可管理自己的课程和查看学员成绩。不可出题、组卷、判分（教考分离）。</div>
+      </div>
+      <div class="stats">
+        <div class="stat cyan"><div class="sl">🎬 我负责的课程</div><div class="sv">3</div><div class="sl" style="margin-top:1px;">数字化转型概论·数据治理·案例研讨</div></div>
+        <div class="stat gold"><div class="sl">👥 授课学员</div><div class="sv">86</div><div class="sl" style="margin-top:1px;">3个培训班</div></div>
+        <div class="stat fox"><div class="sl">⭐ 综合评分</div><div class="sv">4.8</div><div class="sl" style="margin-top:1px;">学员满意度</div></div>
+      </div>
+      <div class="card"><div class="sh"><h3>🎬 我的课程</h3></div>
+        <div>
+          <div class="cl-item"><div class="cl-thumb">📖</div><div class="cl-info"><div class="cln">数字化转型概论</div><div class="clp">8课时 · 24名学员 · 本周四上课</div></div><button class="btn btn-out btn-sm">编辑</button></div>
+          <div class="cl-item"><div class="cl-thumb">📊</div><div class="cl-info"><div class="cln">数据治理实务</div><div class="clp">6课时 · 18名学员 · 已上完</div></div><button class="btn btn-out btn-sm">查看成绩</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: CLASS_ADVISOR (班主任) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-class_advisor">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">📅 班主任 · 学员管理</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">教务中心</div>
+        <div class="ni"><span class="ico">👥</span> 学员管理</div>
+        <div class="ni"><span class="ico">📅</span> 开班管理</div>
+        <div class="ni"><span class="ico">📋</span> 考试管理</div>
+        <div class="ni"><span class="ico">📊</span> 成绩分析 <span class="nb">只读</span></div>
+      </div>
+    </div>
+    <div class="sb-ft">📅 负责学员和开班运营</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>工作台</h2><div class="bc">班主任 / 概览</div></div><div class="user-badge">📅 班主任·领航者班</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--gold);background:var(--gold-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--gold-dark);">📅 <strong>班主任</strong> — 你负责学员管理、开班运营和考试组织。不可出题、组卷和判分。</div>
+      </div>
+      <div class="stats">
+        <div class="stat gold"><div class="sl">👥 我管理的学员</div><div class="sv">86</div><div class="sl" style="margin-top:1px;">领航者班24·DTM班42·集训班20</div></div>
+        <div class="stat fox"><div class="sl">📅 负责的培训班</div><div class="sv">3</div><div class="sl" style="margin-top:1px;">进行中2·待开班1</div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="card"><div class="sh"><h3>📌 待办</h3></div>
+          <div style="font-size:11px;line-height:2;">
+            🔴 领航者班3名学员缺勤超过50%<br>
+            🟠 评估师集训班需提交最终学员名单<br>
+            🟡 领航者模块二考试需创建<br>
+            🔵 6月学员满意度问卷待发放
+          </div>
+        </div>
+        <div class="card"><div class="sh"><h3>⚡ 快捷操作</h3></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button class="btn btn-out btn-sm">➕ 导入学员</button>
+            <button class="btn btn-out btn-sm">📋 创建考试</button>
+            <button class="btn btn-out btn-sm">👥 查看班级</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: PROCTOR (监考员) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-proctor">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">👁️ 监考员 · 考试监控</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">教务中心</div>
+        <div class="ni"><span class="ico">👁️</span> 在线监考</div>
+      </div>
+    </div>
+    <div class="sb-ft">👁️ 只可见监考中心</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>在线监考</h2><div class="bc">监考员 / DT+ 6月测评</div></div><div class="user-badge">👁️ 监考员</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--verm);background:var(--verm-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--verm);">👁️ <strong>监考员</strong> — 你只看到当前进行中的考试监控面板。没有其他任何模块的权限。</div>
+      </div>
+      <div class="stats">
+        <div class="stat cyan"><div class="sl">✅ 已交卷</div><div class="sv">15</div></div>
+        <div class="stat"><div class="sl">📝 答题中</div><div class="sv">23</div></div>
+        <div class="stat verm"><div class="sl">⚠️ 异常</div><div class="sv">2</div></div>
+      </div>
+      <div class="tw"><table>
+        <tr><th>学员</th><th>进度</th><th>用时</th><th>异常</th><th>操作</th></tr>
+        <tr><td>张晓明</td><td>38/60</td><td>52min</td><td>—</td><td><button class="btn btn-out btn-sm" style="color:var(--verm);border-color:var(--verm);">收卷</button><button class="btn btn-ghost btn-sm">延长</button></td></tr>
+        <tr style="background:var(--verm-glow)"><td>李芳</td><td>22/60</td><td>45min</td><td><span class="tag tag-verm">切屏5次</span></td><td><button class="btn btn-out btn-sm" style="color:var(--verm);border-color:var(--verm);">收卷</button><button class="btn btn-ghost btn-sm">警告</button></td></tr>
+        <tr><td>王磊</td><td>60/60</td><td>78min</td><td>—</td><td><span style="font-size:11px;color:var(--ink-300);">已交卷</span></td></tr>
+      </table></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: GRADER (判分员) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-grader">
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-brand"><h1>🦊 FoxLearn</h1><div class="sb-sub">✦ 狐 学 ✦</div><div class="sb-role">✓ 判分员 · 批阅中心</div></div>
+    <div class="nav">
+      <div class="ng"><div class="ng-lbl">概览</div><div class="ni active"><span class="ico">📋</span> 工作台</div></div>
+      <div class="ng"><div class="ng-lbl">教务中心</div>
+        <div class="ni"><span class="ico">✓</span> 判分中心</div>
+      </div>
+    </div>
+    <div class="sb-ft">✓ 只可见判分中心</div>
+  </div>
+  <div class="main">
+    <div class="top"><div><h2>判分中心</h2><div class="bc">判分员 / 待判列表</div></div><div class="user-badge">✓ 判分员</div></div>
+    <div class="cont">
+      <div class="card" style="border-left:3px solid var(--cyan);background:var(--cyan-glow);padding:14px 18px;">
+        <div style="font-size:11px;color:var(--cyan);">✓ <strong>判分员</strong> — 你只看到待判分的试卷列表和批阅界面。无法查看课程、学员、考试等其他模块。</div>
+      </div>
+      <div class="tw"><table>
+        <tr><th>学员</th><th>考试</th><th>客观分</th><th>主观题</th><th>操作</th></tr>
+        <tr><td>刘洋</td><td>符合性评估模拟</td><td>52/60</td><td><span class="tag tag-fox">待判2题</span></td><td><button class="btn btn-pri btn-sm">批阅</button></td></tr>
+        <tr><td>孙丽</td><td>符合性评估模拟</td><td>45/60</td><td><span class="tag tag-fox">待判1题</span></td><td><button class="btn btn-pri btn-sm">批阅</button></td></tr>
+      </table></div>
+      <div style="margin-top:12px;"><span style="font-size:11px;color:var(--ink-300);">⚠ 教考分离：判分员不可查看讲师信息，讲师不可查看判分详情。</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: STUDENT (学员端 - 完整门户) -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="v-student">
+<div class="app">
+  <div class="sidebar" style="background:var(--paper-dark);">
+    <div class="sb-brand" style="border-bottom:1px solid var(--ink-100);">
+      <h1 style="color:var(--ink-800);">🦊 FoxLearn</h1>
+      <div class="sb-sub" style="color:var(--fox);">✦ 学得聪明，考得轻松 ✦</div>
+      <div class="sb-role" style="color:var(--ink-400);">🎓 学员 · 张晓明</div>
+    </div>
+    <div class="nav">
+      <div class="ni active"><span class="ico">🏠</span> 学习首页</div>
+      <div class="ni"><span class="ico">📝</span> 我的考试</div>
+      <div class="ni"><span class="ico">🎬</span> 我的课程</div>
+      <div class="ni"><span class="ico">🏋️</span> 练习中心</div>
+      <div class="ni"><span class="ico">📖</span> 成绩中心</div>
+      <div class="ni"><span class="ico">🏅</span> 我的证书</div>
+      <div style="height:12px"></div>
+      <div class="ni"><span class="ico">👤</span> 个人中心</div>
+    </div>
+    <div class="sb-ft" style="color:var(--ink-300);border-top-color:var(--ink-100);">🎓 学员端</div>
+  </div>
+  <div class="main">
+    <div class="top" style="background:#fff;"><div><h2 style="color:var(--ink-800);">📚 学习首页</h2><div class="bc">欢迎回来，张晓明</div></div><div class="user-badge" style="background:var(--paper);color:var(--ink-500);">🎓 学员</div></div>
+    <div class="cont">
+      <!-- 头部概况 -->
+      <div class="stats">
+        <div class="stat cyan"><div class="sl">📝 待考考试</div><div class="sv">2</div></div>
+        <div class="stat gold"><div class="sl">🎬 学习中的课程</div><div class="sv">3</div></div>
+        <div class="stat fox"><div class="sl">🏅 已获证书</div><div class="sv">1</div></div>
+      </div>
+
+      <!-- 待考考试 -->
+      <div class="card">
+        <div class="sh"><h3>📝 待参加的考试</h3><button class="btn btn-ghost btn-sm">查看全部</button></div>
+        <div class="scard-grid">
+          <div class="scard" onclick="alert('进入考试'])" style="border-left:3px solid var(--fox);">
+            <div class="sico">📋</div>
+            <div class="sn">DT+ 6月水平测评</div>
+            <div class="sd">开考倒计时 1:32:15</div>
+            <div class="smeta"><span>⏱ 120min</span><span>📌 闭卷</span></div>
+            <button class="btn btn-pri btn-sm" style="margin-top:8px;width:100%;">进入考试</button>
+          </div>
+          <div class="scard">
+            <div class="sico">📄</div>
+            <div class="sn">数智化转型期中测验</div>
+            <div class="sd">6月20日 00:00 开放</div>
+            <div class="smeta"><span>⏱ 90min</span><span>📌 随到随考</span></div>
+            <div style="margin-top:8px;font-size:10px;color:var(--ink-300);text-align:center;">距离开放 3 天</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 学习中课程 -->
+      <div class="card">
+        <div class="sh"><h3>🎬 学习中的课程</h3><button class="btn btn-ghost btn-sm">查看全部</button></div>
+        <div class="cl-item"><div class="cl-thumb">📖</div><div class="cl-info"><div class="cln">数字化转型概论</div><div class="clp">王建国 · 已学 60%</div></div><div class="cl-prog"><div class="pbar"><div class="pbar-f" style="width:60%"></div></div></div><button class="btn btn-out btn-sm">继续</button></div>
+        <div class="cl-item"><div class="cl-thumb">📊</div><div class="cl-info"><div class="cln">数据治理实务</div><div class="clp">李芳 · 已学 35%</div></div><div class="cl-prog"><div class="pbar"><div class="pbar-f" style="width:35%"></div></div></div><button class="btn btn-out btn-sm">继续</button></div>
+        <div class="cl-item"><div class="cl-thumb">🔒</div><div class="cl-info"><div class="cln">安全合规基础 <span style="font-size:10px;color:var(--ink-300);">(未解锁)</span></div><div class="clp">需先完成"数据治理实务"</div></div><button class="btn btn-ghost btn-sm" disabled>🔒</button></div>
+      </div>
+
+      <!-- 最近成绩 -->
+      <div class="card">
+        <div class="sh"><h3>📖 最近成绩</h3><button class="btn btn-ghost btn-sm">查看全部</button></div>
+        <div class="tw"><table>
+          <tr><th>考试</th><th>得分</th><th>判定</th><th>时间</th><th>操作</th></tr>
+          <tr><td>DTM 模块一单元测验</td><td style="font-weight:600;color:var(--cyan);">82</td><td><span class="st ok">通过</span></td><td style="font-size:11px">6月5日</td><td><button class="btn btn-out btn-sm">查看详情</button></td></tr>
+          <tr><td>DT+ 基础知识测试</td><td style="font-weight:600;color:var(--verm);">58</td><td><span class="st draft">未通过</span></td><td style="font-size:11px">5月20日</td><td><button class="btn btn-out btn-sm">查看详情</button></td></tr>
+        </table></div>
+      </div>
+
+      <!-- AI助教入口 -->
+      <div class="card" style="border-left:3px solid var(--fox);background:var(--fox-pale);padding:14px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:32px;">🦊</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--fox-dark);">小狐狸 AI 助教</div>
+            <div style="font-size:10px;color:var(--fox);">随时问我学习问题 · 三期开放</div>
+          </div>
+          <span class="tag tag-ink" style="font-size:9px;">🔒 即将上线</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function switchRole(role) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('v-' + role).classList.add('active');
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.role-btn').forEach(b => {
+    if(b.textContent.includes({
+      super_admin:'超级管理员',org_admin:'机构管理员',question_setter:'出题人',
+      reviewer:'审核人',paper_maker:'组卷人',lecturer:'讲师',class_advisor:'班主任',
+      proctor:'监考员',grader:'判分员',student:'学员'
+    }[role]) || (role==='student' && b.textContent.includes('学员'))) b.classList.add('active');
+  });
+}
+</script>
+</body>
+</html>

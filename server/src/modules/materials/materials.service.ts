@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { PDFParse } from 'pdf-parse';
 
 @Injectable()
 export class MaterialsService {
@@ -59,11 +60,108 @@ export class MaterialsService {
     return material;
   }
 
+  /**
+   * 将文本按章节标题分割成章节数组
+   */
+  private parseTextToChapters(text: string): Array<{ title: string; content: string }> {
+    const lines = text.split('\n').filter(l => l.trim());
+    const sectionPattern = /^(第[一二三四五六七八九十百千]+章|第\d+章|#+\s*|Chapter\s+\d+|Part\s+\d+)/i;
+    const chapters: Array<{ title: string; content: string }> = [];
+    let currentTitle = '全文';
+    let currentContent: string[] = [];
+
+    for (const line of lines) {
+      if (sectionPattern.test(line.trim())) {
+        if (currentContent.length > 0) {
+          chapters.push({ title: currentTitle, content: currentContent.join('\n') });
+        }
+        currentTitle = line.trim().replace(/^#+\s*/, '');
+        currentContent = [];
+      } else {
+        currentContent.push(line);
+      }
+    }
+    if (currentContent.length > 0 || chapters.length === 0) {
+      chapters.push({ title: currentTitle, content: currentContent.join('\n') });
+    }
+    return chapters;
+  }
+
+  /**
+   * 保存章节到数据库
+   */
+  private async saveChapters(materialId: number, chapters: Array<{ title: string; content: string }>) {
+    for (let i = 0; i < chapters.length; i++) {
+      await this.prisma.materialChapter.create({
+        data: {
+          materialId,
+          title: chapters[i].title,
+          chapterIndex: i,
+          content: chapters[i].content,
+          status: 'GENERATED',
+          sortOrder: i,
+        },
+      });
+    }
+    return chapters.length;
+  }
+
+  /**
+   * 从 PDF 文件提取文字
+   */
+  private async extractPdfText(filePath: string): Promise<{ text: string; numPages: number }> {
+    const pdfBuffer = await fs.readFile(filePath);
+    const parser = new PDFParse({ data: pdfBuffer });
+    try {
+      const result = await parser.getText();
+      return { text: result.text, numPages: result.total };
+    } finally {
+      await parser.destroy().catch(() => {});
+    }
+  }
+
+  /**
+   * 直接通过文本创建教材（无需上传文件）
+   */
+  async create(data: {
+    name: string;
+    subjectId: number;
+    createdBy: number;
+    batchNote?: string;
+    content?: string;
+  }) {
+    const material = await this.prisma.material.create({
+      data: {
+        name: data.name,
+        fileName: data.name + '.txt',
+        fileSize: data.content ? Buffer.byteLength(data.content, 'utf-8') : 0,
+        filePath: '',
+        subjectId: data.subjectId,
+        batchNote: data.batchNote || null,
+        status: data.content ? 'OCR_DONE' : 'UPLOADED',
+        createdBy: data.createdBy,
+      },
+    });
+
+    // 如果有内容，自动创建章节
+    if (data.content) {
+      const chapters = this.parseTextToChapters(data.content);
+      const chapterCount = await this.saveChapters(material.id, chapters);
+
+      // 更新章节数
+      await this.prisma.material.update({
+        where: { id: material.id },
+        data: {
+          totalPages: chapterCount,
+        },
+      });
+    }
+
+    return this.findOne(material.id);
+  }
+
   async upload(file: Express.Multer.File, body: { subjectId: string; name?: string; batchNote?: string; createdBy: string }) {
     if (!file) throw new BadRequestException('请上传PDF文件');
-    if (path.extname(file.originalname).toLowerCase() !== '.pdf') {
-      throw new BadRequestException('仅支持PDF格式');
-    }
 
     const savedName = `${crypto.randomUUID()}.pdf`;
     const filePath = path.join(this.uploadDir, savedName);
@@ -82,7 +180,41 @@ export class MaterialsService {
       },
     });
 
-    return material;
+    // ── PDF 文字提取 + 章节识别 ──
+    try {
+      const { text, numPages } = await this.extractPdfText(filePath);
+      if (text.trim().length < 10) {
+        console.warn(`PDF text extraction returned too little text for ${file.originalname}`);
+        // 文字太少的 PDF 可能是扫描件，保持 UPLOADED 状态
+        await this.prisma.material.update({
+          where: { id: material.id },
+          data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字，PDF 可能为扫描件' },
+        });
+      } else {
+        const chapters = this.parseTextToChapters(text);
+        await this.saveChapters(material.id, chapters);
+
+        await this.prisma.material.update({
+          where: { id: material.id },
+          data: {
+            status: 'OCR_DONE',
+            totalPages: numPages || Math.ceil(text.length / 2000) || 1,
+            errorMessage: null,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('PDF text extraction failed:', e.message);
+      // 提取失败时保持 UPLOADED 状态，记录错误信息
+      await this.prisma.material.update({
+        where: { id: material.id },
+        data: {
+          errorMessage: 'PDF 文字提取失败：' + e.message,
+        },
+      }).catch(() => {});
+    }
+
+    return this.findOne(material.id);
   }
 
   async getStats(id: number) {

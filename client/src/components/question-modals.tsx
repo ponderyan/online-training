@@ -13,7 +13,7 @@ const DIFF_NAMES: Record<string, string> = {
 export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { open: boolean; onClose: () => void; subjects: any[]; editQuestion?: any | null }) {
   const [type, setType] = useState('SINGLE_CHOICE');
   const [difficulty, setDifficulty] = useState('EASY');
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id || 1);
+  const [subjectId, setSubjectId] = useState((subjects && subjects[0]?.id) || 1);
   const [chapterId, setChapterId] = useState(0);
   const [content, setContent] = useState('');
   const [analysis, setAnalysis] = useState('');
@@ -27,7 +27,9 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
   useEffect(() => {
     if (subjectId) {
-      fetch(`/api/chapters?subjectId=${subjectId}`).then(r => r.json()).then(setChapters).catch(() => {});
+      fetch(`/api/chapters?subjectId=${subjectId}`).then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setChapters(data);
+      }).catch(() => {});
     }
   }, [subjectId]);
 
@@ -148,7 +150,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>章节</label>
               <select value={chapterId} onChange={e => setChapterId(Number(e.target.value))} className="input select">
                 <option value={0}>不指定</option>
-                {chapters.map((ch: any) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
+                {(chapters || []).map((ch: any) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
               </select>
             </div>
           </div>

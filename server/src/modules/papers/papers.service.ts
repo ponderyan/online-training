@@ -60,15 +60,73 @@ export class PapersService {
     return paper;
   }
 
+  async create(data: { name: string; subjectId: number; createdBy: number; totalScore?: number; durationMinutes?: number }) {
+    if (!data.name || !data.subjectId || !data.createdBy) {
+      throw new BadRequestException('缺少必要参数：name, subjectId, createdBy');
+    }
+    const subject = await this.prisma.subject.findUnique({ where: { id: data.subjectId } });
+    if (!subject) throw new NotFoundException('科目不存在');
+
+    const seq = subject.paperNumberSeq;
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const paperNumber = `DT+${subject.code}-${dateStr}-${String(seq).padStart(3, '0')}`;
+
+    await this.prisma.subject.update({
+      where: { id: data.subjectId },
+      data: { paperNumberSeq: seq + 1 },
+    });
+
+    return this.prisma.paper.create({
+      data: {
+        name: data.name,
+        paperNumber,
+        subjectId: data.subjectId,
+        totalScore: data.totalScore || 100,
+        durationMinutes: data.durationMinutes || 90,
+        status: 'DRAFT',
+        createdBy: data.createdBy,
+      },
+    });
+  }
+
   async generate(data: {
-    name: string; subjectId: number; createdBy: number;
-    totalScore: number; durationMinutes?: number; isOpenBook?: boolean;
-    typeConfigs: { questionType: QuestionType; count: number; scorePerQuestion: number }[];
-    difficultyDistribution: Record<string, number>;
+    name?: string; subjectId: number; createdBy: number;
+    totalScore?: number; durationMinutes?: number; isOpenBook?: boolean;
+    templateId?: number; // 快捷路径：用模板配置生成
+    typeConfigs?: { questionType: QuestionType; count: number; scorePerQuestion: number }[];
+    difficultyDistribution?: Record<string, number>;
     chapterStrategy?: string; sourceMix?: number;
     excludeQuestionIds?: number[];
     includeQuestionIds?: number[]; // 必选题
   }) {
+    // ═══════════════════════════════════════════
+    //  快捷路径：如果有 templateId，自动加载模板配置
+    // ═══════════════════════════════════════════
+    if (data.templateId) {
+      const template = await this.prisma.paperTemplate.findUnique({
+        where: { id: data.templateId },
+        include: { typeConfigs: true },
+      });
+      if (!template) throw new NotFoundException('模板不存在');
+
+      data.typeConfigs = template.typeConfigs.map(tc => ({
+        questionType: tc.questionType,
+        count: tc.count,
+        scorePerQuestion: tc.scorePerQuestion,
+      }));
+      data.difficultyDistribution = template.difficultyDistribution as Record<string, number>;
+      data.chapterStrategy = data.chapterStrategy || template.chapterStrategy;
+      data.sourceMix = data.sourceMix ?? template.sourceMix;
+      data.totalScore = data.totalScore ?? template.totalScore;
+      data.durationMinutes = data.durationMinutes ?? template.durationMinutes;
+      data.isOpenBook = data.isOpenBook ?? template.isOpenBook;
+      data.name = data.name || template.name;
+    }
+
+    if (!data.name || !data.totalScore || !data.typeConfigs) {
+      throw new BadRequestException('缺少必要参数：name, totalScore, typeConfigs（或提供 templateId）');
+    }
+    data.difficultyDistribution = data.difficultyDistribution ?? { EASY: 25, MEDIUM_EASY: 25, MEDIUM_HARD: 25, HARD: 25 };
     const subject = await this.prisma.subject.findUnique({ where: { id: data.subjectId } });
     if (!subject) throw new NotFoundException('Subject not found');
 

@@ -13,13 +13,16 @@ export default function PapersPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAnswer, setShowAnswer] = useState<any>(null);
+  const [keyword, setKeyword] = useState('');
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
 
   const load = async (p: number = page) => {
     setLoading(true);
     try {
       const data = await api.papers.list(p);
-      setPapers(data.items || []);
+      let items = data.items || [];
+      if (keyword) items = items.filter((i: any) => i.name?.includes(keyword) || i.paperNumber?.includes(keyword));
+      setPapers(items);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
@@ -83,6 +86,10 @@ export default function PapersPage() {
   return (
     <AppLayout>
       <div className="flex items-start justify-between mb-7">
+      <input value={keyword} onChange={e => setKeyword(e.target.value)}
+        placeholder="🔍 搜索试卷名称/编号…" className="input" style={{ maxWidth: 320 }}
+        onKeyDown={e => e.key === 'Enter' && load()} />
+
         <div>
           <h1 className="page-title">🦊 试卷管理</h1>
           <p className="page-subtitle">

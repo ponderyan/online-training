@@ -139,6 +139,41 @@ export class QuestionsService {
     };
   }
 
+  async getPracticeQuestions(
+    count: number = 10,
+    subjectId?: number,
+    types?: string[],
+    chapterId?: number,
+  ) {
+    const where: any = {
+      status: 'PUBLISHED',
+      isPublic: true,
+    };
+    if (subjectId) where.subjectId = subjectId;
+    if (types && types.length > 0) where.type = { in: types };
+    if (chapterId) where.chapterId = chapterId;
+
+    const items = await this.prisma.question.findMany({
+      where,
+      take: count,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        subject: { select: { name: true } },
+        chapter: { select: { name: true } },
+        options: { orderBy: { sortOrder: 'asc' } },
+        blanks: { orderBy: { blankIndex: 'asc' } },
+      },
+    });
+
+    // 随机打乱
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    return items;
+  }
+
   async batchCreate(questions: any[]) {
     const results: { index: number; success: boolean; id?: number; error?: string }[] = [];
 
@@ -169,5 +204,37 @@ export class QuestionsService {
 
     const successCount = results.filter(r => r.success).length;
     return { total: questions.length, successCount, failCount: questions.length - successCount, results };
+  }
+
+  async getPracticeAnswer(questionId?: number) {
+    if (!questionId) throw new NotFoundException('题目ID不能为空');
+    const question = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      include: {
+        options: { orderBy: { sortOrder: 'asc' } },
+        blanks: { orderBy: { blankIndex: 'asc' } },
+      },
+    });
+    if (!question) throw new NotFoundException('题目不存在');
+
+    const correctAnswer = this.formatCorrectAnswer(question);
+    return { correctAnswer, analysis: question.analysis };
+  }
+
+  private formatCorrectAnswer(question: any): string {
+    switch (question.type) {
+      case 'SINGLE_CHOICE':
+      case 'TRUE_FALSE':
+        return question.options?.find((o: any) => o.isCorrect)?.label || '—';
+      case 'MULTIPLE_CHOICE':
+        return question.options?.filter((o: any) => o.isCorrect).map((o: any) => o.label).join(', ') || '—';
+      case 'FILL_BLANK':
+        return question.blanks?.map((b: any) => b.answer).join(' | ') || '—';
+      case 'SHORT_ANSWER':
+      case 'CASE_STUDY':
+        return (question as any).analysis || '参考答案见解析';
+      default:
+        return '—';
+    }
   }
 }

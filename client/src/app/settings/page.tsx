@@ -64,7 +64,7 @@ export default function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const result = await api.aiConfigs.test({ apiBaseUrl: apiBase, apiKey, modelVersion: model });
+      const result = await api.aiConfigs.test({ apiBaseUrl: apiBase, apiKey, modelVersion: model, configId: savedConfigId || undefined });
       setTestResult(result);
     } catch (e: any) {
       setTestResult({ success: false, message: e.message });
@@ -139,7 +139,15 @@ export default function SettingsPage() {
 
   const addDictionary = async () => {
     if (!newCode || !newName) return;
-    await api.dataDictionaries.create({ code: newCode.toUpperCase(), name: newName });
+    const code = newCode.toUpperCase();
+    // 先创建数据字典条目，返回包含实际 id
+    const newDict = await api.dataDictionaries.create({ code, name: newName });
+    // 同步创建对应的科目（Subject），使用实际返回的字典 ID
+    try {
+      await api.subjects.create({ name: newName, code, dictionaryId: newDict.id, sortOrder: 99 });
+    } catch {
+      // 科目可能已存在，忽略
+    }
     setNewCode(''); setNewName('');
     api.dataDictionaries.list().then(setDictionaries);
   };
@@ -226,7 +234,10 @@ export default function SettingsPage() {
                   placeholder={savedConfigId && !keyEditing ? '已加密，点击"修改 Key"重新输入' : '输入 API Key'}
                   readOnly={!!savedConfigId && !keyEditing}
                 />
-                <button type="button" onClick={() => setShowApiKey(!showApiKey)}
+                <button type="button" onClick={() => {
+                  setShowApiKey(true);
+                  setTimeout(() => setShowApiKey(false), 2000);
+                }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer flex items-center justify-center p-1 rounded"
                   style={{ color: 'var(--ink-300)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink-700)')}

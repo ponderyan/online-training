@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoxLearn · 狐学 — 平台原型 v2</title>
+<style>
+:root {
+  --ink-900:#1a1712;--ink-800:#231f1a;--ink-700:#2c261e;--ink-500:#5a5348;--ink-400:#736a5c;--ink-300:#8b8174;--ink-200:#a89d8e;--ink-100:#c4bcb0;
+  --paper:#efe9dc;--paper-light:#f6f1e8;--paper-bright:#faf6ef;--paper-dark:#e4dccd;
+  --gold:#c9a03a;--gold-dark:#a67f2a;--gold-glow:rgba(201,160,58,.12);
+  --fox:#e87a30;--fox-dark:#c9601e;--fox-light:#f5a061;--fox-pale:#fce6d3;--fox-glow:rgba(232,122,48,.12);
+  --verm:#d9364a;--verm-glow:rgba(217,54,74,.08);--verm-light:#ff4d5e;
+  --cyan:#00897b;--cyan-light:#00c9b6;--cyan-glow:rgba(0,137,123,.08);
+  --green:#2e7d32;--green-glow:rgba(46,125,50,.08);
+  --radius:8px;--radius-lg:12px;
+  --shadow-sm:0 1px 3px rgba(26,23,18,.06);--shadow-md:0 4px 16px rgba(26,23,18,.07);--shadow-lg:0 8px 32px rgba(26,23,18,.09);
+  --sidebar-w:248px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC','PingFang SC',-apple-system,sans-serif;background:var(--paper);color:var(--ink-900);font-size:14px;line-height:1.7;min-height:100vh;display:flex}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--ink-800);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sidebar-brand h1{font-family:'Noto Serif SC',serif;font-size:20px;color:#fff;letter-spacing:.02em}
+.sidebar-brand .brand-sub{font-size:10px;color:var(--fox-light);letter-spacing:.25em;margin-top:1px}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-grp{padding:0 12px;margin-bottom:2px}
+.nav-grp-lbl{font-size:9px;color:rgba(255,255,255,.25);letter-spacing:.12em;padding:10px 8px 5px;display:flex;align-items:center;gap:6px}
+.nav-grp-lbl .phase{font-size:8px;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.2)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:6px;color:rgba(255,255,255,.55);text-decoration:none;font-size:12.5px;cursor:pointer;transition:all .12s}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-item.active{color:var(--fox-light);background:rgba(232,122,48,.12)}
+.nav-item .ico{font-size:15px;width:20px;text-align:center}
+.nav-item .badge{margin-left:auto;font-size:9px;padding:1px 6px;border-radius:8px}
+.nav-item .badge.done{background:var(--green-glow);color:#66bb6a}
+.nav-item .badge.new{background:var(--fox-glow);color:var(--fox-light);font-weight:600}
+.nav-item .badge.locked{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2)}
+.nav-item.locked{color:rgba(255,255,255,.2);cursor:not-allowed}
+.nav-item.locked:hover{background:transparent}
+.sidebar-ft{padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.15)}
+.sidebar-ft .role-tag{display:inline-block;padding:1px 8px;border-radius:8px;background:var(--fox-glow);color:var(--fox-light);font-size:9px;margin-left:4px}
+
+/* Main */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--paper-bright);border-bottom:1px solid var(--ink-100)}
+.topbar h2{font-size:17px}
+.topbar .bc{font-size:11px;color:var(--ink-300);margin-top:1px}
+.topbar-r{display:flex;align-items:center;gap:14px}
+.user-badge{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:20px;background:var(--fox-pale);color:var(--fox-dark);font-size:11px;cursor:pointer}
+.user-badge .av{width:26px;height:26px;border-radius:50%;background:var(--fox);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+
+/* Content */
+.content{padding:20px 28px}
+.page{display:none}
+.page.active{display:block}
+
+/* Cards */
+.card{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.card-flush{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.card-flush .ch{padding:14px 20px;border-bottom:1px solid var(--ink-100);display:flex;align-items:center;justify-content:space-between}
+.card-flush .ch h4{font-family:'Noto Serif SC',serif;font-size:14px}
+.card-flush .cb{padding:16px 20px}
+.card-flush:last-child{margin-bottom:0}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:18px}
+.stat-lbl{font-size:11px;color:var(--ink-400);margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.stat-val{font-size:26px;font-weight:700;font-family:'Noto Serif SC',serif;color:var(--ink-800)}
+.stat-sub{font-size:10px;color:var(--ink-300);margin-top:1px}
+.stat.fox .stat-val{color:var(--fox)}
+.stat.gold .stat-val{color:var(--gold-dark)}
+.stat.cyan .stat-val{color:var(--cyan)}
+.stat.verm .stat-val{color:var(--verm)}
+
+/* Grids */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+
+/* Section */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sh h3{font-family:'Noto Serif SC',serif;font-size:14px;color:var(--ink-700)}
+
+/* Table */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;font-weight:600;color:var(--ink-400);padding:9px 12px;border-bottom:2px solid var(--ink-100);text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 12px;border-bottom:1px solid var(--ink-100);font-size:12.5px;vertical-align:middle}
+tr:hover{background:var(--fox-pale)}
+tr.anomaly{background:var(--verm-glow)}
+tr.anomaly:hover{background:rgba(217,54,74,.12)}
+
+/* Status badges */
+.st{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 8px;border-radius:10px}
+.st.draft{background:var(--paper-dark);color:var(--ink-500)}
+.st.active{background:var(--cyan-glow);color:var(--cyan)}
+.st.ended{background:var(--ink-100);color:var(--ink-300)}
+.st.pending{background:var(--gold-glow);color:var(--gold-dark)}
+.st.grading{background:var(--fox-pale);color:var(--fox-dark)}
+.st.approved{background:var(--green-glow);color:var(--green)}
+.st.error{background:var(--verm-glow);color:var(--verm)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border:none;border-radius:6px;font-size:11px;cursor:pointer;transition:all .12s;font-family:inherit}
+.btn-pri{background:var(--fox);color:#fff}
+.btn-pri:hover{background:var(--fox-dark)}
+.btn-out{background:transparent;border:1px solid var(--ink-100);color:var(--ink-500)}
+.btn-out:hover{border-color:var(--fox);color:var(--fox)}
+.btn-ghost{background:transparent;color:var(--ink-400)}
+.btn-ghost:hover{color:var(--fox);background:var(--fox-glow)}
+.btn-sm{padding:3px 8px;font-size:10px}
+.btn-dgr{background:var(--verm);color:#fff}
+.btn-dgr:hover{opacity:.88}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 7px;border-radius:4px}
+.tag-fox{background:var(--fox-pale);color:var(--fox-dark)}
+.tag-cyan{background:var(--cyan-glow);color:var(--cyan)}
+.tag-gold{background:var(--gold-glow);color:var(--gold-dark)}
+.tag-ink{background:var(--ink-100);color:var(--ink-500)}
+.tag-verm{background:var(--verm-glow);color:var(--verm)}
+.tag-green{background:var(--green-glow);color:var(--green)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--ink-100);margin-bottom:16px}
+.tab{padding:8px 18px;font-size:12px;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab:hover{color:var(--ink-700)}
+.tab.active{color:var(--fox);border-bottom-color:var(--fox)}
+
+/* Form */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:500;color:var(--ink-500);margin-bottom:4px}
+.fi,.fs{width:100%;padding:7px 10px;border:1px solid var(--ink-100);border-radius:6px;background:#fff;font-size:12px;font-family:inherit;color:var(--ink-700);transition:border .12s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--fox);box-shadow:0 0 0 2px var(--fox-glow)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Empty */
+.empty{text-align:center;padding:36px 20px;color:var(--ink-300)}
+.empty .eico{font-size:40px;margin-bottom:10px}
+.empty .et{font-size:14px;color:var(--ink-500);margin-bottom:3px}
+.empty .ed{font-size:11px}
+
+/* Entry cards */
+.entry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.entry-card{text-align:center;padding:18px 12px;border-radius:8px;background:var(--fox-glow);cursor:pointer;transition:all .12s;text-decoration:none;display:block;color:inherit}
+.entry-card:hover{background:var(--fox-pale);transform:translateY(-1px)}
+.entry-card .eico{font-size:28px;margin-bottom:4px}
+.entry-card .enm{font-size:12px;color:var(--fox-dark);font-weight:500}
+.entry-card .edesc{font-size:10px;color:var(--ink-400);margin-top:2px}
+
+/* Mode cards */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mc{border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:14px;cursor:pointer;transition:all .12s}
+.mc:hover{border-color:var(--fox)}
+.mc.sel{border-color:var(--fox);background:var(--fox-glow)}
+.mc.locked{opacity:.4;cursor:not-allowed}
+.mc.locked:hover{border-color:var(--ink-100)}
+.mc .mi{font-size:22px;margin-bottom:6px}
+.mc .mn{font-size:13px;font-weight:600;color:var(--ink-700)}
+.mc .md{font-size:11px;color:var(--ink-400);margin-top:1px}
+.mc .ml{font-size:10px;color:var(--ink-300);margin-top:4px}
+.mc .mt{font-size:10px;color:var(--ink-300);margin-top:2px}
+
+/* Exam layout */
+.exam-layout{display:grid;grid-template-columns:1fr 260px;gap:20px;min-height:calc(100vh - 160px)}
+.qnav{background:var(--paper-bright);border:1px solid var(--ink-100);border-radius:var(--radius-lg);padding:18px;position:sticky;top:20px}
+.qnav .qnt{font-size:11px;color:var(--ink-400);margin-bottom:10px}
+.qgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.qd{width:100%;aspect-ratio:1;border:1px solid var(--ink-100);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-400);cursor:pointer;background:transparent;font-family:inherit}
+.qd:hover{border-color:var(--fox)}
+.qd.done{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+.qd.mark{border-color:var(--verm);color:var(--verm)}
+.qd.cur{border-color:var(--fox);box-shadow:0 0 0 2px var(--fox-glow)}
+
+/* Option card */
+.opt{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ink-100);border-radius:6px;cursor:pointer;transition:all .12s;margin-bottom:6px}
+.opt:hover{border-color:var(--fox)}
+.opt input[type=radio],.opt input[type=checkbox]{accent-color:var(--fox)}
+
+/* Timeline */
+.tl{list-style:none}
+.tl-it{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--ink-100)}
+.tl-it:last-child{border-bottom:none}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;background:var(--ink-200)}
+.tl-dot.adjust{background:var(--gold)}
+.tl-dot.system{background:var(--cyan)}
+.tl-cnt{flex:1}
+.tl-act{font-size:12px}
+.tl-det{font-size:10px;color:var(--ink-300);margin-top:1px}
+
+/* Progress */
+.pbar{height:6px;background:var(--ink-100);border-radius:3px;overflow:hidden}
+.pbar-f{height:100%;border-radius:3px;transition:width .3s}
+
+/* Detail row for forms */
+.detail-row{display:flex;padding:8px 0;border-bottom:1px dashed var(--ink-100)}
+.detail-row:last-child{border-bottom:none}
+.detail-lbl{width:100px;font-size:11px;color:var(--ink-400);flex-shrink:0}
+.detail-val{font-size:12px;color:var(--ink-700)}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>🦊 FoxLearn</h1>
+    <div class="brand-sub">✦ 狐 学 ✦</div>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <div class="nav-grp">
+      <div class="nav-grp-lbl">概览</div>
+      <a class="nav-item" onclick="show('dashboard')"><span class="ico">📋</span> 工作台</a>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-lbl">资源中心 <span class="phase">已实现</span></div>
+      <a class="nav-item" onclick="show('questions')"><span class="ico">📝</span> 题库管理 <span class="badge done">已有</span></a>
+      <a class="nav-item" onclick="show('generate')"><span class="ico">✨</span> 智能组卷 <span class="badge done">已有</span></a>
+      <a class="nav-item" onclick="show('papers')"><span class="ico">📄</span> 试卷管理 <span class="badge done">已有</span></a>
+      <a class="nav-item" onclick="show('courses')"><span class="ico">🎬</span> 课程管理 <span class="badge new">新</span></a>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-lbl">教务中心 <span class="phase" style="color:var(--fox-light);background:var(--fox-glow);color:var(--fox-light)">设计中</span></div>
+      <a class="nav-item" onclick="show('institutions')"><span class="ico">🏢</span> 机构管理 <span class="badge new">新</span></a>
+      <a class="nav-item" onclick="show('instructors')"><span class="ico">👨‍🏫</span> 讲师管理 <span class="badge new">新</span></a>
+      <a class="nav-item" onclick="show('openings')"><span class="ico">📅</span> 开班管理 <span class="badge new">新</span></a>
+      <a class="nav-item" onclick="show('exams')"><span class="ico">📋</span> 考试管理</a>
+      <a class="nav-item" onclick="show('proctor')"><span class="ico">👁️</span> 在线监考</a>
+      <a class="nav-item" onclick="show('grading')"><span class="ico">✓</span> 判分中心</a>
+      <a class="nav-item" onclick="show('analysis')"><span class="ico">📊</span> 成绩分析 <span class="badge new">新</span></a>
+      <a class="nav-item" onclick="show('cert')"><span class="ico">🏅</span> 认证中心</a>
+      <a class="nav-item" onclick="show('quality')"><span class="ico">📋</span> 质量监督 <span class="badge new">新</span></a>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-lbl">AI引擎 <span class="phase" style="color:rgba(255,255,255,.2)">水平层</span></div>
+      <a class="nav-item locked"><span class="ico">🧠</span> AI助教 <span class="badge locked">🔒</span></a>
+      <a class="nav-item locked"><span class="ico">🤖</span> 自适应练习 <span class="badge locked">🔒</span></a>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-lbl">系统</div>
+      <a class="nav-item" onclick="show('settings')"><span class="ico">⚙️</span> 系统管理</a>
+    </div>
+  </nav>
+  <div class="sidebar-ft">
+    🦊 学得聪明，考得轻松 · <span class="role-tag">SUPER_ADMIN</span>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <header class="topbar">
+    <div>
+      <h2 id="p-title">工作台</h2>
+      <div class="bc" id="p-bc">FoxLearn / 概览</div>
+    </div>
+    <div class="topbar-r">
+      <div class="user-badge"><div class="av">管</div> 管理员</div>
+    </div>
+  </header>
+  <div class="content">
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 工作台 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-dashboard" class="page active">
+  <div class="stats">
+    <div class="stat fox"><div class="stat-lbl">📝 总试题</div><div class="stat-val">1,284</div><div class="stat-sub">较上月 +47</div></div>
+    <div class="stat"><div class="stat-lbl">📄 试卷</div><div class="stat-val">36</div><div class="stat-sub">草稿8·定稿28</div></div>
+    <div class="stat gold"><div class="stat-lbl">👥 学员总数</div><div class="stat-val">427</div><div class="stat-sub">3个班级 · 2个机构</div></div>
+    <div class="stat cyan"><div class="stat-lbl">📋 考试场次</div><div class="stat-val">12</div><div class="stat-sub">进行中2·待开始3</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="sh"><h3>📌 待办事项</h3><button class="btn btn-out btn-sm">全部</button></div>
+      <div class="tw">
+        <table>
+          <tr><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0">🔴 3 道主观题待批阅</td><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0;text-align:right;color:var(--ink-300);font-size:11px">DT+ 6月考</td></tr>
+          <tr><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0">🟡 1 份试卷待定稿</td><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0;text-align:right;color:var(--ink-300);font-size:11px">数智化 期中卷</td></tr>
+          <tr><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0">🟢 2 个开班申请待审查</td><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0;text-align:right;color:var(--ink-300);font-size:11px">评估师集训班</td></tr>
+          <tr><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0">🟠 考试"DT+ 6月测评"即将开始</td><td style="border-bottom:1px dashed var(--ink-100);padding:8px 0;text-align:right;color:var(--ink-300);font-size:11px">2小时后·43人</td></tr>
+          <tr><td style="padding:8px 0">🔵 1 份质量督查报告待审</td><td style="padding:8px 0;text-align:right;color:var(--ink-300);font-size:11px">领航者班</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sh"><h3>📊 近期考试</h3><button class="btn btn-out btn-sm">查看全部</button></div>
+      <div class="tw"><table>
+        <tr><th>考试</th><th>状态</th><th>参考</th></tr>
+        <tr><td>DT+ 2026-6 月考</td><td><span class="st active">进行中</span></td><td>38/43</td></tr>
+        <tr><td>数智化 期中测验</td><td><span class="st pending">待开始</span></td><td>0/56</td></tr>
+        <tr><td>DTM 领航者·模块一</td><td><span class="st ended">已结束</span></td><td>24/24</td></tr>
+        <tr><td>ITSS 符合性评估模拟</td><td><span class="st grading">判分中</span></td><td>31/31</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 模块快速入口 -->
+  <div class="card">
+    <div class="sh"><h3>🚀 各模块快速入口</h3><span class="tag tag-fox">点击进入</span></div>
+    <div class="entry-grid">
+      <a class="entry-card" onclick="show('courses')"><div class="eico">🎬</div><div class="enm">课程管理</div><div class="edesc">新建·课时·讲师</div></a>
+      <a class="entry-card" onclick="show('institutions')"><div class="eico">🏢</div><div class="enm">机构管理</div><div class="edesc">注册·审核·考核</div></a>
+      <a class="entry-card" onclick="show('instructors')"><div class="eico">👨‍🏫</div><div class="enm">讲师管理</div><div class="edesc">分级·准入·调配</div></a>
+      <a class="entry-card" onclick="show('openings')"><div class="eico">📅</div><div class="enm">开班管理</div><div class="edesc">申请·备案·审查</div></a>
+      <a class="entry-card" onclick="show('analysis')"><div class="eico">📊</div><div class="enm">成绩分析</div><div class="edesc">分布·趋势·诊断</div></a>
+      <a class="entry-card" onclick="show('quality')"><div class="eico">📋</div><div class="enm">质量监督</div><div class="edesc">督查·满意度·投诉</div></a>
+      <a class="entry-card" onclick="show('cert')"><div class="eico">🏅</div><div class="enm">认证中心</div><div class="edesc">规则·证书·查询</div></a>
+      <a class="entry-card" onclick="show('take-exam')"><div class="eico">📝</div><div class="enm">学员考试（预览）</div><div class="edesc">答题界面</div></a>
+    </div>
+  </div>
+
+  <!-- 平台概览 -->
+  <div class="card" style="border-left:3px solid var(--fox);background:var(--fox-pale)">
+    <div style="font-size:12px;color:var(--fox-dark);display:flex;align-items:center;gap:8px;">
+      <span>🦊</span>
+      <span><strong>FoxLearn 平台</strong> · 五大模块已就绪</span>
+      <span style="margin-left:auto;font-size:10px;">设计阶段 ✦ 待编码</span>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--ink-500);">
+      <span>📚 资源中心 · 内容管理</span>
+      <span>📋 教务中心 · 培训运营</span>
+      <span>🎓 学习中心 · 学员端</span>
+      <span>🧠 AI引擎 · 智能能力</span>
+      <span>⚙️ 系统管理 · 基础设施</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 机构管理 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-institutions" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">🏢 机构管理</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">培训实施机构的注册、认证、考核与监督</p></div>
+    <div><span class="tag tag-green">3 个运营中</span><span class="tag tag-ink" style="margin-left:6px;">1 个待审核</span></div>
+  </div>
+  <div class="card-flush">
+    <div class="ch"><h4>注册机构列表</h4><button class="btn btn-pri btn-sm">+ 新建机构</button></div>
+    <div class="cb"><div class="tw"><table>
+      <tr><th>机构名称</th><th>联系人</th><th>状态</th><th>注册时间</th><th>年度考核</th><th>操作</th></tr>
+      <tr>
+        <td><strong>中电标协培训中心</strong><br><span style="font-size:10px;color:var(--ink-300)">No. INST-2026-001</span></td>
+        <td>张老师<br><span style="font-size:10px;color:var(--ink-300)">138****5678</span></td>
+        <td><span class="st approved" style="background:var(--green-glow);color:var(--green);">运营中</span></td>
+        <td style="font-size:11px">2026-01-15</td>
+        <td><span class="st approved" style="background:var(--green-glow);color:var(--green);">合格</span></td>
+        <td><button class="btn btn-ghost btn-sm">详情</button><button class="btn btn-out btn-sm">编辑</button></td>
+      </tr>
+      <tr>
+        <td><strong>东软教育科技集团</strong><br><span style="font-size:10px;color:var(--ink-300)">No. INST-2026-003</span></td>
+        <td>李经理<br><span style="font-size:10px;color:var(--ink-300)">139****9012</span></td>
+        <td><span class="st approved" style="background:var(--green-glow);color:var(--green);">运营中</span></td>
+        <td style="font-size:11px">2026-03-20</td>
+        <td><span class="st pending">待考核</span></td>
+        <td><button class="btn btn-ghost btn-sm">详情</button><button class="btn btn-out btn-sm">编辑</button></td>
+      </tr>
+      <tr style="background:var(--gold-glow)">
+        <td><strong>北京数智英才科技</strong><br><span style="font-size:10px;color:var(--ink-300)">No. INST-2026-005</span></td>
+        <td>王老师<br><span style="font-size:10px;color:var(--ink-300)">186****3456</span></td>
+        <td><span class="st pending">待审核</span></td>
+        <td style="font-size:11px">2026-06-10</td>
+        <td><span style="font-size:11px;color:var(--ink-300)">—</span></td>
+        <td><button class="btn btn-ghost btn-sm">审核</button></td>
+      </tr>
+    </table></div></div>
+  </div>
+  <!-- 机构详情卡片 -->
+  <div class="card">
+    <div class="sh"><h3>🏢 中电标协培训中心 · 详情</h3><span class="tag tag-green">运营中</span></div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div>
+        <div class="detail-row"><span class="detail-lbl">机构全称</span><span class="detail-val">中国电子工业标准化技术协会培训中心</span></div>
+        <div class="detail-row"><span class="detail-lbl">机构编码</span><span class="detail-val">INST-2026-001</span></div>
+        <div class="detail-row"><span class="detail-lbl">联系人</span><span class="detail-val">张明</span></div>
+        <div class="detail-row"><span class="detail-lbl">联系电话</span><span class="detail-val">138****5678</span></div>
+        <div class="detail-row"><span class="detail-lbl">注册日期</span><span class="detail-val">2026-01-15</span></div>
+      </div>
+      <div>
+        <div class="detail-row"><span class="detail-lbl">旗下讲师</span><span class="detail-val">12 人</span></div>
+        <div class="detail-row"><span class="detail-lbl">已办培训</span><span class="detail-val">8 期</span></div>
+        <div class="detail-row"><span class="detail-lbl">学员总数</span><span class="detail-val">256 人</span></div>
+        <div class="detail-row"><span class="detail-lbl">年度考核</span><span class="detail-val"><span class="st approved" style="background:var(--green-glow);color:var(--green);">合格</span> (2026-06)</span></div>
+        <div class="detail-row"><span class="detail-lbl">资质文件</span><span class="detail-val"><span style="color:var(--fox);cursor:pointer;">营业执照.pdf</span> · <span style="color:var(--fox);cursor:pointer;">场地证明.pdf</span></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 讲师管理 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-instructors" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">👨‍🏫 讲师管理</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">讲师的注册、分级、调配与考评</p></div>
+    <div>
+      <span class="tag tag-fox">高级3人</span>
+      <span class="tag tag-cyan">讲师8人</span>
+      <span class="tag tag-ink">助理4人</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="selTab(this)">全部 (15)</button>
+    <button class="tab" onclick="selTab(this)">助理讲师 (4)</button>
+    <button class="tab" onclick="selTab(this)">讲师 (8)</button>
+    <button class="tab" onclick="selTab(this)">高级讲师 (3)</button>
+  </div>
+  <div class="card-flush">
+    <div class="ch"><h4>讲师库</h4><button class="btn btn-pri btn-sm">+ 注册讲师</button></div>
+    <div class="cb"><div class="tw"><table>
+      <tr><th>姓名</th><th>级别</th><th>准入通道</th><th>专业领域</th><th>证书有效期</th><th>综合评分</th><th>状态</th><th>操作</th></tr>
+      <tr>
+        <td><strong>王建国</strong><br><span style="font-size:10px;color:var(--ink-300)">所属：中电标协</span></td>
+        <td><span class="tag tag-fox">高级讲师</span></td>
+        <td><span class="tag tag-gold">直接聘任</span></td>
+        <td style="font-size:11px">数据治理·数字化转型</td>
+        <td style="font-size:11px">2028-06</td>
+        <td style="font-weight:600">4.8</td>
+        <td><span class="st active">正常</span></td>
+        <td><button class="btn btn-ghost btn-sm">调配</button><button class="btn btn-out btn-sm">考评</button></td>
+      </tr>
+      <tr>
+        <td><strong>李芳</strong><br><span style="font-size:10px;color:var(--ink-300)">所属：东软教育</span></td>
+        <td><span class="tag tag-cyan">讲师</span></td>
+        <td><span class="tag tag-cyan">审核认定</span></td>
+        <td style="font-size:11px">IT服务管理·项目管理</td>
+        <td style="font-size:11px">2027-03</td>
+        <td style="font-weight:600">4.5</td>
+        <td><span class="st active">正常</span></td>
+        <td><button class="btn btn-ghost btn-sm">调配</button><button class="btn btn-out btn-sm">考评</button></td>
+      </tr>
+      <tr>
+        <td><strong>张力</strong><br><span style="font-size:10px;color:var(--ink-300)">所属：中电标协</span></td>
+        <td><span class="tag tag-ink">助理讲师</span></td>
+        <td><span class="tag tag-cyan">考试认证</span></td>
+        <td style="font-size:11px">人工智能基础</td>
+        <td style="font-size:11px">2026-12</td>
+        <td style="font-weight:600">4.0</td>
+        <td><span class="st active">正常</span></td>
+        <td><button class="btn btn-ghost btn-sm">调配</button><button class="btn btn-out btn-sm">考评</button></td>
+      </tr>
+    </table></div></div>
+  </div>
+  <!-- 准入三通道 -->
+  <div class="grid-3" style="margin-bottom:0;">
+    <div class="card" style="border-left:3px solid var(--gold);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">📝 考试认证通道</div>
+      <div style="font-size:11px;color:var(--ink-400);">社会公开招募、培训实施机构推荐<br>方式：笔试 + 试讲<br>注册级别：助理讲师</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--cyan);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">📋 审核认定通道</div>
+      <div style="font-size:11px;color:var(--ink-400);">持DT+相关证书的学员或从业人员<br>方式：材料审核 + 试讲<br>注册级别：讲师/助理讲师</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--fox);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">⭐ 直接聘任通道</div>
+      <div style="font-size:11px;color:var(--ink-400);">行业影响力人物、标准主要起草人<br>方式：专家评议 + 审批<br>注册级别：高级讲师</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 开班管理 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-openings" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">📅 开班管理</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">培训班的申请、备案审查与全生命周期管理</p></div>
+    <button class="btn btn-pri btn-sm">+ 新开班申请</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="selTab(this)">全部 (5)</button>
+    <button class="tab" onclick="selTab(this)">申请中 (2)</button>
+    <button class="tab" onclick="selTab(this)">已批准 (1)</button>
+    <button class="tab" onclick="selTab(this)">进行中 (1)</button>
+    <button class="tab" onclick="selTab(this)">已结束 (1)</button>
+  </div>
+  <div class="tw"><table>
+    <tr><th>培训班名称</th><th>主办机构</th><th>开班模式</th><th>时间</th><th>学员</th><th>状态</th><th>操作</th></tr>
+    <tr>
+      <td><strong>DT+ 领航者·第三期</strong></td>
+      <td style="font-size:11px">中电标协培训中心</td>
+      <td><span class="tag tag-cyan">秘书处主导</span></td>
+      <td style="font-size:11px">2026-07-01 ~ 2026-12-31</td>
+      <td>0/30</td>
+      <td><span class="st approved" style="background:var(--gold-glow);color:var(--gold-dark);">已批准</span></td>
+      <td><button class="btn btn-ghost btn-sm">详情</button></td>
+    </tr>
+    <tr>
+      <td><strong>评估师执业集训班</strong></td>
+      <td style="font-size:11px">东软教育科技集团</td>
+      <td><span class="tag tag-gold">机构独立</span></td>
+      <td style="font-size:11px">2026-06-20 ~ 2026-06-25</td>
+      <td>18/25</td>
+      <td><span class="st pending">待审查</span></td>
+      <td><button class="btn btn-ghost btn-sm">审查</button></td>
+    </tr>
+    <tr>
+      <td><strong>DTM 管理师认证培训</strong></td>
+      <td style="font-size:11px">中电标协培训中心</td>
+      <td><span class="tag tag-cyan">秘书处主导</span></td>
+      <td style="font-size:11px">2026-06-10 ~ 2026-06-14<</td>
+      <td>24/24</td>
+      <td><span class="st active">进行中</span></td>
+      <td><button class="btn btn-ghost btn-sm">详情</button></td>
+    </tr>
+    <tr>
+      <td><strong>数智化转型 企业定制班</strong></td>
+      <td style="font-size:11px">中电标协+东软联合</td>
+      <td><span class="tag tag-fox">机构联合</span></td>
+      <td style="font-size:11px">2026-06-01 ~ 2026-06-03</td>
+      <td>12/15</td>
+      <td><span class="st ended">已结束</span></td>
+      <td><button class="btn btn-ghost btn-sm">归档</button></td>
+    </tr>
+  </table></div>
+
+  <!-- 开班备案审查流程 -->
+  <div class="card" style="margin-top:16px;">
+    <div class="sh"><h3>📋 开班备案审查流程</h3></div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-500);padding:8px 0;">
+      <span style="background:var(--cyan);color:#fff;padding:2px 10px;border-radius:10px;">① 提交申请</span> <span style="color:var(--ink-300)">→</span>
+      <span style="background:var(--gold);color:#fff;padding:2px 10px;border-radius:10px;">② 材料审查</span> <span style="color:var(--ink-300)">→</span>
+      <span style="background:var(--fox);color:#fff;padding:2px 10px;border-radius:10px;">③ 审批通过</span> <span style="color:var(--ink-300)">→</span>
+      <span style="background:var(--cyan);color:#fff;padding:2px 10px;border-radius:10px;">④ 开班执行</span> <span style="color:var(--ink-300)">→</span>
+      <span style="background:var(--ink-400);color:#fff;padding:2px 10px;border-radius:10px;">⑤ 结业归档</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--ink-400);padding:10px 14px;background:var(--paper);border-radius:6px;">
+      <strong>审查重点：</strong>培训合同副本 · 收款凭证 · 宣传材料合规性 · 讲师资质匹配 · 人数规模合理
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 考试管理 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-exams" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">📋 考试场次管理</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">创建考试、分配学员、监控进度</p></div>
+    <button class="btn btn-pri btn-sm" onclick="alert('创建考试弹窗（原型）')">+ 创建考试</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="selTab(this)">全部 (12)</button>
+    <button class="tab" onclick="selTab(this)">待开始 (3)</button>
+    <button class="tab" onclick="selTab(this)">进行中 (2)</button>
+    <button class="tab" onclick="selTab(this)">已结束 (7)</button>
+  </div>
+  <div class="tw"><table>
+    <tr><th>考试名称</th><th>关联试卷</th><th>模式</th><th>时间</th><th>参考</th><th>状态</th><th>操作</th></tr>
+    <tr>
+      <td><strong>DT+ 2026年6月水平测评</strong></td><td>DTM 综合卷</td>
+      <td><span class="tag tag-cyan">统一开考</span></td><td style="font-size:11px">6/17 14:00 · 120min</td><td>38/43</td>
+      <td><span class="st active">进行中</span></td>
+      <td><button class="btn btn-ghost btn-sm">详情</button><button class="btn btn-out btn-sm" onclick="show('proctor')">监考</button></td>
+    </tr>
+    <tr>
+      <td><strong>数智化转型 期中测验</strong></td><td>数智化 期中A卷</td>
+      <td><span class="tag tag-gold">随到随考</span></td><td style="font-size:11px">6/20~6/27 · 90min</td><td>0/56</td>
+      <td><span class="st pending">待开始</span></td>
+      <td><button class="btn btn-ghost btn-sm">详情</button><button class="btn btn-out btn-sm">编辑</button></td>
+    </tr>
+    <tr>
+      <td><strong>ITSS符合性评估模拟</strong></td><td>符合性评估 综合模拟</td>
+      <td><span class="tag tag-cyan">统一开考</span></td><td style="font-size:11px">6/10 09:00 · 120min</td><td>31/31</td>
+      <td><span class="st grading">判分中</span></td>
+      <td><button class="btn btn-ghost btn-sm">详情</button><button class="btn btn-out btn-sm" onclick="show('grading')">判分</button></td>
+    </tr>
+  </table></div>
+  <!-- 创建考试参数一览 -->
+  <div class="grid-2" style="margin-bottom:0;">
+    <div class="card"><div class="sh" style="margin-bottom:8px;"><h3>基本信息</h3></div>
+      <div style="font-size:11px;color:var(--ink-500);line-height:2;">· 考试名称 · 关联试卷（从已定稿选择）<br>· 考试说明 · 考试分类（正式/模拟/补考）</div></div>
+    <div class="card"><div class="sh" style="margin-bottom:8px;"><h3>时间与模式</h3></div>
+      <div style="font-size:11px;color:var(--ink-500);line-height:2;">· 开始/截止时间 · 考试时长<br>· <strong>统一开考</strong>：到点统一开始，迟到不可入场<br>· <strong>随到随考</strong>：窗口期随时开始，计时从个人开始</div></div>
+    <div class="card"><div class="sh" style="margin-bottom:8px;"><h3>学员范围</h3></div>
+      <div style="font-size:11px;color:var(--ink-500);line-height:2;">· 按班级选择 · 按个人勾选<br>· 追加/补考 · 排除已通过学员</div></div>
+    <div class="card"><div class="sh" style="margin-bottom:8px;"><h3>防作弊</h3></div>
+      <div style="font-size:11px;color:var(--ink-500);line-height:2;">· 切屏阈值 · IP白名单<br>· 禁止复制粘贴 · 人脸验证⚡预留</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 监考中心 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-proctor" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">👁️ 在线监考</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">DT+ 2026年6月水平测评 · 实时监控</p></div>
+    <div><span class="tag tag-cyan">统一开考</span><span class="tag tag-fox" style="margin-left:6px;">38/43 进行中</span></div>
+  </div>
+  <div class="stats" style="margin-bottom:16px;">
+    <div class="stat cyan"><div class="stat-lbl">✅ 已交卷</div><div class="stat-val">15</div></div>
+    <div class="stat"><div class="stat-lbl">📝 答题中</div><div class="stat-val">23</div></div>
+    <div class="stat gold"><div class="stat-lbl">⏳ 未开始</div><div class="stat-val">5</div></div>
+    <div class="stat verm"><div class="stat-lbl">⚠️ 异常</div><div class="stat-val">2</div><div class="stat-sub">切屏超标2人</div></div>
+  </div>
+  <div class="tw"><table>
+    <tr><th>学员</th><th>状态</th><th>进度</th><th>用时</th><th>异常</th><th>操作</th></tr>
+    <tr><td>张晓明</td><td><span class="st active">答题中</span></td><td>38/60</td><td>52min</td><td>—</td><td><button class="btn btn-ghost btn-sm">延长</button><button class="btn btn-out btn-sm" style="color:var(--verm);border-color:var(--verm);">强制收卷</button></td></tr>
+    <tr class="anomaly"><td>李芳</td><td><span class="st active">答题中</span></td><td>22/60</td><td>45min</td><td><span class="tag tag-verm">⚠ 切屏5次</span></td><td><button class="btn btn-ghost btn-sm">警告</button><button class="btn btn-out btn-sm" style="color:var(--verm);border-color:var(--verm);">强制收卷</button></td></tr>
+    <tr><td>王磊</td><td><span class="st ended">已交卷</span></td><td>60/60</td><td>78min</td><td>—</td><td><span style="font-size:11px;color:var(--ink-300)">—</span></td></tr>
+    <tr class="anomaly"><td>陈晨</td><td><span class="st active">答题中</span></td><td>41/60</td><td>68min</td><td><span class="tag tag-verm">⚠ 离屏12s</span></td><td><button class="btn btn-ghost btn-sm">警告</button><button class="btn btn-out btn-sm" style="color:var(--verm);border-color:var(--verm);">强制收卷</button></td></tr>
+  </table></div>
+  <div style="text-align:right"><button class="btn btn-out btn-sm" onclick="alert('批量操作弹窗')">⚡ 批量延长5分钟</button></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 判分中心 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-grading" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">✓ 判分中心</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">客观题自动判 · 主观题人工判 · 成绩调整留痕</p></div>
+    <div><span class="tag tag-cyan">自动判 45/45</span><span class="tag tag-fox" style="margin-left:6px;">待人工判 3 份</span></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="sh"><h3>📝 批阅界面预览</h3></div>
+      <div class="fl">简答题（10分）</div>
+      <div style="background:var(--paper);padding:12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:10px;">
+        <strong>题目：</strong>简述数据驱动与流程驱动的核心区别。<br><br>
+        <strong style="color:var(--cyan);">学员答案：</strong>数据驱动以数据为基础做决策，流程驱动以固化流程为基础……
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div><div class="fl" style="margin-bottom:2px;">得分</div><input class="fi" style="width:70px;" value="7"></div>
+        <div style="flex:1"><div class="fl" style="margin-bottom:2px;">评语</div><input class="fi" value="基本正确，论证不够充分"></div>
+        <button class="btn btn-pri btn-sm" style="margin-bottom:1px;">提交</button>
+      </div>
+      <!-- 成绩调整 -->
+      <details style="margin-top:10px;font-size:11px;">
+        <summary style="color:var(--ink-400);cursor:pointer;">⚡ 成绩调整（仅管理员）</summary>
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
+          <span>原68→</span><input class="fi" style="width:60px;" value="72">
+          <input class="fi" style="flex:1;" placeholder="调整原因（必填）">
+          <button class="btn btn-out btn-sm" style="border-color:var(--gold);color:var(--gold-dark);">确认</button>
+        </div>
+        <div style="color:var(--ink-300);margin-top:4px;">⚠ 自动记录审计日志</div>
+      </details>
+    </div>
+    <!-- 调整日志 -->
+    <div class="card">
+      <div class="sh"><h3>📋 调整审计日志</h3></div>
+      <ul class="tl">
+        <li class="tl-it"><span class="tl-dot adjust"></span><div class="tl-cnt"><div class="tl-act"><strong>65 → 70</strong> · 成绩调整</div><div class="tl-det">管理员 · 6/15 14:23 · 漏加案例题分</div></div></li>
+        <li class="tl-it"><span class="tl-dot system"></span><div class="tl-cnt"><div class="tl-act">系统自动判分完成</div><div class="tl-det">6/10 11:05</div></div></li>
+        <li class="tl-it"><span class="tl-dot adjust"></span><div class="tl-cnt"><div class="tl-act"><strong>72 → 75</strong> · 成绩调整</div><div class="tl-det">管理员 · 6/10 14:50 · 学员申诉第3题</div></div></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 成绩分析 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-analysis" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">📊 成绩分析</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">多维度成绩统计、薄弱诊断、质量监控指标</p></div>
+    <button class="btn btn-out btn-sm">📥 导出报表</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="selTab(this)">考试维度</button>
+    <button class="tab" onclick="selTab(this)">学员维度</button>
+    <button class="tab" onclick="selTab(this)">薄弱诊断 🤖</button>
+    <button class="tab" onclick="selTab(this)">质量监控</button>
+  </div>
+  <!-- 考试维度 -->
+  <div class="stats">
+    <div class="stat cyan"><div class="stat-lbl">平均分</div><div class="stat-val">76.3</div></div>
+    <div class="stat"><div class="stat-lbl">最高/最低</div><div class="stat-val">94 / 41</div></div>
+    <div class="stat gold"><div class="stat-lbl">通过率</div><div class="stat-val">83.5%</div></div>
+    <div class="stat"><div class="stat-lbl">标准差</div><div class="stat-val">12.7</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="sh"><h3>📊 分数分布</h3></div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:100px;padding:8px 0;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;"><div style="width:80%;background:var(--ink-100);border-radius:3px 3px 0 0;height:15%"></div><span style="font-size:9px;margin-top:4px;color:var(--ink-300)">0-39</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;"><div style="width:80%;background:var(--ink-200);border-radius:3px 3px 0 0;height:25%"></div><span style="font-size:9px;margin-top:4px;color:var(--ink-300)">40-59</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;"><div style="width:80%;background:var(--fox-light);border-radius:3px 3px 0 0;height:55%"></div><span style="font-size:9px;margin-top:4px;color:var(--ink-300)">60-79</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;"><div style="width:80%;background:var(--fox);border-radius:3px 3px 0 0;height:85%"></div><span style="font-size:9px;margin-top:4px;color:var(--ink-300)">80-100</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sh"><h3>🎯 逐题正确率（Top 最低5题）</h3></div>
+      <div style="font-size:11px;line-height:1.8;">
+        <div>第5题（单选） <span style="float:right;color:var(--verm);font-weight:600;">23% ⚠</span></div>
+        <div>第12题（多选） <span style="float:right;color:var(--fox);font-weight:600;">41%</span></div>
+        <div>第8题（判断） <span style="float:right;color:var(--fox);font-weight:600;">52%</span></div>
+        <div>第3题（填空） <span style="float:right;color:var(--gold-dark);font-weight:600;">61%</span></div>
+        <div>第17题（案例） <span style="float:right;color:var(--ink-400);font-weight:600;">68%</span></div>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--verm);padding:6px 8px;background:var(--verm-glow);border-radius:4px;">⚠ 第5题正确率仅23%，疑似题目有歧义，建议核查</div>
+    </div>
+  </div>
+  <!-- 薄弱诊断（AI）卡片 -->
+  <div class="card" style="border-left:3px solid var(--fox);background:var(--fox-pale)">
+    <div class="sh"><h3>🧠 AI薄弱诊断</h3><span class="tag tag-fox">🤖 AI生成</span></div>
+    <div style="font-size:11px;line-height:1.8;">
+      <div>📌 全班最薄弱知识点：<strong>数据安全合规</strong>（平均掌握度 52%）</div>
+      <div>📌 建议：为该知识点薄弱学员推送专项练习卷（12人）</div>
+      <div>📌 推荐行动：<span style="color:var(--fox);cursor:pointer;">生成薄弱专项练习 →</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 认证中心 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-cert" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">🏅 认证中心</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">认证规则、证书颁发与管理</p></div>
+    <button class="btn btn-pri btn-sm">+ 新建规则</button>
+  </div>
+  <div class="tw" style="margin-bottom:16px;"><table>
+    <tr><th>规则名称</th><th>模式</th><th>通过线</th><th>有效期</th><th>补考</th><th>状态</th></tr>
+    <tr><td><strong>DT+ 标准认证</strong></td><td><span class="tag tag-cyan">单次考试</span></td><td>60分</td><td>2年</td><td>2次/1年</td><td><span class="st active">生效中</span></td></tr>
+    <tr><td><strong>DTM 领航者认证</strong></td><td><span class="tag tag-gold">多科分次</span></td><td>各科60分</td><td>整体5年</td><td>不限</td><td><span class="st active">生效中</span></td></tr>
+    <tr><td><strong>ITSS 评估师</strong></td><td><span class="tag tag-cyan">单次考试</span></td><td>70分</td><td>3年</td><td>1次/6月</td><td><span class="st active">生效中</span></td></tr>
+  </table></div>
+  <div class="sh"><h3>📐 四种考试模式</h3></div>
+  <div class="mode-grid">
+    <div class="mc sel"><div class="mi">📄</div><div class="mn">单次考试</div><div class="md">一次考试决定是否通过，可配补考</div><div class="mt">📌 DT+ 当前模式</div></div>
+    <div class="mc locked"><div class="mi">📚</div><div class="mn">多科分次通过</div><div class="md">分科通过，整体有效期</div><div class="ml">🔒 预留·类似CPA</div></div>
+    <div class="mc locked"><div class="mi">🔗</div><div class="mn">多科捆绑同次</div><div class="md">同次考试全科通过</div><div class="ml">🔒 预留·类似软考</div></div>
+    <div class="mc locked"><div class="mi">⬆️</div><div class="mn">先后依赖型</div><div class="md">过上游才能考下游</div><div class="ml">🔒 预留·类似法考</div></div>
+  </div>
+  <!-- 证书查询 -->
+  <div class="card">
+    <div class="sh"><h3>🔍 证书公开查询</h3></div>
+    <div style="display:flex;gap:8px;">
+      <input class="fi" style="flex:1;" placeholder="输入证书编号查询真伪">
+      <button class="btn btn-pri btn-sm">查询</button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--ink-300);">📌 每位通过认证的学员获得唯一编号证书，可在本平台验证真伪</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 质量监督 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-quality" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">📋 质量监督</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">全过程质量管理：备案审查·现场督查·满意度·投诉</p></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="selTab(this)">备案审查 (2)</button>
+    <button class="tab" onclick="selTab(this)">督查记录</button>
+    <button class="tab" onclick="selTab(this)">满意度</button>
+    <button class="tab" onclick="selTab(this)">投诉 (1)</button>
+  </div>
+  <div class="tw"><table>
+    <tr><th>培训班</th><th>机构</th><th>审查类型</th><th>提交日期</th><th>状态</th><th>操作</th></tr>
+    <tr>
+      <td><strong>评估师执业集训班</strong></td><td>东软教育</td><td><span class="tag tag-gold">开班备案</span></td><td>2026-06-15</td>
+      <td><span class="st pending">待审查</span></td>
+      <td><button class="btn btn-pri btn-sm">审查</button></td>
+    </tr>
+    <tr>
+      <td><strong>DTM管理师认证</strong></td><td>中电标协</td><td><span class="tag tag-cyan">宣传材料</span></td><td>2026-06-12</td>
+      <td><span class="st approved" style="background:var(--green-glow);color:var(--green);">通过</span></td>
+      <td><button class="btn btn-ghost btn-sm">查看</button></td>
+    </tr>
+    <tr style="background:var(--verm-glow)">
+      <td><strong>DT+ 领航者第三期</strong></td><td>中电标协</td><td><span class="tag tag-verm">投诉处理</span></td><td>2026-06-14</td>
+      <td><span class="st grading">调查中</span></td>
+      <td><button class="btn btn-ghost btn-sm">处理</button></td>
+    </tr>
+  </table></div>
+  <!-- 满意度概览 -->
+  <div class="grid-3" style="margin-bottom:0;">
+    <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:2px;">😊 学员满意度</div><div style="font-size:24px;color:var(--fox);font-weight:700;">4.3</div><div style="font-size:11px;color:var(--ink-300);">/ 5.0 · 最近3期平均</div></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:2px;">📋 培训质量评分</div><div style="font-size:24px;color:var(--gold-dark);font-weight:700;">4.1</div><div style="font-size:11px;color:var(--ink-300);">教学内容4.3·讲师4.2·组织3.8</div></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:2px;">📊 存档合规率</div><div style="font-size:24px;color:var(--cyan);font-weight:700;">100%</div><div style="font-size:11px;color:var(--ink-300);">3年保存期·全部合规</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 课程管理 (NEW) -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-courses" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-family:'Noto Serif SC',serif;font-size:15px;">🎬 课程管理</h3><p style="font-size:11px;color:var(--ink-300);margin-top:2px;">课程创建·课时编排·讲师关联·学习进度</p></div>
+    <button class="btn btn-pri btn-sm">+ 新建课程</button>
+  </div>
+  <div class="tw"><table>
+    <tr><th>课程名称</th><th>类型</th><th>科目</th><th>课时</th><th>讲师</th><th>学员</th><th>状态</th><th>操作</th></tr>
+    <tr>
+      <td><strong>数字化转型概论</strong></td><td><span class="tag tag-cyan">专题</span></td><td>DT+</td><td>8课时/16h</td><td>王建国</td><td>24人</td><td><span class="st active">已发布</span></td>
+      <td><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-out btn-sm">进度</button></td>
+    </tr>
+    <tr>
+      <td><strong>数据治理实务</strong></td><td><span class="tag tag-cyan">专题</span></td><td>DTM</td><td>6课时/12h</td><td>李芳</td><td>18人</td><td><span class="st active">已发布</span></td>
+      <td><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-out btn-sm">进度</button></td>
+    </tr>
+    <tr>
+      <td><strong>ITSS基础知识（全员）</strong></td><td><span class="tag tag-gold">公共</span></td><td>ITSS</td><td>4课时/8h</td><td>张力</td><td>156人</td><td><span class="st draft">草稿</span></td>
+      <td><button class="btn btn-ghost btn-sm">编辑</button></td>
+    </tr>
+  </table></div>
+  <!-- 课时编排预览 -->
+  <div class="card">
+    <div class="sh"><h3>📋 数字化转型概论 · 课时编排</h3><span class="tag tag-cyan">顺序解锁</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--paper);border-radius:4px;font-size:11px;">
+        <span style="color:var(--cyan);font-weight:600;">01</span>
+        <span style="flex:1;">数字化转型的背景与趋势</span>
+        <span style="color:var(--ink-300);">2h</span>
+        <span style="color:var(--ink-300);">王建国</span>
+        <span class="tag tag-green">免费试看</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--paper);border-radius:4px;font-size:11px;">
+        <span style="color:var(--ink-300);">02</span>
+        <span style="flex:1;">数据驱动的核心理念</span>
+        <span style="color:var(--ink-300);">2h</span>
+        <span style="color:var(--ink-300);">王建国</span>
+        <span style="font-size:9px;color:var(--gold);">📌 试看后解锁</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--paper);border-radius:4px;font-size:11px;">
+        <span style="color:var(--ink-300);">03</span>
+        <span style="flex:1;">技术架构与平台选择</span>
+        <span style="color:var(--ink-300);">2h</span>
+        <span style="color:var(--ink-300);">李芳</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PAGE: 在线答题（学员端） -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-take-exam" class="page">
+  <div style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <h3 style="font-family:'Noto Serif SC',serif;font-size:16px;">📝 DT+ 2026年6月水平测评</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="tag tag-cyan">📌 闭卷</span>
+        <span style="font-size:14px;font-weight:600;color:var(--fox);">剩余 1:02:35</span>
+        <button class="btn btn-dgr btn-sm" onclick="if(confirm('确认交卷？'))alert('交卷成功')">交卷</button>
+      </div>
+    </div>
+  </div>
+  <div class="exam-layout">
+    <div>
+      <div class="tabs" style="margin-bottom:12px;">
+        <button class="tab active" onclick="selTab(this)">一、单选题（20题）</button>
+        <button class="tab" onclick="selTab(this)">二、多选题（5题）</button>
+        <button class="tab" onclick="selTab(this)">三、填空题（5题）</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+          <span style="font-size:11px;color:var(--ink-400);">第 3 题 / 共 20 题</span>
+          <button class="btn btn-ghost btn-sm">📌 标记此题</button>
+        </div>
+        <div style="font-size:13px;line-height:1.8;margin-bottom:16px;">
+          <strong>3.</strong> 在数字化转型中，"数据驱动"与"流程驱动"的主要区别在于？<br>
+          <span style="font-size:11px;color:var(--ink-300);">难度：易</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label class="opt"><input type="radio" name="q3"> A. 数据驱动以数据为基础做决策，流程驱动以固化流程为基础</label>
+          <label class="opt"><input type="radio" name="q3"> B. 两者本质相同，只是叫法不同</label>
+          <label class="opt"><input type="radio" name="q3"> C. 数据驱动不需要流程，流程驱动不需要数据</label>
+          <label class="opt"><input type="radio" name="q3"> D. 以上都不对</label>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--ink-100);">
+          <button class="btn btn-out btn-sm">← 上一题</button>
+          <button class="btn btn-pri btn-sm">下一题 →</button>
+        </div>
+      </div>
+    </div>
+    <!-- 答题卡 -->
+    <div class="qnav">
+      <div class="qnt">📋 答题卡</div>
+      <div style="display:flex;gap:10px;font-size:10px;margin-bottom:8px;">
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--cyan);border-radius:2px;"></span> 已答</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border:1px solid var(--ink-100);border-radius:2px;"></span> 未答</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border:1px solid var(--verm);border-radius:2px;"></span> 标记</span>
+      </div>
+      <div class="qnt" style="margin-top:10px;">一、单选题</div>
+      <div class="qgrid" style="margin-bottom:8px;">
+        <button class="qd done">1</button><button class="qd done">2</button><button class="qd cur">3</button><button class="qd">4</button><button class="qd">5</button>
+        <button class="qd done">6</button><button class="qd">7</button><button class="qd mark">8</button><button class="qd">9</button><button class="qd">10</button>
+        <button class="qd">11</button><button class="qd">12</button><button class="qd">13</button><button class="qd done">14</button><button class="qd">15</button>
+        <button class="qd">16</button><button class="qd">17</button><button class="qd">18</button><button class="qd">19</button><button class="qd">20</button>
+      </div>
+      <div class="qnt">二、多选题</div>
+      <div class="qgrid" style="margin-bottom:8px;">
+        <button class="qd">1</button><button class="qd">2</button><button class="qd">3</button><button class="qd">4</button><button class="qd">5</button>
+      </div>
+      <div class="qnt">三、填空题</div>
+      <div class="qgrid">
+        <button class="qd">1</button><button class="qd">2</button><button class="qd">3</button><button class="qd">4</button><button class="qd">5</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-300);margin-top:12px;text-align:center;">已答 4 / 共 30 题</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- PLACEHOLDER PAGES -->
+<!-- ════════════════════════════════════════════════════ -->
+<div id="p-questions" class="page"><div class="empty"><div class="eico">📝</div><div class="et">题库管理</div><div class="ed">一期已实现，页面内容见真实应用</div></div></div>
+<div id="p-generate" class="page"><div class="empty"><div class="eico">✨</div><div class="et">智能组卷</div><div class="ed">一期已实现，页面内容见真实应用</div></div></div>
+<div id="p-papers" class="page"><div class="empty"><div class="eico">📄</div><div class="et">试卷管理</div><div class="ed">一期已实现，页面内容见真实应用</div></div></div>
+<div id="p-settings" class="page"><div class="empty"><div class="eico">⚙️</div><div class="et">系统管理</div><div class="ed">角色权限·AI配置·数据字典·审计日志</div></div></div>
+
+  </div><!-- /.content -->
+</div><!-- /.main -->
+
+<script>
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  var t = document.getElementById('p-' + id);
+  if (t) t.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var link = document.querySelector('.nav-item[onclick*="' + id + '"]');
+  if (link) link.classList.add('active');
+
+  var titles = {
+    dashboard:['工作台','FoxLearn / 概览'],
+    institutions:['机构管理','FoxLearn / 教务中心 / 机构管理'],
+    instructors:['讲师管理','FoxLearn / 教务中心 / 讲师管理'],
+    openings:['开班管理','FoxLearn / 教务中心 / 开班管理'],
+    exams:['考试管理','FoxLearn / 教务中心 / 考试管理'],
+    proctor:['在线监考','FoxLearn / 教务中心 / 在线监考'],
+    grading:['判分中心','FoxLearn / 教务中心 / 判分中心'],
+    analysis:['成绩分析','FoxLearn / 教务中心 / 成绩分析'],
+    cert:['认证中心','FoxLearn / 教务中心 / 认证中心'],
+    quality:['质量监督','FoxLearn / 教务中心 / 质量监督'],
+    courses:['课程管理','FoxLearn / 资源中心 / 课程管理'],
+    'take-exam':['在线答题','学员端 / 考试'],
+    questions:['题库管理','FoxLearn / 资源中心'],
+    generate:['智能组卷','FoxLearn / 资源中心'],
+    papers:['试卷管理','FoxLearn / 资源中心'],
+    settings:['系统管理','FoxLearn / 系统'],
+  };
+  var info = titles[id] || ['页面','FoxLearn'];
+  document.getElementById('p-title').textContent = info[0];
+  document.getElementById('p-bc').textContent = info[1];
+}
+
+function selTab(el) {
+  var parent = el.parentElement;
+  parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Restore from URL hash
+window.addEventListener('load', function() {
+  var hash = window.location.hash.slice(1) || 'dashboard';
+  show(hash);
+});
+</script>
+</body>
+</html>

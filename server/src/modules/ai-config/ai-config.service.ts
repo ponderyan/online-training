@@ -43,6 +43,10 @@ export class AiConfigService {
     return this.prisma.aiConfig.delete({ where: { id } });
   }
 
+  async findById(id: number) {
+    return this.prisma.aiConfig.findUnique({ where: { id } });
+  }
+
   async testConnection(config: { apiBaseUrl: string; apiKey: string; modelVersion: string }) {
     const url = config.apiBaseUrl.replace(/\/+$/, '') + '/chat/completions';
     try {

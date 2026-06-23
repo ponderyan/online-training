@@ -38,4 +38,14 @@ export class SubjectsService {
     await this.findOne(id);
     return this.prisma.subject.delete({ where: { id } });
   }
+
+  async findPublic() {
+    return this.prisma.subject.findMany({
+      where: {
+        questions: { some: { status: 'PUBLISHED', isPublic: true } },
+      },
+      select: { id: true, name: true, code: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
 }

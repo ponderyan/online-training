@@ -1,43 +1,123 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { PERMISSION_KEY } from '../decorators/require-permission.decorator.js';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 import { Permission, Role, ROLE_PERMISSIONS } from '../permissions.constants.js';
+import { PrismaService } from '../../modules/prisma/prisma.service.js';
+import { requestContext } from '../utils/request-context.js';
+import { Request } from 'express';
+
+const RAW_SECRET = process.env.JWT_SECRET;
+if (!RAW_SECRET) throw new Error('JWT_SECRET 环境变量未设置 — 请在 .env 中配置');
+const JWT_SECRET: string = RAW_SECRET;
 
 /**
- * 权限守卫
- * 1. 读取 API 上的 @RequirePermission() 装饰器
- * 2. 从请求的 user 中获取 role
- * 3. 检查该角色是否有对应权限
+ * 统一认证 + 权限守卫
  *
- * 注意：当前用户认证基于 localStorage，请求中并无 user 信息。
- * 在完整用户系统完成前，本 Guard 默认放行所有请求（admin 降级）。
- * 未来接入真实 JWT/会话后，取消 defaultAdmin 的兜底。
+ * 行为逻辑：
+ * - @Public() → 公开放行（无需 JWT，无需权限）
+ * - @RequirePermission('xxx') → 需要 JWT + 有该权限
+ * - 两者都没有 → 需要 JWT，但不检查具体权限（学员端等场景）
  */
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private jwtService: JwtService,
+    private prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+
+    // ── 检查 @Public() 装饰器 ──
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const requiredPermission = this.reflector.getAllAndOverride<Permission>(
       PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // 没有权限标记的接口，不拦截
-    if (!requiredPermission) return true;
-
-    const request = context.switchToHttp().getRequest();
-
-    // ── 临时：当前无真实认证，默认 admin 角色 ──
-    // 等二期做了用户系统后，需要从 JWT/session 获取真实角色
-    const userRole: Role = request.user?.role || Role.SUPER_ADMIN;
-
-    const permissions = ROLE_PERMISSIONS[userRole];
-
-    if (!permissions || !permissions.includes(requiredPermission)) {
-      throw new ForbiddenException('权限不足：缺少 ' + requiredPermission);
+    // ── JWT 验证 ──
+    const token = this.extractToken(request);
+    if (token) {
+      try {
+        const payload = this.jwtService.verify(token, { secret: JWT_SECRET });
+        // 保留 id（JWT 里是 sub），兼容 Passport Strategy 的返回值
+        (request as any).user = { id: payload.sub, ...payload };
+      } catch {
+        if (requiredPermission) {
+          throw new UnauthorizedException('登录已过期，请重新登录');
+        }
+      }
     }
 
-    return true;
+    // ── 设置请求上下文（供审计日志使用）──
+    const user = (request as any).user;
+    if (user) {
+      const ip = request.ip || request.headers['x-forwarded-for'] as string || '';
+      const userRoles: string[] = user.roles || [];
+      requestContext.enterWith({
+        userId: user.id || user.sub,
+        userName: user.displayName || user.username || '',
+        ip,
+        orgId: user.orgId || undefined,
+        isSuperAdmin: userRoles.includes('SUPER_ADMIN'),
+      });
+    }
+
+    // 没有权限标记 → JWT 验证通过即可放行（学员端接口）
+    if (!requiredPermission) {
+      if (!user) throw new UnauthorizedException('请先登录');
+      return true;
+    }
+
+    // ── 权限检查 ──
+    if (!user) {
+      throw new UnauthorizedException('请先登录');
+    }
+
+    // 从 DB 实时查询角色（支持管理员修改角色后即时生效，无需重登）
+    let userRoles: string[] = user.roles || [];
+    const userId = user.sub || user.id;
+    if (userId) {
+      try {
+        const dbAssignments = await this.prisma.userRoleAssignment.findMany({
+          where: { userId },
+          include: { role: { select: { code: true } } },
+        });
+        if (dbAssignments.length > 0) {
+          userRoles = dbAssignments.map(a => a.role.code);
+        }
+      } catch {
+        // 降级使用 JWT payload 中的角色
+      }
+    }
+
+    // 策略1：查数据库 role_permissions 表（单次批量查询，避免 N+1）
+    const dbPerms = await this.prisma.rolePermission.findMany({
+      where: { role: { code: { in: userRoles } }, permission: requiredPermission },
+    });
+    if (dbPerms.some(p => p.isGranted)) return true;
+
+    // 策略2：降级使用静态常量
+    if (userRoles.some(roleCode => {
+      const permissions = ROLE_PERMISSIONS[roleCode as keyof typeof ROLE_PERMISSIONS];
+      return permissions?.includes(requiredPermission);
+    })) return true;
+
+    throw new ForbiddenException('权限不足：缺少 ' + requiredPermission);
+  }
+
+  private extractToken(request: Request): string | null {
+    const auth = request.headers?.authorization;
+    if (!auth) return null;
+    const [type, token] = auth.split(' ');
+    return type === 'Bearer' ? token : null;
   }
 }
