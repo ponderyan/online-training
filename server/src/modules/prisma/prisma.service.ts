@@ -13,11 +13,14 @@ const MODEL_TO_ENTITY: Record<string, string> = {
   User: 'User', Exam: 'Exam', Certificate: 'Certificate',
   Paper: 'Paper', Question: 'Question', TrainingProgram: 'TrainingProgram',
   ExamSession: 'ExamSession', ScoreAppeal: 'ScoreAppeal',
-  StudentGroup: 'StudentGroup', Instructor: 'Instructor',
-  Course: 'Course', Schedule: 'Schedule', ProgramEnrollment: 'ProgramEnrollment',
+  Instructor: 'Instructor', Course: 'Course', Schedule: 'Schedule',
+  ProgramEnrollment: 'ProgramEnrollment',
   Material: 'Material', Subject: 'Subject', Chapter: 'Chapter',
   PaperTemplate: 'PaperTemplate', GradingAssignment: 'GradingAssignment',
   GradingReview: 'GradingReview', CertificateApplication: 'CertificateApplication',
+  Role: 'Role', Evaluation: 'Evaluation', Notification: 'Notification',
+  EnrollmentAgencyEnrollment: 'Filing', VideoCourse: 'VideoCourse',
+  AttendanceRecord: 'AttendanceRecord', BusinessEvidence: 'BusinessEvidence',
 };
 
 /** 审计日志写入（全局可用的独立函数，可在 PrismaClient 实例外调用） */

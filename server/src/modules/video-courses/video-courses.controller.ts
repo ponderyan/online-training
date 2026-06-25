@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Body, Query, Req, Res, ParseIntPipe, BadRequestException, UseInterceptors, UploadedFile,
+  Controller, Get, Post, Put, Delete, Param, Body, Query, Req, Res, ParseIntPipe, BadRequestException, ForbiddenException, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs/promises';
@@ -49,7 +49,7 @@ export class VideoCoursesController {
     const uploadDir = path.resolve('uploads/videos');
     await fs.mkdir(uploadDir, { recursive: true });
     // 去除文件名中的非 ASCII 字符（避免 MySQL 编码问题）
-    const safeName = file.originalname.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, '_').replace(/_{2,}/g, '_');
+    const safeName = file.originalname.replace(/[^\x20-\x7E一-鿿㐀-䶿]/g, '').replace(/\s+/g, '_').replace(/_{2,}/g, '_');
     const fileName = `${Date.now()}-${safeName || 'video'}`;
     await fs.writeFile(path.join(uploadDir, fileName), file.buffer);
     return { url: `/uploads/videos/${fileName}`, fileName: file.originalname };
@@ -85,6 +85,8 @@ export class VideoCoursesController {
   // ── 学员端：视频播放流 ──
   @Get(':id/stream')
   async stream(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Res() res: Response) {
+    const isAllowed = await this.service.canAccessVideo(id, req.user?.id, req.user?.roles);
+    if (!isAllowed) { res.status(403).json({ error: '无权访问此视频' }); return; }
     const video = await this.service.findOne(id);
     if (!video.url) { res.status(404).send('视频文件未上传'); return; }
     const filePath = path.resolve('.' + video.url);
@@ -133,19 +135,22 @@ export class VideoCoursesController {
   @Get(':id/progress')
   async getProgress(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const studentId = req.user?.id;
-    if (!studentId) throw new Error('未登录');
+    if (!studentId) throw new ForbiddenException('未登录');
+    if (!await this.service.canAccessVideo(id, studentId, req.user?.roles)) throw new ForbiddenException('无权访问此视频');
     return this.service.getProgress(id, studentId);
   }
 
   @Post(':id/progress')
   async reportProgress(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Body() body: any) {
     const studentId = req.user?.id;
-    if (!studentId) throw new Error('未登录');
+    if (!studentId) throw new ForbiddenException('未登录');
+    if (!await this.service.canAccessVideo(id, studentId, req.user?.roles)) throw new ForbiddenException('无权访问此视频');
     return this.service.reportProgress(id, studentId, body);
   }
 
   // ── 学员端：可见视频列表 + 学时统计 ──
   @Get('student/visible')
+  @RequirePermission(P.COURSE_VIEW)
   async findVisible(@Req() req: any) {
     const studentId = req.user?.id;
     if (!studentId) throw new Error('未登录');

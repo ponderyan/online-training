@@ -15,6 +15,7 @@ export class AuditLogsController {
     @Query('entityType') entityType?: string,
     @Query('action') action?: string,
     @Query('operatorId') operatorId?: string,
+    @Query('operatorName') operatorName?: string,
     @Query('entityId') entityId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -25,6 +26,7 @@ export class AuditLogsController {
       pageSize: pageSize ? parseInt(pageSize) : undefined,
       entityType, action,
       operatorId: operatorId ? parseInt(operatorId) : undefined,
+      operatorName,
       entityId: entityId ? parseInt(entityId) : undefined,
       startDate, endDate, sort,
     });

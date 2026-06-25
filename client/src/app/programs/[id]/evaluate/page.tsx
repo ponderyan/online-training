@@ -14,6 +14,8 @@ export default function EvaluatePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [instructorRatings, setInstructorRatings] = useState<Record<number, number>>({});
   const [form, setForm] = useState({
     contentRating: 0, instructorRating: 0, organizationRating: 0,
     overallRating: 0, comment: '', isAnonymous: false,
@@ -28,8 +30,15 @@ export default function EvaluatePage() {
     Promise.all([
       api.trainingPrograms.get(Number(params.id)).catch(() => null),
       parsed.role === 'STUDENT' ? api.evaluations.my(parsed.id).catch(() => []) : [],
-    ]).then(([p, myEvals]) => {
+      api.schedules.getByProgram(Number(params.id)).catch(() => []),
+    ]).then(([p, myEvals, schedules]) => {
       setProgram(p);
+      const uniqueInsts = Array.isArray(schedules)
+        ? schedules.filter((s: any) => s.instructor)
+            .map((s: any) => s.instructor)
+            .filter((inst: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === inst.id) === i)
+        : [];
+      setInstructors(uniqueInsts);
       if (myEvals && Array.isArray(myEvals)) {
         const found = (myEvals as any[]).find((e: any) => e.programId === Number(params.id));
         setExisting(found || null);
@@ -37,20 +46,33 @@ export default function EvaluatePage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  const canEvaluate = program && (program.status === 'FINISHED' || program.status === 'IN_PROGRESS');
+  const canEvaluate = program && ['IN_PROGRESS', 'COMPLETED', 'REVIEWING', 'CERTIFYING'].includes(program.status);
 
   const handleSubmit = async () => {
-    if (form.contentRating === 0 || form.instructorRating === 0 || form.overallRating === 0) {
+    const ratingKeys = Object.keys(instructorRatings);
+    const hasAllInstructorRatings = instructors.length > 0 && ratingKeys.length === instructors.length;
+    const effectiveInstructorRating = instructors.length > 0 && hasAllInstructorRatings
+      ? Math.round(ratingKeys.reduce((s, k) => s + (instructorRatings[Number(k)] || 0), 0) / ratingKeys.length)
+      : form.instructorRating;
+
+    if (form.contentRating === 0 || effectiveInstructorRating === 0 || form.overallRating === 0) {
       alert('请完成所有必填评分'); return;
+    }
+    if (instructors.length > 0 && !hasAllInstructorRatings) {
+      alert('请为每位讲师评分'); return;
     }
     setSubmitting(true);
     try {
       await api.evaluations.create({
         programId: Number(params.id), studentId: user.id,
-        contentRating: form.contentRating, instructorRating: form.instructorRating,
+        contentRating: form.contentRating,
+        instructorRating: effectiveInstructorRating,
         organizationRating: form.organizationRating || null,
         overallRating: form.overallRating, comment: form.comment || null,
         isAnonymous: form.isAnonymous,
+        ...(hasAllInstructorRatings ? {
+          instructorRatings: ratingKeys.map(k => ({ instructorId: Number(k), rating: instructorRatings[Number(k)] })),
+        } : {}),
       });
       setSubmitted(true);
     } catch (e: any) { alert('提交失败：' + e.message); }
@@ -101,7 +123,19 @@ export default function EvaluatePage() {
             </div>
             <div>
               <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>讲师教学水平 *</label>
-              <RatingInput value={form.instructorRating} onChange={v => setForm({ ...form, instructorRating: v })} />
+              {instructors.length === 0 ? (
+                <RatingInput value={form.instructorRating} onChange={v => setForm({ ...form, instructorRating: v })} />
+              ) : (
+                <div className="space-y-2 pl-1">
+                  {instructors.map((inst: any) => (
+                    <div key={inst.id} className="flex items-center gap-3">
+                      <span className="text-xs min-w-[80px]">{inst.realName}</span>
+                      <RatingInput value={instructorRatings[inst.id] || 0}
+                        onChange={v => setInstructorRatings(prev => ({ ...prev, [inst.id]: v }))} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>组织服务（选填）</label>

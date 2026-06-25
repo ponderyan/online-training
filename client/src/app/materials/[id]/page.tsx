@@ -644,7 +644,8 @@ export default function MaterialDetailPage() {
               if (!confirm('确认使用大模型生成试题？将覆盖该教材之前生成的所有试题。')) return;
               setGenerating(true);
               try {
-                const res = await fetch(`/api/materials/${materialId}/generate`, { method: 'POST' });
+                const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+                const res = await fetch(`${apiBase}/api/materials/${materialId}/generate`, { method: 'POST' });
                 if (!res.ok) { const err = await res.text(); throw new Error(err); }
                 const data = await res.json();
                 alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);

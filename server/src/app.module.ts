@@ -33,6 +33,7 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { VideoCoursesModule } from './modules/video-courses/video-courses.module.js';
 import { LearningHoursModule } from './modules/learning-hours/learning-hours.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
 
 @Module({
@@ -70,6 +71,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     KnowledgeModule,
     VideoCoursesModule,
     OrganizationsModule,
+    UsersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: PermissionGuard },

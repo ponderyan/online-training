@@ -108,20 +108,27 @@ export class InstructorsService {
       },
     });
 
-    const evaluations = await this.prisma.evaluation.findMany({
+    // 从 EvaluationInstructorRating 子表读取讲师评分
+    const ratingResult = await this.prisma.evaluationInstructorRating.aggregate({
       where: { instructorId: id },
-      select: { instructorRating: true, overallRating: true },
+      _avg: { rating: true },
     });
+    const avgInstructorRating = ratingResult._avg.rating ?? null;
+
+    // 总体评分：查询该讲师被评价的关联评价的总体评分
+    const evalRatings = await this.prisma.evaluationInstructorRating.findMany({
+      where: { instructorId: id },
+      select: { evaluation: { select: { overallRating: true } } },
+    });
+    const avgOverallRating = evalRatings.length > 0
+      ? Math.round(evalRatings.reduce((a, r) => a + (r.evaluation.overallRating || 0), 0) / evalRatings.length * 10) / 10
+      : null;
 
     return {
       totalSchedules: schedules.length,
       totalHours: schedules.reduce((sum, s) => sum + (s.course?.hours || 0), 0),
-      avgInstructorRating: evaluations.length
-        ? evaluations.reduce((sum, e) => sum + e.instructorRating, 0) / evaluations.length
-        : null,
-      avgOverallRating: evaluations.length
-        ? evaluations.reduce((sum, e) => sum + e.overallRating, 0) / evaluations.length
-        : null,
+      avgInstructorRating,
+      avgOverallRating,
       schedules: schedules.map(s => ({
         courseName: s.course?.name,
         programName: s.program?.name,

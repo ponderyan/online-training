@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { EvaluationsService } from './evaluations.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -20,9 +20,16 @@ export class EvaluationsController {
 
   /** 管理员：某培训班的所有评价 */
   @Get('program/:programId')
-  @RequirePermission(Permissions.PROGRAM_VIEW)
+  @RequirePermission(Permissions.EVALUATION_VIEW)
   async findByProgram(@Param('programId', ParseIntPipe) programId: number) {
     return this.service.findByProgram(programId);
+  }
+
+  /** 删除评价 */
+  @Delete(':id')
+  @RequirePermission(Permissions.EVALUATION_MANAGE)
+  async delete(@Param('id', ParseIntPipe) id: number) {
+    return this.service.delete(id);
   }
 
   /** 某培训班的评价统计 */

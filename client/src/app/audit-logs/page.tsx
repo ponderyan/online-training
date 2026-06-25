@@ -1,28 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 
-const ENTITY_TYPES = ['', 'User', 'Exam', 'Certificate', 'Paper', 'Question', 'TrainingProgram', 'ExamSession', 'ScoreAppeal'];
+const ENTITY_TYPES = ['', 'User', 'Exam', 'Certificate', 'Paper', 'Question',
+  'TrainingProgram', 'ExamSession', 'ScoreAppeal',
+  'Filing', 'VideoCourse', 'Instructor', 'Schedule',
+  'ProgramEnrollment', 'Course', 'CourseVideo',
+];
 const ACTIONS = ['', 'CREATE', 'UPDATE', 'DELETE', 'APPEAL_ADJUST', 'UNLOCK', 'ADJUST'];
+
+function generatePageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [];
+  if (current <= 4) { pages.push(1, 2, 3, 4, 5, '...', total); }
+  else if (current >= total - 3) { pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total); }
+  else { pages.push(1, '...', current - 1, current, current + 1, '...', total); }
+  return pages;
+}
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
   const [filters, setFilters] = useState({
-    entityType: '', action: '', operatorId: '', entityId: '', startDate: '', endDate: '',
+    entityType: '', action: '', operatorId: '', operatorName: '', entityId: '', startDate: '', endDate: '',
   });
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  const searchKey = useMemo(() => JSON.stringify(filters), [filters]);
 
   const load = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { page: String(page), pageSize: '30' };
+      const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
       if (filters.entityType) params.entityType = filters.entityType;
       if (filters.action) params.action = filters.action;
+      if (filters.operatorName) params.operatorName = filters.operatorName;
       if (filters.operatorId) params.operatorId = filters.operatorId;
       if (filters.entityId) params.entityId = filters.entityId;
       if (filters.startDate) params.startDate = filters.startDate;
@@ -34,7 +51,9 @@ export default function AuditLogsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, pageSize, searchKey]);
+
+  const totalPages = Math.ceil(total / pageSize);
 
   const ACTION_COLORS: Record<string, string> = {
     CREATE: '#00897b', UPDATE: '#e87a30', DELETE: '#e53935',
@@ -65,12 +84,14 @@ export default function AuditLogsPage() {
             </select>
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>操作人ID</label>
-            <input type="number" value={filters.operatorId} onChange={e => setFilters({ ...filters, operatorId: e.target.value })} className="input text-xs" style={{ width: 100 }} placeholder="数字ID" min={1} />
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>操作人</label>
+            <input type="text" value={filters.operatorName} onChange={e => setFilters({ ...filters, operatorName: e.target.value })}
+              className="input text-xs" style={{ width: 150 }} placeholder="搜索用户名/姓名" />
           </div>
           <div>
             <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>实体ID</label>
-            <input type="number" value={filters.entityId} onChange={e => setFilters({ ...filters, entityId: e.target.value })} className="input text-xs" style={{ width: 100 }} placeholder="数字ID" min={1} />
+            <input type="text" value={filters.entityId} onChange={e => setFilters({ ...filters, entityId: e.target.value })}
+              className="input text-xs" style={{ width: 130 }} placeholder="输入实体ID" />
           </div>
           <div>
             <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>开始</label>
@@ -80,8 +101,11 @@ export default function AuditLogsPage() {
             <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>结束</label>
             <input type="date" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="input text-xs" style={{ width: 140 }} />
           </div>
-          <button onClick={() => { setPage(1); load(); }} className="btn btn-fox btn-xs">搜索</button>
-          <button onClick={() => { setFilters({ entityType: '', action: '', operatorId: '', entityId: '', startDate: '', endDate: '' }); setPage(1); }} className="btn btn-outline btn-xs">清空</button>
+          <button onClick={() => { setPage(1); }} className="btn btn-fox btn-xs">搜索</button>
+          <button onClick={() => {
+            setFilters({ entityType: '', action: '', operatorId: '', operatorName: '', entityId: '', startDate: '', endDate: '' });
+            setPage(1);
+          }} className="btn btn-outline btn-xs">清空</button>
         </div>
       </div>
 
@@ -110,7 +134,15 @@ export default function AuditLogsPage() {
               {logs.map((log: any) => (
                 <tr key={log.id}>
                   <td className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-400)' }}>{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
-                  <td className="text-xs">{log.operatorName || '—'}</td>
+                  <td className="text-xs">
+                    {log.operatorName ? (
+                      <span>{log.operatorName}<span className="font-mono" style={{ color: 'var(--ink-300)' }}> ({log.operatorId})</span></span>
+                    ) : log.operatorId ? (
+                      <span className="font-mono" style={{ color: 'var(--ink-300)' }}>用户 #{log.operatorId}</span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-300)' }}>—</span>
+                    )}
+                  </td>
                   <td><span className="tag tag-cyan text-[10px]">{log.entityType}</span></td>
                   <td className="font-mono text-xs">{log.entityId}</td>
                   <td><span className="tag text-[10px]" style={{ background: `${ACTION_COLORS[log.action] || '#888'}18`, color: ACTION_COLORS[log.action] || '#888' }}>{log.action}</span></td>
@@ -152,13 +184,43 @@ export default function AuditLogsPage() {
         </div>
       )}
 
-      {total > 30 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {page > 1 && <button onClick={() => setPage(p => p - 1)} className="btn btn-outline btn-xs">上一页</button>}
-          <span className="text-xs px-3 py-1.5" style={{ color: 'var(--ink-400)' }}>第 {page} 页 / 共 {Math.ceil(total / 30)} 页</span>
-          {page < Math.ceil(total / 30) && <button onClick={() => setPage(p => p + 1)} className="btn btn-outline btn-xs">下一页</button>}
+      {/* Pagination — 居中 */}
+      <div className="flex flex-col items-center gap-3 mt-6">
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>共 {total} 条</span>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            className="input select text-xs" style={{ width: 70 }}>
+            <option value={20}>20</option>
+            <option value={30}>30</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>条/页</span>
         </div>
-      )}
+        <div className="flex items-center gap-1">
+          <button onClick={() => setPage(1)} disabled={page === 1}
+            className="btn btn-outline btn-xs px-2" style={{ opacity: page === 1 ? 0.3 : 1 }}>⟪</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className="btn btn-outline btn-xs" style={{ opacity: page === 1 ? 0.3 : 1 }}>上一页</button>
+          {generatePageNumbers(page, totalPages).map((p, i) =>
+            p === '...' ? (
+              <span key={`dots-${i}`} className="text-xs px-1" style={{ color: 'var(--ink-300)' }}>…</span>
+            ) : (
+              <button key={p} onClick={() => setPage(p as number)}
+                className="btn btn-xs px-2"
+                style={p === page
+                  ? { background: 'var(--fox)', color: 'white', border: 'none' }
+                  : { background: 'transparent', border: '1px solid var(--ink-200)', color: 'var(--ink-500)' }}>
+                {p}
+              </button>
+            )
+          )}
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            className="btn btn-outline btn-xs" style={{ opacity: page === totalPages ? 0.3 : 1 }}>下一页</button>
+          <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
+            className="btn btn-outline btn-xs px-2" style={{ opacity: page === totalPages ? 0.3 : 1 }}>⟫</button>
+        </div>
+      </div>
     </AppLayout>
   );
 }

@@ -9,8 +9,9 @@ export class FilingController {
 
   @Get()
   @RequirePermission(P.PROGRAM_VIEW)
-  async findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('status') status?: string, @Query('search') search?: string) {
-    return this.service.findAll({ page: page ? parseInt(page) : 1, pageSize: pageSize ? parseInt(pageSize) : 20, status, search });
+  async findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('status') status?: string, @Query('search') search?: string) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.service.findAll({ page: page ? parseInt(page) : 1, pageSize: pageSize ? parseInt(pageSize) : 20, status, search }, userId);
   }
 
   @Get(':id')

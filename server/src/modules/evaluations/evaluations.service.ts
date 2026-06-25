@@ -9,38 +9,54 @@ export class EvaluationsService {
     programId: number; contentRating: number; instructorRating: number;
     organizationRating?: number; overallRating: number; comment?: string;
     isAnonymous?: boolean; instructorId?: number; courseId?: number;
+    instructorRatings?: { instructorId: number; rating: number }[];
   }) {
-    // Verify student is enrolled in the program
     const enrollment = await this.prisma.programEnrollment.findUnique({
       where: { programId_studentId: { programId: data.programId, studentId } },
     });
     if (!enrollment) throw new ForbiddenException('您未报名该培训班');
 
-    // Verify program status
     const program = await this.prisma.trainingProgram.findUnique({ where: { id: data.programId } });
     if (!program) throw new NotFoundException('培训班不存在');
-    if (program.status !== 'IN_PROGRESS' && program.status !== 'COMPLETED' && program.status !== 'REVIEWING' && program.status !== 'CERTIFYING') {
+    if (!['IN_PROGRESS', 'COMPLETED', 'REVIEWING', 'CERTIFYING'].includes(program.status)) {
       throw new BadRequestException('该培训班未开课或已取消，无法评价');
     }
 
-    // Dedup check
     const existing = await this.prisma.evaluation.findUnique({
       where: { programId_studentId: { programId: data.programId, studentId } },
     });
     if (existing) throw new BadRequestException('您已评价过该培训班');
 
+    if (data.instructorRatings && data.instructorRatings.length > 0) {
+      const avg = Math.round(
+        data.instructorRatings.reduce((s, r) => s + r.rating, 0) / data.instructorRatings.length
+      );
+      const evaluation = await this.prisma.evaluation.create({
+        data: {
+          programId: data.programId, studentId,
+          contentRating: data.contentRating, instructorRating: avg,
+          organizationRating: data.organizationRating ?? null,
+          overallRating: data.overallRating, comment: data.comment || null,
+          isAnonymous: data.isAnonymous ?? false,
+          instructorId: data.instructorId ?? null, courseId: data.courseId ?? null,
+        },
+      });
+      await this.prisma.evaluationInstructorRating.createMany({
+        data: data.instructorRatings.map(r => ({
+          evaluationId: evaluation.id, instructorId: r.instructorId, rating: r.rating,
+        })),
+      });
+      return evaluation;
+    }
+
     return this.prisma.evaluation.create({
       data: {
-        programId: data.programId,
-        studentId,
-        contentRating: data.contentRating,
-        instructorRating: data.instructorRating,
+        programId: data.programId, studentId,
+        contentRating: data.contentRating, instructorRating: data.instructorRating,
         organizationRating: data.organizationRating ?? null,
-        overallRating: data.overallRating,
-        comment: data.comment || null,
+        overallRating: data.overallRating, comment: data.comment || null,
         isAnonymous: data.isAnonymous ?? false,
-        instructorId: data.instructorId ?? null,
-        courseId: data.courseId ?? null,
+        instructorId: data.instructorId ?? null, courseId: data.courseId ?? null,
       },
     });
   }
@@ -48,7 +64,12 @@ export class EvaluationsService {
   async findByProgram(programId: number) {
     return this.prisma.evaluation.findMany({
       where: { programId },
-      include: { student: { select: { id: true, displayName: true } } },
+      include: {
+        student: { select: { id: true, displayName: true } },
+        instructorRatings: {
+          include: { instructor: { select: { id: true, realName: true } } },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -81,14 +102,33 @@ export class EvaluationsService {
   }
 
   async getInstructorStats(instructorId: number) {
-    const evals = await this.prisma.evaluation.findMany({
+    const ratings = await this.prisma.evaluationInstructorRating.findMany({
       where: { instructorId },
-      select: { instructorRating: true, overallRating: true, comment: true, isAnonymous: true, createdAt: true, student: { select: { displayName: true } } },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        evaluation: {
+          select: {
+            id: true, overallRating: true, comment: true, isAnonymous: true, createdAt: true,
+            program: { select: { name: true } },
+            student: { select: { displayName: true } },
+          },
+        },
+      },
+      orderBy: { evaluation: { createdAt: 'desc' } },
     });
-    const count = evals.length;
-    const rating = count > 0 ? Math.round(evals.reduce((a, e) => a + e.instructorRating, 0) / count * 10) / 10 : 0;
-    const overall = count > 0 ? Math.round(evals.reduce((a, e) => a + e.overallRating, 0) / count * 10) / 10 : 0;
-    return { count, instructorRating: rating, overallRating: overall, evaluations: evals };
+
+    const count = ratings.length;
+    const avgRating = count > 0 ? Math.round(ratings.reduce((a, r) => a + r.rating, 0) / count * 10) / 10 : 0;
+    const avgOverall = count > 0 ? Math.round(ratings.reduce((a, r) => a + (r.evaluation.overallRating || 0), 0) / count * 10) / 10 : 0;
+
+    return {
+      count, instructorRating: avgRating, overallRating: avgOverall,
+      evaluations: ratings.map(r => ({ ...r.evaluation, rating: r.rating })),
+    };
+  }
+
+  async delete(id: number) {
+    const evalRecord = await this.prisma.evaluation.findUnique({ where: { id } });
+    if (!evalRecord) throw new NotFoundException('评价不存在');
+    return this.prisma.evaluation.delete({ where: { id } });
   }
 }

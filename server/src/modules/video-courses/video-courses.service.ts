@@ -1,9 +1,42 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class VideoCoursesService {
   constructor(private prisma: PrismaService) {}
+
+  async canAccessVideo(videoId: number, userId: number, roles: string[]): Promise<boolean> {
+    // 管理员/讲师 放行
+    if (roles?.some(r => ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'].includes(r))) return true;
+
+    // PUBLIC 类型视频放行
+    const video = await this.prisma.videoCourse.findUnique({ where: { id: videoId } });
+    if (!video) return false;
+    if (video.type === 'PUBLIC') return true;
+
+    // SPECIALIZED 类型：检查学员是否报了关联课程的培训班
+    const courseIds = await this.prisma.videoCourseCourse.findMany({
+      where: { videoCourseId: videoId },
+      select: { courseId: true },
+    });
+    if (courseIds.length === 0) return false;
+
+    const enrolledPrograms = await this.prisma.programEnrollment.findMany({
+      where: { studentId: userId },
+      select: { programId: true },
+    });
+    const programIds = enrolledPrograms.map(e => e.programId);
+
+    const matchingSchedules = await this.prisma.schedule.findMany({
+      where: {
+        programId: { in: programIds },
+        courseId: { in: courseIds.map(c => c.courseId) },
+      },
+      take: 1,
+    });
+
+    return matchingSchedules.length > 0;
+  }
 
   async findAll(params: { page?: number; pageSize?: number; type?: string; keyword?: string }) {
     const page = params.page || 1;

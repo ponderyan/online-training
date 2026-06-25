@@ -23,10 +23,12 @@ export class TrainingProgramsController {
   ) {}
 
   @Get()
+  @RequirePermission(P.PROGRAM_VIEW)
   findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string) {
     return this.service.findAll({ page: page ? parseInt(page) : undefined, pageSize: pageSize ? parseInt(pageSize) : undefined, keyword, status, subjectId: subjectId ? parseInt(subjectId) : undefined });
   }
   @Get(':id')
+  @RequirePermission(P.PROGRAM_VIEW)
   findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
   @Post() @RequirePermission(P.PROGRAM_CREATE)
   create(@Body() data: any) { return this.service.create(data); }

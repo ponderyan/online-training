@@ -272,7 +272,20 @@ export const api = {
     delete: (id: number) => request(`/enrollment-agencies/${id}`, { method: 'DELETE' }),
   },
 
-  permissions: {    getRoles: () => request<any[]>('/permissions/roles'),    createRole: (data: any) => request<any>('/permissions/roles', { method: 'POST', body: JSON.stringify(data) }),    updateRole: (id: number, data: any) => request<any>(`/permissions/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),    deleteRole: (id: number) => request(`/permissions/roles/${id}`, { method: 'DELETE' }),    getMatrix: () => request<any>('/permissions'),    updateRolePerms: (roleId: number, permissions: any[]) => request<any>(`/permissions/${roleId}`, { method: 'PUT', body: JSON.stringify({ permissions }) }),  },
+  permissions: {
+    getRoles: () => request<any[]>('/permissions/roles'),
+    createRole: (data: any) => request<any>('/permissions/roles', { method: 'POST', body: JSON.stringify(data) }),
+    updateRole: (id: number, data: any) => request<any>(`/permissions/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteRole: (id: number) => request(`/permissions/roles/${id}`, { method: 'DELETE' }),
+    getMatrix: () => request<any>('/permissions'),
+    updateRolePerms: (roleId: number, permissions: any[]) => request<any>(`/permissions/${roleId}`, { method: 'PUT', body: JSON.stringify({ permissions }) }),
+    getRoleUsers: (roleId: number, page: number, search?: string) => {
+      const qs = `?page=${page}&pageSize=20${search ? '&search=' + encodeURIComponent(search) : ''}`;
+      return request<any>(`/permissions/roles/${roleId}/users${qs}`);
+    },
+    removeRoleUser: (roleId: number, assignmentId: number) =>
+      request<any>(`/permissions/roles/${roleId}/users/${assignmentId}`, { method: 'DELETE' }),
+  },
 
 
   certificates: {
@@ -451,6 +464,7 @@ export const api = {
     programStats: (programId: number) => request<any>(`/evaluations/program/${programId}/stats`),
     my: (studentId: number) => request<any[]>(`/evaluations/my?studentId=${studentId}`),
     instructorStats: (instructorId: number) => request<any>(`/evaluations/instructor/${instructorId}`),
+    delete: (id: number) => request<any>(`/evaluations/${id}`, { method: 'DELETE' }),
   },
 
   aiConfigs: {

@@ -8,7 +8,7 @@ export class AuditLogsService {
   async findAll(params: {
     page?: number; pageSize?: number;
     entityType?: string; action?: string;
-    operatorId?: number; entityId?: number;
+    operatorId?: number; operatorName?: string; entityId?: number;
     startDate?: string; endDate?: string;
     sort?: string;
   }) {
@@ -18,6 +18,7 @@ export class AuditLogsService {
 
     if (params.entityType) where.entityType = params.entityType;
     if (params.action) where.action = params.action;
+    if (params.operatorName) where.operatorName = { contains: params.operatorName };
     if (params.operatorId) where.operatorId = params.operatorId;
     if (params.entityId) where.entityId = params.entityId;
     if (params.startDate || params.endDate) {

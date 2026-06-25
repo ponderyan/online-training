@@ -15,12 +15,22 @@ export class FilingService {
     });
   }
 
-  async findAll(params: { page?: number; pageSize?: number; status?: string; search?: string }) {
+  async findAll(params: { page?: number; pageSize?: number; status?: string; search?: string }, userId?: number) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
     if (params.status) where.status = params.status;
     if (params.search) where.agencyName = { contains: params.search };
+    // 按机构隔离
+    if (userId) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } });
+      const isSuperAdmin = await this.prisma.userRoleAssignment.findFirst({
+        where: { userId, role: { code: 'SUPER_ADMIN' } },
+      });
+      if (user?.orgId && !isSuperAdmin) {
+        where.program = { orgId: user.orgId };
+      }
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.enrollmentAgencyEnrollment.findMany({

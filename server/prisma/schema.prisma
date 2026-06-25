@@ -1241,9 +1241,10 @@ model Instructor {
   bankAccount     String?   @db.VarChar(50)  @map("bank_account")           // 银行账户
   contractExpire  DateTime? @map("contract_expire")                          // 签约有效期
 
-  schedules       Schedule[]
-  exams           Exam[]
-  evaluations     Evaluation[]
+  schedules         Schedule[]
+  exams             Exam[]
+  evaluations       Evaluation[]
+  evaluationRatings EvaluationInstructorRating[]
 
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -1465,10 +1466,28 @@ model Evaluation {
   courseId      Int?      @map("course_id")
   course        Course?   @relation(fields: [courseId], references: [id])
 
-  createdAt     DateTime  @default(now()) @map("created_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  instructorRatings EvaluationInstructorRating[]
 
   @@unique([programId, studentId])
   @@map("evaluations")
+}
+
+// ═══════════════════════════════════════════
+// 讲师评分明细（子表，支持多讲师分别评分）
+// ═══════════════════════════════════════════
+
+model EvaluationInstructorRating {
+  id           Int       @id @default(autoincrement())
+  evaluationId Int       @map("evaluation_id")
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  instructorId Int       @map("instructor_id")
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+  rating       Int       // 1-5 分
+
+  @@unique([evaluationId, instructorId])
+  @@index([instructorId])
+  @@map("evaluation_instructor_ratings")
 }
 
 // ═══════════════════════════════════════════

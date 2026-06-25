@@ -26,7 +26,7 @@ export default function InstructorEvaluationsPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push(`/instructors/${params.id}/edit`)} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回讲师信息</button>
+      <button onClick={() => router.push(`/instructors/${params.id}`)} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回讲师信息</button>
       <h1 className="page-title">⭐ {instructor?.realName || '讲师'} · 评价汇总</h1>
 
       {data ? (
