@@ -61,7 +61,7 @@ export default function MyCertificatesPage() {
             <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
               参加考试并通过后，证书会自动出现在这里
             </p>
-            <button onClick={() => router.push('/exams')}
+            <button onClick={() => router.push('/exam')}
               className="btn btn-fox btn-sm mt-5">去看看考试</button>
           </div>
         ) : (

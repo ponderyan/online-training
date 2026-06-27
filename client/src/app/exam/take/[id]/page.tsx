@@ -57,12 +57,44 @@ export default function ExamTake() {
     }).catch(() => router.push('/exam'));
   }, [params.id, router]);
 
-  // 倒计时
+  const handleAnswer = useCallback((pqId: number, value: any) => {
+    setAnswers(prev => ({ ...prev, [pqId]: value }));
+  }, []);
+
+  const handleSubmit = async () => {
+    if (submitting || submitted) return;
+    setSubmitting(true);
+    const token = localStorage.getItem('token');
+    try {
+      const answerArray = Object.entries(answers).map(([pqId, answer]) => ({
+        paperQuestionId: parseInt(pqId),
+        questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
+        answer,
+      }));
+      await fetch(`/api/student/exams/${params.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          answers: answerArray,
+          tabSwitchLog: tabSwitchLogRef.current,
+        }),
+      });
+      setSubmitted(true);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      router.push(`/exam/result/${params.id}`);
+    } catch {
+      setSubmitting(false);
+    }
+  };
+
+  // 倒计时（handleSubmit 用 ref 避免闭包过期）
+  const submitRef = useRef<() => Promise<void>>(async () => {});
+  submitRef.current = handleSubmit;
   useEffect(() => {
     if (loading || submitted || !exam) return;
     const timer = setInterval(() => {
       setTimeLeft(t => {
-        if (t <= 1) { clearInterval(timer); handleSubmit(); return 0; }
+        if (t <= 1) { clearInterval(timer); submitRef.current(); return 0; }
         return t - 1;
       });
     }, 1000);
@@ -118,36 +150,6 @@ export default function ExamTake() {
       window.removeEventListener('focus', handleFocus);
     };
   }, [loading, submitted]);
-
-  const handleAnswer = useCallback((pqId: number, value: any) => {
-    setAnswers(prev => ({ ...prev, [pqId]: value }));
-  }, []);
-
-  const handleSubmit = async () => {
-    if (submitting || submitted) return;
-    setSubmitting(true);
-    const token = localStorage.getItem('token');
-    try {
-      const answerArray = Object.entries(answers).map(([pqId, answer]) => ({
-        paperQuestionId: parseInt(pqId),
-        questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
-        answer,
-      }));
-      await fetch(`/api/student/exams/${params.id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          answers: answerArray,
-          tabSwitchLog: tabSwitchLogRef.current,
-        }),
-      });
-      setSubmitted(true);
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      router.push(`/exam/result/${params.id}`);
-    } catch {
-      setSubmitting(false);
-    }
-  };
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
