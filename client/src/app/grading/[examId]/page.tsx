@@ -113,7 +113,9 @@ export default function GradingDetail() {
       });
       const data = await res.json();
       if (data.error) { alert('发布失败：' + data.error); return; }
-      alert('✅ 成绩已发布');
+      const passCount = students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passScore || 60)).length;
+      const failCount = students.length - passCount;
+      alert(`✅ 发布成功！共 ${passCount} 名学员获得证书，${failCount} 名未达及格线`);
       setShowPublishConfirm(false);
       const d = await api.exams.students(examId);
       setStudents(d?.filter((st: any) => st.status === 'SUBMITTED') || []);
@@ -216,7 +218,8 @@ export default function GradingDetail() {
             </label>
           </div>
           <p className="page-subtitle">
-            共 {students.length} 人已提交{allConf ? ' · 🔒 已确认' : allPub ? ' · ✅ 已全部发布' : ` · ${students.filter((s: any) => s.scoringStatus === 'PUBLISHED').length} 已发布`}
+            共 {students.length} 人已提交 · 已批改 {students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length} / 待批改 {students.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === 'GRADING').length}
+            {allConf ? ' · 🔒 已确认' : allPub ? ' · ✅ 已全部发布' : ` · ${students.filter((s: any) => s.scoringStatus === 'PUBLISHED').length} 已发布`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -428,7 +431,11 @@ export default function GradingDetail() {
                           {a.type === 'SHORT_ANSWER' ? (a.yourAnswer || '未作答') : a.type === 'CASE_STUDY' ? (JSON.stringify(a.yourAnswer) || '未作答') : String(a.yourAnswer ?? '-')}
                         </p>
                       </div>
-                      {need && <GradingForm answerId={a.answerId} maxScore={a.maxScore} onGrade={gradeAnswer} />}
+                      {need && <GradingForm answerId={a.answerId} maxScore={a.maxScore} onGrade={gradeAnswer} onNextStudent={() => {
+                        const currentIdx = students.findIndex(s => s.student?.id === selectedStudent);
+                        const nextStudent = students[currentIdx + 1];
+                        if (nextStudent) loadStudentAnswers(nextStudent.student?.id);
+                      }} />}
                     </div>
                   );
                 })}
@@ -436,7 +443,11 @@ export default function GradingDetail() {
                 <div className="rounded-xl p-5 flex items-center gap-3" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
                   <button onClick={() => setAdjustOpen(!adjustOpen)} className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)' }}>⚖️ 成绩调整</button>
                   <button onClick={() => { setShowReviews(!showReviews); if (!showReviews) loadReviews(); }} className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)' }}>🔍 复核 ({reviews.filter((r: any) => r.status === 'PENDING').length})</button>
-                  {!allConf && <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '📢 发布成绩'}</button>}
+                  {allConf ? (
+                    <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '🔄 重新发布'}</button>
+                  ) : (
+                    <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '📢 发布成绩'}</button>
+                  )}
                 </div>
 
                 {adjustOpen && (
@@ -452,14 +463,36 @@ export default function GradingDetail() {
 
                 {showPublishConfirm && (
                   <div className="modal-overlay" onClick={() => !publishing && setShowPublishConfirm(false)}>
-                    <div className="modal-card max-w-[420px]" onClick={e => e.stopPropagation()}>
+                    <div className="modal-card max-w-[460px]" onClick={e => e.stopPropagation()}>
                       <div className="modal-header">
-                        <h3 className="font-serif font-bold text-sm">📢 确认发布成绩</h3>
+                        <h3 className="font-serif font-bold text-sm">{allConf ? '🔄 确认重新发布' : '📢 确认发布成绩'}</h3>
                         <button onClick={() => setShowPublishConfirm(false)} disabled={publishing} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
                       </div>
                       <div className="modal-body text-sm space-y-3">
-                        <p style={{ color: 'var(--ink-600)' }}>注意：成绩发布后学员将看到成绩，<strong style={{ color: 'var(--verm)' }}>不可撤回</strong>。</p>
-                        <div className="p-3 rounded-lg" style={{ background: 'var(--verm-glow)' }}><p className="text-xs" style={{ color: 'var(--verm)' }}>确认发布？</p></div>
+                        {allConf ? (
+                          <p style={{ color: 'var(--ink-600)' }}>成绩已发布过。<strong style={{ color: 'var(--verm)' }}>已发布的成绩和证书将被覆盖</strong>。确认重新发布？</p>
+                        ) : (
+                          <>
+                            <p style={{ color: 'var(--ink-600)' }}>
+                              本次考试共 <strong>{students.length}</strong> 名学员，发布后将自动发送成绩通知并生成证书。
+                            </p>
+                            <div className="p-3 rounded-lg grid grid-cols-2 gap-2" style={{ background: 'var(--fox-glow)' }}>
+                              <div className="text-center">
+                                <div className="text-lg font-bold" style={{ color: 'var(--sage)' }}>
+                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passScore || 60)).length}
+                                </div>
+                                <div className="text-xs" style={{ color: 'var(--ink-400)' }}>获证书</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-bold" style={{ color: 'var(--verm)' }}>
+                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) < (exam?.passScore || 60)).length}
+                                </div>
+                                <div className="text-xs" style={{ color: 'var(--ink-400)' }}>未达及格线</div>
+                              </div>
+                            </div>
+                            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>成绩发布后学员端将立即看到成绩和证书。</p>
+                          </>
+                        )}
                       </div>
                       <div className="modal-footer">
                         <button onClick={() => setShowPublishConfirm(false)} disabled={publishing} className="btn btn-ghost btn-sm">取消</button>
@@ -530,15 +563,25 @@ export default function GradingDetail() {
   );
 }
 
-function GradingForm({ answerId, maxScore, onGrade }: { answerId: number; maxScore: number; onGrade: (id: number, score: number, note?: string) => void }) {
+function GradingForm({ answerId, maxScore, onGrade, onNextStudent }: { answerId: number; maxScore: number; onGrade: (id: number, score: number, note?: string) => void; onNextStudent?: () => void }) {
   const [score, setScore] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async () => {
+    if (!score) return;
+    setSubmitting(true);
+    await onGrade(answerId, parseInt(score), note);
+    setSubmitting(false);
+    setScore('');
+    if (onNextStudent) onNextStudent();
+  };
   return (
     <div className="flex gap-2 items-end">
-      <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评分（/{maxScore}）</label><input type="number" value={score} onChange={e => setScore(e.target.value)} className="input w-20" min={0} max={maxScore} /></div>
-      <div className="flex-1"><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评语</label><input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="扣分原因" className="input" /></div>
-      <button onClick={async () => { if (!score) return; setSubmitting(true); await onGrade(answerId, parseInt(score), note); setSubmitting(false); setScore(''); }}
+      <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评分（/{maxScore}）</label><input type="number" value={score} onChange={e => setScore(e.target.value)} className="input w-20" min={0} max={maxScore}
+        onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} /></div>
+      <div className="flex-1"><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评语</label><input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="扣分原因" className="input"
+        onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} /></div>
+      <button onClick={handleSubmit}
         disabled={!score || submitting} className="btn text-xs px-3 py-2" style={{ background: 'var(--sage)', color: 'white', opacity: !score || submitting ? 0.5 : 1 }}>
         {submitting ? '提交中…' : '提交评分'}</button>
     </div>
