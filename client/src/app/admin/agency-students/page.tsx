@@ -28,10 +28,11 @@ export default function AgencyStudentsPage() {
 
       // Load agency list
       const list = await api.enrollmentAgencies.list();
-      setAgencies(list || []);
-      if (list?.length > 0) {
-        setSelectedAgencyId(list[0].id);
-        loadStudents(list[0].id);
+      const agencyList = list?.items || list || [];
+      setAgencies(agencyList);
+      if (agencyList.length > 0) {
+        setSelectedAgencyId(agencyList[0].id);
+        loadStudents(agencyList[0].id);
       }
     } catch {}
     setLoading(false);

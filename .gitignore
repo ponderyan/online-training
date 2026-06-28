@@ -6,3 +6,4 @@ dist/
 server_logs/
 .superpowers/
 server/uploads/
+server/.next/

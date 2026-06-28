@@ -192,6 +192,7 @@ model User {
   attendanceModified    AttendanceRecord[]           @relation("AttendanceModifier")
   enrollmentSubmissions EnrollmentAgencyEnrollment[] @relation("FilingSubmitter")
   enrollmentReviews     EnrollmentAgencyEnrollment[] @relation("FilingReviewer")
+  approvedLHRRecords    LearningHourRecord[]         @relation("LHRApprover")
   certificateTraces     CertificateTrace[]
   videoProgresses       VideoProgress[]
   videoCourseLogs       VideoCourseLog[]
@@ -1046,9 +1047,10 @@ model TrainingProgram {
   enrollStart DateTime @map("enroll_start")
   enrollEnd   DateTime @map("enroll_end")
 
-  tuitionFee Float? @map("tuition_fee")
-  examFee    Float? @map("exam_fee")
-  certFee    Float? @map("cert_fee")
+  tuitionFee  Float? @map("tuition_fee")
+  examFee     Float? @map("exam_fee")
+  certFee     Float? @map("cert_fee")
+  hoursPerDay Float? @map("hours_per_day")
 
   subjectId Int @map("subject_id")
   createdBy Int @map("created_by")
@@ -1400,8 +1402,21 @@ model LearningHourRecord {
   program    TrainingProgram? @relation(fields: [programId], references: [id])
   source     String           @db.VarChar(20) // VIDEO | OFFLINE
   sourceId   Int?             @map("source_id") // video_id or schedule_id
-  hours      Float // 学时数
-  recordedAt DateTime         @default(now()) @map("recorded_at")
+  hours         Float                                 // 学时数
+
+  // ── 学时审核状态 ──
+  status        String   @default("PENDING") @db.VarChar(20)  // PENDING | APPROVED | REJECTED
+
+  // ── 审核信息 ──
+  approvedById  Int?     @map("approved_by_id")
+  approvedBy    User?    @relation("LHRApprover", fields: [approvedById], references: [id])
+  approvedAt    DateTime? @map("approved_at")
+  reviewComment String?  @map("review_comment") @db.Text
+
+  // ── 证据附件 ──
+  evidenceUrl   String?  @map("evidence_url") @db.VarChar(500)
+
+  recordedAt    DateTime @default(now()) @map("recorded_at")
 
   @@index([studentId, programId])
   @@map("learning_hour_records")
