@@ -128,11 +128,26 @@ export default function ExamResult() {
   const wrongCount = result.answers.filter(a => a.isCorrect === false).length;
   const pendingCount = result.answers.filter(a => a.isCorrect === null).length;
   const isPassed = result.isPassed === true;
+  const showCertEntry = result.isPassed === true && result.published === true;
+  const subjectivePending = result.finalScore === null && result.subjectiveScore === null;
+
+  // 主观题类型
+  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY'];
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-md" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
+    <>
+      <title>考试结果 · 狐学</title>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .print-area, .print-area * { visibility: visible; }
+          .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+      <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+        {/* Header - hidden in print */}
+        <div className="sticky top-0 z-10 backdrop-blur-md no-print" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FoxLogo.Light size={32} />
@@ -201,10 +216,35 @@ export default function ExamResult() {
                 <span style={{ color: '#ef4444' }}>● {wrongCount} 错误</span>
                 {pendingCount > 0 && <span style={{ color: '#f59e0b' }}>● {pendingCount} 待判</span>}
               </div>
+              <div className="flex gap-2 mt-3 no-print">
+                <button onClick={() => window.print()}
+                  className="btn btn-sm text-xs px-3 py-1.5"
+                  style={{ background: 'var(--fox)', color: 'white', border: 'none', cursor: 'pointer' }}>
+                  🖨️ 打印成绩单
+                </button>
+                {showCertEntry && (
+                  <button onClick={() => window.location.href = '/my-certificates'}
+                    className="btn btn-sm text-xs px-3 py-1.5"
+                    style={{ background: '#7b1fa2', color: 'white', border: 'none', cursor: 'pointer' }}>
+                    🎓 查看证书
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Stats Bar */}
+        {subjectivePending && (
+          <div className="mb-6 p-4 rounded-lg flex items-center gap-3"
+            style={{ background: '#fff8e1', border: '1px solid #ffe082', color: '#f57f17' }}>
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="font-semibold text-sm">主观题阅卷中</p>
+              <p className="text-xs mt-0.5" style={{ color: '#b8860b' }}>客观题得分已出，主观题由人工判分中，请耐心等待</p>
+            </div>
+          </div>
+        )}
         {/* Stats Bar */}
         <div className="grid grid-cols-4 gap-3 mb-8">
           {[
@@ -351,5 +391,6 @@ export default function ExamResult() {
         </div>
       </div>
     </div>
+    </>
   );
 }
