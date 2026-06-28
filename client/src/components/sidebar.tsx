@@ -126,6 +126,12 @@ export default function Sidebar({ user }: { user: any }) {
   const permissions: string[] = user?.permissions || [];
   const navGroups = isStudent ? STUDENT_NAV_GROUPS : ADMIN_NAV_GROUPS;
 
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    router.push('/login');
+  };
+
   const visibleGroups = navGroups
     .map(group => ({
       ...group,
@@ -138,39 +144,28 @@ export default function Sidebar({ user }: { user: any }) {
     .filter(g => g.items.length > 0);
 
   return (
-    <div className="w-56 flex-shrink-0 flex flex-col h-screen sticky top-0 overflow-y-auto"
-      style={{ background: 'var(--card)', borderRight: '1px solid var(--ink-100)' }}>
+    <aside className="w-[240px] flex-shrink-0 flex flex-col h-screen sticky top-0"
+      style={{ background: 'linear-gradient(180deg, #1a1712 0%, #231f1a 100%)' }}>
       {/* Logo */}
-      <div className="px-4 py-5 flex items-center gap-2.5">
-        <FoxLogo />
-      </div>
-
-      {/* User info */}
-      <div className="px-4 pb-3 border-b" style={{ borderColor: 'var(--ink-100)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm"
-            style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-            🦊
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>
-              {user?.displayName || '用户'}
-            </p>
-            <p className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
-              {user?.roleInfo?.[0]?.name || '小狐狸的搭档'} 🐾
-            </p>
+      <div className="px-5 py-6 border-b" style={{ borderColor: 'rgba(196,188,176,0.08)' }}>
+        <div className="flex items-center gap-3">
+          <FoxLogo size={36} />
+          <div className="font-serif font-bold leading-tight tracking-wider text-white">
+            {settings?.siteName || 'FoxLearn'}
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {visibleGroups.map(group => (
-          <div key={group.title} className="mb-2">
-            <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider"
-              style={{ color: 'var(--ink-300)' }}>
-              {group.title}
-            </div>
+          <div key={group.title}>
+            {!isStudent && (
+              <div className="px-4 py-2 text-[10px] uppercase tracking-wider font-semibold"
+                style={{ color: 'var(--ink-400)' }}>
+                {group.title}
+              </div>
+            )}
             {group.items.map(item => {
               const isActive = pathname === item.path || (
                 pathname.startsWith(item.path + '/') &&
@@ -184,7 +179,7 @@ export default function Sidebar({ user }: { user: any }) {
               return (
                 <div key={item.path + item.label}
                   onClick={() => router.push(item.path)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all mx-2"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all"
                   style={{
                     background: isActive ? 'rgba(232, 122, 48, 0.1)' : 'transparent',
                     color: isActive ? '#f5a061' : '#8b8174',
@@ -201,7 +196,7 @@ export default function Sidebar({ user }: { user: any }) {
                       e.currentTarget.style.color = '#8b8174';
                     }
                   }}>
-                  <span className="text-base">{item.icon}</span>
+                  <span className="text-base flex-shrink-0">{item.icon}</span>
                   <span className="flex-1 truncate">{item.label}</span>
                   {isActive && (
                     <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: '#e87a30' }} />
@@ -212,6 +207,32 @@ export default function Sidebar({ user }: { user: any }) {
           </div>
         ))}
       </nav>
-    </div>
+
+      {/* User info + logout */}
+      <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(196,188,176,0.08)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+            style={{ background: 'rgba(232, 122, 48, 0.15)', color: '#f5a061' }}>
+            {user?.displayName?.[0] || '🦊'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-[#c4bcb0] truncate">{user?.displayName || ''}</div>
+            <div className="text-[11px]" style={{ color: '#f5a061' }}>
+              {user?.roles?.includes('STUDENT') ? '学员'
+                : user?.roles?.includes('SUPER_ADMIN') ? '超级管理员'
+                : user?.roles?.includes('ORG_ADMIN') ? '机构管理员'
+                : user?.roles?.includes('LECTURER') ? '讲师'
+                : user?.roles?.includes('EXAM_OFFICER') ? '考务员'
+                : user?.roles?.includes('PROCTOR') ? '监考员'
+                : '小狐狸的搭档'} 🐾
+            </div>
+          </div>
+          <button onClick={handleLogout}
+            className="text-[11px] text-[#8b8174] hover:text-[#e87a30] transition-colors bg-transparent border-none cursor-pointer flex-shrink-0 px-1">
+            退出
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }
