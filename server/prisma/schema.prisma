@@ -1413,6 +1413,9 @@ model LearningHourRecord {
   approvedAt    DateTime? @map("approved_at")
   reviewComment String?  @map("review_comment") @db.Text
 
+  // ── 学员申报备注 ──
+  note          String?  @map("note") @db.Text
+
   // ── 证据附件 ──
   evidenceUrl   String?  @map("evidence_url") @db.VarChar(500)
 

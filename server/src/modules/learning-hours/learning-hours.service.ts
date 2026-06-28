@@ -154,9 +154,10 @@ export class LearningHoursService {
     }
   }
 
-  async getPendingHours(programId?: number) {
+  async getPendingHours(programId?: number, source?: string) {
     const where: any = { status: 'PENDING' };
     if (programId) where.programId = programId;
+    if (source) where.source = source;
     return this.prisma.learningHourRecord.findMany({
       where,
       include: {
@@ -178,6 +179,20 @@ export class LearningHoursService {
     return this.prisma.learningHourRecord.updateMany({
       where: { id: { in: ids }, status: 'PENDING' },
       data: { status: 'REJECTED', approvedById: reviewerId, approvedAt: new Date(), reviewComment: comment },
+    });
+  }
+
+  async submit(studentId: number, data: { programId?: number; hours: number; source: string; evidenceUrl?: string; note?: string }) {
+    return this.prisma.learningHourRecord.create({
+      data: {
+        studentId,
+        programId: data.programId || null,
+        hours: data.hours,
+        source: data.source || 'OFFLINE',
+        status: 'PENDING',
+        evidenceUrl: data.evidenceUrl || null,
+        note: data.note || null,
+      },
     });
   }
 }

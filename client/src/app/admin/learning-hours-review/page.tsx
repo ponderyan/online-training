@@ -9,14 +9,15 @@ export default function LearningHoursReviewPage() {
   const [programs, setPrograms] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [programFilter, setProgramFilter] = useState<number | undefined>();
+  const [sourceFilter, setSourceFilter] = useState<string>('');
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
-    api.learningHours.pending(programFilter).then(d => setPendingHours(Array.isArray(d) ? d : [])).catch(() => {});
+    api.learningHours.pending(programFilter, sourceFilter || undefined).then(d => setPendingHours(Array.isArray(d) ? d : [])).catch(() => {});
     // Load programs list
     api.programs.list({ pageSize: 200 }).then(d => setPrograms(d.items || [])).catch(() => {});
-  }, [programFilter]);
+  }, [programFilter, sourceFilter]);
 
   const toggleSelect = (id: number) => {
     setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -31,14 +32,14 @@ export default function LearningHoursReviewPage() {
     if (selected.size === 0) return;
     await api.learningHours.approve(Array.from(selected));
     setSelected(new Set());
-    api.learningHours.pending(programFilter).then(d => setPendingHours(Array.isArray(d) ? d : []));
+    api.learningHours.pending(programFilter, sourceFilter || undefined).then(d => setPendingHours(Array.isArray(d) ? d : []));
   };
 
   const handleReject = async () => {
     if (selected.size === 0 || !rejectReason.trim()) return;
     await api.learningHours.reject(Array.from(selected), rejectReason);
     setSelected(new Set()); setRejectModal(false); setRejectReason('');
-    api.learningHours.pending(programFilter).then(d => setPendingHours(Array.isArray(d) ? d : []));
+    api.learningHours.pending(programFilter, sourceFilter || undefined).then(d => setPendingHours(Array.isArray(d) ? d : []));
   };
 
   return (
@@ -53,6 +54,12 @@ export default function LearningHoursReviewPage() {
           className="input select text-xs" style={{ maxWidth: 250 }}>
           <option value="">全部培训班</option>
           {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
+          className="input select text-xs" style={{ maxWidth: 140 }}>
+          <option value="">全部来源</option>
+          <option value="VIDEO">📺 视频</option>
+          <option value="OFFLINE">✏️ 人工申报</option>
         </select>
         <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {pendingHours.length} 条待审核</span>
       </div>

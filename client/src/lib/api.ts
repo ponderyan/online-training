@@ -316,7 +316,7 @@ export const api = {
   },
 
   enrollmentAgencies: {
-    list: () => request<any[]>('/enrollment-agencies'),
+    list: () => request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>('/enrollment-agencies'),
     get: (id: number) => request<any>(`/enrollment-agencies/${id}`),
     getStudents: (id: number, params?: Record<string, string | number>) => {
       const qs = params ? '?' + new URLSearchParams(
@@ -480,14 +480,24 @@ export const api = {
     },
     stats: () => request<{ totalHours: number; completedVideos: number; programStats: any[] }>('/learning-hours/stats'),
     programStats: (programId: number) => request<any[]>(`/learning-hours/program/${programId}`),
-    pending: (programId?: number) => {
-      const qs = programId ? `?programId=${programId}` : '';
-      return request<any[]>(`/learning-hours/pending${qs}`);
+    pending: (programId?: number, source?: string) => {
+      const params = new URLSearchParams();
+      if (programId) params.set('programId', String(programId));
+      if (source) params.set('source', source);
+      const qs = params.toString();
+      return request<any[]>(`/learning-hours/pending${qs ? '?' + qs : ''}`);
     },
     approve: (ids: number[], comment?: string) =>
       request<any>('/learning-hours/approve', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
     reject: (ids: number[], comment: string) =>
       request<any>('/learning-hours/reject', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
+    submit: (data: { programId?: number; hours: number; source?: string; evidenceUrl?: string; note?: string }) =>
+      request<any>('/learning-hours/submit', { method: 'POST', body: JSON.stringify(data) }),
+    uploadEvidence: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return request<{ url: string; filename: string }>('/learning-hours/upload-evidence', { method: 'POST', body: formData });
+    },
   },
 
   // ── Phase C: 排课管理 ──

@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, ParseIntPipe, Query, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import { LearningHoursService } from './learning-hours.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 
 @Controller('api/learning-hours')
 export class LearningHoursController {
@@ -38,8 +42,15 @@ export class LearningHoursController {
 
   @Get('pending')
   @RequirePermission(P.LEARNING_HOUR_APPROVE)
-  async getPendingHours(@Query('programId') programId?: string) {
-    return this.service.getPendingHours(programId ? parseInt(programId) : undefined);
+  async getPendingHours(@Query('programId') programId?: string, @Query('source') source?: string) {
+    return this.service.getPendingHours(programId ? parseInt(programId) : undefined, source);
+  }
+
+  @Post('submit')
+  @UseGuards(JwtAuthGuard)
+  async submit(@Body() data: { programId?: number; hours: number; source: string; evidenceUrl?: string; note?: string }, @Req() req: any) {
+    const studentId = req.user?.id || req.user?.sub;
+    return this.service.submit(studentId, data);
   }
 
   @Post('approve')
@@ -54,5 +65,25 @@ export class LearningHoursController {
   async rejectHours(@Body() data: { ids: number[]; comment: string }, @Req() req: any) {
     const reviewerId = req.user?.id || req.user?.sub;
     return this.service.rejectHours(data.ids, reviewerId, data.comment);
+  }
+
+  @Post('upload-evidence')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'learning-hour-evidence'),
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + extname(file.originalname));
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }))
+  async uploadEvidence(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new Error('No file uploaded');
+    return {
+      url: `/uploads/learning-hour-evidence/${file.filename}`,
+      filename: file.originalname,
+    };
   }
 }
