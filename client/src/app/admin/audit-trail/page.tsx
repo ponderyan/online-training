@@ -1,250 +1,599 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 
-const STATUS_NAMES: Record<string, string> = {
-  PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
-  REVIEWING: '待审核', CERTIFYING: '发证中', COMPLETED: '已结业', CANCELLED: '已取消',
+// ── 操作类型中文映射 ──
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: '创建',
+  UPDATE: '更新',
+  DELETE: '删除',
+  PUBLISH: '发布',
+  APPEAL_ADJUST: '申诉调整',
+  UNLOCK: '解锁',
+  ADJUST: '调整',
+  IMPORT: '导入',
+  EXPORT: '导出',
+  ARCHIVE: '归档',
+  RESTORE: '恢复',
+  REVOKE: '撤销',
+  APPROVE: '审核通过',
+  REJECT: '驳回',
+  SUBMIT: '提交',
+  REVIEW: '审核',
+  CERTIFY: '发证',
+  CANCEL: '取消',
 };
-const STATUS_COLORS: Record<string, string> = {
-  PREPARING: '#8b8174', ENROLLING: '#00897b', IN_PROGRESS: '#e87a30',
-  REVIEWING: '#e87a30', CERTIFYING: '#7b1fa2', COMPLETED: '#2e7d32', CANCELLED: '#aaa',
+const ACTION_COLORS: Record<string, string> = {
+  CREATE: '#00897b',
+  UPDATE: '#e87a30',
+  DELETE: '#e53935',
+  PUBLISH: '#7b1fa2',
+  APPEAL_ADJUST: '#7b1fa2',
+  UNLOCK: '#c9a03a',
+  ADJUST: '#e87a30',
 };
+
+const ENTITY_TYPES = [
+  'User', 'Exam', 'Certificate', 'Paper', 'Question',
+  'TrainingProgram', 'ExamSession', 'ScoreAppeal',
+  'Filing', 'VideoCourse', 'Instructor', 'Schedule',
+  'ProgramEnrollment', 'Course', 'CourseVideo',
+  'Material', 'Notification', 'Permission', 'Role',
+];
+
+function formatTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/** 从已加载数据生成 CSV 并触发下载 */
+function downloadCSV(logs: any[], filename = '审计日志.csv') {
+  const headers = ['操作时间', '操作人', '操作类型', '实体类型', '实体ID', '操作内容摘要', 'IP地址'];
+  const rows = logs.map((log: any) => [
+    formatTime(log.createdAt),
+    log.operatorName || `用户 #${log.operatorId || '?'}`,
+    ACTION_LABELS[log.action] || log.action || '',
+    log.entityType || '',
+    String(log.entityId ?? ''),
+    (log.after && typeof log.after === 'object')
+      ? Object.keys(log.after).slice(0, 3).join(', ')
+      : (log.before && typeof log.before === 'object')
+        ? Object.keys(log.before).slice(0, 3).join(', ')
+        : '',
+    log.ip || '',
+  ]);
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+  ].join('\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function generatePageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [];
+  if (current <= 4) {
+    pages.push(1, 2, 3, 4, 5, '...', total);
+  } else if (current >= total - 3) {
+    pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total);
+  } else {
+    pages.push(1, '...', current - 1, current, current + 1, '...', total);
+  }
+  return pages;
+}
+
+/** 检查当前用户是否有指定权限 */
+function can(permission: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const permsStr = localStorage.getItem('userPermissions');
+    if (permsStr) {
+      const permsData = JSON.parse(permsStr);
+      if (permsData.isSuperAdmin) return true;
+      const perms: string[] = permsData.permissions || [];
+      return perms.includes(permission);
+    }
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.isSuperAdmin) return true;
+      const perms: string[] = user.permissions || [];
+      return perms.includes(permission);
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return false;
+}
 
 export default function AuditTrailPage() {
-  const [programs, setPrograms] = useState<any[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20); // 固定每页 20 条
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
-  // Chain modal
-  const [chainModal, setChainModal] = useState(false);
-  const [chainData, setChainData] = useState<any>(null);
-  const [chainLoading, setChainLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    entityType: '',
+    action: '',
+    operatorName: '',
+    startDate: '',
+    endDate: '',
+  });
+
+  const searchKey = useMemo(() => JSON.stringify(filters), [filters]);
+
+  const hasPermission = can('auditLog:view');
 
   const load = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { page: '1', pageSize: '50' };
-      if (search) params.keyword = search;
-      if (filterStatus) params.status = filterStatus;
-      const data = await api.trainingPrograms.list(params);
-      setPrograms(data.items || []);
-    } catch {}
+      const params: Record<string, string> = {
+        page: String(page),
+        pageSize: String(pageSize),
+      };
+      if (filters.entityType) params.entityType = filters.entityType;
+      if (filters.action) params.action = filters.action;
+      if (filters.operatorName) params.operatorName = filters.operatorName;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      const data = await api.auditLogs.list(params);
+      setLogs(data.data || []);
+      setTotal(data.total || 0);
+    } catch {
+      // silently fail
+    }
     setLoading(false);
   };
-  useEffect(() => { load(); }, [search, filterStatus]);
 
-  const doSearch = () => { setSearch(searchInput); };
+  useEffect(() => {
+    if (hasPermission) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchKey, hasPermission]);
 
-  const openChain = async (programId: number) => {
-    setChainLoading(true);
-    setChainModal(true);
-    try {
-      const data = await api.trainingPrograms.getAuditChain(programId);
-      setChainData(data);
-    } catch { setChainData(null); }
-    setChainLoading(false);
-  };
+  const totalPages = Math.ceil(total / pageSize);
+
+  // 若没有权限，显示无权限提示
+  if (!hasPermission) {
+    return (
+      <AppLayout>
+        <div className="mb-6">
+          <h1 className="page-title">📋 审计日志</h1>
+          <p className="page-subtitle">系统操作审计追溯</p>
+        </div>
+        <div className="card p-12 text-center">
+          <p className="text-4xl mb-4">🔒</p>
+          <p style={{ color: 'var(--ink-300)' }}>您没有查看审计日志的权限</p>
+          <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>请联系管理员开通 auditLog:view 权限</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🔍 全链审计</h1>
-        <p className="page-subtitle">一站式查看培训班全链路：签到 → 备案 → 证书 → 追溯</p>
+        <h1 className="page-title">📋 审计日志</h1>
+        <p className="page-subtitle">
+          系统操作审计追溯 · 共 {total} 条操作记录
+        </p>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-3 mb-5">
-        <div className="flex gap-2">
-          <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            placeholder="🔍 搜索培训班…" className="input" style={{ maxWidth: 240 }} />
-          <button onClick={doSearch} className="btn btn-outline btn-sm">查询</button>
-        </div>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); }}
-          className="input select" style={{ maxWidth: 120 }}>
-          <option value="">全部状态</option>
-          {Object.entries(STATUS_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-      </div>
+      {/* ── 筛选器 ── */}
+      <div className="card p-4 mb-5">
+        <div className="flex flex-wrap gap-3 items-end">
+          {/* 实体类型 */}
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>
+              实体类型
+            </label>
+            <select
+              value={filters.entityType}
+              onChange={e =>
+                setFilters({ ...filters, entityType: e.target.value })
+              }
+              className="input select text-xs"
+              style={{ width: 140 }}
+            >
+              <option value="">全部实体</option>
+              {ENTITY_TYPES.map(t => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
-      ) : programs.length === 0 ? (
-        <div className="card p-12 text-center"><p className="text-4xl mb-4">🔍</p><p style={{ color: 'var(--ink-300)' }}>暂无培训班数据</p></div>
-      ) : (
-        <div className="grid gap-4">
-          {programs.map(p => (
-            <div key={p.id} className="card p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-base">{p.name}</span>
-                    <span className="tag" style={{
-                      background: `${STATUS_COLORS[p.status] || '#888'}18`,
-                      color: STATUS_COLORS[p.status] || '#888',
-                      padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600,
-                    }}>{STATUS_NAMES[p.status] || p.status}</span>
-                  </div>
-                  <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                    课程：{p.courseName} · 时间：{p.startDate?.slice(0, 10)} ~ {p.endDate?.slice(0, 10)} · 报名：{p.enrolledCount || 0}人
-                  </p>
-                </div>
-                <button onClick={() => openChain(p.id)} className="btn btn-outline btn-sm text-xs">🔍 查看完整追溯</button>
-              </div>
-              {/* Will load chain summary when opened */}
-            </div>
-          ))}
-        </div>
-      )}
+          {/* 操作类型 */}
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>
+              操作类型
+            </label>
+            <select
+              value={filters.action}
+              onChange={e =>
+                setFilters({ ...filters, action: e.target.value })
+              }
+              className="input select text-xs"
+              style={{ width: 130 }}
+            >
+              <option value="">全部操作</option>
+              {Object.entries(ACTION_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v} ({k})
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Chain Modal */}
-      {chainModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setChainModal(false)}>
-          <div className="rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-semibold text-lg">📋 全链追溯</h3>
-              <button onClick={() => setChainModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
-            </div>
+          {/* 操作人搜索 */}
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>
+              操作人
+            </label>
+            <input
+              type="text"
+              value={filters.operatorName}
+              onChange={e =>
+                setFilters({ ...filters, operatorName: e.target.value })
+              }
+              className="input text-xs"
+              style={{ width: 160 }}
+              placeholder="搜索用户名/姓名…"
+            />
+          </div>
 
-            {chainLoading ? (
-              <div className="py-16 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载追溯数据中… 🦊</div>
-            ) : !chainData ? (
-              <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载失败</div>
-            ) : (
-              <div>
-                {/* Program Summary */}
-                {chainData.program && (
-                  <div className="card p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold">{chainData.program.name}</span>
-                      <span className="tag" style={{
-                        background: `${STATUS_COLORS[chainData.program.status] || '#888'}18`,
-                        color: STATUS_COLORS[chainData.program.status] || '#888',
-                        fontSize: '10px',
-                      }}>{STATUS_NAMES[chainData.program.status] || chainData.program.status}</span>
-                    </div>
-                    <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                      {chainData.program.code} · {chainData.program.courseName}
-                    </p>
-                  </div>
-                )}
+          {/* 开始日期 */}
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>
+              开始日期
+            </label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={e =>
+                setFilters({ ...filters, startDate: e.target.value })
+              }
+              className="input text-xs"
+              style={{ width: 150 }}
+            />
+          </div>
 
-                {/* Timeline */}
-                <div className="relative pl-8 mb-6">
-                  <div className="absolute left-3.5 top-2 bottom-2 w-0.5" style={{ background: 'var(--ink-200)' }} />
+          {/* 结束日期 */}
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>
+              结束日期
+            </label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={e =>
+                setFilters({ ...filters, endDate: e.target.value })
+              }
+              className="input text-xs"
+              style={{ width: 150 }}
+            />
+          </div>
 
-                  {/* 1. Program created */}
-                  {chainData.program && (
-                    <div className="relative pb-6">
-                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                        style={{ background: 'var(--paper)', borderColor: '#8b8174' }} />
-                      <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                        {new Date(chainData.program.createdAt).toLocaleString('zh-CN')}
-                      </div>
-                      <div className="text-sm mt-0.5 font-medium">创建培训班</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-400)' }}>{chainData.program.name}</div>
-                    </div>
-                  )}
-
-                  {/* 2. Attendance */}
-                  {chainData.attendance && (
-                    <div className="relative pb-6">
-                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                        style={{ background: 'var(--paper)', borderColor: '#00897b' }} />
-                      <div className="text-sm mt-0.5 font-medium">✅ 签到管理</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                        {chainData.evidences?.total || 0} 张签到表 · 平均出勤率 {chainData.attendance.avgRate}%
-                        · {chainData.attendance.records.length} 名学员
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. Filing */}
-                  {chainData.filing ? (
-                    <div className="relative pb-6">
-                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                        style={{ background: 'var(--paper)', borderColor: chainData.filing.status === 'APPROVED' ? '#2e7d32' : '#e87a30' }} />
-                      <div className="text-sm mt-0.5 font-medium">
-                        🏢 备案
-                        <span className="ml-2 tag" style={{
-                          background: chainData.filing.status === 'APPROVED' ? '#2e7d3218' : '#e87a3018',
-                          color: chainData.filing.status === 'APPROVED' ? '#2e7d32' : '#e87a30',
-                          fontSize: '10px',
-                        }}>
-                          {chainData.filing.status === 'APPROVED' ? '已通过' : chainData.filing.status === 'PENDING' ? '待审核' : '已驳回'}
-                        </span>
-                      </div>
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
-                        {chainData.filing.agencyName} · {chainData.filing.submittedAt ? new Date(chainData.filing.submittedAt).toLocaleString('zh-CN') : '—'}
-                        {chainData.filing.reviewedAt && ` · 审核：${new Date(chainData.filing.reviewedAt).toLocaleString('zh-CN')}`}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative pb-6">
-                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                        style={{ background: 'var(--paper)', borderColor: '#8b8174' }} />
-                      <div className="text-sm mt-0.5 font-medium">🏢 备案</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-300)' }}>未提交</div>
-                    </div>
-                  )}
-
-                  {/* 4. Certificates */}
-                  {chainData.certificates && (
-                    <div className="relative pb-6">
-                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                        style={{ background: 'var(--paper)', borderColor: '#7b1fa2' }} />
-                      <div className="text-sm mt-0.5 font-medium">🏅 证书</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                        已颁发 {chainData.certificates.issued} 张
-                      </div>
-                      {chainData.certificates.items?.length > 0 && (
-                        <div className="mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-                          {chainData.certificates.items.map((c: any) => (
-                            <div key={c.id} className="flex items-center gap-2 mt-1">
-                              <span>{c.studentName} — {c.certificateNo}</span>
-                              {c.traces?.length > 0 && (
-                                <span className="tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '9px' }}>
-                                  {c.traces.length} 条追溯
-                                </span>
-                              )}
-                              {c.status === 'REVOKED' && (
-                                <span className="tag" style={{ background: '#e5393518', color: '#e53935', fontSize: '9px' }}>已撤销</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Evidence files list */}
-                {chainData.evidences?.items?.length > 0 && (
-                  <div className="card p-4">
-                    <h4 className="text-sm font-semibold mb-2">📎 证据文件清单</h4>
-                    <div className="space-y-1">
-                      {chainData.evidences.items.map((e: any) => (
-                        <div key={e.id} className="text-xs flex items-center gap-2">
-                          <span style={{ color: 'var(--ink-400)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</span>
-                          <span style={{ color: 'var(--fox)' }}>{e.fileName}</span>
-                          <span className="tag" style={{ background: '#8b817418', color: '#8b8174', fontSize: '9px' }}>
-                            {e.evidenceType === 'ATTENDANCE_SHEET' ? '签到表' : e.evidenceType}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+          {/* 操作按钮 */}
+          <div className="flex gap-2 items-end">
+            <button
+              onClick={() => {
+                setPage(1);
+                load();
+              }}
+              className="btn btn-fox btn-xs"
+            >
+              搜索
+            </button>
+            <button
+              onClick={() => {
+                setFilters({
+                  entityType: '',
+                  action: '',
+                  operatorName: '',
+                  startDate: '',
+                  endDate: '',
+                });
+                setPage(1);
+              }}
+              className="btn btn-outline btn-xs"
+            >
+              清空
+            </button>
+            <button
+              onClick={() => downloadCSV(logs)}
+              className="btn btn-outline btn-xs"
+              disabled={logs.length === 0}
+              style={{ opacity: logs.length === 0 ? 0.4 : 1 }}
+            >
+              📥 导出 CSV
+            </button>
           </div>
         </div>
+      </div>
+
+      {/* ── 表格区域 ── */}
+      {loading ? (
+        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
+          小狐狸正在加载… 🦊
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-4xl mb-4">📋</p>
+          <p style={{ color: 'var(--ink-300)' }}>暂无审计日志</p>
+        </div>
+      ) : (
+        <>
+          <div className="card p-0 overflow-hidden">
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 150 }}>操作时间</th>
+                  <th>操作人</th>
+                  <th>操作类型</th>
+                  <th>操作对象</th>
+                  <th>操作内容摘要</th>
+                  <th>IP 地址</th>
+                  <th style={{ width: 60 }}>详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log: any) => {
+                  const isExpanded = expandedRow === log.id;
+                  // 生成操作内容摘要
+                  const summary = (() => {
+                    if (log.action === 'CREATE') return `创建 ${log.entityType || '实体'}`;
+                    if (log.action === 'UPDATE') {
+                      const after = log.after;
+                      if (after && typeof after === 'object') {
+                        const changed = Object.keys(after).slice(0, 3).join(', ');
+                        return `更新了 ${changed}${Object.keys(after).length > 3 ? ' 等' : ''}`;
+                      }
+                      return '更新数据';
+                    }
+                    if (log.action === 'DELETE') return `删除 ${log.entityType || '实体'}`;
+                    if (log.action === 'PUBLISH') return `发布 ${log.entityType || '实体'}`;
+                    if (log.before || log.after) return '修改数据';
+                    return `执行 ${ACTION_LABELS[log.action] || log.action} 操作`;
+                  })();
+                  // 操作对象描述
+                  const entityLabel = log.entityType
+                    ? `${log.entityType}#${log.entityId ?? '?'}`
+                    : log.entityId
+                      ? `#${log.entityId}`
+                      : '—';
+
+                  return (
+                    <tr key={log.id}>
+                      <td className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-400)' }}>
+                        {formatTime(log.createdAt)}
+                      </td>
+                      <td className="text-xs">
+                        {log.operatorName ? (
+                          <span>
+                            {log.operatorName}
+                            <span className="font-mono" style={{ color: 'var(--ink-300)' }}>
+                              {' '}({log.operatorId})
+                            </span>
+                          </span>
+                        ) : log.operatorId ? (
+                          <span className="font-mono" style={{ color: 'var(--ink-300)' }}>
+                            用户 #{log.operatorId}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--ink-300)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className="tag text-[10px]"
+                          style={{
+                            background: `${ACTION_COLORS[log.action] || '#888'}18`,
+                            color: ACTION_COLORS[log.action] || '#888',
+                          }}
+                        >
+                          {ACTION_LABELS[log.action] || log.action}
+                        </span>
+                      </td>
+                      <td className="text-xs">
+                        <span className="tag tag-cyan text-[10px]" style={{ marginRight: 4 }}>
+                          {log.entityType || '?'}
+                        </span>
+                        <span className="font-mono" style={{ color: 'var(--ink-400)' }}>
+                          #{log.entityId ?? '?'}
+                        </span>
+                      </td>
+                      <td className="text-xs" style={{ color: 'var(--ink-500)', maxWidth: 280 }}>
+                        <span className="truncate block" style={{ maxWidth: 280 }}>
+                          {summary}
+                        </span>
+                      </td>
+                      <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>
+                        {log.ip || '—'}
+                      </td>
+                      <td>
+                        {(log.before || log.after) ? (
+                          <button
+                            onClick={() =>
+                              setExpandedRow(isExpanded ? null : log.id)
+                            }
+                            className="text-xs bg-transparent border-none cursor-pointer whitespace-nowrap"
+                            style={{ color: 'var(--fox)' }}
+                          >
+                            {isExpanded ? '收起' : '展开'}
+                          </button>
+                        ) : (
+                          <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                            —
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* ── 展开详情 (使用 <details> 标签) ── */}
+            {expandedRow && (() => {
+              const log = logs.find(l => l.id === expandedRow);
+              if (!log) return null;
+              return (
+                <div
+                  className="border-t"
+                  style={{ borderColor: 'var(--ink-100)' }}
+                >
+                  <details
+                    open
+                    className="p-4"
+                    style={{ background: 'var(--paper-dark)' }}
+                  >
+                    <summary
+                      className="text-xs font-medium cursor-pointer mb-2"
+                      style={{ color: 'var(--ink-400)' }}
+                    >
+                      完整变更详情（JSON）
+                    </summary>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                      <div>
+                        <div
+                          className="font-medium text-[10px] mb-1"
+                          style={{ color: 'var(--ink-400)' }}
+                        >
+                          变更前 (before):
+                        </div>
+                        <pre
+                          className="p-2 rounded overflow-auto max-h-48 whitespace-pre-wrap break-all"
+                          style={{
+                            background: 'white',
+                            border: '1px solid var(--ink-100)',
+                            fontSize: 11,
+                          }}
+                        >
+                          {log.before
+                            ? JSON.stringify(log.before, null, 2)
+                            : '—'}
+                        </pre>
+                      </div>
+                      <div>
+                        <div
+                          className="font-medium text-[10px] mb-1"
+                          style={{ color: 'var(--ink-400)' }}
+                        >
+                          变更后 (after):
+                        </div>
+                        <pre
+                          className="p-2 rounded overflow-auto max-h-48 whitespace-pre-wrap break-all"
+                          style={{
+                            background: 'white',
+                            border: '1px solid var(--ink-100)',
+                            fontSize: 11,
+                          }}
+                        >
+                          {log.after
+                            ? JSON.stringify(log.after, null, 2)
+                            : '—'}
+                        </pre>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ── 分页控件 ── */}
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <div className="flex items-center gap-1">
+              <span className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                共 {total} 条 · 每页 {pageSize} 条 · 第 {page}/{totalPages || 1} 页
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="btn btn-outline btn-xs px-2"
+                style={{ opacity: page === 1 ? 0.3 : 1 }}
+              >
+                ⟪
+              </button>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="btn btn-outline btn-xs"
+                style={{ opacity: page === 1 ? 0.3 : 1 }}
+              >
+                上一页
+              </button>
+              {generatePageNumbers(page, totalPages).map((p, i) =>
+                p === '...' ? (
+                  <span
+                    key={`dots-${i}`}
+                    className="text-xs px-1"
+                    style={{ color: 'var(--ink-300)' }}
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p as number)}
+                    className="btn btn-xs px-2"
+                    style={
+                      p === page
+                        ? { background: 'var(--fox)', color: 'white', border: 'none' }
+                        : {
+                            background: 'transparent',
+                            border: '1px solid var(--ink-200)',
+                            color: 'var(--ink-500)',
+                          }
+                    }
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="btn btn-outline btn-xs"
+                style={{ opacity: page === totalPages ? 0.3 : 1 }}
+              >
+                下一页
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                className="btn btn-outline btn-xs px-2"
+                style={{ opacity: page === totalPages ? 0.3 : 1 }}
+              >
+                ⟫
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </AppLayout>
   );
