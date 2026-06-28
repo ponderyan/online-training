@@ -56,9 +56,7 @@ export default function CourseDetailPage() {
             {course.parentCourse && <span className="ml-4">基于：{course.parentCourse.name}</span>}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => router.push(`/courses/${params.id}/edit`)} className="btn btn-outline btn-sm">编辑信息</button>
-        </div>
+        <div /> {/* 占位，保持 flex 对齐 */}
       </div>
 
       {course.description && (
