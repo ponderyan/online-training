@@ -61,10 +61,12 @@ export const Permissions = {
   GRADING_PUBLISH: 'grading:publish',
 
   // ── 学员管理 ──
+  STUDENT_VIEW: 'student:view',
   STUDENT_CREATE: 'student:create',
   STUDENT_IMPORT: 'student:import',
   STUDENT_EDIT: 'student:edit',
   STUDENT_GROUP: 'student:group',
+  STUDENT_RESET_PWD: 'student:reset_pwd',
 
   // ── 成绩 ──
   REPORT_VIEW: 'report:view',
@@ -347,6 +349,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.AGENCY_MANAGE_STUDENTS,
     Permissions.AGENCY_MANAGE_CERTIFICATES,
     Permissions.LEARNING_HOUR_MANAGE,
+    Permissions.NOTIFICATION_VIEW,
   ],
 
   [Role.AUDITOR]: [
@@ -403,10 +406,12 @@ export const PERM_CATEGORIES: PermissionCategory[] = [
     name: '学员管理',
     key: 'student',
     permissions: [
+      { key: Permissions.STUDENT_VIEW, label: '查看学员列表' },
       { key: Permissions.STUDENT_CREATE, label: '创建学员' },
       { key: Permissions.STUDENT_IMPORT, label: '批量导入学员' },
       { key: Permissions.STUDENT_EDIT, label: '编辑学员' },
       { key: Permissions.STUDENT_GROUP, label: '管理学员分组' },
+      { key: Permissions.STUDENT_RESET_PWD, label: '重置学员密码' },
     ],
   },
   {

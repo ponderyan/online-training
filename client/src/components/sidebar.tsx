@@ -29,54 +29,54 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     title: '培训管理',
     items: [
-      { path: '/programs', label: '培训班管理', icon: '📋' },
-      { path: '/courses', label: '课程管理', icon: '📚' },
-      { path: '/admin/video-courses', label: '视频课程', icon: '🎬' },
-      { path: '/instructors', label: '讲师管理', icon: '👨‍🏫' },
-      { path: '/students', label: '学员管理', icon: '👥' },
-      { path: '/agencies', label: '招生机构', icon: '🏢' },
-      { path: '/admin/agency-students', label: '机构学员', icon: '👥' },
+      { path: '/programs', label: '培训班管理', icon: '📋', perm: 'program:view' },
+      { path: '/courses', label: '课程管理', icon: '📚', perm: 'course:view' },
+      { path: '/admin/video-courses', label: '视频课程', icon: '🎬', perm: 'course:view' },
+      { path: '/instructors', label: '讲师管理', icon: '👨‍🏫', perm: 'instructor:view' },
+      { path: '/students', label: '学员管理', icon: '👥', perm: 'student:view' },
+      { path: '/agencies', label: '招生机构', icon: '🏢', perm: 'agency:view' },
+      { path: '/admin/agency-students', label: '机构学员', icon: '👥', perm: 'agency:view:students' },
     ],
   },
   {
     title: '考务管理',
     items: [
-      { path: '/questions', label: '题库管理', icon: '📝' },
-      { path: '/materials', label: '教材出题', icon: '📖' },
-      { path: '/generate', label: '智能组卷', icon: '✨' },
-      { path: '/papers', label: '试卷管理', icon: '📄' },
-      { path: '/exams', label: '考试管理', icon: '📋' },
-      { path: '/proctoring', label: '监考中心', icon: '🎥' },
-      { path: '/grading', label: '阅卷中心', icon: '📊' },
+      { path: '/questions', label: '题库管理', icon: '📝', perm: 'question:create' },
+      { path: '/materials', label: '教材出题', icon: '📖', perm: 'material:upload' },
+      { path: '/generate', label: '智能组卷', icon: '✨', perm: 'paper:generate' },
+      { path: '/papers', label: '试卷管理', icon: '📄', perm: 'paper:view' },
+      { path: '/exams', label: '考试管理', icon: '📋', perm: 'exam:view' },
+      { path: '/proctoring', label: '监考中心', icon: '🎥', perm: 'proctor:view' },
+      { path: '/grading', label: '阅卷中心', icon: '📊', perm: 'grading:manual' },
     ],
   },
   {
     title: '认证管理',
     items: [
-      { path: '/admin/filing', label: '开班备案', icon: '🏛️' },
-      { path: '/certificates', label: '证书管理', icon: '🎓' },
-      { path: '/certificates/applications', label: '证书审批', icon: '📋' },
-      { path: '/evaluations', label: '评价管理', icon: '⭐' },
-      { path: '/admin/learning-hours-review', label: '学时审核', icon: '⏱' },
+      { path: '/admin/filing', label: '开班备案', icon: '🏛️', perm: 'program:view' },
+      { path: '/certificates', label: '证书管理', icon: '🎓', perm: 'cert:view' },
+      { path: '/certificates/applications', label: '证书审批', icon: '📋', perm: 'cert:application_view' },
+      { path: '/evaluations', label: '评价管理', icon: '⭐', perm: 'evaluation:view' },
+      { path: '/admin/learning-hours-review', label: '学时审核', icon: '⏱', perm: 'learningHour:approve' },
     ],
   },
   {
     title: '审计管理',
     items: [
-      { path: '/admin/audit-trail', label: '全链审计', icon: '🔍' },
-      { path: '/audit-logs', label: '审计日志', icon: '📋' },
+      { path: '/admin/audit-trail', label: '全链审计', icon: '🔍', perm: 'auditLog:view' },
+      { path: '/audit-logs', label: '审计日志', icon: '📋', perm: 'auditLog:view' },
     ],
   },
   {
     title: '系统管理',
     items: [
-      { path: '/admin/organizations', label: '机构管理', icon: '🏢' },
-      { path: '/settings', label: '系统设置', icon: '⚙️' },
-      { path: '/admin/settings/branding', label: '品牌设置', icon: '🎨' },
-      { path: '/admin/ai-configs', label: 'AI 配置', icon: '🤖' },
-      { path: '/admin/messages', label: '消息中心', icon: '📢' },
-      { path: '/admin/knowledge', label: '知识库管理', icon: '📚' },
-      { path: '/admin/data', label: '数据管理', icon: '📦' },
+      { path: '/admin/organizations', label: '机构管理', icon: '🏢', perm: 'org:view' },
+      { path: '/settings', label: '系统设置', icon: '⚙️', perm: 'system:config' },
+      { path: '/admin/settings/branding', label: '品牌设置', icon: '🎨', perm: 'system:config' },
+      { path: '/admin/ai-configs', label: 'AI 配置', icon: '🤖', perm: 'aiConfig:view' },
+      { path: '/admin/messages', label: '消息中心', icon: '📢', perm: 'notice:manage' },
+      { path: '/admin/knowledge', label: '知识库管理', icon: '📚', perm: 'aiConfig:view' },
+      { path: '/admin/data', label: '数据管理', icon: '📦', perm: 'system:config' },
     ],
   },
   {
@@ -139,6 +139,7 @@ export default function Sidebar({ user }: { user: any }) {
       ...group,
       items: group.items.filter(item => {
         if (group.isSuperAdminOnly && !isSuperAdmin) return false;
+        if (isSuperAdmin) return true; // 超管看全部，无视权限缓存
         if (item.perm && !permissions.includes(item.perm)) return false;
         return true;
       }),
