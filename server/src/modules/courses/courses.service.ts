@@ -32,6 +32,17 @@ export class CoursesService {
       include: {
         parentCourse: { select: { id: true, name: true } },
         childCourses: { select: { id: true, name: true } },
+        videoCourseLinks: {
+          include: {
+            videoCourse: {
+              select: {
+                id: true, name: true, description: true,
+                duration: true, hours: true, url: true,
+                coverUrl: true, type: true, status: true,
+              },
+            },
+          },
+        },
       },
     });
     if (!course) throw new NotFoundException('课程不存在');

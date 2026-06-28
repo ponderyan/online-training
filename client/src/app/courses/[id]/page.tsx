@@ -8,22 +8,20 @@ import { api } from '@/lib/api';
 const TYPE_NAMES: Record<string, string> = { STANDARD: '标准课', CUSTOM: '定制课' };
 const TYPE_COLORS: Record<string, string> = { STANDARD: '#00897b', CUSTOM: '#1565c0' };
 
+const VC_TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
+const VC_TYPE_COLORS: Record<string, string> = { PUBLIC: '#7b1fa2', SPECIALIZED: '#e87a30' };
+
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [course, setCourse] = useState<any>(null);
-  const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [courseData, videosData] = await Promise.all([
-        api.courses.get(Number(params.id)),
-        api.courseVideos.list(Number(params.id)).catch(() => []),
-      ]);
+      const courseData = await api.courses.get(Number(params.id));
       setCourse(courseData);
-      setVideos(videosData || []);
     } catch { router.push('/courses'); }
     setLoading(false);
   };
@@ -34,6 +32,8 @@ export default function CourseDetailPage() {
     const s = sec % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+
+  const videoLinks = course?.videoCourseLinks || [];
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
   if (!course) return null;
@@ -57,7 +57,6 @@ export default function CourseDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => router.push(`/courses/${params.id}/videos`)} className="btn btn-fox btn-sm">🎬 视频管理</button>
           <button onClick={() => router.push(`/courses/${params.id}/edit`)} className="btn btn-outline btn-sm">编辑信息</button>
         </div>
       </div>
@@ -70,29 +69,38 @@ export default function CourseDetailPage() {
       )}
 
       <div className="card p-0 overflow-hidden">
-        <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--ink-200)' }}>
-          <h3 className="font-semibold text-sm">课程视频（{videos.length}）</h3>
-          <button onClick={() => router.push(`/courses/${params.id}/videos`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>管理 →</button>
+        <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--ink-200)' }}>
+          <h3 className="font-semibold text-sm">关联视频课程（{videoLinks.length}）</h3>
         </div>
-        {videos.length === 0 ? (
+        {videoLinks.length === 0 ? (
           <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
-            暂无视频，<button onClick={() => router.push(`/courses/${params.id}/videos`)} className="bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>去添加</button>
+            暂无关联视频课程
           </div>
         ) : (
           <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
-            {videos.map((v: any, i: number) => (
-              <div key={v.id} className="flex items-center gap-4 px-5 py-3">
-                <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{v.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
-                    {formatDuration(v.duration)} · 完成条件：{v.requiredPct}%
-                    {v.isPublic && <span className="ml-2 tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '10px' }}>公共课</span>}
-                  </p>
+            {videoLinks.map((link: any, i: number) => {
+              const vc = link.videoCourse;
+              return (
+                <div key={link.id} className="flex items-center gap-4 px-5 py-3">
+                  <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{vc?.name || '未命名视频'}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                      {vc?.duration ? formatDuration(vc.duration) : '—'}
+                      {vc?.hours ? ` · ${vc.hours} 学时` : ''}
+                      {vc?.type && (
+                        <span className="ml-2 tag" style={{ background: `${VC_TYPE_COLORS[vc.type] || '#888'}18`, color: VC_TYPE_COLORS[vc.type] || '#888', fontSize: '10px' }}>
+                          {VC_TYPE_NAMES[vc.type] || vc.type}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {vc?.url && (
+                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>已上传</span>
+                  )}
                 </div>
-                <button onClick={() => router.push(`/courses/${params.id}/videos/${v.id}/play`)} className="btn btn-outline btn-sm text-xs">▶ 播放</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
