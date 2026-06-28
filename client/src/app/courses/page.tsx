@@ -105,12 +105,11 @@ export default function CoursesPage() {
                   <tr key={c.id}>
                     <td className="font-medium">
                       <button onClick={() => router.push(`/courses/${c.id}`)}
-                        className="bg-transparent border-none cursor-pointer font-medium text-left transition-all"
-                        style={{ color: 'var(--fox)' }}
-                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                        className="group bg-transparent border-none cursor-pointer font-medium text-left flex items-center gap-1"
+                        style={{ color: '#2563eb' }}
                         title="点击查看课程详情">
-                        {c.name}
+                        <span className="group-hover:underline">{c.name}</span>
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs">→</span>
                       </button>
                     </td>
                     <td>
