@@ -9,15 +9,7 @@ export default function LearningHoursPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // 申报模态框
-  const [showModal, setShowModal] = useState(false);
-  const [programs, setPrograms] = useState<any[]>([]);
-  const [form, setForm] = useState({ programId: '', hours: '', source: 'OFFLINE', note: '' });
-  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const load = () => {
-    setLoading(true);
+  useEffect(() => {
     Promise.all([
       api.learningHours.list(),
       api.learningHours.stats(),
@@ -26,42 +18,7 @@ export default function LearningHoursPage() {
       setStats(statsData);
     }).catch(() => {})
     .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const openModal = async () => {
-    setShowModal(true);
-    setForm({ programId: '', hours: '', source: 'OFFLINE', note: '' });
-    setEvidenceFile(null);
-    try {
-      const d = await api.programs.list({ pageSize: 200 } as any);
-      setPrograms(d.items || []);
-    } catch {}
-  };
-
-  const handleSubmit = async () => {
-    const hours = parseFloat(form.hours);
-    if (!hours || hours <= 0) { alert('请输入有效的学时数'); return; }
-    setSubmitting(true);
-    try {
-      let evidenceUrl: string | undefined;
-      if (evidenceFile) {
-        const uploadRes = await api.learningHours.uploadEvidence(evidenceFile);
-        evidenceUrl = uploadRes.url;
-      }
-      await api.learningHours.submit({
-        programId: form.programId ? parseInt(form.programId) : undefined,
-        hours,
-        source: form.source,
-        evidenceUrl,
-        note: form.note || undefined,
-      });
-      setShowModal(false);
-      load();
-    } catch (e: any) { alert('提交失败：' + (e.message || '未知错误')); }
-    setSubmitting(false);
-  };
+  }, []);
 
   const sourceLabel = (source: string) => {
     if (source === 'VIDEO') return { icon: '📺', text: '视频', color: '#00897b', bg: '#00897b18' };
@@ -85,7 +42,6 @@ export default function LearningHoursPage() {
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
       ) : (
         <>
-          {/* Stats Cards */}
           {stats && (
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="card p-4 text-center">
@@ -103,12 +59,6 @@ export default function LearningHoursPage() {
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="mb-4">
-            <button onClick={openModal} className="btn btn-fox btn-sm">✏️ 申报学时</button>
-          </div>
-
-          {/* Program Stats */}
           {stats?.programStats?.length > 0 && (
             <div className="card p-0 overflow-hidden mb-6">
               <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>培训班汇总</div>
@@ -126,21 +76,15 @@ export default function LearningHoursPage() {
             </div>
           )}
 
-          {/* Record List */}
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学习记录</div>
             {records.length === 0 ? (
-              <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无学习记录，完成视频学习或申报学时后自动记录</div>
+              <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无学习记录</div>
             ) : (
               <table className="list-table">
                 <thead>
                   <tr>
-                    <th>来源</th>
-                    <th>内容</th>
-                    <th>培训班</th>
-                    <th>学时</th>
-                    <th>状态</th>
-                    <th>时间</th>
+                    <th>来源</th><th>内容</th><th>培训班</th><th>学时</th><th>状态</th><th>时间</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -170,58 +114,6 @@ export default function LearningHoursPage() {
             )}
           </div>
         </>
-      )}
-
-      {/* Submit Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
-          <div className="modal-card max-w-md animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">✏️ 申报学时</h3>
-              <button onClick={() => setShowModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
-            </div>
-            <div className="modal-body space-y-4">
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>培训班</label>
-                <select value={form.programId} onChange={e => setForm({...form, programId: e.target.value})} className="input select text-xs">
-                  <option value="">不关联培训班</option>
-                  {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学时数 *</label>
-                  <input type="number" min="0.5" step="0.5" value={form.hours} onChange={e => setForm({...form, hours: e.target.value})}
-                    className="input" placeholder="如 4" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>类型</label>
-                  <select value={form.source} onChange={e => setForm({...form, source: e.target.value})} className="input select text-xs">
-                    <option value="OFFLINE">线下培训</option>
-                    <option value="OFFLINE">其他</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>证明材料（可选）</label>
-                <input type="file" accept="image/*,.pdf" onChange={e => setEvidenceFile(e.target.files?.[0] || null)}
-                  className="input text-xs" />
-                {evidenceFile && <p className="text-xs mt-1" style={{ color: 'var(--fox)' }}>已选择：{evidenceFile.name}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>备注（可选）</label>
-                <textarea value={form.note} onChange={e => setForm({...form, note: e.target.value})}
-                  className="input textarea text-xs" rows={2} placeholder="说明学时来源，如参加了什么培训" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm">取消</button>
-              <button onClick={handleSubmit} disabled={submitting} className="btn btn-fox btn-sm">
-                {submitting ? '提交中…' : '提交'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </AppLayout>
   );

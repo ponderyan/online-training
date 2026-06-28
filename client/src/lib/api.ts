@@ -491,7 +491,7 @@ export const api = {
       request<any>('/learning-hours/approve', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
     reject: (ids: number[], comment: string) =>
       request<any>('/learning-hours/reject', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
-    submit: (data: { programId?: number; hours: number; source?: string; evidenceUrl?: string; note?: string }) =>
+    submit: (data: { studentId: number; programId?: number; hours: number; source?: string; evidenceUrl?: string; note?: string }) =>
       request<any>('/learning-hours/submit', { method: 'POST', body: JSON.stringify(data) }),
     uploadEvidence: (file: File) => {
       const formData = new FormData();

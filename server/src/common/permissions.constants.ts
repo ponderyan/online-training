@@ -346,6 +346,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.AGENCY_VIEW_STUDENTS,
     Permissions.AGENCY_MANAGE_STUDENTS,
     Permissions.AGENCY_MANAGE_CERTIFICATES,
+    Permissions.LEARNING_HOUR_MANAGE,
   ],
 
   [Role.AUDITOR]: [

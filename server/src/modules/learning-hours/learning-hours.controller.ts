@@ -47,10 +47,9 @@ export class LearningHoursController {
   }
 
   @Post('submit')
-  @UseGuards(JwtAuthGuard)
-  async submit(@Body() data: { programId?: number; hours: number; source: string; evidenceUrl?: string; note?: string }, @Req() req: any) {
-    const studentId = req.user?.id || req.user?.sub;
-    return this.service.submit(studentId, data);
+  @RequirePermission(P.LEARNING_HOUR_MANAGE)
+  async submit(@Body() data: { studentId: number; programId?: number; hours: number; source: string; evidenceUrl?: string; note?: string }, @Req() req: any) {
+    return this.service.submit(data.studentId, data);
   }
 
   @Post('approve')
@@ -68,7 +67,7 @@ export class LearningHoursController {
   }
 
   @Post('upload-evidence')
-  @UseGuards(JwtAuthGuard)
+  @RequirePermission(P.LEARNING_HOUR_MANAGE)
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'uploads', 'learning-hour-evidence'),
