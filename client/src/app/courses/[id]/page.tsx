@@ -42,7 +42,7 @@ export default function CourseDetailPage() {
     <AppLayout>
       <button onClick={() => router.push('/courses')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回课程列表</button>
 
-      <div className="flex items-start justify-between mb-6">
+      <div className="mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="page-title mb-0">{course.name}</h1>
@@ -56,7 +56,6 @@ export default function CourseDetailPage() {
             {course.parentCourse && <span className="ml-4">基于：{course.parentCourse.name}</span>}
           </p>
         </div>
-        <div /> {/* 占位，保持 flex 对齐 */}
       </div>
 
       {course.description && (
