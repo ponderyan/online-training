@@ -43,9 +43,13 @@ export default function CoursesPage() {
     return () => clearTimeout(timer);
   }, [keyword, filterStatus, filterType]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定停用该课程吗？')) return;
-    try { await api.courses.delete(id); load(); } catch (e: any) { alert('操作失败：' + e.message); }
+  const handleToggleStatus = async (c: any) => {
+    if (c.status === 'ACTIVE') {
+      if (!confirm('停用后，新培训班将无法引用此课程。已关联的培训班不受影响。确定停用？')) return;
+    } else {
+      if (!confirm('恢复启用该课程？')) return;
+    }
+    try { await api.courses.toggleStatus(c.id); load(); } catch (e: any) { alert(e.message || '操作失败'); }
   };
 
   return (
@@ -141,9 +145,9 @@ export default function CoursesPage() {
                         <button onClick={() => router.push(`/courses/${c.id}/edit`)}
                           className="text-xs bg-transparent border-none cursor-pointer"
                           style={{ color: 'var(--fox)' }}>编辑</button>
-                        <button onClick={() => handleDelete(c.id)}
+                        <button onClick={() => handleToggleStatus(c)}
                           className="text-xs bg-transparent border-none cursor-pointer"
-                          style={{ color: '#e53935' }}>停用</button>
+                          style={{ color: c.status === 'ACTIVE' ? '#e53935' : '#00897b' }}>{c.status === 'ACTIVE' ? '停用' : '恢复'}</button>
                       </div>
                     </td>
                   </tr>

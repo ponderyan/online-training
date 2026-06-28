@@ -32,6 +32,6 @@ export class CoursesController {
   @Put(':id') @RequirePermission(P.COURSE_EDIT)
   update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
 
-  @Delete(':id') @RequirePermission(P.COURSE_DELETE)
-  delete(@Param('id', ParseIntPipe) id: number) { return this.service.delete(id); }
+  @Put(':id/toggle-status') @RequirePermission(P.COURSE_DELETE)
+  toggleStatus(@Param('id', ParseIntPipe) id: number) { return this.service.toggleStatus(id); }
 }

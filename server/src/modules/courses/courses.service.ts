@@ -64,9 +64,24 @@ export class CoursesService {
     return this.prisma.course.update({ where: { id }, data: upd });
   }
 
-  async delete(id: number) {
-    const course = await this.prisma.course.findUnique({ where: { id } });
+  async toggleStatus(id: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: { childCourses: { select: { id: true } } },
+    });
     if (!course) throw new NotFoundException('课程不存在');
-    return this.prisma.course.update({ where: { id }, data: { status: 'INACTIVE' } });
+
+    // 停用前检查：有进行中的培训班引用此课程则阻止
+    if (course.status === 'ACTIVE') {
+      const activePrograms = await this.prisma.trainingProgram.count({
+        where: { courseId: id, status: { in: ['PREPARING', 'ENROLLING', 'IN_PROGRESS'] } },
+      });
+      if (activePrograms > 0) {
+        throw new Error(`该课程正在被 ${activePrograms} 个进行中的培训班引用，无法停用。请先结束相关培训班。`);
+      }
+    }
+
+    const newStatus = course.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    return this.prisma.course.update({ where: { id }, data: { status: newStatus } });
   }
 }
