@@ -62,6 +62,16 @@ export const api = {
     // 保存 token + 用户信息
     localStorage.setItem('token', data.accessToken);
     localStorage.setItem('user', JSON.stringify(data.user));
+
+    // 登录后获取权限并缓存
+    fetch('/api/user/permissions', {
+      headers: { Authorization: `Bearer ${data.accessToken}` },
+    }).then(r => r.json()).then(permData => {
+      if (permData && permData.permissions) {
+        localStorage.setItem('userPermissions', JSON.stringify(permData));
+      }
+    }).catch(() => {});
+
     return data.user;
   },
 
@@ -293,6 +303,11 @@ export const api = {
     update: (id: number, data: any) => request<any>(`/enrollment-agencies/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/enrollment-agencies/${id}`, { method: 'DELETE' }),
   },
+
+  getPermissionCategories: () => request<any[]>('/permissions/categories'),
+
+  getUserPermissions: () =>
+    request<{ permissions: string[]; roles: any[]; isSuperAdmin: boolean }>('/user/permissions'),
 
   permissions: {
     getRoles: () => request<any[]>('/permissions/roles'),

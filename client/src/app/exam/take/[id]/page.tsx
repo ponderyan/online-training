@@ -47,6 +47,8 @@ export default function ExamTake() {
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const heartbeatRef = useRef<any>(null);
+  const heartbeatFailCount = useRef(0);
+  const [networkError, setNetworkError] = useState(false);
   const tabSwitchLogRef = useRef<{time: string; duration: number}[]>([]);
   const tabSwitchStartRef = useRef<number | null>(null);
 
@@ -165,10 +167,27 @@ export default function ExamTake() {
     heartbeatRef.current = setInterval(() => {
       fetch(`/api/student/exams/${params.id}/heartbeat`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      }).then(r => {
+        if (r.ok) heartbeatFailCount.current = 0;
+        else heartbeatFailCount.current++;
+      }).catch(() => {
+        heartbeatFailCount.current++;
+        if (heartbeatFailCount.current >= 3) setNetworkError(true);
+      });
     }, 30000);
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
   }, [loading, submitted, params.id]);
+
+  // 离开页面确认提示
+  useEffect(() => {
+    if (loading || submitted) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [loading, submitted]);
 
   // 键盘快捷键
   useEffect(() => {
@@ -257,6 +276,17 @@ export default function ExamTake() {
     const sec = s % 60;
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
+
+  if (networkError) return (
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--paper)' }}>
+      <div className="text-center max-w-md">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--ink-700)' }}>网络连接异常</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>检测到网络不稳定，但你的答题数据已保存，请不要关闭页面</p>
+        <p className="text-xs" style={{ color: 'var(--ink-300)' }}>正在尝试重新连接…</p>
+      </div>
+    </div>
+  );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--paper)' }}><p>加载中…</p></div>;
   if (!exam) return null;

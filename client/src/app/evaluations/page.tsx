@@ -18,7 +18,8 @@ export default function EvaluationsPage() {
     const u = localStorage.getItem('user');
     if (u) {
       const parsed = JSON.parse(u);
-      setCanManage(parsed.roles?.includes('SUPER_ADMIN') || parsed.roles?.includes('ORG_ADMIN'));
+      const perms = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+    setCanManage(perms.isSuperAdmin || (perms.permissions || []).includes('evaluation:manage'));
     }
     Promise.all([
       api.trainingPrograms.list({ pageSize: '100' }).then((d: any) => d.items || []),

@@ -41,7 +41,8 @@ export default function Dashboard() {
       setRole((parsed?.roles && parsed.roles[0]) || parsed?.role || '');
     }
 
-    const isStudent = parsed && (parsed.roles?.includes('STUDENT') || parsed.role === 'STUDENT');
+    const perms = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+    const isStudent = parsed && (parsed.roles?.includes('STUDENT') || parsed.role === 'STUDENT') && !perms.isSuperAdmin;
     if (isStudent) {
       fetch('/api/student/exams', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },

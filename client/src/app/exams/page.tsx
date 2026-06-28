@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { can } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 const STATUS_OPTS = [

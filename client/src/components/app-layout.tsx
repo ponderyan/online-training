@@ -12,8 +12,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const u = localStorage.getItem('user');
-    if (u) { setUser(JSON.parse(u)); setLoading(false); }
-    else { router.replace('/login'); }
+    if (u) {
+      let userData = JSON.parse(u);
+      // Merge permissions from localStorage
+      const permsStr = localStorage.getItem('userPermissions');
+      if (permsStr) {
+        const permsData = JSON.parse(permsStr);
+        userData.permissions = permsData.permissions || [];
+        userData.isSuperAdmin = permsData.isSuperAdmin || false;
+        userData.roleInfo = permsData.roles || [];
+      }
+      setUser(userData);
+      setLoading(false);
+    } else { router.replace('/login'); }
   }, [router]);
 
   if (loading) return null;

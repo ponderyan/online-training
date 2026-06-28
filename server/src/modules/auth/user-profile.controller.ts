@@ -2,6 +2,7 @@ import { Controller, Get, Put, Post, Body, Req, UnauthorizedException, BadReques
 import { PrismaService } from '../prisma/prisma.service.js';
 import * as bcryptjs from 'bcryptjs';
 import * as crypto from 'crypto';
+import { ROLE_PERMISSIONS } from '../../common/permissions.constants.js';
 
 @Controller('api/user')
 export class UserProfileController {
@@ -64,6 +65,52 @@ export class UserProfileController {
       data: upd,
       select: { id: true, displayName: true, phone: true, email: true, organization: true, title: true, gender: true, remark: true },
     });
+  }
+
+  @Get('permissions')
+  async getUserPermissions(@Req() req: any) {
+    const userId = this.getUserId(req);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        roleAssignments: {
+          include: {
+            role: { select: { id: true, code: true, name: true, color: true } },
+          },
+        },
+      },
+    });
+    if (!user) throw new UnauthorizedException('用户不存在');
+
+    const roleCodes = user.roleAssignments.map(a => a.role.code);
+
+    const dbPerms = await this.prisma.rolePermission.findMany({
+      where: { role: { code: { in: roleCodes } }, isGranted: true },
+      select: { permission: true },
+    });
+    const dbPermSet = new Set(dbPerms.map(p => p.permission));
+
+    const allGranted = new Set<string>();
+    for (const code of roleCodes) {
+      const defaultPerms = ROLE_PERMISSIONS[code as keyof typeof ROLE_PERMISSIONS] || [];
+      for (const p of defaultPerms) {
+        if (dbPermSet.has(p) || !dbPerms.some(dp => dp.permission === p)) {
+          allGranted.add(p);
+        }
+      }
+    }
+    for (const p of dbPermSet) allGranted.add(p);
+
+    const roles = user.roleAssignments.map(a => ({
+      id: a.role.id, code: a.role.code, name: a.role.name, color: a.role.color,
+    }));
+
+    return {
+      permissions: [...allGranted],
+      roles,
+      isSuperAdmin: roleCodes.includes('SUPER_ADMIN'),
+    };
   }
 
   @Post('password')

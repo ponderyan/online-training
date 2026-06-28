@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { PermissionsService } from './permissions.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
-import { Permissions as P } from '../../common/permissions.constants.js';
+import { Permissions as P, PERM_CATEGORIES } from '../../common/permissions.constants.js';
 
 @Controller('api/permissions')
 export class PermissionsController {
@@ -65,6 +65,11 @@ export class PermissionsController {
   }
 
   // ═══ 权限映射 ═══
+
+  @Get('categories')
+  getCategories() {
+    return PERM_CATEGORIES;
+  }
 
   @Get()
   getAll() {
