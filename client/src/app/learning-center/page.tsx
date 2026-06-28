@@ -11,7 +11,8 @@ export default function LearningCenterPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all | public | specialized
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -30,9 +31,9 @@ export default function LearningCenterPage() {
   };
 
   const visibleVideos = data?.videos?.filter((v: any) => {
-    if (filter === 'all') return true;
-    if (filter === 'public') return v.type === 'PUBLIC';
-    if (filter === 'specialized') return v.type === 'SPECIALIZED';
+    if (filter === 'public' && v.type !== 'PUBLIC') return false;
+    if (filter === 'specialized' && v.type !== 'SPECIALIZED') return false;
+    if (search && !v.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }) || [];
 
@@ -61,22 +62,27 @@ export default function LearningCenterPage() {
         </div>
       )}
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-5">
-        {[
-          { key: 'all', label: '全部' },
-          { key: 'public', label: '公共课' },
-          { key: 'specialized', label: '专项课' },
-        ].map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
-            style={{
-              background: filter === f.key ? 'var(--fox)' : 'var(--paper-dark)',
-              color: filter === f.key ? '#fff' : 'var(--ink-400)',
-            }}>
-            {f.label}
-          </button>
-        ))}
+      {/* Filter + Search */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="flex gap-2">
+          {[
+            { key: 'all', label: '全部' },
+            { key: 'public', label: '公共课' },
+            { key: 'specialized', label: '专项课' },
+          ].map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
+              style={{
+                background: filter === f.key ? 'var(--fox)' : 'var(--paper-dark)',
+                color: filter === f.key ? '#fff' : 'var(--ink-400)',
+              }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="搜索视频名称…"
+          className="input text-xs" style={{ width: 200, marginLeft: 'auto' }} />
       </div>
 
       {loading ? (
@@ -84,60 +90,64 @@ export default function LearningCenterPage() {
       ) : visibleVideos.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">📺</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无视频课程</p>
+          <p style={{ color: 'var(--ink-300)' }}>{search ? '没有匹配的视频' : '暂无视频课程'}</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleVideos.map((v: any) => {
             const pct = v.progress ? Math.min(100, Math.round(v.progress.progress || 0)) : 0;
             const completed = v.progress?.completed || false;
             return (
-              <div key={v.id} className="card p-4 cursor-pointer hover:shadow-md transition-shadow"
+              <div key={v.id} className="card p-0 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/learning-center/${v.id}/play`)}>
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl flex-shrink-0"
-                    style={{ background: 'var(--fox)', color: '#fff' }}>
-                    ▶
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-sm truncate">{v.name}</h3>
-                      <span className="tag" style={{
-                        background: v.type === 'PUBLIC' ? '#00897b18' : '#1565c018',
-                        color: v.type === 'PUBLIC' ? '#00897b' : '#1565c0',
-                        fontSize: '9px',
-                      }}>{TYPE_NAMES[v.type] || v.type}</span>
-                      {v.isContinuingEducation && (
-                        <span className="tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '9px' }}>计学时</span>
-                      )}
+                {/* Cover area */}
+                <div className="relative" style={{ paddingTop: '56.25%', background: 'linear-gradient(135deg, var(--fox), var(--gold))' }}>
+                  {v.coverUrl ? (
+                    <img src={v.coverUrl} alt={v.name} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-30">🎬</div>
+                  )}
+                  {/* Type badge */}
+                  <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-medium"
+                    style={{
+                      background: v.type === 'PUBLIC' ? 'rgba(0,137,123,0.8)' : 'rgba(21,101,192,0.8)',
+                      color: '#fff',
+                    }}>
+                    {TYPE_NAMES[v.type] || v.type}
+                  </span>
+                  {v.isContinuingEducation && (
+                    <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded font-medium"
+                      style={{ background: 'rgba(123,31,162,0.8)', color: '#fff' }}>
+                      计学时
+                    </span>
+                  )}
+                  {/* Progress overlay */}
+                  {pct > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                      <div className="h-full" style={{
+                        width: `${completed ? 100 : pct}%`,
+                        background: completed ? '#2e7d32' : 'var(--fox)',
+                      }} />
                     </div>
-                    <p className="text-xs truncate" style={{ color: 'var(--ink-400)' }}>
-                      {v.instructorName ? `${v.instructorName}${v.instructorLevel ? ` (${v.instructorLevel})` : ''}` : ''}
-                      {v.hours ? ` · ${v.hours} 课时` : ''}
+                  )}
+                </div>
+                {/* Info area */}
+                <div className="p-3">
+                  <h3 className="font-medium text-sm truncate">{v.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                      {v.instructorName || '—'}
+                      {v.hours ? ` · ${v.hours}h` : ''}
                       {v.duration ? ` · ${formatDuration(v.duration)}` : ''}
-                    </p>
-                    {v.description && (
-                      <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--ink-300)' }}>{v.description}</p>
-                    )}
-                    {v.type === 'SPECIALIZED' && v.courseLinks?.length > 0 && (
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
-                        📎 课程：{v.courseLinks.map((cl: any) => cl.course?.name).join('、')}
-                      </p>
-                    )}
-                    {/* Progress bar */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
-                        <div className="h-full rounded-full" style={{
-                          width: `${completed ? 100 : pct}%`,
-                          background: completed ? '#2e7d32' : 'var(--fox)',
-                          transition: 'width 0.3s',
-                        }} />
-                      </div>
-                      <span className="text-xs font-mono" style={{ color: completed ? '#2e7d32' : 'var(--ink-400)' }}>
-                        {completed ? '✅ 已完成' : `${pct}%`}
-                      </span>
-                    </div>
+                    </span>
                   </div>
+                  {completed ? (
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#2e7d3218', color: '#2e7d32' }}>✅ 已完成</span>
+                  ) : pct > 0 ? (
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中 {pct}%</span>
+                  ) : (
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#00897b18', color: '#00897b' }}>开始学习</span>
+                  )}
                 </div>
               </div>
             );

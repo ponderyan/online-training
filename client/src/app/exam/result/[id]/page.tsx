@@ -25,6 +25,8 @@ interface ExamResult {
   finalScore: number | null;
   isPassed: boolean | null;
   submittedAt: string;
+  published?: boolean;
+  message?: string;
   answers: AnswerDetail[];
 }
 
@@ -97,6 +99,22 @@ export default function ExamResult() {
       setLoading(false);
     }).catch(() => router.push('/exam'));
   }, [params.id, router]);
+
+  // 成绩尚未发布
+  if (result && result.published === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--paper)' }}>
+        <div className="max-w-md w-full text-center">
+          <div className="text-5xl mb-4">⏳</div>
+          <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--ink-700)' }}>成绩尚未发布</h1>
+          <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>你的答卷已提交，请等待管理员发布成绩</p>
+          {result.submittedAt && <p className="text-xs mb-6" style={{ color: 'var(--ink-300)' }}>交卷时间：{new Date(result.submittedAt).toLocaleString('zh-CN')}</p>}
+          <button onClick={() => router.push('/exam')} className="px-6 py-2.5 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all hover:brightness-110 active:scale-95"
+            style={{ background: 'var(--fox)', color: '#fff' }}>← 返回考试列表</button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--paper)' }}>

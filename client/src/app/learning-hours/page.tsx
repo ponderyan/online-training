@@ -82,6 +82,7 @@ export default function LearningHoursPage() {
                 <thead>
                   <tr>
                     <th>来源</th>
+                    <th>内容</th>
                     <th>培训班</th>
                     <th>学时</th>
                     <th>时间</th>
@@ -99,6 +100,7 @@ export default function LearningHoursPage() {
                           {r.source === 'VIDEO' ? '视频' : '线下'}
                         </span>
                       </td>
+                      <td className="text-sm" style={{ color: 'var(--ink-600)' }}>{r.videoName || (r.source === 'VIDEO' ? '视频学习' : '线下活动')}</td>
                       <td>{r.program?.name || '—'}</td>
                       <td>{r.hours} 小时</td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)' }}>

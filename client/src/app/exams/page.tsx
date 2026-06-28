@@ -112,6 +112,10 @@ export default function ExamList() {
                         📊 分析
                       </span>
                     )}
+                    <span onClick={e => { e.stopPropagation(); router.push(`/admin/exam-results/${exam.id}`); }}
+                      className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                      📊 查看结果
+                    </span>
                     <span className="text-xs font-medium px-3 py-1 rounded-full" style={{
                       background: `${statusColors[exam.status]}18`,
                       color: statusColors[exam.status],

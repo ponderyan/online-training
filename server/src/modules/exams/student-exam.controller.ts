@@ -46,6 +46,26 @@ export class StudentExamController {
     return this.service.heartbeat(id, this.getStudentId(req), data?.tabSwitchData);
   }
 
+  @Post(':id/mark')
+  @RequirePermission(Permissions.EXAM_VIEW)
+  markQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { questionId: number },
+    @Req() req: any,
+  ) {
+    return this.service.markQuestion(id, this.getStudentId(req), data.questionId);
+  }
+
+  @Post(':id/unmark')
+  @RequirePermission(Permissions.EXAM_VIEW)
+  unmarkQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { questionId: number },
+    @Req() req: any,
+  ) {
+    return this.service.unmarkQuestion(id, this.getStudentId(req), data.questionId);
+  }
+
   @Get(':id/result')
   result(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.getResult(id, this.getStudentId(req));

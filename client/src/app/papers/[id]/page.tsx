@@ -111,6 +111,7 @@ export default function PaperDetailPage() {
   };
 
   const [replaceTarget, setReplaceTarget] = useState<{ pqId: number; section: string } | null>(null);
+  const [addToPractice, setAddToPractice] = useState(true);
 
   const handleReplaceQuestion = async (pqId: number, section: string, score: number) => {
     // 打开选题弹窗，从同题型题库中选择替换
@@ -153,6 +154,10 @@ export default function PaperDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId, score: pickingScore, typeSection: pickingSection }),
       });
+      // 如果勾选了加入练习
+      if (addToPractice) {
+        await api.questions.update(questionId, { practiceVisible: true }).catch(() => {});
+      }
     }
     setShowPickModal(false);
     load();
@@ -424,6 +429,13 @@ export default function PaperDetailPage() {
               <h3 className="font-serif font-bold text-base">{replaceTarget ? '替换试题' : '从题库选题'} — {TYPE_NAMES[pickingSection] || pickingSection}</h3>
               <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
+            {!replaceTarget && (
+              <label className="flex items-center gap-2 px-4 pt-2 pb-1 text-xs" style={{ color: 'var(--ink-400)' }}>
+                <input type="checkbox" checked={addToPractice} onChange={e => setAddToPractice(e.target.checked)}
+                  className="checkbox checkbox-sm accent-[#e87a30]" />
+                选中题目自动加入练习模式（学员在练习中可见）
+              </label>
+            )}
             <div className="modal-body max-h-[400px] overflow-y-auto">
               {availableQuestions.length === 0 ? (
                 <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无可选试题（所有同类试题可能已在试卷中）</p>

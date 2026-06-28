@@ -12,19 +12,22 @@ interface ExamItem {
   durationMinutes: number;
   startTime: string;
   endTime: string;
+  status: string;
   accessType: string;
   sessionStatus: string;
   myScore: number | null;
   myFinalScore: number | null;
   isPassed: boolean | null;
+  scoringStatus: string | null;
   submittedAt: string | null;
 }
 
-type TabKey = 'pending' | 'active' | 'completed';
+type TabKey = 'pending' | 'active' | 'awaiting' | 'completed';
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: 'pending', label: '待考', icon: '⏳' },
   { key: 'active', label: '考试中', icon: '📝' },
+  { key: 'awaiting', label: '待公布', icon: '⏸️' },
   { key: 'completed', label: '已完成', icon: '✅' },
 ];
 
@@ -75,14 +78,17 @@ export default function ExamList() {
     }).finally(() => setLoading(false));
   }, [router]);
 
-  const categorized = useCallback(() => {
+  const categorized = useCallback((): { pending: ExamItem[]; active: ExamItem[]; awaiting: ExamItem[]; completed: ExamItem[] } => {
     const pending: ExamItem[] = [];
+    const awaiting: ExamItem[] = [];
     const active: ExamItem[] = [];
     const completed: ExamItem[] = [];
 
     exams.forEach(e => {
-      if (e.submittedAt || e.myFinalScore !== null || e.isPassed !== null) {
+      if (e.scoringStatus === 'PUBLISHED' || e.scoringStatus === 'ADJUSTED') {
         completed.push(e);
+      } else if (e.submittedAt) {
+        awaiting.push(e);
       } else if (e.sessionStatus === 'ACTIVE') {
         active.push(e);
       } else {
@@ -90,15 +96,15 @@ export default function ExamList() {
       }
     });
 
-    // Sort: pending by startTime asc, completed by submittedAt desc
     pending.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    awaiting.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
     completed.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
-    return { pending, active, completed };
+    return { pending, active, awaiting, completed };
   }, [exams]);
 
-  const { pending, active, completed } = categorized();
-  const tabCounts = { pending: pending.length, active: active.length, completed: completed.length };
+  const { pending, active, awaiting, completed } = categorized();
+  const tabCounts = { pending: pending.length, active: active.length, awaiting: awaiting.length, completed: completed.length };
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--paper)' }}>
@@ -107,10 +113,10 @@ export default function ExamList() {
     </div>
   );
 
-  const renderExamCard = (exam: ExamItem, variant: 'pending' | 'active' | 'completed') => {
+  const renderExamCard = (exam: ExamItem, variant: 'pending' | 'active' | 'awaiting' | 'completed') => {
     const startTime = new Date(exam.startTime);
     const endTime = new Date(exam.endTime);
-    const isAvailable = startTime <= now && !exam.submittedAt;
+    const isAvailable = startTime <= now && new Date(exam.endTime) > now && !exam.submittedAt;
 
     if (variant === 'active') {
       return (
@@ -162,7 +168,25 @@ export default function ExamList() {
       );
     }
 
-    if (variant === 'completed') {
+    if (variant === 'awaiting') {
+    return (
+      <div key={exam.id} className="rounded-xl p-5 opacity-70" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-base" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
+            <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{exam.paperName} · {exam.totalScore}分</p>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: '#fff8e1', color: '#f57f17' }}>已交卷</span>
+        </div>
+        <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
+          交卷时间：{exam.submittedAt ? new Date(exam.submittedAt).toLocaleString('zh-CN') : '—'}
+        </div>
+        <div className="mt-3 text-xs italic" style={{ color: 'var(--ink-300)' }}>成绩尚未发布，请等待管理员发布</div>
+      </div>
+    );
+  }
+
+  if (variant === 'completed') {
       const passed = exam.isPassed === true;
       return (
         <div
@@ -209,7 +233,7 @@ export default function ExamList() {
     }
 
     // Pending
-    const canStart = isAvailable;
+    const canStart = isAvailable && (exam.status === 'PUBLISHED' || exam.status === 'IN_PROGRESS');
     return (
       <div
         key={exam.id}
@@ -241,6 +265,10 @@ export default function ExamList() {
                 style={{ background: 'var(--fox)', color: '#fff' }}>
                 进入考试
               </button>
+            ) : isAvailable ? (
+              <span className="text-xs px-3 py-2 rounded-lg" style={{ background: 'var(--ink-100)', color: 'var(--ink-300)' }}>
+                暂未开放
+              </span>
             ) : (
               <div className="text-right">
                 <span className="text-xs" style={{ color: 'var(--ink-300)' }}>

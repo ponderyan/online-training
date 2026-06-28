@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, ParseIntPipe } from '@nestjs/common';
 import { ExamsService } from './exams.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -83,5 +83,43 @@ export class ExamsController {
   @RequirePermission(Permissions.TRANSCRIPT_VIEW)
   async getTranscript(@Param('id', ParseIntPipe) id: number) {
     return this.service.getTranscript(id);
+  }
+
+  @Get(':id/results')
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
+  async getExamResults(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getExamResults(id);
+  }
+
+  @Get(':id/results/:studentId')
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
+  async getStudentResult(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: any,
+  ) {
+    const viewerId = req.user?.sub || req.user?.id;
+    return this.service.getResult(id, studentId, viewerId);
+  }
+
+  @Get(':id/appeals')
+  @RequirePermission(Permissions.APPEAL_MANAGE)
+  async getAppeals(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getAppeals(id);
+  }
+
+  @Put(':id/appeals/:appealId')
+  @RequirePermission(Permissions.APPEAL_MANAGE)
+  async resolveAppeal(
+    @Param('appealId', ParseIntPipe) appealId: number,
+    @Body() data: { status: string; adminNote?: string; newScore?: number },
+  ) {
+    return this.service.resolveAppeal(appealId, data);
+  }
+
+  @Post(':id/publish-scores')
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
+  async publishScores(@Param('id', ParseIntPipe) id: number) {
+    return this.service.publishScores(id);
   }
 }

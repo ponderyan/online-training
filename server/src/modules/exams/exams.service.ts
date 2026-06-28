@@ -188,6 +188,7 @@ export class ExamsService {
     return sessions.map(s => ({
       id: s.exam.id,
       title: s.exam.title,
+      status: s.exam.status,
       paperName: s.exam.paper.name,
       totalScore: s.exam.paper.totalScore,
       durationMinutes: s.exam.paper.durationMinutes,
@@ -196,6 +197,7 @@ export class ExamsService {
       accessType: s.exam.accessType,
       sessionStatus: s.status,
       remainingTime: s.remainingTime,
+      scoringStatus: s.scoringStatus,
       myScore: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.totalScore : null,
       myFinalScore: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.finalScore : null,
       isPassed: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.isPassed : null,
@@ -289,7 +291,7 @@ export class ExamsService {
     return { ok: true, remainingTime: updateData.remainingTime };
   }
 
-  async getResult(examId: number, studentId: number) {
+  async getResult(examId: number, studentId: number, viewerId?: number) {
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
       include: {
@@ -309,7 +311,45 @@ export class ExamsService {
       },
     });
     if (!session) throw new NotFoundException('考试记录不存在');
-    return {
+
+    // 学生自查看 — 检查成绩是否已发布
+    const isStudentViewing = !viewerId || viewerId === studentId;
+    if (isStudentViewing) {
+      const published = session.scoringStatus === 'PUBLISHED' || session.scoringStatus === 'ADJUSTED';
+      if (!published) {
+        return {
+          examTitle: session.exam.title,
+          submittedAt: session.submittedAt,
+          scoringStatus: session.scoringStatus,
+          published: false,
+          message: '成绩尚未发布，请等待管理员发布成绩',
+        };
+      }
+    }
+
+    // Determine if viewer can see full results
+    let showFull = true;
+    const vId = viewerId || studentId;
+    if (vId === studentId) {
+      // Student viewing their own result
+      if (!(session.exam as any).showAnswerAfterExam) {
+        showFull = false;
+      }
+    }
+
+    // Compute stats
+    const totalQuestions = session.exam.paper.questions.length;
+    const correctCount = session.answers.filter(a => a.isCorrect === true).length;
+    const wrongCount = session.answers.filter(a => a.isCorrect === false).length;
+    const pendingCount = session.answers.filter(a => a.isCorrect === null).length;
+
+    // Check appeal status
+    const appeal = await this.prisma.scoreAppeal.findFirst({
+      where: { examId, studentId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const base = {
       examTitle: session.exam.title,
       paperName: session.exam.paper.name,
       totalScore: session.totalScore,
@@ -318,6 +358,20 @@ export class ExamsService {
       isPassed: session.isPassed,
       submittedAt: session.submittedAt,
       scoringStatus: session.scoringStatus,
+      stats: { totalQuestions, correctCount, wrongCount, pendingCount },
+      appealStatus: appeal?.status || null,
+    };
+
+    if (!showFull) {
+      return {
+        ...base,
+        answers: [],
+        message: '考后暂不展示试题详情，如需核查请联系管理员或提交申诉',
+      };
+    }
+
+    return {
+      ...base,
       answers: session.answers.map(a => {
         const pq = session.exam.paper.questions.find(q => q.id === a.paperQuestionId);
         const q = pq?.question;
@@ -436,6 +490,7 @@ export class ExamsService {
   }
 
   private prepareExamQuestions(exam: any, session: any) {
+    const markedQuestions: number[] = JSON.parse(session.markedQuestions || '[]');
     return {
       examId: exam.id,
       title: exam.title,
@@ -448,6 +503,7 @@ export class ExamsService {
         options: pq.question.options, blanks: pq.question.blanks,
         subQuestions: pq.question.subQuestions,
         yourAnswer: session.answers?.find((a: any) => a.paperQuestionId === pq.id)?.answer || null,
+        isMarked: markedQuestions.includes(pq.question.id),
       })),
     };
   }
@@ -533,5 +589,117 @@ export class ExamsService {
         submittedAt: s.submittedAt,
       })),
     };
+  }
+  async getExamResults(examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { id: true, title: true, paper: { select: { name: true } } },
+    });
+    if (!exam) throw new NotFoundException('考试不存在');
+
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId },
+      include: { student: { select: { id: true, displayName: true } } },
+    });
+
+    const appeals = await this.prisma.scoreAppeal.findMany({
+      where: { examId },
+      select: { studentId: true, status: true },
+    });
+    const appealMap = new Map(appeals.map(a => [a.studentId, a.status]));
+
+    return {
+      examId: exam.id,
+      examTitle: exam.title,
+      paperName: exam.paper?.name,
+      students: sessions.map(s => ({
+        studentId: s.student.id,
+        studentName: s.student.displayName,
+        totalScore: s.totalScore,
+        finalScore: s.finalScore,
+        isPassed: s.isPassed,
+        submittedAt: s.submittedAt,
+        scoringStatus: s.scoringStatus,
+        appealStatus: appealMap.get(s.student.id) || null,
+      })),
+    };
+  }
+
+  async submitAppeal(examId: number, studentId: number, reason: string) {
+    const existing = await this.prisma.scoreAppeal.findFirst({
+      where: { examId, studentId, status: 'PENDING' },
+    });
+    if (existing) throw new BadRequestException('已有待处理的申诉，请等待管理员处理');
+        const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+    });
+    if (!session) throw new NotFoundException('考试记录不存在');
+    return this.prisma.scoreAppeal.create({
+      data: { examId, sessionId: session.id, studentId, reason, description: reason },
+    });
+  }
+
+  async getAppeals(examId: number) {
+    return this.prisma.scoreAppeal.findMany({
+      where: { examId },
+      include: { student: { select: { id: true, displayName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async resolveAppeal(appealId: number, data: { status: string; adminNote?: string; newScore?: number }) {
+    const updateData: any = { status: data.status, adminNote: data.adminNote, resolvedAt: new Date() };
+    if (data.status === 'APPROVED' && data.newScore !== undefined) {
+      const appeal = await this.prisma.scoreAppeal.findUnique({ where: { id: appealId } });
+      if (!appeal) throw new NotFoundException('申诉记录不存在');
+      await this.prisma.examSession.update({
+        where: { examId_studentId: { examId: appeal.examId, studentId: appeal.studentId } },
+        data: { finalScore: data.newScore },
+      });
+      updateData.newScore = data.newScore;
+    }
+    return this.prisma.scoreAppeal.update({ where: { id: appealId }, data: updateData });
+  }
+
+  async publishScores(examId: number) {
+    const exam = await this.prisma.exam.findUnique({ where: { id: examId }, select: { id: true, title: true } });
+    if (!exam) throw new NotFoundException('考试不存在');
+    const result = await this.prisma.examSession.updateMany({
+      where: { examId, scoringStatus: { notIn: ['PUBLISHED', 'ADJUSTED'] } },
+      data: { scoringStatus: 'PUBLISHED', scoringPublishedAt: new Date() },
+    });
+    return { ok: true, publishedCount: result.count, message: `已发布 ${result.count} 份成绩` };
+  }
+
+  async markQuestion(examId: number, studentId: number, questionId: number) {
+    const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+    });
+    if (!session || session.status === 'SUBMITTED') throw new NotFoundException('考试不存在或已结束');
+
+    const current: number[] = JSON.parse(session.markedQuestions || '[]');
+    if (!current.includes(questionId)) {
+      current.push(questionId);
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: { markedQuestions: JSON.stringify(current) },
+      });
+    }
+    return { markedQuestions: current };
+  }
+
+  async unmarkQuestion(examId: number, studentId: number, questionId: number) {
+    const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+    });
+    if (!session || session.status === 'SUBMITTED') throw new NotFoundException('考试不存在或已结束');
+
+    const current: number[] = JSON.parse(session.markedQuestions || '[]');
+    const updated = current.filter(id => id !== questionId);
+    await this.prisma.examSession.update({
+      where: { id: session.id },
+      data: { markedQuestions: JSON.stringify(updated) },
+    });
+    return { markedQuestions: updated };
   }
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api, API_STREAM_BASE } from '@/lib/api';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 
-const REPORT_INTERVAL = 30000;
+const REPORT_INTERVAL = 60000;
 
 export default function LearningCenterPlayPage() {
   const params = useParams();
@@ -35,7 +35,7 @@ export default function LearningCenterPlayPage() {
     .finally(() => setLoading(false));
   }, []);
 
-  // Initialize Plyr
+  // Initialize Plyr + anti-cheating
   useEffect(() => {
     if (!video || !videoRef.current) return;
     const player = new Plyr(videoRef.current, {
@@ -48,10 +48,42 @@ export default function LearningCenterPlayPage() {
       player.on('ready', () => { player.currentTime = progress.lastPosition; });
     }
 
-    return () => { player.destroy(); playerRef.current = null; };
+    // C1b: Seek restriction — can't jump to >95% if under 30% progress
+    const prevPct = progress ? (progress.progress || 0) : 0;
+    player.on('seeking', () => {
+      if (!player.duration) return;
+      const targetPct = (player.currentTime / player.duration) * 100;
+      if (targetPct > 95 && prevPct < 30) {
+        player.currentTime = player.duration * 0.3;
+      }
+    });
+
+    // C1a: Visibility change — auto pause on blur
+    const handleVisibility = () => { if (document.hidden && player) player.pause(); };
+    const handleBlur = () => { if (player) player.pause(); };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      player.destroy();
+      playerRef.current = null;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+    };
   }, [video, progress]);
 
-  // Progress reporting
+  // Progress reporting (60s interval + event-driven)
+  const reportProgress = useCallback(() => {
+    const p = playerRef.current;
+    if (!p || !p.duration) return;
+    const pct = Math.min(100, Math.round((p.currentTime / p.duration) * 100));
+    const isCompleted = pct >= 80;
+    if (isCompleted) setCompleted(true);
+    api.videoCourses.reportProgress(videoId, {
+      progress: pct, lastPosition: Math.round(p.currentTime), completed: isCompleted,
+    }).catch(() => {});
+  }, [videoId]);
+
   useEffect(() => {
     if (!video || !playerRef.current) return;
     const checkReady = setInterval(() => {
@@ -59,25 +91,19 @@ export default function LearningCenterPlayPage() {
       if (!p || !p.duration) return;
       clearInterval(checkReady);
 
-      const report = () => {
-        const p = playerRef.current;
-        if (!p || !p.duration) return;
-        const pct = Math.min(100, Math.round((p.currentTime / p.duration) * 100));
-        const isCompleted = pct >= 80;
-        if (isCompleted) setCompleted(true);
-        api.videoCourses.reportProgress(videoId, {
-          progress: pct, lastPosition: Math.round(p.currentTime), completed: isCompleted,
-        }).catch(() => {});
-      };
+      intervalRef.current = setInterval(reportProgress, REPORT_INTERVAL);
 
-      intervalRef.current = setInterval(report, REPORT_INTERVAL);
+      // Event-driven reporting
+      p.on('pause', reportProgress);
+      p.on('seeked', reportProgress);
+      p.on('ended', reportProgress);
 
       const handleBeforeUnload = () => {
-        const p = playerRef.current;
-        if (p && p.duration) {
-          const pct = Math.min(100, Math.round((p.currentTime / p.duration) * 100));
+        const p2 = playerRef.current;
+        if (p2 && p2.duration) {
+          const pct = Math.min(100, Math.round((p2.currentTime / p2.duration) * 100));
           navigator.sendBeacon(`/api/video-courses/${videoId}/progress`, JSON.stringify({
-            progress: pct, lastPosition: Math.round(p.currentTime),
+            progress: pct, lastPosition: Math.round(p2.currentTime),
             completed: pct >= 80,
           }));
         }
@@ -91,7 +117,7 @@ export default function LearningCenterPlayPage() {
     }, 500);
 
     return () => clearInterval(checkReady);
-  }, [video, videoId]);
+  }, [video, videoId, reportProgress]);
 
   const formatDuration = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -128,10 +154,16 @@ export default function LearningCenterPlayPage() {
               {video.hours ? ` · ${video.hours} 课时` : ''}
               {video.isContinuingEducation && ' · 计入学时'}
             </p>
+            {/* 关联课程/培训班信息 */}
+            {video.courseLinks?.length > 0 && (
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+                📎 关联课程：{video.courseLinks.map((cl: any) => cl.course?.name).filter(Boolean).join('、')}
+              </p>
+            )}
           </div>
           <div>
             {completed ? (
-              <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>✅ 已完成</span>
+              <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>🎉 已完成</span>
             ) : (
               <span className="tag" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中</span>
             )}
@@ -152,6 +184,11 @@ export default function LearningCenterPlayPage() {
               </div>
               <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{Math.round(progress.progress || 0)}%</span>
             </div>
+          </div>
+        )}
+        {completed && (
+          <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: '#f0faf0', border: '1px solid #c8e6c9' }}>
+            <span className="text-lg">🎉 恭喜完成本视频学习！</span>
           </div>
         )}
       </div>

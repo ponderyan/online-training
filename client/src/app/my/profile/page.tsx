@@ -22,6 +22,7 @@ export default function ProfilePage() {
   // Password change
   const [oldPwd, setOldPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
   const [pwdMsg, setPwdMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -95,6 +96,7 @@ export default function ProfilePage() {
 
   const handleChangePwd = async () => {
     if (!oldPwd || !newPwd) { setPwdMsg('请填写完整'); return; }
+    if (newPwd !== confirmPwd) { setPwdMsg('两次输入的密码不一致'); return; }
     if (newPwd.length < 8) { setPwdMsg('新密码至少8位'); return; }
     if (!/[A-Z]/.test(newPwd)) { setPwdMsg('新密码需包含大写字母'); return; }
     if (!/[a-z]/.test(newPwd)) { setPwdMsg('新密码需包含小写字母'); return; }
@@ -103,7 +105,7 @@ export default function ProfilePage() {
       const res = await fetch('/api/user/password', { method: 'POST', headers, body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd }) });
       const data = await res.json();
       if (data.error) { setPwdMsg(data.error); return; }
-      setPwdMsg('✅ 密码已修改'); setOldPwd(''); setNewPwd('');
+      setPwdMsg('✅ 密码已修改'); setOldPwd(''); setNewPwd(''); setConfirmPwd('');
     } catch (e: any) { setPwdMsg('修改失败：' + e.message); }
   };
 
@@ -280,6 +282,8 @@ export default function ProfilePage() {
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>新密码</label>
                 <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} className="input" placeholder="至少8位，需包含大小写字母和数字" />
+                <label className="block text-xs font-medium mb-1 mt-3" style={{ color: 'var(--ink-500)' }}>确认新密码</label>
+                <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} className="input" placeholder="再次输入新密码" />
                 {/* Password strength bar */}
                 <div className="mt-1 h-1 rounded-full" style={{ background: 'var(--ink-100)' }}>
                   <div className="h-full rounded-full transition-all" style={{

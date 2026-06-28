@@ -5,9 +5,11 @@ import { Response } from 'express';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VideoCoursesService } from './video-courses.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
 
 @Controller('api/video-courses')
@@ -21,11 +23,12 @@ export class VideoCoursesController {
     @Query('pageSize') pageSize?: string,
     @Query('type') type?: string,
     @Query('keyword') keyword?: string,
+    @Query('status') status?: string,
   ) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
-      type, keyword,
+      type, keyword, status,
     });
   }
 
@@ -48,11 +51,29 @@ export class VideoCoursesController {
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     const uploadDir = path.resolve('uploads/videos');
     await fs.mkdir(uploadDir, { recursive: true });
-    // 去除文件名中的非 ASCII 字符（避免 MySQL 编码问题）
-    const safeName = file.originalname.replace(/[^\x20-\x7E一-鿿㐀-䶿]/g, '').replace(/\s+/g, '_').replace(/_{2,}/g, '_');
-    const fileName = `${Date.now()}-${safeName || 'video'}`;
+    const ext = path.extname(file.originalname) || '.mp4';
+    const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext}`;
     await fs.writeFile(path.join(uploadDir, fileName), file.buffer);
-    return { url: `/uploads/videos/${fileName}`, fileName: file.originalname };
+    return { url: `/uploads/videos/${fileName}`, originalFileName: file.originalname, fileName: file.originalname };
+  }
+
+  @Post('upload-cover')
+  @RequirePermission(P.COURSE_EDIT)
+  @UseInterceptors(FileInterceptor('cover', {
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.startsWith('image/')) {
+        cb(new BadRequestException('仅支持图片文件'), false);
+      } else cb(null, true);
+    },
+  }))
+  async uploadCover(@UploadedFile() file: Express.Multer.File) {
+    const uploadDir = path.resolve('uploads/covers');
+    await fs.mkdir(uploadDir, { recursive: true });
+    const ext = path.extname(file.originalname) || '.jpg';
+    const fileName = `${Date.now()}-cover-${crypto.randomUUID().slice(0, 8)}${ext}`;
+    await fs.writeFile(path.join(uploadDir, fileName), file.buffer);
+    return { url: `/uploads/covers/${fileName}`, fileName: file.originalname };
   }
 
   @Post()
@@ -69,6 +90,20 @@ export class VideoCoursesController {
     return this.service.update(id, data, userId);
   }
 
+  @Put(':id/publish')
+  @RequirePermission(P.COURSE_EDIT)
+  publish(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = req.user?.sub || req.user?.id || 1;
+    return this.service.publish(id, userId);
+  }
+
+  @Put(':id/unpublish')
+  @RequirePermission(P.COURSE_EDIT)
+  unpublish(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = req.user?.sub || req.user?.id || 1;
+    return this.service.unpublish(id, userId);
+  }
+
   @Delete(':id')
   @RequirePermission(P.COURSE_DELETE)
   delete(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
@@ -83,6 +118,7 @@ export class VideoCoursesController {
   }
 
   // ── 学员端：视频播放流 ──
+  @Public()
   @Get(':id/stream')
   async stream(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Res() res: Response) {
     const isAllowed = await this.service.canAccessVideo(id, req.user?.id, req.user?.roles);

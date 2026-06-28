@@ -10,6 +10,7 @@ export class QuestionsService {
     subjectId?: number; chapterId?: number; type?: QuestionType;
     difficulty?: string; status?: string; keyword?: string;
     isPublic?: boolean; page?: number; pageSize?: number;
+    createdBy?: number;
   }) {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
@@ -23,6 +24,7 @@ export class QuestionsService {
     if (params.status) where.status = params.status as any;
     if (params.keyword) where.content = { contains: params.keyword };
     if (params.isPublic !== undefined) where.isPublic = params.isPublic;
+    if (params.createdBy !== undefined) where.createdBy = params.createdBy;
 
     const [items, total] = await Promise.all([
       this.prisma.question.findMany({
@@ -66,12 +68,14 @@ export class QuestionsService {
     blanks?: { answer: string }[];
     subQuestions?: { content: string; answer?: string; score?: number }[];
     tagIds?: number[];
+    createdBy?: number;
   }) {
-    const { options, blanks, subQuestions, tagIds, ...questionData } = data;
+    const { options, blanks, subQuestions, tagIds, createdBy, ...questionData } = data;
 
     return this.prisma.question.create({
       data: {
         ...questionData,
+        createdBy,
         difficulty: data.difficulty as any,
         options: options ? { create: options.map((o, i) => ({ ...o, sortOrder: i })) } : undefined,
         blanks: blanks ? { create: blanks.map((b, i) => ({ ...b, blankIndex: i, sortOrder: i })) } : undefined,
@@ -147,7 +151,7 @@ export class QuestionsService {
   ) {
     const where: any = {
       status: 'PUBLISHED',
-      isPublic: true,
+      practiceVisible: true,
     };
     if (subjectId) where.subjectId = subjectId;
     if (types && types.length > 0) where.type = { in: types };
@@ -191,6 +195,7 @@ export class QuestionsService {
             status: q.status || 'PUBLISHED',
             analysis: q.analysis || undefined,
             isPublic: q.isPublic || false,
+            createdBy: q.createdBy ?? undefined,
             options: q.options ? { create: q.options.map((o: any, idx: number) => ({ ...o, sortOrder: idx })) } : undefined,
             blanks: q.blanks ? { create: q.blanks.map((b: any, idx: number) => ({ ...b, blankIndex: idx, sortOrder: idx })) } : undefined,
             subQuestions: q.subQuestions ? { create: q.subQuestions.map((s: any, idx: number) => ({ ...s, sortOrder: idx })) } : undefined,
@@ -219,6 +224,172 @@ export class QuestionsService {
 
     const correctAnswer = this.formatCorrectAnswer(question);
     return { correctAnswer, analysis: question.analysis };
+  }
+
+  // ── 练习模式 ──
+
+  async submitPractice(data: { studentId: number; questionId: number; answer: any }) {
+    const question = await this.prisma.question.findUnique({
+      where: { id: data.questionId },
+      include: {
+        options: { orderBy: { sortOrder: 'asc' } },
+        blanks: { orderBy: { blankIndex: 'asc' } },
+      },
+    });
+    if (!question) throw new NotFoundException('题目不存在');
+
+    const isCorrect = this.checkAnswer(question, data.answer);
+
+    const record = await this.prisma.practiceRecord.upsert({
+      where: {
+        studentId_questionId: { studentId: data.studentId, questionId: data.questionId },
+      },
+      create: {
+        studentId: data.studentId,
+        questionId: data.questionId,
+        answer: data.answer,
+        isCorrect,
+      },
+      update: {
+        answer: data.answer,
+        isCorrect,
+      },
+    });
+
+    const correctAnswer = this.formatCorrectAnswer(question);
+    return { isCorrect, correctAnswer, analysis: question.analysis };
+  }
+
+  async getPracticeRecords(params: { studentId: number; onlyWrong?: boolean; subjectId?: number }) {
+    const where: any = { studentId: params.studentId };
+    if (params.onlyWrong) where.isCorrect = false;
+
+    const records = await this.prisma.practiceRecord.findMany({
+      where,
+      include: {
+        question: {
+          include: {
+            options: { orderBy: { sortOrder: 'asc' } },
+            blanks: { orderBy: { blankIndex: 'asc' } },
+            subject: { select: { name: true } },
+            chapter: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let filtered = records;
+    if (params.subjectId) {
+      filtered = records.filter(r => r.question.subjectId === params.subjectId);
+    }
+
+    return { total: filtered.length, items: filtered };
+  }
+
+  async getPracticeStats(studentId: number) {
+    const total = await this.prisma.practiceRecord.count({ where: { studentId } });
+    const correct = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: true } });
+    const wrong = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: false } });
+
+    const rows: any[] = await this.prisma.$queryRawUnsafe(`
+      SELECT q.subject_id, ANY_VALUE(s.name) as subject_name,
+        COUNT(*) as total,
+        SUM(CASE WHEN pr.is_correct THEN 1 ELSE 0 END) as correct
+      FROM practice_records pr
+      JOIN questions q ON q.id = pr.question_id
+      JOIN subjects s ON s.id = q.subject_id
+      WHERE pr.student_id = ?
+      GROUP BY q.subject_id
+    `, studentId);
+
+    const bySubject = rows.map((r: any) => ({
+      subject_id: Number(r.subject_id),
+      subject_name: r.subject_name,
+      total: Number(r.total),
+      correct: Number(r.correct),
+    }));
+
+    return {
+      total,
+      correct,
+      wrong,
+      accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+      bySubject,
+    };
+  }
+
+  async toggleFavorite(studentId: number, questionId: number) {
+    const existing = await this.prisma.questionFavorite.findUnique({
+      where: { studentId_questionId: { studentId, questionId } },
+    });
+    if (existing) {
+      await this.prisma.questionFavorite.delete({ where: { id: existing.id } });
+      return { favorited: false };
+    }
+    await this.prisma.questionFavorite.create({ data: { studentId, questionId } });
+    return { favorited: true };
+  }
+
+  async getFavoriteQuestions(params: { studentId: number; subjectId?: number }) {
+    const where: any = { studentId: params.studentId };
+    const records = await this.prisma.questionFavorite.findMany({
+      where,
+      include: {
+        question: {
+          include: {
+            options: { orderBy: { sortOrder: 'asc' } },
+            blanks: { orderBy: { blankIndex: 'asc' } },
+            subject: { select: { name: true } },
+            chapter: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    let items = records.map(r => r.question);
+    if (params.subjectId) items = items.filter(q => q.subjectId === params.subjectId);
+    return { total: items.length, items };
+  }
+
+  async getFavoriteIds(studentId: number) {
+    const records = await this.prisma.questionFavorite.findMany({
+      where: { studentId },
+      select: { questionId: true },
+    });
+    return records.map(r => r.questionId);
+  }
+
+  private checkAnswer(question: any, studentAnswer: any): boolean {
+    switch (question.type) {
+      case 'SINGLE_CHOICE':
+      case 'TRUE_FALSE': {
+        const correct = question.options?.find((o: any) => o.isCorrect);
+        return studentAnswer === correct?.label;
+      }
+      case 'MULTIPLE_CHOICE': {
+        const correctLabels = new Set(
+          question.options?.filter((o: any) => o.isCorrect).map((o: any) => o.label)
+        );
+        const studentLabels = new Set(Array.isArray(studentAnswer) ? studentAnswer : []);
+        if (correctLabels.size !== studentLabels.size) return false;
+        for (const l of correctLabels) if (!studentLabels.has(l)) return false;
+        return true;
+      }
+      case 'FILL_BLANK': {
+        const blanks = question.blanks || [];
+        const studentBlanks = Array.isArray(studentAnswer) ? studentAnswer : [studentAnswer];
+        if (blanks.length !== studentBlanks.length) return false;
+        return blanks.every((b: any, i: number) =>
+          String(studentBlanks[i] || '').trim().toLowerCase() === String(b.answer || '').trim().toLowerCase()
+        );
+      }
+      case 'SHORT_ANSWER':
+      case 'CASE_STUDY':
+        return false;
+      default:
+        return false;
+    }
   }
 
   private formatCorrectAnswer(question: any): string {

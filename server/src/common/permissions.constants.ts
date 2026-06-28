@@ -12,7 +12,8 @@ export enum Role {
   LECTURER = 'LECTURER',         // 讲师/出题人
   PROCTOR = 'PROCTOR',           // 监考员
   STUDENT = 'STUDENT',           // 学员
-  AUDITOR = 'AUDITOR',           // 审计员（只读查看+报表导出）
+  AUDITOR = 'AUDITOR',
+  EXAM_OFFICER = 'EXAM_OFFICER',   // 考务员（负责组卷/考试/判分/成绩发布）           // 审计员（只读查看+报表导出）
 }
 
 // 权限点定义
@@ -45,6 +46,8 @@ export const Permissions = {
   EXAM_DELETE: 'exam:delete',
   EXAM_ASSIGN: 'exam:assign',
   EXAM_VIEW: 'exam:view',
+  EXAM_RESULT_VIEW: 'exam:result:view',
+  APPEAL_MANAGE: 'appeal:manage',
 
   // ── 监考 ──
   PROCTOR_VIEW: 'proctor:view',
@@ -225,9 +228,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
     // 新权限
     Permissions.ORG_VIEW,
-    Permissions.ORG_CREATE,
-    Permissions.ORG_EDIT,
-    Permissions.ORG_DELETE,
     Permissions.ROLE_VIEW,
     Permissions.ROLE_CREATE,
     Permissions.ROLE_EDIT,
@@ -242,7 +242,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 
   [Role.LECTURER]: [
-    Permissions.EXAM_CREATE,
     Permissions.QUESTION_CREATE,
     Permissions.PROGRAM_VIEW,
     Permissions.TRANSCRIPT_VIEW,
@@ -250,14 +249,12 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.QUESTION_EDIT,
     Permissions.QUESTION_AUDIT,
     Permissions.PAPER_VIEW,
-    Permissions.PAPER_GENERATE,
-    Permissions.PAPER_EDIT,
     Permissions.PAPER_DOWNLOAD,
     Permissions.PAPER_ANSWER_SHEET,
-    Permissions.TEMPLATE_MANAGE,
     Permissions.REPORT_VIEW,
     Permissions.GRADING_MANUAL,
     Permissions.PROCTOR_VIEW,
+    Permissions.EXAM_RESULT_VIEW,
     Permissions.MATERIAL_UPLOAD,
     Permissions.MATERIAL_REVIEW,
     Permissions.MATERIAL_GENERATE,
@@ -267,7 +264,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 
   [Role.PROCTOR]: [
-    Permissions.EXAM_CREATE,
     Permissions.PROCTOR_VIEW,
     Permissions.PROCTOR_FORCE_SUBMIT,
     Permissions.PROCTOR_EXTEND_TIME,
@@ -283,7 +279,67 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.REPORT_VIEW,           // 成绩/报表
   ],
 
+  [Role.EXAM_OFFICER]: [
+    // ── 题库管理 ──
+    Permissions.QUESTION_CREATE,
+    Permissions.QUESTION_EDIT,
+    Permissions.QUESTION_DELETE,
+    Permissions.QUESTION_IMPORT,
+    Permissions.QUESTION_AUDIT,
+
+    // ── 组卷 ──
+    Permissions.PAPER_VIEW,
+    Permissions.PAPER_GENERATE,
+    Permissions.PAPER_EDIT,
+    Permissions.PAPER_PUBLISH,
+    Permissions.PAPER_DOWNLOAD,
+    Permissions.PAPER_ANSWER_SHEET,
+    Permissions.TEMPLATE_MANAGE,
+
+    // ── 考试管理 ──
+    Permissions.EXAM_VIEW,
+    Permissions.EXAM_CREATE,
+    Permissions.EXAM_EDIT,
+    Permissions.EXAM_DELETE,
+    Permissions.EXAM_ASSIGN,
+    Permissions.EXAM_RESULT_VIEW,
+
+    // ── 阅卷 ──
+    Permissions.GRADING_AUTO,
+    Permissions.GRADING_MANUAL,
+    Permissions.GRADING_PUBLISH,
+
+    // ── 监考 ──
+    Permissions.PROCTOR_VIEW,
+    Permissions.PROCTOR_FORCE_SUBMIT,
+    Permissions.PROCTOR_EXTEND_TIME,
+
+    // ── 成绩与申诉 ──
+    Permissions.APPEAL_MANAGE,
+
+    // ── 证书 ──
+    Permissions.CERT_VIEW,
+    Permissions.CERT_ISSUE,
+    Permissions.CERT_REVOKE,
+    Permissions.CERT_APPLICATION_VIEW,
+
+    // ── 教材 ──
+    Permissions.MATERIAL_UPLOAD,
+    Permissions.MATERIAL_REVIEW,
+    Permissions.MATERIAL_GENERATE,
+
+    // ── 查看类 ──
+    Permissions.REPORT_VIEW,
+    Permissions.REPORT_EXPORT,
+    Permissions.TRANSCRIPT_VIEW,
+    Permissions.NOTIFICATION_VIEW,
+  ],
+
   [Role.AUDITOR]: [
+    Permissions.EXAM_RESULT_VIEW,
+    Permissions.CERT_VIEW,
+    Permissions.CERT_APPLICATION_VIEW,
+    Permissions.TRANSCRIPT_VIEW,
     Permissions.PROGRAM_VIEW,
     Permissions.SCHEDULE_VIEW,
     Permissions.REPORT_VIEW,

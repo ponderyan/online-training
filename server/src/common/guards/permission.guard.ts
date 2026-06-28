@@ -31,24 +31,16 @@ export class PermissionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    // ── 检查 @Public() 装饰器 ──
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) return true;
-
     const requiredPermission = this.reflector.getAllAndOverride<Permission>(
       PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // ── JWT 验证 ──
+    // ── JWT 验证（先解码，让 @Public() 端点也能拿到 user）──
     const token = this.extractToken(request);
     if (token) {
       try {
         const payload = this.jwtService.verify(token, { secret: JWT_SECRET });
-        // 保留 id（JWT 里是 sub），兼容 Passport Strategy 的返回值
         (request as any).user = { id: payload.sub, ...payload };
       } catch {
         if (requiredPermission) {
@@ -56,6 +48,13 @@ export class PermissionGuard implements CanActivate {
         }
       }
     }
+
+    // ── 检查 @Public() 装饰器（此时 req.user 已设，供 handler 使用）──
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
 
     // ── 设置请求上下文（供审计日志使用）──
     const user = (request as any).user;
@@ -115,9 +114,15 @@ export class PermissionGuard implements CanActivate {
   }
 
   private extractToken(request: Request): string | null {
+    // 1) 优先取 Authorization header
     const auth = request.headers?.authorization;
-    if (!auth) return null;
-    const [type, token] = auth.split(' ');
-    return type === 'Bearer' ? token : null;
+    if (auth) {
+      const [type, token] = auth.split(' ');
+      if (type === 'Bearer') return token;
+    }
+    // 2) 降级到查询参数 ?token=（供 <video> 标签等无法设置 header 的场景使用）
+    const queryToken = (request.query as any)?.token;
+    if (typeof queryToken === 'string' && queryToken.length > 0) return queryToken;
+    return null;
   }
 }

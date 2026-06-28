@@ -38,8 +38,9 @@ export default function NewProgramPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    (api as any).dictionary.list({ type: 'SUBJECT' }).then((d: any) => {
-      if (d?.items?.length) setSubjects(d.items.map((s: any) => ({ id: s.id, code: s.code, name: s.name })));
+    api.dataDictionaries.list().then((d: any) => {
+      const items = Array.isArray(d) ? d : d?.items || [];
+      if (items.length) setSubjects(items.map((s: any) => ({ id: s.code || s.id, code: s.code, name: s.name })));
     }).catch(() => {});
   }, []);
 

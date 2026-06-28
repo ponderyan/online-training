@@ -14,7 +14,7 @@ interface SiteSettings {
 
 const defaultSettings: SiteSettings = {
   siteName: 'FoxLearn',
-  siteTitle: 'FoxLearn · 狐学',
+  siteTitle: '狐学 · 智能在线培训考试平台',
   footerText: '跟着小狐狸，知识不迷路 🐾',
   publicRegistration: false,
 };

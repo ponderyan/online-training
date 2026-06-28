@@ -151,6 +151,28 @@ export const api = {
     create: (data: any) => request<any>('/exams', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/exams/${id}`, { method: 'DELETE' }),
+    appeal: {
+      submit: (examId: number, reason: string) =>
+        request<any>(`/student/exams/${examId}/appeal`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }),
+    },
+    admin: {
+      getExamResults: (examId: number) =>
+        request<any>(`/exams/${examId}/results`),
+      getStudentResult: (examId: number, studentId: number) =>
+        request<any>(`/exams/${examId}/results/${studentId}`),
+      getAppeals: (examId: number) =>
+        request<any>(`/exams/${examId}/appeals`),
+      resolveAppeal: (examId: number, appealId: number, data: any) =>
+        request<any>(`/exams/${examId}/appeals/${appealId}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        }),
+      publishScores: (examId: number) =>
+        request<any>(`/exams/${examId}/publish-scores`, { method: 'POST' }),
+    },
     publish: (id: number) => request<any>(`/exams/${id}/publish`, { method: 'PUT' }),
     finish: (id: number) => request<any>(`/exams/${id}/finish`, { method: 'PUT' }),
     students: (id: number) => request<any[]>(`/exams/${id}/students`),
@@ -367,11 +389,12 @@ export const api = {
 
   // ── Phase 2: 视频课程（独立实体） ──
   videoCourses: {
-    list: (params?: { page?: number; pageSize?: number; type?: string; keyword?: string }) => {
+    list: (params?: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string }) => {
       const qp: Record<string, string> = {};
       if (params?.page) qp.page = params.page.toString();
       if (params?.pageSize) qp.pageSize = params.pageSize.toString();
       if (params?.type) qp.type = params.type;
+      if (params?.status) qp.status = params.status;
       if (params?.keyword) qp.keyword = params.keyword;
       const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
       return request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/video-courses${qs}`);
@@ -528,7 +551,36 @@ export const api = {
 
   // ── Phase F: 练习 ──
   practice: {
+    questions: (params?: Record<string, string | number | boolean>) => {
+      const qs = params ? '?' + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+      ).toString() : '';
+      return request<any[]>(`/questions/practice${qs}`);
+    },
     answer: (questionId: number) => request<any>(`/questions/practice/answer?questionId=${questionId}`),
+    submit: (data: { questionId: number; answer: any }) =>
+      request<any>('/questions/practice/submit', { method: 'POST', body: JSON.stringify(data) }),
+    records: (params?: Record<string, string | number | boolean>) => {
+      const qs = params ? '?' + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+      ).toString() : '';
+      return request<{ total: number; items: any[] }>(`/questions/practice/records${qs}`);
+    },
+    stats: () => request<any>('/questions/practice/stats'),
+    favorite: {
+      toggle: (questionId: number) =>
+        request<any>('/questions/practice/favorite/toggle', {
+          method: 'POST',
+          body: JSON.stringify({ questionId }),
+        }),
+      ids: () => request<number[]>('/questions/practice/favorite/ids'),
+      questions: (params?: Record<string, string | number | boolean>) => {
+        const qs = params ? '?' + new URLSearchParams(
+          Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+        ).toString() : '';
+        return request<{ total: number; items: any[] }>(`/questions/practice/favorites${qs}`);
+      },
+    },
   },
 
   // ── 公开科目列表（无需登录） ──

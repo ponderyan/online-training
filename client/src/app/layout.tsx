@@ -4,8 +4,8 @@ import { SiteSettingsProvider } from '@/hooks/use-site-settings';
 import DynamicBrand from '@/components/dynamic-brand';
 
 export const metadata: Metadata = {
-  title: 'FoxLearn · 狐学 — 智能组卷系统',
-  description: '跟着小狐狸，高效出卷，精准组卷',
+  title: '狐学 · 智能在线培训考试平台',
+  description: '跟着小狐狸，高效培训，精准考试',
   icons: {
     icon: '/favicon.svg',
   },

@@ -26,11 +26,11 @@ const NAV_GROUPS = [
   {
     title: '考试题库',
     items: [
-      { path: '/questions', label: '题库管理', icon: '📝', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'] },
-      { path: '/materials', label: '教材出题', icon: '📖', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'] },
-      { path: '/generate', label: '智能组卷', icon: '✨', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'] },
-      { path: '/papers', label: '试卷管理', icon: '📄', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'] },
-      { path: '/exams', label: '考试管理', icon: '📋', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
+      { path: '/questions', label: '题库管理', icon: '📝', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER', 'EXAM_OFFICER'] },
+      { path: '/materials', label: '教材出题', icon: '📖', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER', 'EXAM_OFFICER'] },
+      { path: '/generate', label: '智能组卷', icon: '✨', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'] },
+      { path: '/papers', label: '试卷管理', icon: '📄', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'] },
+      { path: '/exams', label: '考试管理', icon: '📋', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'] },
     ],
   },
   {
@@ -49,8 +49,8 @@ const NAV_GROUPS = [
       { path: '/admin/organizations', label: '机构管理', icon: '🏢', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
       { path: '/admin/messages', label: '消息中心', icon: '📢', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
       { path: '/agencies', label: '招生机构', icon: '📋', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
-      { path: '/grading', label: '阅卷中心', icon: '📊', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'] },
-      { path: '/proctoring', label: '监考中心', icon: '🎥', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'PROCTOR'] },
+      { path: '/grading', label: '阅卷中心', icon: '📊', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER', 'EXAM_OFFICER'] },
+      { path: '/proctoring', label: '监考中心', icon: '🎥', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'PROCTOR', 'EXAM_OFFICER'] },
       { path: '/evaluations', label: '评价管理', icon: '📋', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
       { path: '/accounts', label: '账户管理', icon: '👤', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
       { path: '/permissions', label: '权限管理', icon: '🔐', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
@@ -64,12 +64,12 @@ const NAV_GROUPS = [
   {
     title: '学员空间',
     items: [
-      { path: '/learning-center', label: '学习中心', icon: '📺', roles: ['STUDENT'] },
-      { path: '/practice', label: '练习模式', icon: '📝', roles: ['STUDENT'] },
-      { path: '/exam', label: '我的考试', icon: '📋', roles: ['STUDENT'] },
-      { path: '/learning-hours', label: '我的学时', icon: '📊', roles: ['STUDENT'] },
-      { path: '/my-certificates', label: '我的证书', icon: '🎓', roles: ['STUDENT'] },
-      { path: '/ai/assistant', label: 'AI 助教', icon: '🦊', roles: ['STUDENT'] },
+      { path: '/learning-center', label: '学习中心', icon: '📺', roles: ['STUDENT', 'SUPER_ADMIN'] },
+      { path: '/practice', label: '练习模式', icon: '📝', roles: ['STUDENT', 'SUPER_ADMIN'] },
+      { path: '/exam', label: '我的考试', icon: '📋', roles: ['STUDENT', 'SUPER_ADMIN'] },
+      { path: '/learning-hours', label: '我的学时', icon: '📊', roles: ['STUDENT', 'SUPER_ADMIN'] },
+      { path: '/my-certificates', label: '我的证书', icon: '🎓', roles: ['STUDENT', 'SUPER_ADMIN'] },
+      { path: '/ai/assistant', label: 'AI 助教', icon: '🦊', roles: ['STUDENT', 'SUPER_ADMIN'] },
     ],
   },
 ];
@@ -116,7 +116,12 @@ export default function Sidebar({ user }: { user: any }) {
               </div>
             )}
             {group.items.map(item => {
-              const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
+              const isActive = pathname === item.path || (
+                pathname.startsWith(item.path + '/') &&
+                !group.items.some(sibling =>
+                  sibling.path !== item.path && pathname.startsWith(sibling.path + '/')
+                )
+              );
               return (
                 <div key={item.path + item.label} onClick={() => router.push(item.path)}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all"
@@ -141,7 +146,8 @@ export default function Sidebar({ user }: { user: any }) {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-[#c4bcb0] truncate">{user?.displayName || ''}</div>
             <div className="text-[11px] text-[#f5a061]">
-              {user?.roles?.includes('STUDENT') ? '学员' : user?.roles?.includes('SUPER_ADMIN') ? '超级管理员' : user?.roles?.includes('ORG_ADMIN') ? '机构管理员' : user?.roles?.includes('LECTURER') ? '讲师' : user?.roles?.includes('PROCTOR') ? '监考员' : '小狐狸的搭档'} 🐾
+              {user?.roles?.includes('STUDENT') ? '学员' : user?.roles?.includes('SUPER_ADMIN') ? '超级管理员' : user?.roles?.includes('ORG_ADMIN') ? '机构管理员' : user?.roles?.includes('LECTURER') ? '讲师' : user?.roles?.includes('EXAM_OFFICER') ? '考务员'
+          : user?.roles?.includes('PROCTOR') ? '监考员' : '小狐狸的搭档'} 🐾
             </div>
           </div>
           <button onClick={handleLogout} className="text-[11px] text-[#8b8174] hover:text-[#e87a30] transition-colors bg-transparent border-none cursor-pointer flex-shrink-0 px-1">退出</button>

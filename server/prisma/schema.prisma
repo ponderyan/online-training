@@ -191,6 +191,8 @@ model User {
   videoProgresses      VideoProgress[]
   videoCourseLogs      VideoCourseLog[]
   learningHourRecords  LearningHourRecord[]
+  practiceRecords      PracticeRecord[]
+  favoriteQuestions    QuestionFavorite[]
 
   @@map("users")
 }
@@ -416,6 +418,8 @@ model Question {
   status     QuestionStatus @default(PUBLISHED)
   usageCount Int            @default(0) @map("usage_count")
   isPublic   Boolean        @default(false) @map("is_public") // 通用/公共题
+  practiceVisible Boolean   @default(false) @map("practice_visible") // 练习模式可见
+  createdBy   Int?     @map("created_by")   // 出题人用户ID
   createdAt  DateTime       @default(now()) @map("created_at")
   updatedAt  DateTime       @updatedAt @map("updated_at")
 
@@ -430,6 +434,8 @@ model Question {
   paperQuestions  PaperQuestion[]
   coolDownRecords CoolDownRecord[]
   materialQuestions MaterialQuestion[]
+  practiceRecords PracticeRecord[]
+  favoriteRecords QuestionFavorite[]
 
   @@map("questions")
 }
@@ -850,6 +856,7 @@ model Exam {
 
   // ── Phase D: 申诉配置 ──
   appealDeadlineHours Int?    @default(72) @map("appeal_deadline_hours") // 申诉截止（小时），0=不允许申诉
+  showAnswerAfterExam  Boolean  @default(false) @map("show_answer_after_exam") // 考后是否显示答案
 
   createdBy        Int      @map("created_by")
   createdAt        DateTime @default(now()) @map("created_at")
@@ -900,6 +907,8 @@ model ExamSession {
   // PUBLISHED: 成绩已对学员可见
   scoringPublishedAt   DateTime? @map("scoring_published_at")
     confirmedAt     DateTime? @map("confirmed_at")
+
+  markedQuestions String   @default("[]") @map("marked_questions")
 
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -1334,10 +1343,13 @@ model VideoCourse {
   instructorId          Int?      @map("instructor_id")         // 可选关联系统 Instructor
   hours                 Float?                                  // 课时数
   url                   String?   @db.VarChar(500)              // 视频文件 URL（可空，允许先建后传）
+  originalFileName      String?   @map("original_file_name") @db.VarChar(500) // 上传时的原始文件名
+  coverUrl              String?   @map("cover_url") @db.VarChar(500) // 封面图 URL
   duration              Int       @default(0)                   // 视频时长（秒）
   type                  String    @default("PUBLIC") @db.VarChar(20) // PUBLIC | SPECIALIZED
   isContinuingEducation Boolean   @default(false) @map("is_continuing_education") // 是否计入继续教育学分
   sortOrder             Int       @default(0) @map("sort_order")
+  status                String    @default("DRAFT") @db.VarChar(20) // DRAFT | PUBLISHED | UNPUBLISHED
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -1636,4 +1648,41 @@ model CertificateTrace {
   createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("certificate_traces")
+}
+
+// ═══════════════════════════════════════════
+// 收藏题目记录
+// ═══════════════════════════════════════════
+model QuestionFavorite {
+  id         Int      @id @default(autoincrement())
+  studentId  Int      @map("student_id")
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId Int      @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([studentId, questionId])
+  @@index([studentId])
+  @@map("question_favorites")
+}
+
+// ═══════════════════════════════════════════
+// 练习记录（每次练习答题记录，用于错题本和统计）
+// ═══════════════════════════════════════════
+model PracticeRecord {
+  id         Int      @id @default(autoincrement())
+  studentId  Int      @map("student_id")
+  student    User     @relation(fields: [studentId], references: [id])
+  questionId Int      @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id])
+
+  answer     Json     // 学员提交的答案
+  isCorrect  Boolean  @map("is_correct")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([studentId, questionId])
+  @@index([studentId, isCorrect])
+  @@map("practice_records")
 }

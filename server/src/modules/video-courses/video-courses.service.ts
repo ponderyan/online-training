@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -9,10 +9,13 @@ export class VideoCoursesService {
     // 管理员/讲师 放行
     if (roles?.some(r => ['SUPER_ADMIN', 'ORG_ADMIN', 'LECTURER'].includes(r))) return true;
 
-    // PUBLIC 类型视频放行
+    // PUBLIC 类型视频放行（即使未登录也放行）
     const video = await this.prisma.videoCourse.findUnique({ where: { id: videoId } });
     if (!video) return false;
     if (video.type === 'PUBLIC') return true;
+
+    // 未登录用户只能看 PUBLIC，以下需要 userId
+    if (!userId) return false;
 
     // SPECIALIZED 类型：检查学员是否报了关联课程的培训班
     const courseIds = await this.prisma.videoCourseCourse.findMany({
@@ -38,11 +41,12 @@ export class VideoCoursesService {
     return matchingSchedules.length > 0;
   }
 
-  async findAll(params: { page?: number; pageSize?: number; type?: string; keyword?: string }) {
+  async findAll(params: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
     if (params.type) where.type = params.type;
+    if (params.status) where.status = params.status;
     if (params.keyword) where.name = { contains: params.keyword };
 
     const [items, total] = await Promise.all([
@@ -78,6 +82,9 @@ export class VideoCoursesService {
 
   async create(data: any, userId: number) {
     const { courseIds, ...rest } = data;
+    // 公开课默认已发布，专项课默认草稿
+    if (rest.type === 'PUBLIC' && !rest.status) rest.status = 'PUBLISHED';
+    if (rest.type === 'SPECIALIZED' && !rest.status) rest.status = 'DRAFT';
     // Build clean data: include all fields but drop null values for nullable fields
     // so Prisma uses defaults for non-nullable fields with defaults
     const cleanData: any = {};
@@ -146,7 +153,8 @@ export class VideoCoursesService {
   }
 
   async delete(id: number, userId: number) {
-    await this.findOne(id);
+    const video = await this.findOne(id);
+    if (video.status !== 'UNPUBLISHED') throw new BadRequestException('请先下架后再删除');
     await this.prisma.videoCourseLog.create({
       data: { videoCourseId: id, action: '删除视频课程', operatorId: userId },
     });
@@ -217,14 +225,14 @@ export class VideoCoursesService {
     // 2. PUBLIC videos (all students can see)
     // 3. SPECIALIZED videos linked to enrolled courses
     const publicVideos = await this.prisma.videoCourse.findMany({
-      where: { type: 'PUBLIC' },
+      where: { type: 'PUBLIC', status: 'PUBLISHED' },
       include: { courseLinks: { include: { course: { select: { id: true, name: true } } } } },
       orderBy: { sortOrder: 'asc' },
     });
 
     const specializedVideos = await this.prisma.videoCourse.findMany({
       where: {
-        type: 'SPECIALIZED',
+        type: 'SPECIALIZED', status: 'PUBLISHED',
         courseLinks: { some: { courseId: { in: Array.from(enrolledCourseIds) } } },
       },
       include: { courseLinks: { include: { course: { select: { id: true, name: true } } } } },
@@ -254,5 +262,31 @@ export class VideoCoursesService {
       videos: withProgress,
       stats: { totalVideos, completedVideos, totalHours: Math.round(totalHours * 100) / 100 },
     };
+  }
+
+  async publish(id: number, userId: number) {
+    const video = await this.findOne(id);
+    if (video.status === 'PUBLISHED') return video;
+    const updated = await this.prisma.videoCourse.update({
+      where: { id },
+      data: { status: 'PUBLISHED' },
+    });
+    await this.prisma.videoCourseLog.create({
+      data: { videoCourseId: id, action: '发布视频课程', operatorId: userId },
+    });
+    return updated;
+  }
+
+  async unpublish(id: number, userId: number) {
+    const video = await this.findOne(id);
+    if (video.status === 'DRAFT' || video.status === 'UNPUBLISHED') return video;
+    const updated = await this.prisma.videoCourse.update({
+      where: { id },
+      data: { status: 'UNPUBLISHED' },
+    });
+    await this.prisma.videoCourseLog.create({
+      data: { videoCourseId: id, action: '下架视频课程', operatorId: userId },
+    });
+    return updated;
   }
 }

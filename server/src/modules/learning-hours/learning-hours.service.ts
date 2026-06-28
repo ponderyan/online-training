@@ -18,7 +18,21 @@ export class LearningHoursService {
       }),
       this.prisma.learningHourRecord.count({ where }),
     ]);
-    return { items, total };
+
+    // 为 VIDEO 来源的记录补充视频名称
+    const enriched = await Promise.all(items.map(async (r) => {
+      let videoName: string | null = null;
+      if (r.source === 'VIDEO' && r.sourceId) {
+        const vc = await this.prisma.videoCourse.findUnique({
+          where: { id: r.sourceId },
+          select: { name: true },
+        });
+        if (vc) videoName = vc.name;
+      }
+      return { ...r, videoName };
+    }));
+
+    return { items: enriched, total };
   }
 
   async stats(studentId: number) {
