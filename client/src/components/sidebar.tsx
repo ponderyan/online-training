@@ -175,7 +175,10 @@ export default function Sidebar({ user }: { user: any }) {
               const isActive = pathname === item.path || (
                 pathname.startsWith(item.path + '/') &&
                 !group.items.some(sibling =>
-                  sibling.path !== item.path && pathname.startsWith(sibling.path + '/')
+                  sibling.path !== item.path && (
+                    pathname === sibling.path ||
+                    pathname.startsWith(sibling.path + '/')
+                  )
                 )
               );
               return (
