@@ -109,26 +109,51 @@ export class DataImportExportService {
 
   private async importStudents(rows: string[][], log: any, operatorId: number) {
     for (let i = 0; i < rows.length; i++) {
-      const [username, displayName, phone, organization] = rows[i];
+      const [displayName, username, idCard, phone, email, organization, mailingAddress, agencyName, title, gender, studentNumber] = rows[i];
       try {
-        if (!username || !displayName) throw new Error('用户名和姓名为必填');
+        if (!displayName || !username) throw new Error('姓名和用户名为必填');
         const u = String(username).trim();
         const existing = await this.db.user.findUnique({ where: { username: u } });
         const data: any = { displayName: String(displayName).trim() };
+        if (idCard) data.idCard = String(idCard).trim();
         if (phone) data.phone = String(phone).trim();
+        if (email) data.email = String(email).trim();
         if (organization) data.organization = String(organization).trim();
+        if (mailingAddress) data.mailingAddress = String(mailingAddress).trim();
+        if (title) data.title = String(title).trim();
+        if (gender) data.gender = String(gender).trim();
+        if (studentNumber) data.studentNumber = String(studentNumber).trim();
+
+        // 招生机构名称 → primaryAgencyId
+        if (agencyName) {
+          const name = String(agencyName).trim();
+          let agency = await this.db.enrollmentAgency.findFirst({ where: { name } });
+          if (!agency) {
+            agency = await this.db.enrollmentAgency.create({ data: { name, isActive: true } });
+          }
+          data.primaryAgencyId = agency.id;
+        }
+
         if (existing) {
           await this.db.user.update({ where: { id: existing.id }, data });
         } else {
           data.username = u;
           data.passwordHash = await bcrypt.hash('123456', 10);
-          data.role = 'STUDENT';
-          await this.db.user.create({ data });
+          const newUser = await this.db.user.create({ data });
+          // 分配 STUDENT 角色
+          const studentRole = await this.db.role.findUnique({ where: { code: 'STUDENT' } });
+          if (studentRole) {
+            await this.db.userRoleAssignment.upsert({
+              where: { userId_roleId: { userId: newUser.id, roleId: studentRole.id } },
+              create: { userId: newUser.id, roleId: studentRole.id },
+              update: {},
+            });
+          }
         }
         log.successRows++;
       } catch (e: any) {
         log.failRows++;
-        log.errors.push({ row: i + 2, field: 'username', message: e.message });
+        log.errors.push({ row: i + 2, field: 'displayName', message: e.message });
       }
     }
   }

@@ -101,6 +101,10 @@ export default function LearningHoursPage() {
                         </span>
                       </td>
                       <td className="text-sm" style={{ color: 'var(--ink-600)' }}>{r.videoName || (r.source === 'VIDEO' ? '视频学习' : '线下活动')}</td>
+                      <td>{r.source === 'VIDEO' ? <span className="text-xs" style={{ color: 'var(--ink-300)' }}>自动记录</span>
+                        : r.status === 'APPROVED' ? <span className="text-xs" style={{ color: '#2e7d32' }}>✅ 已审核</span>
+                        : r.status === 'REJECTED' ? <span className="text-xs" style={{ color: '#ef4444' }} title={r.reviewComment || ''}>❌ 已驳回</span>
+                        : <span className="text-xs" style={{ color: '#e87a30' }}>⏳ 待审核</span>}</td>
                       <td>{r.program?.name || '—'}</td>
                       <td>{r.hours} 小时</td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)' }}>

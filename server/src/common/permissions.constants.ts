@@ -13,6 +13,7 @@ export enum Role {
   PROCTOR = 'PROCTOR',           // 监考员
   STUDENT = 'STUDENT',           // 学员
   AUDITOR = 'AUDITOR',
+  AGENCY_ADMIN = 'AGENCY_ADMIN',   // 招生机构管理员
   EXAM_OFFICER = 'EXAM_OFFICER',   // 考务员（负责组卷/考试/判分/成绩发布）           // 审计员（只读查看+报表导出）
 }
 
@@ -92,6 +93,9 @@ export const Permissions = {
 
   // ── Phase A: 招生机构 ──
   AGENCY_VIEW: 'agency:view',
+  AGENCY_VIEW_STUDENTS: 'agency:view:students',
+  AGENCY_MANAGE_STUDENTS: 'agency:manage:students',
+  AGENCY_MANAGE_CERTIFICATES: 'agency:manage:certificates',
   AGENCY_CREATE: 'agency:create',
   AGENCY_EDIT: 'agency:edit',
   AGENCY_DELETE: 'agency:delete',
@@ -137,6 +141,7 @@ export const Permissions = {
   // ── 学时管理（新） ──
   LEARNING_HOUR_VIEW: 'learningHour:view',
   LEARNING_HOUR_MANAGE: 'learningHour:manage',
+  LEARNING_HOUR_APPROVE: 'learningHour:approve',
 
   // ── 评价管理（新） ──
   EVALUATION_VIEW: 'evaluation:view',
@@ -234,6 +239,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.ROLE_DELETE,
     Permissions.LEARNING_HOUR_VIEW,
     Permissions.LEARNING_HOUR_MANAGE,
+    Permissions.LEARNING_HOUR_APPROVE,
     Permissions.EVALUATION_VIEW,
     Permissions.EVALUATION_MANAGE,
     Permissions.AI_CONFIG_VIEW,
@@ -333,6 +339,13 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.REPORT_EXPORT,
     Permissions.TRANSCRIPT_VIEW,
     Permissions.NOTIFICATION_VIEW,
+  ],
+
+  [Role.AGENCY_ADMIN]: [
+    Permissions.AGENCY_VIEW,
+    Permissions.AGENCY_VIEW_STUDENTS,
+    Permissions.AGENCY_MANAGE_STUDENTS,
+    Permissions.AGENCY_MANAGE_CERTIFICATES,
   ],
 
   [Role.AUDITOR]: [
@@ -451,6 +464,8 @@ export const PERM_CATEGORIES: PermissionCategory[] = [
       { key: Permissions.REPORT_EXPORT, label: '导出报表' },
       { key: Permissions.TRANSCRIPT_VIEW, label: '查看成绩单' },
       { key: Permissions.LEARNING_HOUR_VIEW, label: '查看学时' },
+      { key: Permissions.LEARNING_HOUR_MANAGE, label: '管理学时' },
+      { key: Permissions.LEARNING_HOUR_APPROVE, label: '审核学时' },
       { key: Permissions.LEARNING_HOUR_MANAGE, label: '管理学时' },
       { key: Permissions.AUDIT_LOG_VIEW, label: '查看审计日志' },
     ],

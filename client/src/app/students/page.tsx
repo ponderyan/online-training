@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ImportModal from './import-modal';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -211,8 +212,8 @@ export default function StudentsPage() {
           }} className="btn btn-outline btn-sm">📤 导出CSV</button>
           <button onClick={() => { setShowGroup(true); setGroupForm({ name: '', note: '' }); }}
             className="btn btn-outline btn-sm">📂 分组管理</button>
-          <button onClick={() => { setShowImport(true); setBatchResult(null); setBatchText(''); }}
-            className="btn btn-outline btn-sm">📥 批量导入</button>
+          <button onClick={() => setShowImport(true)}
+            className="btn btn-outline btn-sm">📥 导入学员</button>
           <button onClick={() => { setShowAdd(true); setEditStudent(null); resetForm(); }}
             className="btn btn-fox btn-sm">➕ 添加学员</button>
         </div>
@@ -418,45 +419,9 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* ── Batch Import Modal ── */}
+      {/* ── Excel 导入学员 Modal ── */}
       {showImport && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowImport(false); setBatchResult(null); } }}>
-          <div className="modal-card max-w-[600px] animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">📥 批量导入学员</h3>
-              <button onClick={() => { setShowImport(false); setBatchResult(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p className="text-xs mb-3" style={{ color: 'var(--ink-400)' }}>
-                每行一名学员，格式：<code className="px-1 rounded" style={{ background: 'var(--paper-dark)' }}>用户名,姓名,密码,学号,手机号,单位</code>
-                &nbsp;（分隔符支持逗号、中文逗号、Tab）
-              </p>
-              <textarea value={batchText} onChange={e => setBatchText(e.target.value)}
-                className="input textarea" rows={8}
-                placeholder="stu002,李四,123456,DTM2026002,13900139002,YY公司&#10;stu003,王五,123456,DTM2026003,13700137003,ZZ科技" />
-
-              {batchResult && (
-                <div className="mt-3 p-3 rounded text-sm" style={{ background: batchResult.failCount === 0 ? 'var(--cyan-glow)' : 'var(--verm-glow)' }}>
-                  <span style={{ color: 'var(--cyan)' }}>✅ 成功 {batchResult.successCount}</span>
-                  {batchResult.failCount > 0 && (
-                    <span className="ml-3" style={{ color: 'var(--verm)' }}>❌ 失败 {batchResult.failCount}</span>
-                  )}
-                  {batchResult.results?.filter((r: any) => !r.success).slice(0, 3).map((r: any, i: number) => (
-                    <div key={i} className="text-xs mt-1" style={{ color: 'var(--verm)' }}>{r.username}: {r.message}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => { setShowImport(false); setBatchResult(null); }} className="btn btn-ghost btn-sm">关闭</button>
-              {!batchResult && (
-                <button onClick={handleBatchImport} disabled={batchImporting} className="btn btn-fox btn-sm">
-                  {batchImporting ? '导入中…' : '开始导入'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        <ImportModal onClose={() => setShowImport(false)} onSuccess={() => { setShowImport(false); load(); }} />
       )}
 
       {/* ── Group Management Modal ── */}

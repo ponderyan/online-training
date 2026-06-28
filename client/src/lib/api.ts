@@ -306,6 +306,30 @@ export const api = {
 
   getPermissionCategories: () => request<any[]>('/permissions/categories'),
 
+  programs: {
+    list: (params?: Record<string, string | number>) => {
+      const qs = params ? '?' + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+      ).toString() : '';
+      return request<{ items: any[]; total: number }>(`/training-programs${qs}`);
+    },
+  },
+
+  enrollmentAgencies: {
+    list: () => request<any[]>('/enrollment-agencies'),
+    get: (id: number) => request<any>(`/enrollment-agencies/${id}`),
+    getStudents: (id: number, params?: Record<string, string | number>) => {
+      const qs = params ? '?' + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+      ).toString() : '';
+      return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/enrollment-agencies/${id}/students${qs}`);
+    },
+    getStudentProgress: (id: number, studentId?: number) =>
+      request<any[]>(`/enrollment-agencies/${id}/students/progress${studentId ? `?studentId=${studentId}` : ''}`),
+    getEnrollments: (id: number, studentId?: number) =>
+      request<any[]>(`/enrollment-agencies/${id}/enrollments${studentId ? `?studentId=${studentId}` : ''}`),
+  },
+
   getUserPermissions: () =>
     request<{ permissions: string[]; roles: any[]; isSuperAdmin: boolean }>('/user/permissions'),
 
@@ -456,6 +480,14 @@ export const api = {
     },
     stats: () => request<{ totalHours: number; completedVideos: number; programStats: any[] }>('/learning-hours/stats'),
     programStats: (programId: number) => request<any[]>(`/learning-hours/program/${programId}`),
+    pending: (programId?: number) => {
+      const qs = programId ? `?programId=${programId}` : '';
+      return request<any[]>(`/learning-hours/pending${qs}`);
+    },
+    approve: (ids: number[], comment?: string) =>
+      request<any>('/learning-hours/approve', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
+    reject: (ids: number[], comment: string) =>
+      request<any>('/learning-hours/reject', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
   },
 
   // ── Phase C: 排课管理 ──
@@ -555,6 +587,10 @@ export const api = {
     importLogs: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
       return request<{ items: any[]; total: number }>(`/data/import/logs${qs}`);
+    },
+    exportLogs: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return request<{ items: any[]; total: number }>(`/data/export/logs${qs}`);
     },
   },
 

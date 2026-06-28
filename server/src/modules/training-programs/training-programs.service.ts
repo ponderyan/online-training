@@ -79,6 +79,11 @@ export class TrainingProgramsService {
   async create(data: any) {
     data.code = await this.generateCode();
     if (!data.createdBy) data.createdBy = 1; // default to admin
+    // 日期字段转换（前端可能传 "YYYY-MM-DD" 格式）
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.enrollStart) data.enrollStart = new Date(data.enrollStart);
+    if (data.enrollEnd) data.enrollEnd = new Date(data.enrollEnd);
     return this.prisma.trainingProgram.create({ data });
   }
 

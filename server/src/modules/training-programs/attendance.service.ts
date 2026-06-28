@@ -25,21 +25,61 @@ export class AttendanceService {
     return [...records, ...defaults];
   }
 
-  async update(programId: number, studentId: number, data: { actualDays: number; reason: string }, userId: number) {
+  async update(programId: number, studentId: number, data: { actualDays: number; reason: string; signInSheetUrl?: string }, userId: number) {
     const existing = await this.prisma.attendanceRecord.findUnique({
       where: { programId_studentId: { programId, studentId } },
     });
     const totalDays = existing?.totalDays || (await this.prisma.schedule.count({ where: { programId } }));
     const attendanceRate = totalDays > 0 ? Math.round(data.actualDays / totalDays * 10000) / 100 : 0;
 
+    let attendance;
     if (existing) {
-      return this.prisma.attendanceRecord.update({
+      attendance = await this.prisma.attendanceRecord.update({
         where: { id: existing.id },
         data: { actualDays: data.actualDays, attendanceRate, modifiedById: userId, modifiedReason: data.reason },
       });
+    } else {
+      attendance = await this.prisma.attendanceRecord.create({
+        data: { programId, studentId, totalDays, actualDays: data.actualDays, attendanceRate, source: 'MANUAL', modifiedById: userId, modifiedReason: data.reason },
+      });
     }
-    return this.prisma.attendanceRecord.create({
-      data: { programId, studentId, totalDays, actualDays: data.actualDays, attendanceRate, source: 'MANUAL', modifiedById: userId, modifiedReason: data.reason },
-    });
+
+    // ── 出勤保存后自动生成 OFFLINE 学时 ──
+    try {
+      const program = await this.prisma.trainingProgram.findUnique({
+        where: { id: programId },
+        select: { hoursPerDay: true },
+      });
+      if (program?.hoursPerDay && data.actualDays > 0) {
+        const hours = data.actualDays * program.hoursPerDay;
+        const existingLHR = await this.prisma.learningHourRecord.findFirst({
+          where: { studentId, programId, source: 'OFFLINE' },
+          orderBy: { recordedAt: 'desc' },
+        });
+        if (existingLHR && existingLHR.status === 'APPROVED') {
+          // 已审批学时不被篡改，新建 PENDING 记录走审批
+          await this.prisma.learningHourRecord.create({
+            data: {
+              studentId, programId, source: 'OFFLINE', hours, status: 'PENDING',
+              evidenceUrl: data.signInSheetUrl ?? undefined, recordedAt: new Date(),
+            },
+          });
+        } else if (existingLHR) {
+          await this.prisma.learningHourRecord.update({
+            where: { id: existingLHR.id },
+            data: { hours, evidenceUrl: data.signInSheetUrl ?? undefined },
+          });
+        } else {
+          await this.prisma.learningHourRecord.create({
+            data: {
+              studentId, programId, source: 'OFFLINE', hours, status: 'PENDING',
+              evidenceUrl: data.signInSheetUrl ?? undefined, recordedAt: new Date(),
+            },
+          });
+        }
+      }
+    } catch {} // 学时生成失败不影响出勤记录
+
+    return attendance;
   }
 }

@@ -35,6 +35,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/instructors', label: '讲师管理', icon: '👨‍🏫' },
       { path: '/students', label: '学员管理', icon: '👥' },
       { path: '/agencies', label: '招生机构', icon: '🏢' },
+      { path: '/admin/agency-students', label: '机构学员', icon: '👥' },
     ],
   },
   {
@@ -56,6 +57,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/certificates', label: '证书管理', icon: '🎓' },
       { path: '/certificates/applications', label: '证书审批', icon: '📋' },
       { path: '/evaluations', label: '评价管理', icon: '⭐' },
+      { path: '/admin/learning-hours-review', label: '学时审核', icon: '⏱' },
     ],
   },
   {
@@ -223,6 +225,7 @@ export default function Sidebar({ user }: { user: any }) {
                 : user?.roles?.includes('ORG_ADMIN') ? '机构管理员'
                 : user?.roles?.includes('LECTURER') ? '讲师'
                 : user?.roles?.includes('EXAM_OFFICER') ? '考务员'
+                : user?.roles?.includes('AGENCY_ADMIN') ? '招生机构管理员'
                 : user?.roles?.includes('PROCTOR') ? '监考员'
                 : '小狐狸的搭档'} 🐾
             </div>
