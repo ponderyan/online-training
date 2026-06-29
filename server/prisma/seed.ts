@@ -22,6 +22,8 @@ async function main() {
     { name: '监考', code: 'PROCTOR', color: '#f59e0b', description: '考试监控、签到', isSystem: true, sortOrder: 4 },
     { name: '学员', code: 'STUDENT', color: '#2e7d32', description: '学习、考试、查成绩', isSystem: true, sortOrder: 5 },
     { name: '审计员', code: 'AUDITOR', color: '#7b1fa2', description: '只读查看 + 报表导出', isSystem: true, sortOrder: 6 },
+    { name: '招生机构管理员', code: 'AGENCY_ADMIN', color: '#0d47a1', description: '管理招生机构及学员', isSystem: true, sortOrder: 7 },
+    { name: '考务人员', code: 'EXAM_OFFICER', color: '#6a1b9a', description: '考试场次管理、编排、监考指派', isSystem: true, sortOrder: 8 },
   ];
   const roles: any[] = [];
   for (const r of rolesData) {
@@ -135,9 +137,42 @@ async function main() {
   }
   console.log('✅ 讲师: 2 名样例');
 
+  // ── 10. 各角色测试账号 ──
+  const testPw = await bcrypt.hash('123456', 10);
+  const testAccounts = [
+    { username: 'org_admin', displayName: '机构管理员', roles: ['ORG_ADMIN'] },
+    { username: 'agency_admin', displayName: '招生机构管理员', roles: ['AGENCY_ADMIN'] },
+    { username: 'lecturer01', displayName: '李讲师', roles: ['LECTURER'] },
+    { username: 'exam_officer', displayName: '考务员小王', roles: ['EXAM_OFFICER'] },
+    { username: 'proctor01', displayName: '监考员老赵', roles: ['PROCTOR'] },
+    { username: 'auditor01', displayName: '审计员小刘', roles: ['AUDITOR'] },
+  ];
+  for (const acct of testAccounts) {
+    const user = await prisma.user.upsert({
+      where: { username: acct.username },
+      update: {},
+      create: { username: acct.username, passwordHash: testPw, displayName: acct.displayName, orgId: org.id },
+    });
+    const role = roles.find(r => acct.roles.includes(r.code));
+    if (role) {
+      await prisma.userRoleAssignment.upsert({
+        where: { userId_roleId: { userId: user.id, roleId: role.id } },
+        update: {},
+        create: { userId: user.id, roleId: role.id },
+      });
+    }
+  }
+  console.log(`✅ 测试账号: ${testAccounts.length} 个`);
+
   console.log('\n🎉 种子数据初始化完成!');
-  console.log(`   管理员: admin / admin_temp`);
-  console.log(`   学员:   stu001 / 123456`);
+  console.log(`   管理员:   admin / admin_temp`);
+  console.log(`   学员:     stu001 / 123456`);
+  console.log(`   机构管理:  org_admin / 123456`);
+  console.log(`   招生机构:  agency_admin / 123456`);
+  console.log(`   讲师:     lecturer01 / 123456`);
+  console.log(`   考务员:   exam_officer / 123456`);
+  console.log(`   监考员:   proctor01 / 123456`);
+  console.log(`   审计员:   auditor01 / 123456`);
 }
 
 main()
