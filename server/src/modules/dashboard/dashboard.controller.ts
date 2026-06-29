@@ -8,7 +8,7 @@ export class DashboardController {
   constructor(private service: DashboardService) {}
 
   @Get('stats')
-  @RequirePermission(Permissions.REPORT_VIEW)
+  @RequirePermission(Permissions.SYSTEM_CONFIG)
   async getStats() {
     return this.service.getStats();
   }

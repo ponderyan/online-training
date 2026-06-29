@@ -8,6 +8,7 @@ export class SiteSettingsController {
   constructor(private service: SiteSettingsService) {}
 
   @Get()
+  @RequirePermission(Permissions.SYSTEM_CONFIG)
   async get() {
     return this.service.get();
   }

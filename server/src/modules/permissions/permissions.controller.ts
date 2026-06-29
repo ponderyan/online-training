@@ -10,6 +10,7 @@ export class PermissionsController {
   // ═══ 角色管理 ═══
 
   @Get('roles')
+  @RequirePermission(P.ROLE_VIEW)
   getRoles() {
     return this.service.getRoles();
   }
@@ -67,11 +68,13 @@ export class PermissionsController {
   // ═══ 权限映射 ═══
 
   @Get('categories')
+  @RequirePermission(P.ROLE_VIEW)
   getCategories() {
     return PERM_CATEGORIES;
   }
 
   @Get()
+  @RequirePermission(P.ROLE_VIEW)
   getAll() {
     return this.service.getAll();
   }
