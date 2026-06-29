@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Req } from '@nestjs/common';
 import { DashboardService } from './dashboard.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -8,8 +8,8 @@ export class DashboardController {
   constructor(private service: DashboardService) {}
 
   @Get('stats')
-  @RequirePermission(Permissions.SYSTEM_CONFIG)
-  async getStats() {
-    return this.service.getStats();
+  async getStats(@Req() req: any) {
+    const user = req.user;
+    return this.service.getStats(user);
   }
 }
