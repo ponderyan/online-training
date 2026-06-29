@@ -58,6 +58,12 @@ export class AuthService {
     });
     const roleCodes = roleAssignments.map(r => r.role.code);
 
+    // 获取用户权限列表（用于前端侧边栏权限过滤）
+    const dbPerms = await this.prisma.rolePermission.findMany({
+      where: { role: { code: { in: roleCodes } } },
+    });
+    const userPermissions = [...new Set(dbPerms.filter(p => p.isGranted).map(p => p.permission))];
+
     const payload = { sub: user.id, username: user.username, orgId: user.orgId, roles: roleCodes };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -73,7 +79,8 @@ export class AuthService {
         displayName: user.displayName,
         orgId: user.orgId,
         roles: roleCodes,
-        role: roleCodes[0] || 'STUDENT', // ♻ 兼容旧前端，后续迁移到 roles[]
+        role: roleCodes[0] || 'STUDENT',
+        permissions: userPermissions,
       },
     };
   }

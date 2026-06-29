@@ -50,6 +50,12 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('用户名或密码错误');
       localStorage.setItem('token', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.user.permissions) {
+        localStorage.setItem('userPermissions', JSON.stringify({
+          permissions: data.user.permissions,
+          roles: data.user.roles || [],
+        }));
+      }
       router.push('/dashboard');
     } catch (e: any) {
       setError(e.message);

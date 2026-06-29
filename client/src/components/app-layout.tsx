@@ -21,9 +21,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         userData.permissions = permsData.permissions || [];
         userData.isSuperAdmin = permsData.isSuperAdmin || false;
         userData.roleInfo = permsData.roles || [];
+        setUser(userData);
+        setLoading(false);
+      } else {
+        // 兜底：旧登录没有 userPermissions，从 API 获取
+        setUser(userData);
+        const token = localStorage.getItem('token');
+        if (token) {
+          fetch('/api/user/permissions', {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(r => r.json()).then(permData => {
+            if (permData && permData.permissions) {
+              localStorage.setItem('userPermissions', JSON.stringify(permData));
+              userData.permissions = permData.permissions || [];
+              userData.isSuperAdmin = permData.isSuperAdmin || false;
+              userData.roleInfo = permData.roles || [];
+              setUser({ ...userData });
+            }
+          }).catch(() => {});
+        }
+        setLoading(false);
       }
-      setUser(userData);
-      setLoading(false);
     } else { router.replace('/login'); }
   }, [router]);
 
