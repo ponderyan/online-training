@@ -1094,6 +1094,9 @@ model EnrollmentAgency {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  organizationId  Int?    @map("organization_id")
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   enrollments     ProgramEnrollment[]
   primaryStudents User[] // 归属本机构的学员
 

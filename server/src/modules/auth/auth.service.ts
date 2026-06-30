@@ -64,7 +64,7 @@ export class AuthService {
     });
     const userPermissions = [...new Set(dbPerms.filter(p => p.isGranted).map(p => p.permission))];
 
-    const payload = { sub: user.id, username: user.username, orgId: user.orgId, roles: roleCodes };
+    const payload = { sub: user.id, username: user.username, orgId: user.orgId, primaryAgencyId: user.primaryAgencyId, roles: roleCodes };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: JWT_SECRET,
@@ -78,6 +78,7 @@ export class AuthService {
         username: user.username,
         displayName: user.displayName,
         orgId: user.orgId,
+        primaryAgencyId: user.primaryAgencyId,
         roles: roleCodes,
         role: roleCodes[0] || 'STUDENT',
         permissions: userPermissions,

@@ -328,6 +328,13 @@ export const api = {
       request<any[]>(`/enrollment-agencies/${id}/students/progress${studentId ? `?studentId=${studentId}` : ''}`),
     getEnrollments: (id: number, studentId?: number) =>
       request<any[]>(`/enrollment-agencies/${id}/enrollments${studentId ? `?studentId=${studentId}` : ''}`),
+    listMembers: (id: number) => request<any[]>(`/enrollment-agencies/${id}/members`),
+    createMember: (id: number, data: { displayName: string; username: string; phone?: string; roleCode: string }) =>
+      request<any>(`/enrollment-agencies/${id}/members`, { method: 'POST', body: JSON.stringify(data) }),
+    updateMemberRole: (id: number, userId: number, roleCode: string) =>
+      request<any>(`/enrollment-agencies/${id}/members/${userId}`, { method: 'PUT', body: JSON.stringify({ roleCode }) }),
+    removeMember: (id: number, userId: number) =>
+      request<any>(`/enrollment-agencies/${id}/members/${userId}`, { method: 'DELETE' }),
   },
 
   getUserPermissions: () =>

@@ -56,7 +56,7 @@ export default function LoginPage() {
           roles: data.user.roles || [],
         }));
       }
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (e: any) {
       setError(e.message);
       fetchCaptcha();

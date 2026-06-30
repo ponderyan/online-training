@@ -1,14 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import * as bcrypt from 'bcryptjs';
+
+// AGENCY_ADMIN 可以创建的角色白名单（不可创建管理员角色）
+const AGENCY_MANAGEABLE_ROLES = ['PROCTOR', 'LECTURER', 'STUDENT'];
 
 @Injectable()
 export class EnrollmentAgenciesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; keyword?: string }) {
+  async findAll(user: any, params: { page?: number; keyword?: string }) {
     const page = params.page || 1;
     const where: any = {};
     if (params.keyword) where.name = { contains: params.keyword };
+    // AGENCY_ADMIN 只看自己的机构
+    if (user?.roles?.includes('AGENCY_ADMIN') && user.primaryAgencyId) {
+      where.id = user.primaryAgencyId;
+    }
     const [items, total] = await Promise.all([
       this.prisma.enrollmentAgency.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * 20, take: 20 }),
       this.prisma.enrollmentAgency.count({ where }),
@@ -59,5 +67,80 @@ export class EnrollmentAgenciesService {
       include: { student: { select: { id: true, displayName: true } }, program: { select: { id: true, name: true, status: true } } },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ═══════════════════════════════════
+  // 机构成员管理
+  // ═══════════════════════════════════
+
+  async findMembers(agencyId: number) {
+    return this.prisma.user.findMany({
+      where: { primaryAgencyId: agencyId },
+      select: { id: true, displayName: true, username: true, phone: true, email: true, isActive: true,
+        roleAssignments: { select: { role: { select: { code: true, name: true } } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createMember(agencyId: number, data: { displayName: string; username: string; phone?: string; roleCode: string }) {
+    // 校验角色白名单
+    if (!AGENCY_MANAGEABLE_ROLES.includes(data.roleCode)) {
+      throw new ForbiddenException(`不允许创建 ${data.roleCode} 角色`);
+    }
+
+    // 检查用户名是否已存在
+    const existing = await this.prisma.user.findUnique({ where: { username: data.username } });
+    if (existing) throw new ConflictException('用户名已存在');
+
+    // 获取目标角色
+    const role = await this.prisma.role.findUnique({ where: { code: data.roleCode } });
+    if (!role) throw new ForbiddenException('角色不存在');
+
+    // 创建用户
+    const passwordHash = await bcrypt.hash('123456', 10);
+    const user = await this.prisma.user.create({
+      data: {
+        username: data.username,
+        passwordHash,
+        displayName: data.displayName,
+        phone: data.phone || null,
+        primaryAgencyId: agencyId,
+      },
+    });
+
+    // 分配角色
+    await this.prisma.userRoleAssignment.create({
+      data: { userId: user.id, roleId: role.id },
+    });
+
+    return { id: user.id, displayName: user.displayName, username: user.username, role: data.roleCode };
+  }
+
+  async updateMemberRole(agencyId: number, userId: number, roleCode: string) {
+    if (!AGENCY_MANAGEABLE_ROLES.includes(roleCode)) {
+      throw new ForbiddenException(`不允许分配 ${roleCode} 角色`);
+    }
+    const user = await this.prisma.user.findFirst({ where: { id: userId, primaryAgencyId: agencyId } });
+    if (!user) throw new ForbiddenException('用户不属于本机构');
+
+    const role = await this.prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) throw new ForbiddenException('角色不存在');
+
+    // 删除旧角色分配，创建新分配
+    await this.prisma.userRoleAssignment.deleteMany({ where: { userId } });
+    await this.prisma.userRoleAssignment.create({ data: { userId, roleId: role.id } });
+
+    return { userId, role: roleCode };
+  }
+
+  async removeMember(agencyId: number, userId: number) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, primaryAgencyId: agencyId } });
+    if (!user) throw new ForbiddenException('用户不属于本机构');
+
+    // 移除角色分配，再停用用户（不物理删除）
+    await this.prisma.userRoleAssignment.deleteMany({ where: { userId } });
+    await this.prisma.user.update({ where: { id: userId }, data: { isActive: false } });
+
+    return { userId, status: 'deactivated' };
   }
 }

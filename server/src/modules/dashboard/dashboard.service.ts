@@ -91,12 +91,24 @@ export class DashboardService {
     // ── AGENCY_ADMIN 专属 ──
     let agency: any = {};
     if (roles.includes('AGENCY_ADMIN')) {
-      const studentRole = await this.prisma.role.findUnique({ where: { code: 'STUDENT' } });
+      const agencyId = user.primaryAgencyId;
       agency = {
-        totalStudents: studentRole
-          ? await this.prisma.userRoleAssignment.count({ where: { roleId: studentRole.id, user: { isActive: true } } })
+        totalStudents: agencyId
+          ? await this.prisma.user.count({ where: { primaryAgencyId: agencyId, isActive: true } })
           : 0,
-        pendingCertificates: await this.prisma.certificateApplication.count({ where: { status: 'PENDING' } }),
+        pendingCertificates: agencyId
+          ? await this.prisma.certificateApplication.count({
+              where: {
+                studentId: { in: (
+                  await this.prisma.user.findMany({
+                    where: { primaryAgencyId: agencyId },
+                    select: { id: true },
+                  })
+                ).map(u => u.id) },
+                status: 'PENDING',
+              },
+            })
+          : 0,
       };
     }
 
