@@ -66,8 +66,9 @@ model Organization {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  users    User[]
-  programs TrainingProgram[]
+  users              User[]
+  programs           TrainingProgram[]
+  enrollmentAgencies EnrollmentAgency[]
 
   @@map("organizations")
 }

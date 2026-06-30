@@ -35,6 +35,16 @@ export default function AgencyStudentsPage() {
     init();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'members' && selectedAgencyId) {
+      setMembersLoading(true);
+      api.enrollmentAgencies.listMembers(selectedAgencyId)
+        .then((d: any) => setMembers(d || []))
+        .catch(() => {})
+        .finally(() => setMembersLoading(false));
+    }
+  }, [activeTab, selectedAgencyId]);
+
   const init = async () => {
     try {
       const perms = JSON.parse(localStorage.getItem('userPermissions') || '{}');

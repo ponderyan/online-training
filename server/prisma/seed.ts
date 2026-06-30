@@ -14,6 +14,15 @@ async function main() {
   });
   console.log(`✅ 机构: ${org.name} (${org.code})`);
 
+  // ── 1.1 创建默认招生机构 ──
+  let agency = await prisma.enrollmentAgency.findFirst({ where: { name: '中电标协招办' } });
+  if (!agency) {
+    agency = await prisma.enrollmentAgency.create({
+      data: { name: '中电标协招办', contactPerson: '招生办', contactPhone: '010-88888888', organizationId: org.id },
+    });
+  }
+  console.log(`✅ 招生机构: ${agency.name}`);
+
   // ── 2. 创建 6 个内置角色 ──
   const rolesData = [
     { name: '超级管理员', code: 'SUPER_ADMIN', color: '#ef4444', description: '系统运维，管理所有机构', isSystem: true, sortOrder: 1 },
@@ -151,7 +160,11 @@ async function main() {
     const user = await prisma.user.upsert({
       where: { username: acct.username },
       update: {},
-      create: { username: acct.username, passwordHash: testPw, displayName: acct.displayName, orgId: org.id },
+      create: {
+        username: acct.username, passwordHash: testPw,
+        displayName: acct.displayName, orgId: org.id,
+        primaryAgencyId: acct.username === 'agency_admin' ? agency.id : undefined,
+      },
     });
     const role = roles.find(r => acct.roles.includes(r.code));
     if (role) {
