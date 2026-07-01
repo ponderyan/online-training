@@ -159,11 +159,13 @@ async function main() {
   for (const acct of testAccounts) {
     const user = await prisma.user.upsert({
       where: { username: acct.username },
-      update: {},
+      update: {
+        primaryAgencyId: ['agency_admin', 'lecturer01', 'proctor01'].includes(acct.username) ? agency.id : undefined,
+      },
       create: {
         username: acct.username, passwordHash: testPw,
         displayName: acct.displayName, orgId: org.id,
-        primaryAgencyId: acct.username === 'agency_admin' ? agency.id : undefined,
+        primaryAgencyId: ['agency_admin', 'lecturer01', 'proctor01'].includes(acct.username) ? agency.id : undefined,
       },
     });
     const role = roles.find(r => acct.roles.includes(r.code));
