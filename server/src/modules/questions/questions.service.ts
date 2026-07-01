@@ -88,16 +88,15 @@ export class QuestionsService {
     // ★ orgId 隔离
     const userOrgId = params.userOrgId ?? null;
     const userRoles = params.userRoles ?? [];
-    if (userOrgId) {
-      // 机构角色 → 只看自己的
-      where.orgId = userOrgId;
-    } else if (userRoles.includes('SUPER_ADMIN')) {
+    if (userRoles.includes('SUPER_ADMIN')) {
       // SUPER_ADMIN → 取决于开关二
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'hidden') {
         where.orgId = null;
-      }
-      // view_only / full_access → 不限制
+      }  // view_only / full_access → 不限制
+    } else if (userOrgId) {
+      // 机构角色 → 只看自己的
+      where.orgId = userOrgId;
     }
     // 没有角色（公共查询等）→ 不限制
 

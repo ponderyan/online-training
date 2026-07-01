@@ -29,11 +29,11 @@ export class PapersService {
     const where: any = {};
     const userOrgId = params.userOrgId ?? null;
     const userRoles = params.userRoles ?? [];
-    if (userOrgId) {
-      where.orgId = userOrgId;
-    } else if (userRoles.includes('SUPER_ADMIN')) {
+    if (userRoles.includes('SUPER_ADMIN')) {
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'hidden') where.orgId = null;
+    } else if (userOrgId) {
+      where.orgId = userOrgId;
     }
 
     const [items, total] = await Promise.all([

@@ -25,11 +25,11 @@ export class ExamsService {
     // ★ orgId 隔离
     const uOrgId = params.userOrgId ?? null;
     const uRoles = params.userRoles ?? [];
-    if (uOrgId) {
-      where.orgId = uOrgId;
-    } else if (uRoles.includes('SUPER_ADMIN')) {
+    if (uRoles.includes('SUPER_ADMIN')) {
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'hidden') where.orgId = null;
+    } else if (uOrgId) {
+      where.orgId = uOrgId;
     }
 
     const [items, total] = await Promise.all([
