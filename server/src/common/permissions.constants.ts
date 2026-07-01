@@ -155,6 +155,10 @@ export const Permissions = {
 
   // ── 审计日志（新） ──
   AUDIT_LOG_VIEW: 'auditLog:view',
+
+  // ── 题库策略配置（新） ──
+  BANK_POLICY_VIEW: 'bankPolicy:view',
+  BANK_POLICY_MANAGE: 'bankPolicy:manage',
 } as const;
 
 // 角色→权限映射表

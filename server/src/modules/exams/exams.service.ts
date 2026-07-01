@@ -1,15 +1,19 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Injectable()
 export class ExamsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private systemConfig: SystemConfigService,
+  ) {}
 
   // ═══════════════════════════════════════════
   //  场次管理（教务端）
   // ═══════════════════════════════════════════
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; paperId?: number; programId?: number }) {
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; paperId?: number; programId?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
@@ -17,6 +21,16 @@ export class ExamsService {
     if (params.status) where.status = params.status;
     if (params.paperId) where.paperId = params.paperId;
     if (params.programId) where.programId = params.programId;
+
+    // ★ orgId 隔离
+    const uOrgId = params.userOrgId ?? null;
+    const uRoles = params.userRoles ?? [];
+    if (uOrgId) {
+      where.orgId = uOrgId;
+    } else if (uRoles.includes('SUPER_ADMIN')) {
+      const visibility = await this.systemConfig.getConfig('org_bank_visibility');
+      if (visibility === 'hidden') where.orgId = null;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.exam.findMany({
@@ -34,7 +48,7 @@ export class ExamsService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.prisma.exam.findUnique({
       where: { id },
       include: {
@@ -47,6 +61,15 @@ export class ExamsService {
       },
     });
     if (!exam) throw new NotFoundException('考试不存在');
+
+    // ★ orgId 隔离：非 SUPER_ADMIN 只能访问自己机构的
+    if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
+      const uOrgId = userOrgId ?? null;
+      if (uOrgId === null || exam.orgId !== uOrgId) {
+        throw new NotFoundException('考试不存在');
+      }
+    }
+
     return exam;
   }
 
@@ -56,6 +79,7 @@ export class ExamsService {
     accessType?: string; shuffleQuestions?: boolean; shuffleOptions?: boolean;
     password?: string;
     programId?: number; passingScore?: number;
+    orgId?: number | null;
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
     if (!paper) throw new NotFoundException('试卷不存在');
@@ -96,6 +120,7 @@ export class ExamsService {
         status: 'DRAFT',
         totalStudents: students.length,
         createdBy: data.createdBy,
+        orgId: data.orgId ?? null,
         sessions: {
           create: students.map(s => ({
             studentId: s.id,
@@ -110,8 +135,8 @@ export class ExamsService {
     });
   }
 
-  async update(id: number, data: any) {
-    const exam = await this.findOne(id);
+  async update(id: number, data: any, userOrgId?: number | null, userRoles?: string[]) {
+    const exam = await this.findOne(id, userOrgId, userRoles);
     if (exam.status !== 'DRAFT') throw new BadRequestException('只有草稿状态的考试可以编辑');
     const updateData: any = {};
     if (data.title) updateData.title = data.title;
@@ -124,19 +149,19 @@ export class ExamsService {
     return this.prisma.exam.update({ where: { id }, data: updateData });
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    await this.findOne(id, userOrgId, userRoles);
     return this.prisma.exam.delete({ where: { id } });
   }
 
-  async publish(id: number) {
-    const exam = await this.findOne(id);
+  async publish(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const exam = await this.findOne(id, userOrgId, userRoles);
     if (exam.status !== 'DRAFT') throw new BadRequestException('只能发布草稿状态的考试');
     return this.prisma.exam.update({ where: { id }, data: { status: 'PUBLISHED' } });
   }
 
-  async finish(id: number) {
-    const exam = await this.findOne(id);
+  async finish(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const exam = await this.findOne(id, userOrgId, userRoles);
     if (exam.status === 'FINISHED') throw new BadRequestException('考试已结束');
     await this.prisma.examSession.updateMany({
       where: { examId: id, status: { in: ['ACTIVE', 'PAUSED'] } },
@@ -500,7 +525,14 @@ export class ExamsService {
       questions: exam.paper.questions.map((pq: any) => ({
         pqId: pq.id, questionId: pq.question.id, type: pq.question.type,
         content: pq.question.content, score: pq.score,
-        options: pq.question.options, blanks: pq.question.blanks,
+        options: pq.question.options.map((o: any) => ({
+          id: o.id, questionId: o.questionId,
+          label: o.label, content: o.content, sortOrder: o.sortOrder,
+        })),
+        blanks: pq.question.blanks.map((b: any) => ({
+          id: b.id, questionId: b.questionId,
+          blankIndex: b.blankIndex, sortOrder: b.sortOrder,
+        })),
         subQuestions: pq.question.subQuestions,
         yourAnswer: session.answers?.find((a: any) => a.paperQuestionId === pq.id)?.answer || null,
         isMarked: markedQuestions.includes(pq.question.id),

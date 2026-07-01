@@ -10,6 +10,7 @@ export class ExamsController {
   @Get()
   @RequirePermission(Permissions.EXAM_CREATE)
   findAll(
+    @Req() req: any,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('keyword') keyword?: string,
@@ -23,12 +24,16 @@ export class ExamsController {
       keyword, status,
       paperId: paperId ? parseInt(paperId) : undefined,
       programId: programId ? parseInt(programId) : undefined,
+      userOrgId: req.user?.orgId ?? null,
+      userRoles: req.user?.roles,
     });
   }
 
   @Get(':id')
   @RequirePermission(Permissions.EXAM_CREATE)
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Post()
   @RequirePermission(Permissions.EXAM_CREATE)
@@ -38,88 +43,47 @@ export class ExamsController {
     accessType?: string; shuffleQuestions?: boolean; shuffleOptions?: boolean;
     password?: string;
     programId?: number; passingScore?: number;
-  }) { return this.service.create(data); }
+  }, @Req() req: any) {
+    const userId = req.user?.sub || req.user?.id;
+    return this.service.create({ ...data, createdBy: userId, orgId: req.user?.orgId ?? null });
+  }
 
   @Put(':id')
   @RequirePermission(Permissions.EXAM_EDIT)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: any, @Req() req: any) {
+    return this.service.update(id, data, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Delete(':id')
   @RequirePermission(Permissions.EXAM_DELETE)
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.remove(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Put(':id/publish')
   @RequirePermission(Permissions.EXAM_CREATE)
-  publish(@Param('id', ParseIntPipe) id: number) { return this.service.publish(id); }
+  publish(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.publish(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Put(':id/finish')
   @RequirePermission(Permissions.EXAM_EDIT)
-  finish(@Param('id', ParseIntPipe) id: number) { return this.service.finish(id); }
+  finish(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.finish(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Get(':id/students')
   @RequirePermission(Permissions.EXAM_CREATE)
-  getStudents(@Param('id', ParseIntPipe) id: number) { return this.service.getStudents(id); }
+  getStudents(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getStudents(id);
+  }
 
   @Post(':id/add-students')
   @RequirePermission(Permissions.EXAM_ASSIGN)
-  addStudents(@Param('id', ParseIntPipe) id: number, @Body() data: { studentIds: number[] }) {
-    return this.service.addStudents(id, data.studentIds);
-  }
-
-  /** Part 1: 阅卷进度统计 */
-  @Get(':id/grading-progress')
-  @RequirePermission(Permissions.GRADING_MANUAL)
-  async getGradingProgress(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getGradingProgress(id);
-  }
-
-  @Get(':id/sessions/status-summary')
-  @RequirePermission(Permissions.GRADING_MANUAL)
-  async getSessionStatusSummary(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getSessionStatusSummary(id);
-  }
-
-  @Get(':id/transcript')
-  @RequirePermission(Permissions.TRANSCRIPT_VIEW)
-  async getTranscript(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getTranscript(id);
-  }
-
-  @Get(':id/results')
-  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
-  async getExamResults(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getExamResults(id);
-  }
-
-  @Get(':id/results/:studentId')
-  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
-  async getStudentResult(
+  addStudents(
     @Param('id', ParseIntPipe) id: number,
-    @Param('studentId', ParseIntPipe) studentId: number,
-    @Req() req: any,
+    @Body() data: { studentIds: number[] },
   ) {
-    const viewerId = req.user?.sub || req.user?.id;
-    return this.service.getResult(id, studentId, viewerId);
-  }
-
-  @Get(':id/appeals')
-  @RequirePermission(Permissions.APPEAL_MANAGE)
-  async getAppeals(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getAppeals(id);
-  }
-
-  @Put(':id/appeals/:appealId')
-  @RequirePermission(Permissions.APPEAL_MANAGE)
-  async resolveAppeal(
-    @Param('appealId', ParseIntPipe) appealId: number,
-    @Body() data: { status: string; adminNote?: string; newScore?: number },
-  ) {
-    return this.service.resolveAppeal(appealId, data);
-  }
-
-  @Post(':id/publish-scores')
-  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
-  async publishScores(@Param('id', ParseIntPipe) id: number) {
-    return this.service.publishScores(id);
+    return this.service.addStudents(id, data.studentIds);
   }
 }

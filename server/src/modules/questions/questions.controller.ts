@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { QuestionsService } from './questions.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { QuestionType } from '@prisma/client';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -7,7 +8,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 
 @Controller('api/questions')
 export class QuestionsController {
-  constructor(private service: QuestionsService) {}
+  constructor(
+    private service: QuestionsService,
+    private systemConfig: SystemConfigService,
+  ) {}
 
   @Get()
   @RequirePermission(Permissions.QUESTION_CREATE)
@@ -38,6 +42,10 @@ export class QuestionsController {
     )) {
       params.createdBy = req.user.sub || req.user.id;
     }
+
+    // ★ orgId 隔离：传递用户上下文
+    params.userOrgId = req.user?.orgId ?? null;
+    params.userRoles = userRoles;
 
     return this.service.findAll(params);
   }
@@ -124,7 +132,9 @@ export class QuestionsController {
 
   @Get(':id')
   @RequirePermission(Permissions.QUESTION_CREATE)
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Get(':id/referenced-papers')
   @RequirePermission(Permissions.QUESTION_CREATE)
@@ -134,15 +144,37 @@ export class QuestionsController {
 
   @Post()
   @RequirePermission(Permissions.QUESTION_CREATE)
-  create(@Body() data: any, @Req() req: any) {
+  async create(@Body() data: any, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    return this.service.create({ ...data, createdBy: userId });
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+
+    // 机构角色创建题目 → 检查 allow_org_own_bank 开关
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
+      const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
+      if (!allow) {
+        throw new ForbiddenException('当前系统不允许机构自建题库');
+      }
+    }
+
+    return this.service.create({ ...data, createdBy: userId, orgId: userOrgId });
   }
 
   @Post('batch')
   @RequirePermission(Permissions.QUESTION_CREATE)
-  batchCreate(@Body() data: { questions: any[] }) {
-    return this.service.batchCreate(data.questions);
+  async batchCreate(@Body() data: { questions: any[] }, @Req() req: any) {
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+
+    // 机构角色批量创建 → 检查开关
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
+      const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
+      if (!allow) {
+        throw new ForbiddenException('当前系统不允许机构自建题库');
+      }
+    }
+
+    return this.service.batchCreate(data.questions, userOrgId);
   }
 
   @Post('ai-generate')
@@ -152,9 +184,13 @@ export class QuestionsController {
 
   @Put(':id')
   @RequirePermission(Permissions.QUESTION_EDIT)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: any, @Req() req: any) {
+    return this.service.update(id, data, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Delete(':id')
   @RequirePermission(Permissions.QUESTION_DELETE)
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.remove(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 }

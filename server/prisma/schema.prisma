@@ -69,6 +69,9 @@ model Organization {
   users              User[]
   programs           TrainingProgram[]
   enrollmentAgencies EnrollmentAgency[]
+  questions          Question[]
+  papers             Paper[]
+  exams              Exam[]
 
   @@map("organizations")
 }
@@ -424,6 +427,11 @@ model Question {
   isPublic        Boolean        @default(false) @map("is_public") // 通用/公共题
   practiceVisible Boolean        @default(false) @map("practice_visible") // 练习模式可见
   createdBy       Int?           @map("created_by") // 出题人用户ID
+
+  // ── 机构归属（2026-07-02）──
+  orgId Int?          @map("org_id")
+  org   Organization? @relation(fields: [orgId], references: [id])
+
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
@@ -546,6 +554,11 @@ model Paper {
   isOpenBook      Boolean     @default(false) @map("is_open_book")
   status          PaperStatus @default(DRAFT)
   createdBy       Int         @map("created_by")
+
+  // ── 机构归属（2026-07-02）──
+  orgId Int?          @map("org_id")
+  org   Organization? @relation(fields: [orgId], references: [id])
+
   finalizedAt     DateTime?   @map("finalized_at")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
@@ -864,6 +877,11 @@ model Exam {
   showAnswerAfterExam Boolean @default(false) @map("show_answer_after_exam") // 考后是否显示答案
 
   createdBy Int      @map("created_by")
+
+  // ── 机构归属（2026-07-02）──
+  orgId Int?          @map("org_id")
+  org   Organization? @relation(fields: [orgId], references: [id])
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1540,6 +1558,20 @@ model SiteSetting {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("site_settings")
+}
+
+// ═══════════════════════════════════════════
+// 系统配置（开关等）
+// ═══════════════════════════════════════════
+
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(100)     // 配置键名
+  value     String   @db.VarChar(500)              // 配置值
+  desc      String?  @db.VarChar(500)              // 配置说明
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
 }
 
 // ═══════════════════════════════════════════

@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { Prisma, Difficulty, QuestionType, PaperStatus } from '@prisma/client';
 import { join } from 'path';
 import { writeFile, mkdir, readFile } from 'fs/promises';
@@ -14,28 +15,42 @@ import {
 
 @Injectable()
 export class PapersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private systemConfig: SystemConfigService,
+  ) {}
 
-  async findAll(params: { page?: number; pageSize?: number }) {
+  async findAll(params: { page?: number; pageSize?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
+    // ★ orgId 隔离
+    const where: any = {};
+    const userOrgId = params.userOrgId ?? null;
+    const userRoles = params.userRoles ?? [];
+    if (userOrgId) {
+      where.orgId = userOrgId;
+    } else if (userRoles.includes('SUPER_ADMIN')) {
+      const visibility = await this.systemConfig.getConfig('org_bank_visibility');
+      if (visibility === 'hidden') where.orgId = null;
+    }
+
     const [items, total] = await Promise.all([
       this.prisma.paper.findMany({
-        skip, take: pageSize, orderBy: { createdAt: 'desc' },
+        where, skip, take: pageSize, orderBy: { createdAt: 'desc' },
         include: {
           subject: { select: { name: true, code: true } },
           creator: { select: { displayName: true } },
           _count: { select: { questions: true } },
         },
       }),
-      this.prisma.paper.count(),
+      this.prisma.paper.count({ where }),
     ]);
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const paper = await this.prisma.paper.findUnique({
       where: { id },
       include: {
@@ -57,10 +72,23 @@ export class PapersService {
       },
     });
     if (!paper) throw new NotFoundException(`Paper ${id} not found`);
+
+    // ★ orgId 隔离：非 SUPER_ADMIN 只能访问自己机构的
+    if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
+      const uOrgId = userOrgId ?? null;
+      if (uOrgId === null || paper.orgId !== uOrgId) {
+        throw new NotFoundException(`Paper ${id} not found`);
+      }
+    }
+
     return paper;
   }
 
-  async create(data: { name: string; subjectId: number; createdBy: number; totalScore?: number; durationMinutes?: number }) {
+  async create(data: {
+    name: string; subjectId: number; createdBy: number;
+    totalScore?: number; durationMinutes?: number;
+    orgId?: number | null;
+  }) {
     if (!data.name || !data.subjectId || !data.createdBy) {
       throw new BadRequestException('缺少必要参数：name, subjectId, createdBy');
     }
@@ -85,12 +113,14 @@ export class PapersService {
         durationMinutes: data.durationMinutes || 90,
         status: 'DRAFT',
         createdBy: data.createdBy,
+        orgId: data.orgId ?? null,
       },
     });
   }
 
   async generate(data: {
     name?: string; subjectId: number; createdBy: number;
+    orgId?: number | null;
     totalScore?: number; durationMinutes?: number; isOpenBook?: boolean;
     templateId?: number; // 快捷路径：用模板配置生成
     typeConfigs?: { questionType: QuestionType; count: number; scorePerQuestion: number }[];
@@ -273,6 +303,7 @@ export class PapersService {
         isOpenBook: data.isOpenBook ?? false,
         status: 'DRAFT',
         createdBy: data.createdBy,
+        orgId: data.orgId ?? null,
         questions: {
           create: selectedQuestions.map((sq) => ({
             questionId: sq.questionId,
@@ -385,8 +416,15 @@ export class PapersService {
     return { message: 'PDF 生成成功', pdfUrl: `/paper-files/${id}/edited.pdf` };
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const paper = await this.findOne(id, userOrgId, userRoles);
+    // 非 SUPER_ADMIN 只能删自己机构的
+    if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
+      const uOrgId = userOrgId ?? null;
+      if (uOrgId === null || paper.orgId !== uOrgId) {
+        throw new NotFoundException(`Paper ${id} not found`);
+      }
+    }
     return this.prisma.paper.delete({ where: { id } });
   }
 

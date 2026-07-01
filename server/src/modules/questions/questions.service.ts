@@ -1,16 +1,75 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { Prisma, QuestionType } from '@prisma/client';
 
 @Injectable()
 export class QuestionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private systemConfig: SystemConfigService,
+  ) {}
+
+  // ═══════════════════════════════════════════
+  //  权限辅助
+  // ═══════════════════════════════════════════
+
+  /**
+   * 检查当前用户是否有权访问指定记录
+   * @param record.orgId 记录的机构归属
+   * @param userOrgId    当前用户的 orgId（SUPER_ADMIN 为 null）
+   * @param userRoles    当前用户的角色列表
+   */
+  async canAccess(
+    record: { orgId: number | null },
+    userOrgId: number | null,
+    userRoles: string[],
+  ): Promise<boolean> {
+    if (userRoles.includes('SUPER_ADMIN')) {
+      // SUPER_ADMIN 可以访问系统级（orgId = null）记录
+      if (record.orgId === null) return true;
+      // 有归属的记录 → 取决于开关二
+      const visibility = await this.systemConfig.getConfig('org_bank_visibility');
+      if (visibility === 'hidden') return false;
+      // view_only / full_access → 可见
+      return true;
+    }
+    // 其他角色：必须 orgId 匹配
+    return userOrgId !== null && record.orgId === userOrgId;
+  }
+
+  /**
+   * 检查当前用户是否有权写入（创建/编辑/删除）指定记录
+   * SUPER_ADMIN 只能写系统级记录（取决于开关二），机构角色只能写自己机构的
+   */
+  async canWrite(
+    record: { orgId: number | null },
+    userOrgId: number | null,
+    userRoles: string[],
+  ): Promise<boolean> {
+    if (userRoles.includes('SUPER_ADMIN')) {
+      // SUPER_ADMIN 只能写系统级记录
+      if (record.orgId === null) return true;
+      // 有归属的记录 → 只有 full_access 才能写
+      const visibility = await this.systemConfig.getConfig('org_bank_visibility');
+      if (visibility === 'full_access') return true;
+      return false;
+    }
+    // 其他角色：必须 orgId 匹配
+    return userOrgId !== null && record.orgId === userOrgId;
+  }
+
+  // ═══════════════════════════════════════════
+  //  CRUD
+  // ═══════════════════════════════════════════
 
   async findAll(params: {
     subjectId?: number; chapterId?: number; type?: QuestionType;
     difficulty?: string; status?: string; keyword?: string;
     isPublic?: boolean; page?: number; pageSize?: number;
     createdBy?: number;
+    userOrgId?: number | null;
+    userRoles?: string[];
   }) {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
@@ -25,6 +84,22 @@ export class QuestionsService {
     if (params.keyword) where.content = { contains: params.keyword };
     if (params.isPublic !== undefined) where.isPublic = params.isPublic;
     if (params.createdBy !== undefined) where.createdBy = params.createdBy;
+
+    // ★ orgId 隔离
+    const userOrgId = params.userOrgId ?? null;
+    const userRoles = params.userRoles ?? [];
+    if (userOrgId) {
+      // 机构角色 → 只看自己的
+      where.orgId = userOrgId;
+    } else if (userRoles.includes('SUPER_ADMIN')) {
+      // SUPER_ADMIN → 取决于开关二
+      const visibility = await this.systemConfig.getConfig('org_bank_visibility');
+      if (visibility === 'hidden') {
+        where.orgId = null;
+      }
+      // view_only / full_access → 不限制
+    }
+    // 没有角色（公共查询等）→ 不限制
 
     const [items, total] = await Promise.all([
       this.prisma.question.findMany({
@@ -45,7 +120,7 @@ export class QuestionsService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const q = await this.prisma.question.findUnique({
       where: { id },
       include: {
@@ -58,6 +133,13 @@ export class QuestionsService {
       },
     });
     if (!q) throw new NotFoundException(`Question ${id} not found`);
+
+    // 权限校验
+    if (userRoles && userRoles.length > 0) {
+      const ok = await this.canAccess(q, userOrgId ?? null, userRoles);
+      if (!ok) throw new NotFoundException(`Question ${id} not found`);
+    }
+
     return q;
   }
 
@@ -69,13 +151,15 @@ export class QuestionsService {
     subQuestions?: { content: string; answer?: string; score?: number }[];
     tagIds?: number[];
     createdBy?: number;
+    orgId?: number | null;
   }) {
-    const { options, blanks, subQuestions, tagIds, createdBy, ...questionData } = data;
+    const { options, blanks, subQuestions, tagIds, createdBy, orgId, ...questionData } = data;
 
     return this.prisma.question.create({
       data: {
         ...questionData,
         createdBy,
+        orgId: orgId ?? null,
         difficulty: data.difficulty as any,
         options: options ? { create: options.map((o, i) => ({ ...o, sortOrder: i })) } : undefined,
         blanks: blanks ? { create: blanks.map((b, i) => ({ ...b, blankIndex: i, sortOrder: i })) } : undefined,
@@ -91,13 +175,26 @@ export class QuestionsService {
   async update(id: number, data: {
     content?: string; difficulty?: string; analysis?: string; status?: string;
     chapterId?: number;
-  }) {
-    await this.findOne(id);
+  }, userOrgId?: number | null, userRoles?: string[]) {
+    const q = await this.findOne(id, userOrgId, userRoles);
+
+    // 写权限校验
+    if (userRoles && userRoles.length > 0) {
+      const ok = await this.canWrite(q, userOrgId ?? null, userRoles);
+      if (!ok) throw new ForbiddenException('无权修改此题目');
+    }
+
     return this.prisma.question.update({ where: { id }, data: data as any });
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const q = await this.findOne(id, userOrgId, userRoles);
+
+    // 写权限校验
+    if (userRoles && userRoles.length > 0) {
+      const ok = await this.canWrite(q, userOrgId ?? null, userRoles);
+      if (!ok) throw new ForbiddenException('无权删除此题目');
+    }
 
     // 引用保护：被试卷引用的试题不能删除
     const paperCount = await this.prisma.paperQuestion.count({ where: { questionId: id } });
@@ -143,6 +240,10 @@ export class QuestionsService {
     };
   }
 
+  // ═══════════════════════════════════════════
+  //  练习模式（学员端，不加 orgId 限制）
+  // ═══════════════════════════════════════════
+
   async getPracticeQuestions(
     count: number = 10,
     subjectId?: number,
@@ -178,7 +279,7 @@ export class QuestionsService {
     return items;
   }
 
-  async batchCreate(questions: any[]) {
+  async batchCreate(questions: any[], userOrgId?: number | null) {
     const results: { index: number; success: boolean; id?: number; error?: string }[] = [];
 
     for (let i = 0; i < questions.length; i++) {
@@ -196,6 +297,7 @@ export class QuestionsService {
             analysis: q.analysis || undefined,
             isPublic: q.isPublic || false,
             createdBy: q.createdBy ?? undefined,
+            orgId: userOrgId ?? null,
             options: q.options ? { create: q.options.map((o: any, idx: number) => ({ ...o, sortOrder: idx })) } : undefined,
             blanks: q.blanks ? { create: q.blanks.map((b: any, idx: number) => ({ ...b, blankIndex: idx, sortOrder: idx })) } : undefined,
             subQuestions: q.subQuestions ? { create: q.subQuestions.map((s: any, idx: number) => ({ ...s, sortOrder: idx })) } : undefined,
@@ -211,6 +313,10 @@ export class QuestionsService {
     return { total: questions.length, successCount, failCount: questions.length - successCount, results };
   }
 
+  // ═══════════════════════════════════════════
+  //  练习答案（学员端）
+  // ═══════════════════════════════════════════
+
   async getPracticeAnswer(questionId?: number) {
     if (!questionId) throw new NotFoundException('题目ID不能为空');
     const question = await this.prisma.question.findUnique({
@@ -225,8 +331,6 @@ export class QuestionsService {
     const correctAnswer = this.formatCorrectAnswer(question);
     return { correctAnswer, analysis: question.analysis };
   }
-
-  // ── 练习模式 ──
 
   async submitPractice(data: { studentId: number; questionId: number; answer: any }) {
     const question = await this.prisma.question.findUnique({

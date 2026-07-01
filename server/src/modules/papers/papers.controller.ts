@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PapersService } from './papers.service.js';
@@ -11,30 +11,48 @@ export class PapersController {
 
   @Get()
   @RequirePermission(Permissions.PAPER_EDIT)
-  findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+  findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
+      userOrgId: req.user?.orgId ?? null,
+      userRoles: req.user?.roles,
     });
   }
 
   @Get('export-preview/:id')
   @RequirePermission(Permissions.PAPER_VIEW)
-  async exportPreview(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
+  async exportPreview(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
   }
 
   @Get(':id')
   @RequirePermission(Permissions.PAPER_EDIT)
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Post()
   @RequirePermission(Permissions.PAPER_GENERATE)
-  create(@Body() data: any) { return this.service.create(data); }
+  create(@Body() data: any, @Req() req: any) {
+    const userId = req.user?.sub || req.user?.id;
+    return this.service.create({
+      ...data,
+      createdBy: userId,
+      orgId: req.user?.orgId ?? null,
+    });
+  }
 
   @Post('generate')
   @RequirePermission(Permissions.PAPER_GENERATE)
-  generate(@Body() data: any) { return this.service.generate(data); }
+  generate(@Body() data: any, @Req() req: any) {
+    const userId = req.user?.sub || req.user?.id;
+    return this.service.generate({
+      ...data,
+      createdBy: userId,
+      orgId: req.user?.orgId ?? null,
+    });
+  }
 
   @Put(':id/finalize')
   @RequirePermission(Permissions.PAPER_PUBLISH)
@@ -53,47 +71,25 @@ export class PapersController {
 
   @Get(':id/export-word')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
-  async exportWord(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
-    try {
-      const docx = await this.service.generateExportDocx(id);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename="paper-${id}.docx"`);
-      res.send(docx);
-    } catch {
-      const html = await this.service.generateExportHtml(id);
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Content-Disposition', `inline; filename="paper-${id}.html"`);
-      res.send(html);
-    }
-  }
+  async exportWord(@Param('id', ParseIntPipe) id: number) { return this.service.generateExportHtml(id); }
 
   @Get(':id/export-answer-sheet')
   @RequirePermission(Permissions.PAPER_ANSWER_SHEET)
-  async exportAnswerSheet(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
-    const docx = await this.service.generateAnswerSheetDocx(id);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="answer-sheet-${id}.docx"`);
-    res.send(docx);
-  }
+  async exportAnswerSheet(@Param('id', ParseIntPipe) id: number) { return this.service.generateAnswerSheetDocx(id); }
 
   @Get(':id/export-pdf')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
-  async exportPdf(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
-    try {
-      const pdf = await this.service.generateExportPdf(id);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="paper-${id}.pdf"`);
-      res.send(pdf);
-    } catch {
-      const html = await this.service.generateExportHtml(id);
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
-    }
+  async exportPdf(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    const pdf = await this.service.generateExportPdf(id);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="paper-${id}.pdf"`, 'Content-Length': pdf.length });
+    res.end(pdf);
   }
 
   @Delete(':id')
   @RequirePermission(Permissions.PAPER_EDIT)
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.remove(id, req.user?.orgId ?? null, req.user?.roles);
+  }
 
   @Delete(':id/questions/:pqId')
   @RequirePermission(Permissions.PAPER_EDIT)
@@ -109,11 +105,7 @@ export class PapersController {
 
   @Post(':id/questions/:pqId/replace')
   @RequirePermission(Permissions.PAPER_EDIT)
-  replaceQuestion(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('pqId', ParseIntPipe) pqId: number,
-    @Body() data: { newQuestionId: number },
-  ) {
-    return this.service.replaceQuestion(id, pqId, data.newQuestionId);
+  replaceQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number, @Body() data: { questionId: number }) {
+    return this.service.replaceQuestion(id, pqId, data.questionId);
   }
 }

@@ -23,7 +23,7 @@ async function main() {
   }
   console.log(`✅ 招生机构: ${agency.name}`);
 
-  // ── 2. 创建 6 个内置角色 ──
+  // ── 2. 创建 8 个内置角色 ──
   const rolesData = [
     { name: '超级管理员', code: 'SUPER_ADMIN', color: '#ef4444', description: '系统运维，管理所有机构', isSystem: true, sortOrder: 1 },
     { name: '机构管理员', code: 'ORG_ADMIN', color: '#e87a30', description: '管理本机构培训业务', isSystem: true, sortOrder: 2 },
@@ -48,7 +48,6 @@ async function main() {
     update: { passwordHash },
     create: { username: 'admin', passwordHash, displayName: '管理员', orgId: org.id },
   });
-  // 关联 SUPER_ADMIN 角色
   const superRole = roles.find(r => r.code === 'SUPER_ADMIN')!;
   await prisma.userRoleAssignment.upsert({
     where: { userId_roleId: { userId: admin.id, roleId: superRole.id } },
@@ -57,22 +56,7 @@ async function main() {
   });
   console.log(`✅ 管理员: ${admin.displayName} (admin / admin_temp)`);
 
-  // ── 4. 测试学员（可选） ──
-  const studentPw = await bcrypt.hash('123456', 10);
-  const studentRole = roles.find(r => r.code === 'STUDENT')!;
-  const testStudent = await prisma.user.upsert({
-    where: { username: 'stu001' },
-    update: {},
-    create: { username: 'stu001', passwordHash: studentPw, displayName: '张三', orgId: org.id },
-  });
-  await prisma.userRoleAssignment.upsert({
-    where: { userId_roleId: { userId: testStudent.id, roleId: studentRole.id } },
-    update: {},
-    create: { userId: testStudent.id, roleId: studentRole.id },
-  });
-  console.log(`✅ 测试学员: ${testStudent.displayName} (stu001 / 123456)`);
-
-  // ── 5. 数据字典 ──
+  // ── 4. 数据字典 ──
   const dicts = [
     { code: 'DTM', name: '数智化管理师', sortOrder: 1 },
     { code: 'DTC', name: '数智化咨询师', sortOrder: 2 },
@@ -89,7 +73,7 @@ async function main() {
   }
   console.log(`✅ 数据字典: ${dicts.length} 项`);
 
-  // ── 6. 默认科目 ──
+  // ── 5. 默认科目 ──
   const dtmDict = await prisma.dataDictionary.findUniqueOrThrow({ where: { code: 'DTM' } });
   await prisma.subject.upsert({
     where: { id: 1 },
@@ -97,27 +81,34 @@ async function main() {
     create: { id: 1, name: '数智化管理师', code: 'DTM', dictionaryId: dtmDict.id, sortOrder: 1 },
   });
 
-  // ── 7. 章节 ──
-  for (const ch of [
-    { name: '数字化转型概述', sortOrder: 1 },
-    { name: '数据驱动决策', sortOrder: 2 },
-    { name: 'AI技术基础与应用', sortOrder: 3 },
-    { name: '数字化组织与人才', sortOrder: 4 },
-    { name: '数据治理与安全', sortOrder: 5 },
-    { name: '数字化项目管理', sortOrder: 6 },
-    { name: '案例分析', sortOrder: 7 },
-  ]) {
-    await prisma.chapter.create({
-      data: { subjectId: 1, name: ch.name, sortOrder: ch.sortOrder },
+  // ── 6. 章节 ──
+  const chapterNames = [
+    '数字化转型概述', '数据驱动决策', 'AI技术基础与应用',
+    '数字化组织与人才', '数据治理与安全', '数字化项目管理', '案例分析',
+  ];
+  const chapters: any[] = [];
+  for (let i = 0; i < chapterNames.length; i++) {
+    let ch = await prisma.chapter.findFirst({ where: { subjectId: 1, name: chapterNames[i] } });
+    if (!ch) {
+      ch = await prisma.chapter.create({
+        data: { subjectId: 1, name: chapterNames[i], sortOrder: i + 1 },
+      });
+    }
+    chapters.push(ch);
+  }
+  console.log(`✅ 章节: ${chapters.length} 个`);
+
+  // ── 7. 标签 ──
+  for (const name of ['数据治理', '精益管理', '战略转型', 'AI应用', '通用']) {
+    await prisma.tag.upsert({
+      where: { name_type: { name, type: 'domain' } },
+      update: {},
+      create: { name, type: 'domain' },
     }).catch(() => {});
   }
+  console.log('✅ 标签: 5 个');
 
-  // ── 8. 标签 ──
-  for (const name of ['数据治理', '精益管理', '战略转型', 'AI应用', '通用']) {
-    await prisma.tag.create({ data: { name, type: 'domain' } }).catch(() => {});
-  }
-
-  // ── 9. 讲师样例 ──
+  // ── 8. 讲师样例 ──
   const adminUser = await prisma.user.findUnique({ where: { username: 'admin' } });
   if (adminUser) {
     await prisma.instructor.upsert({
@@ -130,23 +121,10 @@ async function main() {
       },
     });
   }
-  const stuUser = await prisma.user.findUnique({ where: { username: 'stu001' } });
-  if (stuUser) {
-    await prisma.instructor.upsert({
-      where: { userId: stuUser.id },
-      update: {},
-      create: {
-        userId: stuUser.id, realName: '张三讲师', title: '副教授',
-        type: 'EXTERNAL', workUnit: '北京某高校', level: 'SENIOR', isGrader: true,
-        education: '博士', school: '清华大学', gender: '男',
-        idCard: '110101199001011234', bankAccount: '工行北京分行 6222****1234',
-        instructorNo: 'INS20260623002',
-      },
-    });
-  }
-  console.log('✅ 讲师: 2 名样例');
+  // 管理员讲师已在 seed 完成后由 B-10 中的 stu001 关联创建
+  console.log('✅ 讲师: 1 名样例（管理员讲师）');
 
-  // ── 10. 各角色测试账号 ──
+  // ── 9. 各角色测试账号 ──
   const testPw = await bcrypt.hash('123456', 10);
   const testAccounts = [
     { username: 'org_admin', displayName: '机构管理员', roles: ['ORG_ADMIN'] },
@@ -179,15 +157,429 @@ async function main() {
   }
   console.log(`✅ 测试账号: ${testAccounts.length} 个`);
 
+  // ═══════════════════════════════════════════════════════════════
+  // 以下为 Part B 新增业务数据
+  // ═══════════════════════════════════════════════════════════════
+
+  // ── B-2: 第2个招生机构 ──
+  let agency2 = await prisma.enrollmentAgency.findFirst({ where: { name: '北京数字人才培训中心' } });
+  if (!agency2) {
+    agency2 = await prisma.enrollmentAgency.create({
+      data: {
+        name: '北京数字人才培训中心',
+        contactPerson: '王主任',
+        contactPhone: '010-87654321',
+        organizationId: org.id,
+      },
+    });
+  }
+  console.log(`✅ B-2 招生机构: ${agency2.name}`);
+
+  // ── B-4: 1个标准课程 ──
+  let course = await prisma.course.findFirst({ where: { code: 'CORE-DT-001' } });
+  if (!course) {
+    course = await prisma.course.create({
+      data: {
+        name: '数字化转型核心课程',
+        code: 'CORE-DT-001',
+        description: '数字化转型核心知识点，含理论+案例',
+        hours: 40,
+        type: 'STANDARD',
+        status: 'ACTIVE',
+      },
+    });
+  }
+  console.log(`✅ B-4 标准课程: ${course.name}`);
+
+  // ── B-6: 2个视频课程 ──
+  const videoData = [
+    {
+      name: '数字化转型概述',
+      description: '数字化转型的基本概念、驱动因素和战略框架',
+      instructorName: '李讲师',
+      hours: 4,
+      duration: 7200,
+      type: 'PUBLIC',
+      status: 'PUBLISHED',
+      sortOrder: 1,
+    },
+    {
+      name: '数据驱动决策',
+      description: '如何在组织中建立数据驱动的决策文化和方法',
+      instructorName: '李讲师',
+      hours: 4,
+      duration: 7200,
+      type: 'PUBLIC',
+      status: 'PUBLISHED',
+      sortOrder: 2,
+    },
+  ];
+  const videos: any[] = [];
+  for (const vd of videoData) {
+    let vid = await prisma.videoCourse.findFirst({ where: { name: vd.name } });
+    if (!vid) {
+      vid = await prisma.videoCourse.create({ data: vd });
+    }
+    videos.push(vid);
+  }
+  console.log(`✅ B-6 视频课程: ${videos.length} 个`);
+
+  // ── B-7: 关联视频到课程 ──
+  for (const vid of videos) {
+    await prisma.videoCourseCourse.upsert({
+      where: { videoCourseId_courseId: { videoCourseId: vid.id, courseId: course.id } },
+      update: {},
+      create: { videoCourseId: vid.id, courseId: course.id },
+    });
+  }
+  console.log(`✅ B-7 视频课程关联: ${videos.length} 条`);
+
+  // ── B-8: 10道测试题目 ──
+  const questionsData = [
+    {
+      stem: '数字化转型的首要驱动因素是什么？',
+      analysis: '客户需求变化是数字化转型的核心驱动力',
+      type: 'SINGLE_CHOICE' as const,
+      chapterIdx: 0, // 数字化转型概述
+      options: [
+        { label: 'A', content: '客户需求变化', isCorrect: true },
+        { label: 'B', content: '技术升级', isCorrect: false },
+        { label: 'C', content: '政策要求', isCorrect: false },
+        { label: 'D', content: '成本压力', isCorrect: false },
+      ],
+    },
+    {
+      stem: '数据治理的核心目标是什么？',
+      analysis: '保证数据质量和安全是数据治理的核心目标',
+      type: 'SINGLE_CHOICE' as const,
+      chapterIdx: 4, // 数据治理与安全
+      options: [
+        { label: 'A', content: '提高存储效率', isCorrect: false },
+        { label: 'B', content: '保证数据质量和安全', isCorrect: true },
+        { label: 'C', content: '降低成本', isCorrect: false },
+        { label: 'D', content: '增加数据量', isCorrect: false },
+      ],
+    },
+    {
+      stem: '以下哪个不是常见的数字化技术？',
+      analysis: '蒸汽机属于工业革命时期的发明，不属于数字化技术',
+      type: 'SINGLE_CHOICE' as const,
+      chapterIdx: 0, // 数字化转型概述
+      options: [
+        { label: 'A', content: '云计算', isCorrect: false },
+        { label: 'B', content: '大数据', isCorrect: false },
+        { label: 'C', content: '蒸汽机', isCorrect: true },
+        { label: 'D', content: '人工智能', isCorrect: false },
+      ],
+    },
+    {
+      stem: 'BI工具的主要功能是？',
+      analysis: '商业智能（BI）工具主要用于数据分析和可视化',
+      type: 'SINGLE_CHOICE' as const,
+      chapterIdx: 1, // 数据驱动决策
+      options: [
+        { label: 'A', content: '数据分析和可视化', isCorrect: true },
+        { label: 'B', content: '数据存储', isCorrect: false },
+        { label: 'C', content: '网络安全', isCorrect: false },
+        { label: 'D', content: '硬件管理', isCorrect: false },
+      ],
+    },
+    {
+      stem: '数字化转型成功的最大挑战通常是？',
+      analysis: '组织文化变革往往比技术选型更具挑战性',
+      type: 'SINGLE_CHOICE' as const,
+      chapterIdx: 3, // 数字化组织与人才
+      options: [
+        { label: 'A', content: '技术选型', isCorrect: false },
+        { label: 'B', content: '预算不足', isCorrect: false },
+        { label: 'C', content: '数据不够', isCorrect: false },
+        { label: 'D', content: '组织文化变革', isCorrect: true },
+      ],
+    },
+    {
+      stem: '以下哪些属于数据治理的范畴？',
+      analysis: '数据治理涵盖数据标准、数据质量和数据安全等多个方面',
+      type: 'MULTIPLE_CHOICE' as const,
+      chapterIdx: 4, // 数据治理与安全
+      options: [
+        { label: 'A', content: '数据标准', isCorrect: true },
+        { label: 'B', content: '数据质量', isCorrect: true },
+        { label: 'C', content: '数据删除', isCorrect: false },
+        { label: 'D', content: '数据安全', isCorrect: true },
+      ],
+    },
+    {
+      stem: '云计算的服务模式包括？',
+      analysis: 'IaaS（基础设施即服务）、PaaS（平台即服务）、SaaS（软件即服务）是云计算的三大服务模式',
+      type: 'MULTIPLE_CHOICE' as const,
+      chapterIdx: 2, // AI技术基础与应用
+      options: [
+        { label: 'A', content: 'IaaS', isCorrect: true },
+        { label: 'B', content: 'PaaS', isCorrect: true },
+        { label: 'C', content: 'SaaS', isCorrect: true },
+        { label: 'D', content: 'HaaS', isCorrect: false },
+      ],
+    },
+    {
+      stem: '人工智能在企业的应用场景包括？',
+      analysis: '智能客服、预测分析和流程自动化都是AI在企业中的典型应用',
+      type: 'MULTIPLE_CHOICE' as const,
+      chapterIdx: 2, // AI技术基础与应用
+      options: [
+        { label: 'A', content: '智能客服', isCorrect: true },
+        { label: 'B', content: '手工记账', isCorrect: false },
+        { label: 'C', content: '预测分析', isCorrect: true },
+        { label: 'D', content: '流程自动化', isCorrect: true },
+      ],
+    },
+    {
+      stem: '数字化转型就是信息化升级',
+      analysis: '数字化转型不仅仅是信息化升级，更是业务模式的重塑和组织变革',
+      type: 'TRUE_FALSE' as const,
+      chapterIdx: 0, // 数字化转型概述
+      options: [
+        { label: 'A', content: '正确', isCorrect: false },
+        { label: 'B', content: '错误', isCorrect: true },
+      ],
+    },
+    {
+      stem: '数据是企业的核心资产之一',
+      analysis: '在数字化时代，数据已成为企业的重要战略资产',
+      type: 'TRUE_FALSE' as const,
+      chapterIdx: 4, // 数据治理与安全
+      options: [
+        { label: 'A', content: '正确', isCorrect: true },
+        { label: 'B', content: '错误', isCorrect: false },
+      ],
+    },
+  ];
+
+  const questions: any[] = [];
+  for (const qd of questionsData) {
+    const q = await prisma.question.create({
+      data: {
+        type: qd.type,
+        difficulty: 'EASY',
+        source: 'MANUAL',
+        status: 'PUBLISHED',
+        content: qd.stem,
+        analysis: qd.analysis,
+        subjectId: 1,
+        chapterId: chapters[qd.chapterIdx].id,
+        createdBy: admin.id,
+      },
+    });
+    for (let oi = 0; oi < qd.options.length; oi++) {
+      const opt = qd.options[oi];
+      await prisma.questionOption.create({
+        data: {
+          questionId: q.id,
+          label: opt.label,
+          content: opt.content,
+          isCorrect: opt.isCorrect,
+          sortOrder: oi + 1,
+        },
+      });
+    }
+    questions.push(q);
+  }
+  console.log(`✅ B-8 测试题目: ${questions.length} 题 (5单选+3多选+2判断)`);
+
+  // ── B-9: 1套试卷 ──
+  const paperNumber = `DT-DTM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-001`;
+  let paper = await prisma.paper.findFirst({ where: { name: '数智化管理师（DTM）模拟测试' } });
+  if (!paper) {
+    paper = await prisma.paper.create({
+      data: {
+        name: '数智化管理师（DTM）模拟测试',
+        paperNumber,
+        status: 'FINALIZED',
+        subjectId: 1,
+        totalScore: 100,
+        durationMinutes: 60,
+        createdBy: admin.id,
+      },
+    });
+    // 按顺序添加题目
+    for (let i = 0; i < questions.length; i++) {
+      // 分数分配: 单选10分, 多选10分, 判断10分（合计100）
+      const score = i < 5 ? 10 : (i < 8 ? 10 : 10);
+      await prisma.paperQuestion.create({
+        data: {
+          paperId: paper.id,
+          questionId: questions[i].id,
+          sortOrder: i + 1,
+          score,
+        },
+      });
+    }
+  }
+  console.log(`✅ B-9 试卷: ${paper.name} (${paperNumber}, 100分/60分及格)`);
+
+  // ── B-5: 关联培训班和课程 ──
+  // 先创建培训班（需要引用课程 ID）
+  let program = await prisma.trainingProgram.findFirst({ where: { code: 'DTM-2026-001' } });
+  if (!program) {
+    program = await prisma.trainingProgram.create({
+      data: {
+        name: '数智化管理师（DTM）第1期',
+        code: 'DTM-2026-001',
+        courseName: '数智化管理师认证培训',
+        orgId: org.id,
+        courseId: course.id,
+        subjectId: 1,
+        startDate: new Date('2026-07-01'),
+        endDate: new Date('2026-07-31'),
+        enrollStart: new Date('2026-06-01'),
+        enrollEnd: new Date('2026-07-15'),
+        hoursPerDay: 8,
+        createdBy: admin.id,
+        status: 'ENROLLING',
+        maxStudents: 50,
+        location: '北京·中电标协培训教室',
+        description: '数智化管理师认证培训2026年第1期，涵盖数字化转型、数据驱动决策、AI应用等核心模块',
+      },
+    });
+  } else {
+    // 确保已有课程关联
+    if (!program.courseId) {
+      program = await prisma.trainingProgram.update({
+        where: { id: program.id },
+        data: { courseId: course.id },
+      });
+    }
+  }
+  console.log(`✅ B-3/B-5 培训班: ${program.name} (${program.code})`);
+
+  // ── B-10: 新增学员关联 ──
+  const studentPw = await bcrypt.hash('123456', 10);
+  const studentRole = roles.find(r => r.code === 'STUDENT')!;
+
+  // 机构1（中电标协招办）下的学员：stu001已存在 + stu002, stu003新增
+  const agency1Students = [
+    { username: 'stu001', displayName: '张三' },
+    { username: 'stu002', displayName: '李四' },
+    { username: 'stu003', displayName: '王五' },
+  ];
+
+  // 机构2（北京数字人才培训中心）下的学员：stu004, stu005新增
+  const agency2Students = [
+    { username: 'stu004', displayName: '赵六' },
+    { username: 'stu005', displayName: '钱七' },
+  ];
+
+  let enrollCount = 0;
+
+  for (const sd of agency1Students) {
+    const user = await prisma.user.upsert({
+      where: { username: sd.username },
+      update: { displayName: sd.displayName, primaryAgencyId: agency.id },
+      create: {
+        username: sd.username,
+        passwordHash: studentPw,
+        displayName: sd.displayName,
+        orgId: org.id,
+        primaryAgencyId: agency.id,
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: studentRole.id } },
+      update: {},
+      create: { userId: user.id, roleId: studentRole.id },
+    });
+    // 如果是 stu001，创建讲师关联
+    if (sd.username === 'stu001') {
+      await prisma.instructor.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id, realName: '张三讲师', title: '副教授',
+          type: 'EXTERNAL', workUnit: '北京某高校', level: 'SENIOR', isGrader: true,
+          education: '博士', school: '清华大学', gender: '男',
+          idCard: '110101199001011234', bankAccount: '工行北京分行 6222****1234',
+          instructorNo: 'INS20260623002',
+        },
+      });
+    }
+    // 报名培训班
+    await prisma.programEnrollment.upsert({
+      where: { programId_studentId: { programId: program.id, studentId: user.id } },
+      update: {},
+      create: {
+        programId: program.id,
+        studentId: user.id,
+        agencyId: agency.id,
+        enrollSource: 'SEED',
+        feeStatus: 'UNPAID',
+        status: 'ENROLLED',
+      },
+    });
+    enrollCount++;
+  }
+  console.log(`  ↪ 张三讲师: 已关联 stu001`);
+
+  for (const sd of agency2Students) {
+    const user = await prisma.user.upsert({
+      where: { username: sd.username },
+      update: { displayName: sd.displayName, primaryAgencyId: agency2!.id },
+      create: {
+        username: sd.username,
+        passwordHash: studentPw,
+        displayName: sd.displayName,
+        orgId: org.id,
+        primaryAgencyId: agency2!.id,
+      },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: studentRole.id } },
+      update: {},
+      create: { userId: user.id, roleId: studentRole.id },
+    });
+    // 报名培训班
+    await prisma.programEnrollment.upsert({
+      where: { programId_studentId: { programId: program.id, studentId: user.id } },
+      update: {},
+      create: {
+        programId: program.id,
+        studentId: user.id,
+        agencyId: agency2!.id,
+        enrollSource: 'SEED',
+        feeStatus: 'UNPAID',
+        status: 'ENROLLED',
+      },
+    });
+    enrollCount++;
+  }
+  console.log(`✅ B-10 学员报名: ${enrollCount} 名学员 (机构1: 3, 机构2: 2)`);
+
+  // ── SystemConfig 默认值 ──
+  const configDefaults = [
+    { key: 'allow_org_own_bank', value: 'false', desc: '是否允许机构自建题库' },
+    { key: 'org_bank_visibility', value: 'view_only', desc: '协会对机构题库可见性: hidden/view_only/full_access' },
+  ];
+  for (const cfg of configDefaults) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: { value: cfg.value, desc: cfg.desc },
+      create: cfg,
+    });
+  }
+  console.log(`✅ SystemConfig: ${configDefaults.length} 项`);
+
+  // ── 最终输出 ──
   console.log('\n🎉 种子数据初始化完成!');
   console.log(`   管理员:   admin / admin_temp`);
-  console.log(`   学员:     stu001 / 123456`);
   console.log(`   机构管理:  org_admin / 123456`);
   console.log(`   招生机构:  agency_admin / 123456`);
   console.log(`   讲师:     lecturer01 / 123456`);
   console.log(`   考务员:   exam_officer / 123456`);
   console.log(`   监考员:   proctor01 / 123456`);
   console.log(`   审计员:   auditor01 / 123456`);
+  console.log(`   学员A:    stu001 / 123456 (中电标协招办)`);
+  console.log(`   学员B:    stu002 / 123456 (中电标协招办)`);
+  console.log(`   学员C:    stu003 / 123456 (中电标协招办)`);
+  console.log(`   学员D:    stu004 / 123456 (北京数字人才培训中心)`);
+  console.log(`   学员E:    stu005 / 123456 (北京数字人才培训中心)`);
 }
 
 main()

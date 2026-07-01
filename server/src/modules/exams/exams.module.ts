@@ -12,9 +12,10 @@ import { CertificatesService } from '../certificates/certificates.service.js';
 import { ScoreAppealService } from './score-appeal.service.js';
 import { ExamAnalysisService } from './exam-analysis.service.js';
 import { ProctoringService } from './proctoring.service.js';
+import { SystemConfigModule } from '../system-config/system-config.module.js';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SystemConfigModule],
   controllers: [ExamsController, StudentExamController, GradingController, TranscriptController, ScoreAppealController, ExamAnalysisController, ProctoringController],
   providers: [ExamsService, CertificatesService, ScoreAppealService, ExamAnalysisService, ProctoringService],
   exports: [ExamsService],

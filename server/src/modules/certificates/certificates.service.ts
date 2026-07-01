@@ -238,114 +238,26 @@ export class CertificatesService {
     const cert = await this.prisma.certificate.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('证书不存在');
 
+    // 读取模板文件
+    const templatePath = path.resolve(
+      import.meta.dirname, 'templates', 'certificate.html'
+    );
+    let html = await fs.readFile(templatePath, 'utf-8');
+
+    // 替换模板变量（防 XSS：转义 HTML 特殊字符）
+    const escapeHtml = (s: string) =>
+      String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    html = html
+      .replace(/{{studentName}}/g, escapeHtml(cert.studentName))
+      .replace(/{{courseName}}/g, escapeHtml(cert.courseName))
+      .replace(/{{certificateNo}}/g, escapeHtml(cert.certificateNo))
+      .replace(/{{issueDate}}/g, escapeHtml(cert.issueDate.toISOString().slice(0, 10)))
+      .replace(/{{verificationCode}}/g, escapeHtml(cert.verificationCode.slice(0, 8).toUpperCase()));
+
     // 动态导入 puppeteer
     const puppeteer = await import('puppeteer');
-
-    const html = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page { margin: 0; }
-  body {
-    margin: 0;
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: #f5f0eb;
-  }
-  .certificate {
-    width: 800px;
-    height: 560px;
-    background: #fff;
-    border: 2px solid #d4a574;
-    padding: 48px 56px;
-    box-sizing: border-box;
-    position: relative;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-  }
-  .certificate::before {
-    content: '';
-    position: absolute;
-    top: 12px; left: 12px; right: 12px; bottom: 12px;
-    border: 1px solid #e8d5c0;
-    pointer-events: none;
-  }
-  .header {
-    text-align: center;
-    margin-bottom: 36px;
-  }
-  .logo {
-    font-size: 18px;
-    color: #e87a30;
-    letter-spacing: 4px;
-    margin-bottom: 8px;
-  }
-  .title {
-    font-size: 32px;
-    font-weight: bold;
-    color: #3a3028;
-    letter-spacing: 12px;
-  }
-  .body-text {
-    text-align: center;
-    font-size: 15px;
-    color: #5a5048;
-    line-height: 2.2;
-    margin: 36px 0;
-  }
-  .name {
-    font-size: 28px;
-    font-weight: bold;
-    color: #3a3028;
-    letter-spacing: 4px;
-  }
-  .course {
-    font-size: 16px;
-    color: #e87a30;
-    font-weight: 600;
-  }
-  .meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #8a8078;
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px dashed #d4a574;
-  }
-  .verify {
-    font-size: 12px;
-    color: #a09890;
-    text-align: center;
-    margin-top: 8px;
-  }
-</style>
-</head>
-<body>
-<div class="certificate">
-  <div class="header">
-    <div class="logo">🦊 FoxLearn</div>
-    <div class="title">证 书</div>
-  </div>
-  <div class="body-text">
-    兹证明<br>
-    <span class="name">${cert.studentName}</span><br>
-    参加 <span class="course">${cert.courseName}</span><br>
-    成绩合格，特发此证
-  </div>
-  <div class="meta">
-    <span>证书编号：${cert.certificateNo}</span>
-    <span>发证日期：${cert.issueDate.toISOString().slice(0, 10)}</span>
-  </div>
-  <div class="verify">
-    验证码：${cert.verificationCode.slice(0, 8).toUpperCase()} | foxlearn.cn/verify
-  </div>
-</div>
-</body>
-</html>`;
 
     const browser = await puppeteer.launch({
       headless: true,
