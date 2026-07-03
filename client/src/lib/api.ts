@@ -5,6 +5,11 @@ export const API_STREAM_BASE = typeof window !== 'undefined' && window.location.
   ? 'http://localhost:3001'
   : '';
 
+// 上传也用同样的直连策略（Next.js 代理对大文件 multipart 有问题）
+const UPLOAD_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:3001'
+  : '';
+
 /** 从 localStorage 获取 JWT token */
 function getToken(): string | null {
   if (typeof window === 'undefined') return null; // SSR guard
@@ -21,13 +26,14 @@ function redirectToLogin() {
 
 async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
+  const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string>),
   };
 
-  // 自动带 JWT（FormData 类型会让浏览器自己设 Content-Type）
-  if (token && !(options?.body instanceof FormData)) {
+  // 自动带 JWT（FormData 不设 Content-Type，让浏览器自设 multipart boundary）
+  if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -392,10 +398,13 @@ export const api = {
     get: (id: number) => request<any>(`/materials/${id}`),
     getStats: (id: number) => request<any>(`/materials/${id}/stats`),
     upload: (formData: FormData) => {
-      return fetch(`${BASE}/materials/upload`, {
+      const token = getToken();
+      return fetch(`${UPLOAD_BASE}/api/materials/upload`, {
         method: 'POST',
-        body: formData, // no Content-Type header — browser will set multipart boundary
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
       }).then(async res => {
+        if (res.status === 401) { redirectToLogin(); throw new Error('登录已过期，请重新登录'); }
         if (!res.ok) { const err = await res.text(); throw new Error(err); }
         return res.json();
       });
@@ -697,5 +706,19 @@ export const api = {
       }).then(r => r.blob()),
     remove: (id: number) => request<any>(`/attachments/${id}`, { method: 'DELETE' }),
     verify: (id: number) => request<any>(`/attachments/${id}/verify`, { method: 'POST' }),
+  },
+
+  // ── 系统配置（题库策略）──
+  systemConfig: {
+    bankPolicy: {
+      get: () => request<{ allow_org_own_bank: boolean; org_bank_visibility: string }>(
+        '/system-config/bank-policy'
+      ),
+      update: (data: { allow_org_own_bank?: boolean; org_bank_visibility?: string }) =>
+        request<{ allow_org_own_bank: boolean; org_bank_visibility: string }>(
+          '/system-config/bank-policy',
+          { method: 'PUT', body: JSON.stringify(data) }
+        ),
+    },
   },
 };

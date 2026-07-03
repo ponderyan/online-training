@@ -163,14 +163,25 @@ export class MaterialsService {
   async upload(file: Express.Multer.File, body: { subjectId: string; name?: string; batchNote?: string; createdBy: string }) {
     if (!file) throw new BadRequestException('请上传PDF文件');
 
+    // 修复文件名编码：浏览器上传的中文文件名可能被 multer 以 Latin-1 解码
+    const fixEncoding = (s: string) => {
+      try {
+        const buf = Buffer.from(s, 'latin1');
+        const utf = buf.toString('utf8');
+        // 如果解码后出现正常中文，说明是二次编码，使用修复后的
+        if (/[一-鿿]/.test(utf)) return utf;
+      } catch {}
+      return s;
+    };
+
     const savedName = `${crypto.randomUUID()}.pdf`;
     const filePath = path.join(this.uploadDir, savedName);
     await fs.writeFile(filePath, file.buffer);
 
     const material = await this.prisma.material.create({
       data: {
-        name: body.name || file.originalname.replace(/\.pdf$/i, ''),
-        fileName: file.originalname,
+        name: body.name || fixEncoding(file.originalname).replace(/\.pdf$/i, ''),
+        fileName: fixEncoding(file.originalname),
         fileSize: file.size,
         filePath: savedName,
         subjectId: parseInt(body.subjectId),
@@ -501,9 +512,9 @@ ${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
 
 以下为章节内容：
 
-${content.slice(0, 8000)}
+${content.slice(0, 20000)}
 
-请根据以上内容生成8-15道试题，尽量覆盖多种题型，分布合理。
+请根据以上内容和教材说明中的题型数量要求生成试题，题型分布要符合教材说明的要求，总量可适当超出说明以覆盖考点。
 返回格式（严格 JSON 数组，不要有任何其他文字）：
 [
   {
@@ -536,7 +547,7 @@ ${content.slice(0, 8000)}
           temperature: Math.min(config.temperature || 0.7, 0.5), // 出题需要较低温度保证准确性
           max_tokens: config.maxTokens || 8192,
         }),
-        signal: AbortSignal.timeout(120000),
+        signal: AbortSignal.timeout(300000), // 5分钟，55道题生成需要时间
       });
 
       if (!response.ok) {

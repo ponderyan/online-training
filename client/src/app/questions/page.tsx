@@ -39,6 +39,7 @@ export default function QuestionsPage() {
   const [editQuestion, setEditQuestion] = useState<any>(null);
   const [editingLoading, setEditingLoading] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [bankPolicy, setBankPolicy] = useState<{ org_bank_visibility: string; allow_org_own_bank?: boolean } | null>(null);
   const router = useRouter();
   const [referencedPapers, setReferencedPapers] = useState<any>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
@@ -57,7 +58,36 @@ export default function QuestionsPage() {
   }, [page, pageSize, keyword, filterType, filterDifficulty, filterSubject]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { api.subjects.list().then(setSubjects).catch(() => {}); }, []);
+  useEffect(() => {
+    // 科目筛选取自 subjects，按 code 去重（数据字典为基准）
+    Promise.all([
+      api.subjects.list(),
+      api.dataDictionaries.list().catch(() => []),
+    ]).then(([subjs, dicts]) => {
+      const dictCodes = new Set(dicts.map((d: any) => d.code));
+      // 只保留在数据字典中的科目，去重
+      const seen = new Set<string>();
+      const deduped = subjs.filter((s: any) => {
+        if (seen.has(s.code)) return false;
+        seen.add(s.code);
+        return dictCodes.has(s.code); // 只显示数据字典里配了的
+      });
+      setSubjects(deduped);
+    }).catch(() => {
+      api.subjects.list().then(setSubjects).catch(() => {});
+    });
+  }, []);
+  useEffect(() => {
+    api.systemConfig.bankPolicy.get()
+      .then(data => setBankPolicy(data))
+      .catch(() => {});
+  }, []);
+
+  // 当前用户角色
+  const currentUser = typeof window !== 'undefined'
+    ? (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })()
+    : {};
+  const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN') || false;
 
   const toggleStatus = async (q: any) => {
     const newStatus = q.status === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
@@ -169,7 +199,9 @@ export default function QuestionsPage() {
         </div>
         <div className="flex gap-3">
           <button onClick={() => setShowImport(true)} className="btn btn-outline btn-sm">↑ 批量导入</button>
-          <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">+ 录入试题</button>
+          {(!isSuperAdmin && bankPolicy?.allow_org_own_bank === false) ? null : (
+            <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">+ 录入试题</button>
+          )}
         </div>
       </div>
 
@@ -253,7 +285,16 @@ export default function QuestionsPage() {
                 <td><span className={`tag ${DIFF_LABELS[q.difficulty]?.cls}`}>{DIFF_LABELS[q.difficulty]?.label}</span></td>
                 <td><span className="tag tag-gold">{q.subject?.code}</span></td>
                 <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                  {q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'}
+                  {q.orgId ? (
+                    <>
+                      {q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'}
+                      <span className="ml-1.5 tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px' }}>
+                        机构
+                      </span>
+                    </>
+                  ) : (
+                    q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'
+                  )}
                 </td>
                 <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
                   {q.createdAt ? new Date(q.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) : '—'}
@@ -274,23 +315,34 @@ export default function QuestionsPage() {
                   </span>
                 </td>
                 <td>
-                  <div className="flex gap-1.5">
-                    <button onClick={async (e) => { e.stopPropagation(); try { const full = await api.questions.get(q.id); setViewQuestion(full); } catch { setViewQuestion(q); } }}
-                      className="btn btn-xs btn-ghost">详情</button>
-                    <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
-                      className="btn btn-xs btn-ghost">{editingLoading ? '…' : '修改'}</button>
-                    {q.status === 'PUBLISHED' ? (
-                      <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
-                        className="btn btn-xs" style={{ color: 'var(--verm)' }}>停用</button>
-                    ) : (
-                      <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
-                        className="btn btn-xs" style={{ color: 'var(--cyan)' }}>启用</button>
-                    )}
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
-                      className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
-                  </div>
+                  {(() => {
+                    const isOrgQuestion = q.orgId !== null;
+                    const isViewOnly = isOrgQuestion && isSuperAdmin && bankPolicy?.org_bank_visibility === 'view_only';
+                    return (
+                    <div className="flex gap-1.5">
+                      <button onClick={async (e) => { e.stopPropagation(); try { const full = await api.questions.get(q.id); setViewQuestion(full); } catch { setViewQuestion(q); } }}
+                        className="btn btn-xs btn-ghost">详情</button>
+                      <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
+                        className="btn btn-xs btn-ghost"
+                        disabled={isViewOnly}
+                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingLoading ? '…' : '修改'}</button>
+                      {q.status === 'PUBLISHED' ? (
+                        <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
+                          className="btn btn-xs" style={{ color: 'var(--verm)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                          disabled={isViewOnly}>停用</button>
+                      ) : (
+                        <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
+                          className="btn btn-xs" style={{ color: 'var(--cyan)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                          disabled={isViewOnly}>启用</button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
+                        className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                        disabled={isViewOnly}
+                        onMouseEnter={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--verm)'; }}
+                        onMouseLeave={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--ink-300)'; }}>删除</button>
+                    </div>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}

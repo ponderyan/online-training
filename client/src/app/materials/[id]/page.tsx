@@ -645,7 +645,11 @@ export default function MaterialDetailPage() {
               setGenerating(true);
               try {
                 const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-                const res = await fetch(`${apiBase}/api/materials/${materialId}/generate`, { method: 'POST' });
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${apiBase}/api/materials/${materialId}/generate`, {
+                  method: 'POST',
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
                 if (!res.ok) { const err = await res.text(); throw new Error(err); }
                 const data = await res.json();
                 alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);

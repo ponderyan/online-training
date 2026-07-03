@@ -705,7 +705,7 @@ model MaterialChapter {
   material      Material              @relation(fields: [materialId], references: [id], onDelete: Cascade)
   title         String                @db.VarChar(500) // 章节标题
   chapterIndex  Int                   @map("chapter_index") // 章节序号
-  content       String?               @db.Text // 该章节的完整文本（OCR结果）
+  content       String?               @db.MediumText // 该章节的完整文本（OCR结果，支持16MB）
   status        MaterialChapterStatus @default(PENDING)
   questionCount Int                   @default(0) @map("question_count")
   sortOrder     Int                   @default(0) @map("sort_order")

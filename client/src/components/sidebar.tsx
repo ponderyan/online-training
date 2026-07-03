@@ -1,8 +1,10 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import FoxLogo from './fox-logo';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { api } from '@/lib/api';
 
 interface NavItem {
   path: string;
@@ -119,6 +121,16 @@ export default function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
   const settings = useSiteSettings();
   const router = useRouter();
+  const [allowOrgOwnBank, setAllowOrgOwnBank] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // 非 SUPER_ADMIN 才需要检查开关；SUPER_ADMIN 始终看到题库
+    if (user?.roles && !user.roles.includes('SUPER_ADMIN')) {
+      api.systemConfig.bankPolicy.get()
+        .then(data => setAllowOrgOwnBank(data.allow_org_own_bank))
+        .catch(() => setAllowOrgOwnBank(true));
+    }
+  }, [user]);
 
   const isStudent = user?.roles?.includes('STUDENT') && !user?.roles?.some((r: string) =>
     ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER', 'LECTURER', 'PROCTOR', 'AUDITOR'].includes(r)
@@ -140,6 +152,8 @@ export default function Sidebar({ user }: { user: any }) {
       items: group.items.filter(item => {
         if (group.isSuperAdminOnly && !isSuperAdmin) return false;
         if (isSuperAdmin) return true; // 超管看全部，无视权限缓存
+        // 题库菜单：非SUPER_ADMIN且开关关闭时隐藏
+        if (item.path === '/questions' && !isSuperAdmin && allowOrgOwnBank === false) return false;
         if (item.perm && !permissions.includes(item.perm)) return false;
         return true;
       }),

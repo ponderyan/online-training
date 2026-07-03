@@ -7,6 +7,9 @@ import { api } from '@/lib/api';
 export default function SettingsPage() {
   const [dictionaries, setDictionaries] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('dict');
+  const [bankPolicy, setBankPolicy] = useState<{ allow_org_own_bank: boolean; org_bank_visibility: string } | null>(null);
+  const [bankPolicyLoading, setBankPolicyLoading] = useState(false);
+  const [bankPolicySaving, setBankPolicySaving] = useState(false);
 
   // System params form
   const [coolingDays, setCoolingDays] = useState(() => {
@@ -32,6 +35,16 @@ export default function SettingsPage() {
   useEffect(() => {
     api.dataDictionaries.list().then(setDictionaries).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'bank') {
+      setBankPolicyLoading(true);
+      api.systemConfig.bankPolicy.get()
+        .then(setBankPolicy)
+        .catch(() => {})
+        .finally(() => setBankPolicyLoading(false));
+    }
+  }, [activeTab]);
 
   const saveSysParams = () => {
     localStorage.setItem('sys_coolingDays', String(coolingDays));
@@ -73,6 +86,7 @@ export default function SettingsPage() {
         {[
           { key: 'dict', label: '数据字典' },
           { key: 'sys', label: '系统参数' },
+          { key: 'bank', label: '题库策略' },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="px-5 py-2.5 text-sm font-medium cursor-pointer border-b-2 transition-colors bg-transparent"
@@ -166,6 +180,78 @@ export default function SettingsPage() {
 
             <button onClick={saveSysParams} className="btn btn-ink btn-sm">保存参数</button>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'bank' && (
+        <div className="card p-6 max-w-[500px]">
+          <h3 className="section-title mb-5">题库权限策略</h3>
+
+          {bankPolicyLoading || !bankPolicy ? (
+            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+          ) : (
+            <>
+              {/* 开关：允许机构自建题库 */}
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <div className="text-sm font-medium">允许机构自建题库</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                    开启后，机构管理员可在自己机构下创建和管理试题
+                  </div>
+                </div>
+                <label className="toggle-switch" style={{ position: 'relative', cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={bankPolicy.allow_org_own_bank}
+                    onChange={e => setBankPolicy(prev => prev ? { ...prev, allow_org_own_bank: e.target.checked } : prev)}
+                    style={{ accentColor: '#e87a30', width: '20px', height: '20px' }} />
+                </label>
+              </div>
+
+              {/* 单选：协会对机构题库的可见性 */}
+              <div className="py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <div className="text-sm font-medium mb-3">协会对机构题库的可见性</div>
+                <div className="space-y-3">
+                  {[
+                    { value: 'hidden', label: '不可见', desc: '协会看不到机构创建的题库内容' },
+                    { value: 'view_only', label: '仅查看，不可编辑', desc: '协会可浏览机构题库，但不能修改或删除' },
+                    { value: 'full_access', label: '完全可见', desc: '协会可浏览、编辑、删除机构题库' },
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="org_bank_visibility"
+                        value={opt.value}
+                        checked={bankPolicy.org_bank_visibility === opt.value}
+                        onChange={e => setBankPolicy(prev => prev ? { ...prev, org_bank_visibility: e.target.value } : prev)}
+                        style={{ accentColor: '#e87a30', marginTop: '3px' }} />
+                      <div>
+                        <div className="text-sm">{opt.label}</div>
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>{opt.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 保存按钮 */}
+              <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <button onClick={async () => {
+                  if (!bankPolicy) return;
+                  setBankPolicySaving(true);
+                  try {
+                    await api.systemConfig.bankPolicy.update({
+                      allow_org_own_bank: bankPolicy.allow_org_own_bank,
+                      org_bank_visibility: bankPolicy.org_bank_visibility,
+                    });
+                    alert('题库策略已更新');
+                  } catch (e: any) {
+                    alert('保存失败：' + (e.message || '未知错误'));
+                  }
+                  setBankPolicySaving(false);
+                }} className="btn btn-ink btn-sm">
+                  {bankPolicySaving ? '保存中…' : '保存策略'}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </AppLayout>

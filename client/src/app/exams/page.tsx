@@ -121,6 +121,11 @@ export default function ExamList() {
                       background: `${statusColors[exam.status]}18`,
                       color: statusColors[exam.status],
                     }}>{statusLabels[exam.status] || exam.status}</span>
+                    {exam.orgId && (
+                      <span className="tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
+                        机构
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

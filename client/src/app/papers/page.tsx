@@ -119,6 +119,11 @@ export default function PapersPage() {
                   p.status === 'OFFICIAL' ? 'tag-verm' :
                   p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
                 }`}>{statusLabel(p.status)}</span>
+                {p.orgId && (
+                  <span className="tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
+                    机构
+                  </span>
+                )}
               </div>
 
               <p className="text-xs mb-3" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</p>

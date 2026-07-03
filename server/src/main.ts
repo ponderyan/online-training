@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors();
+  app.useBodyParser('json', { limit: '10mb' });
 
   // Serve uploaded files（头像/附件/试卷等）
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {

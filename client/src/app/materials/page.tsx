@@ -139,18 +139,35 @@ export default function MaterialsPage() {
 function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
   const router = useRouter();
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
+  const [materialName, setMaterialName] = useState('');
   const [batchNote, setBatchNote] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState('');
 
+  // 弹窗打开时全局拦截 Backspace 键（防止浏览器后退导致弹窗关闭）
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace') {
+        const tag = (e.target as HTMLElement)?.tagName;
+        const isEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || !!(e.target as HTMLElement)?.isContentEditable;
+        // 输入框里按 Backspace 让正常删除，否则拦截（防止浏览器回退）
+        if (!isEditable) e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   const handleSubmit = async () => {
     if (!file || !subjectId) return;
+    if (!batchNote.trim()) { alert('请填写出题要求，说明题型、数量和难度分布'); return; }
     setUploading(true);
     setProgress('上传中…');
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('name', materialName || file.name.replace(/\.pdf$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
       formData.append('createdBy', '1');
@@ -185,12 +202,17 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
             </select>
           </div>
           <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材名称</label>
+            <input value={materialName} onChange={e => setMaterialName(e.target.value)}
+              placeholder="如：DTIV上册" className="input" />
+          </div>
+          <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-              批次说明 <span style={{ color: 'var(--ink-300)' }}>（选填，告诉小狐狸这批次重点考什么）</span>
+              出题要求 <span style={{ color: 'var(--verm)' }}>*必填</span>
             </label>
             <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
-              placeholder="如：本次重点考察第一章和第三章，主要出客观题"
-              className="input textarea" rows={2} />
+              placeholder={'请详细描述出题要求，小狐狸会严格按此执行。\n\n例如：\n题型：单选题30道、判断题10道、填空题10道（每题2空）、简答题5道\n难度：60%基础（教材原文）、30%变形（理解应用）、10%场景题\n范围：重点考察第一至四章\n说明：这是数智化转型企业内部评估师考试'}
+              className="input textarea" rows={5} />
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF）</label>
