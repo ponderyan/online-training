@@ -44,6 +44,36 @@ export default function QuestionsPage() {
   const [referencedPapers, setReferencedPapers] = useState<any>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
+  // 知识点标记
+  const [kpModalQuestion, setKpModalQuestion] = useState<any>(null);
+  const [kpTree, setKpTree] = useState<any[]>([]);
+  const [kpSelected, setKpSelected] = useState<Set<number>>(new Set());
+  const [kpLoading, setKpLoading] = useState(false);
+
+  const openKpModal = async (q: any) => {
+    setKpModalQuestion(q);
+    setKpLoading(true);
+    try {
+      const [tree, existing] = await Promise.all([
+        api.knowledgePoints.getTree(),
+        api.knowledgePoints.getQuestionKPs(q.id),
+      ]);
+      setKpTree(tree);
+      setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
+    } catch {}
+    setKpLoading(false);
+  };
+
+  /** 展平知识点树为列表 */
+  const flattenTree = (nodes: any[], depth = 0): { id: number; name: string; code: string; depth: number }[] => {
+    const result: { id: number; name: string; code: string; depth: number }[] = [];
+    for (const n of nodes) {
+      result.push({ id: n.id, name: n.name, code: n.code || '', depth });
+      if (n.children?.length) result.push(...flattenTree(n.children, depth + 1));
+    }
+    return result;
+  };
+
   const load = useCallback(async () => {
     const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
     if (keyword) params.keyword = keyword;
@@ -335,6 +365,8 @@ export default function QuestionsPage() {
                           className="btn btn-xs" style={{ color: 'var(--cyan)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                           disabled={isViewOnly}>启用</button>
                       )}
+                      <button onClick={(e) => { e.stopPropagation(); openKpModal(q); }}
+                        className="btn btn-xs btn-ghost" style={{ color: 'var(--fox)' }}>🧠</button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
                         className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                         disabled={isViewOnly}
@@ -453,6 +485,51 @@ export default function QuestionsPage() {
           </div>
         </div>
       )}
+
+      {/* ═══ 知识点标记弹窗 ═══ */}
+      {kpModalQuestion && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setKpModalQuestion(null); }}>
+          <div className="modal-card max-w-lg animate-fadeSlide">
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-base">🧠 标记知识点 — {kpModalQuestion.content?.slice(0, 30)}…</h3>
+              <button onClick={() => setKpModalQuestion(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+            <div className="modal-body max-h-[60vh] overflow-y-auto">
+              {kpLoading ? (
+                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              ) : (
+                <div className="space-y-1">
+                  {flattenTree(kpTree).map(kp => (
+                    <label key={kp.id} className="flex items-center gap-2 p-1.5 rounded cursor-pointer hover:bg-[var(--fox-glow)] transition-colors"
+                      style={{ paddingLeft: `${12 + kp.depth * 20}px` }}>
+                      <input type="checkbox" checked={kpSelected.has(kp.id)}
+                        onChange={() => {
+                          const next = new Set(kpSelected);
+                          next.has(kp.id) ? next.delete(kp.id) : next.add(kp.id);
+                          setKpSelected(next);
+                        }}
+                        className="accent-[var(--fox)]" />
+                      <span className="text-xs" style={{ color: 'var(--ink-600)', fontWeight: kp.depth === 0 ? 600 : 400 }}>{kp.name}</span>
+                      {kp.code && <span className="text-xs ml-1" style={{ color: 'var(--ink-300)' }}>({kp.code})</span>}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer flex gap-2">
+              <button onClick={() => setKpModalQuestion(null)} className="btn btn-ghost btn-sm">取消</button>
+              <button onClick={async () => {
+                if (!kpModalQuestion) return;
+                try {
+                  await api.knowledgePoints.setQuestionKPs(kpModalQuestion.id, Array.from(kpSelected));
+                  setKpModalQuestion(null);
+                } catch (e: any) { alert('保存失败：' + e.message); }
+              }} className="btn btn-fox btn-sm">保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AppLayout>
   );
 }

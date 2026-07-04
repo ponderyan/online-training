@@ -12,7 +12,6 @@ interface KnowledgePoint {
   sortOrder: number;
   parentId: number | null;
   children: KnowledgePoint[];
-  deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
