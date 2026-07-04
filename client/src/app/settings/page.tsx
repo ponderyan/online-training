@@ -148,6 +148,9 @@ export default function SettingsPage() {
 
       {activeTab === 'sys' && (
         <div className="card p-6 max-w-[500px]">
+          <div className="p-3 mb-5 rounded-lg text-xs" style={{ background: '#f9a82518', color: '#e87a30', border: '1px solid #f9a82544' }}>
+            ℹ️ 系统参数正在迁移至<strong>配置中心</strong>，新配置请在 <a href="/admin/system-config" style={{ color: 'var(--fox)', textDecoration: 'underline' }}>🦊 配置中心</a> 中管理
+          </div>
           <h3 className="section-title mb-5">系统参数</h3>
 
           <div className="space-y-5">

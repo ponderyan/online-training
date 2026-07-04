@@ -125,6 +125,16 @@ export class TrainingProgramsController {
   }
 
   // ═══════════════════════════════
+  //   仪表盘
+  // ═══════════════════════════════
+
+  @Get(':id/dashboard')
+  @RequirePermission(P.PROGRAM_VIEW)
+  getDashboard(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getDashboard(id);
+  }
+
+  // ═══════════════════════════════
   //  批次管理（ProgramBatch）
   // ═══════════════════════════════
 

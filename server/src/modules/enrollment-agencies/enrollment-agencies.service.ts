@@ -143,4 +143,223 @@ export class EnrollmentAgenciesService {
 
     return { userId, status: 'deactivated' };
   }
+
+  // ═══════════════════════════════════════════
+  //   机构质量雷达图
+  // ═══════════════════════════════════════════
+
+  async getRadar(params: {
+    agencyId?: number;
+    year?: number;
+    quarter?: number;
+    monthStart?: string;
+    monthEnd?: string;
+  }) {
+    // ── 时间范围 ──
+    let startDate: Date;
+    let endDate: Date;
+    let timeLabel: string;
+
+    if (params.monthStart && params.monthEnd) {
+      startDate = new Date(`${params.monthStart}-01`);
+      endDate = new Date(`${params.monthEnd}-01`);
+      endDate.setMonth(endDate.getMonth() + 1);
+      timeLabel = `${params.monthStart} ~ ${params.monthEnd}`;
+    } else if (params.quarter && params.year) {
+      const qMap: Record<number, [number, number]> = { 1: [1, 3], 2: [4, 6], 3: [7, 9], 4: [10, 12] };
+      const [sm, em] = qMap[params.quarter] || [1, 12];
+      startDate = new Date(params.year, sm - 1, 1);
+      endDate = new Date(params.year, em, 1);
+      timeLabel = `${params.year} Q${params.quarter}`;
+    } else {
+      const y = params.year || new Date().getFullYear();
+      startDate = new Date(y, 0, 1);
+      endDate = new Date(y + 1, 0, 1);
+      timeLabel = `${y}年`;
+    }
+
+    // ── 获取所有机构（或指定机构） ──
+    const agencyWhere: any = { isActive: true };
+    if (params.agencyId) agencyWhere.id = params.agencyId;
+    const agencies = await this.prisma.enrollmentAgency.findMany({
+      where: agencyWhere,
+      select: { id: true, name: true },
+    });
+
+    if (agencies.length === 0) {
+      return { agencies: [], averages: null, timeRange: { label: timeLabel } };
+    }
+
+    // ── 对每个机构计算维度 ──
+    const agencyResults = await Promise.all(agencies.map(async (agency) => {
+      // 该机构的招生记录（时间范围内）
+      const enrollments = await this.prisma.programEnrollment.findMany({
+        where: {
+          agencyId: agency.id,
+          createdAt: { gte: startDate, lt: endDate },
+        },
+        select: {
+          id: true,
+          studentId: true,
+          programId: true,
+          status: true,
+        },
+      });
+
+      const totalStudents = enrollments.length;
+      if (totalStudents === 0) {
+        return {
+          id: agency.id,
+          name: agency.name,
+          dimensions: {
+            capacityUtilization: null,
+            attendanceRate: null,
+            passRate: null,
+            studentActivity: null,
+            certConversion: null,
+            retention: null,
+          },
+          dimensionDetails: {
+            capacityUtilization: { numerator: 0, denominator: 0 },
+            attendanceRate: { numerator: 0, denominator: 0 },
+            passRate: { numerator: 0, denominator: 0 },
+            studentActivity: { numerator: 0, denominator: 0 },
+            certConversion: { numerator: 0, denominator: 0 },
+            retention: { numerator: 0, denominator: 0 },
+          },
+          totalStudents: 0,
+          activePrograms: 0,
+        };
+      }
+
+      const studentIds = [...new Set(enrollments.map(e => e.studentId))];
+      const programIds = [...new Set(enrollments.map(e => e.programId))];
+      const droppedCount = enrollments.filter(e => e.status === 'DROPPED').length;
+
+      // ── 招生能力 ──
+      const programs = await this.prisma.trainingProgram.findMany({
+        where: { id: { in: programIds } },
+        select: { id: true, maxStudents: true },
+      });
+      const totalCapacity = programs.reduce((s, p) => s + (p.maxStudents || 0), 0);
+      const capacityUtilization = totalCapacity > 0
+        ? Math.round((totalStudents / totalCapacity) * 10000) / 100
+        : null;
+
+      // ── 参考率 ──
+      const examsForPrograms = await this.prisma.exam.findMany({
+        where: { programId: { in: programIds } },
+        select: { id: true },
+      });
+      const examIds = examsForPrograms.map(e => e.id);
+
+      let examinedStudents: number[] = [];
+      if (examIds.length > 0) {
+        const sessions = await this.prisma.examSession.findMany({
+          where: { examId: { in: examIds }, studentId: { in: studentIds }, status: 'SUBMITTED' },
+          select: { studentId: true },
+        });
+        examinedStudents = [...new Set(sessions.map(s => s.studentId))];
+      }
+      const attendanceRate = totalStudents > 0
+        ? Math.round((examinedStudents.length / totalStudents) * 10000) / 100
+        : null;
+
+      // ── 通过率 ──
+      let passedStudents: number[] = [];
+      if (examIds.length > 0) {
+        const passed = await this.prisma.examSession.findMany({
+          where: { examId: { in: examIds }, studentId: { in: studentIds }, isPassed: true },
+          select: { studentId: true },
+        });
+        passedStudents = [...new Set(passed.map(s => s.studentId))];
+      }
+      const passRate = examinedStudents.length > 0
+        ? Math.round((passedStudents.length / examinedStudents.length) * 10000) / 100
+        : null;
+
+      // ── 学员活跃度 ──
+      // 活跃 = 参加考试 OR 完成课程
+      let activeStudents = new Set(examinedStudents);
+      // 已完成视频学习的学员
+      const completedVideos = await this.prisma.videoProgress.findMany({
+        where: { studentId: { in: studentIds }, completed: true },
+        select: { studentId: true },
+      });
+      for (const v of completedVideos) activeStudents.add(v.studentId);
+      // 有出勤记录的学员
+      const attendanceStudents = await this.prisma.attendanceRecord.findMany({
+        where: { studentId: { in: studentIds } },
+        select: { studentId: true },
+      });
+      for (const a of attendanceStudents) activeStudents.add(a.studentId);
+
+      const studentActivity = totalStudents > 0
+        ? Math.round((activeStudents.size / totalStudents) * 10000) / 100
+        : null;
+
+      // ── 证书转化率 ──
+      const certs = await this.prisma.certificate.findMany({
+        where: { studentId: { in: studentIds }, programId: { in: programIds }, isRevoked: false },
+        select: { studentId: true },
+      });
+      const certStudentIds = [...new Set(certs.map(c => c.studentId))];
+      const certConversion = totalStudents > 0
+        ? Math.round((certStudentIds.length / totalStudents) * 10000) / 100
+        : null;
+
+      // ── 退学控制 ──
+      const retention = totalStudents > 0
+        ? Math.round((1 - droppedCount / totalStudents) * 10000) / 100
+        : null;
+
+      // ── 活跃培训班数（去重） ──
+      const activeEnrollments = await this.prisma.programEnrollment.findMany({
+        where: { agencyId: agency.id, createdAt: { gte: startDate, lt: endDate },
+          program: { status: { in: ['ENROLLING', 'IN_PROGRESS', 'REVIEWING', 'CERTIFYING'] } } },
+        select: { programId: true },
+        distinct: ['programId'],
+      });
+      const activePrograms = activeEnrollments.length;
+
+      return {
+        id: agency.id,
+        name: agency.name,
+        dimensions: {
+          capacityUtilization,
+          attendanceRate,
+          passRate,
+          studentActivity,
+          certConversion,
+          retention,
+        },
+        dimensionDetails: {
+          capacityUtilization: { numerator: totalStudents, denominator: totalCapacity },
+          attendanceRate: { numerator: examinedStudents.length, denominator: totalStudents },
+          passRate: { numerator: passedStudents.length, denominator: examinedStudents.length },
+          studentActivity: { numerator: activeStudents.size, denominator: totalStudents },
+          certConversion: { numerator: certStudentIds.length, denominator: totalStudents },
+          retention: { numerator: totalStudents - droppedCount, denominator: totalStudents },
+        },
+        totalStudents,
+        activePrograms,
+      };
+    }));
+
+    // ── 计算所有机构的平均分 ──
+    const dims = ['capacityUtilization', 'attendanceRate', 'passRate', 'studentActivity', 'certConversion', 'retention'] as const;
+    const averages: Record<string, number> = {};
+    for (const dim of dims) {
+      const vals = agencyResults.map(a => a.dimensions[dim]).filter((v): v is number => v !== null);
+      averages[dim] = vals.length > 0
+        ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 100) / 100
+        : 0;
+    }
+
+    return {
+      agencies: agencyResults,
+      averages,
+      timeRange: { type: params.monthStart ? 'custom' : params.quarter ? 'quarter' : 'year', label: timeLabel },
+    };
+  }
 }

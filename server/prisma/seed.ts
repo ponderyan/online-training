@@ -554,17 +554,53 @@ async function main() {
 
   // ── SystemConfig 默认值 ──
   const configDefaults = [
-    { key: 'allow_org_own_bank', value: 'false', desc: '是否允许机构自建题库' },
-    { key: 'org_bank_visibility', value: 'view_only', desc: '协会对机构题库可见性: hidden/view_only/full_access' },
+    // ── 题库策略（已有，加 group/type）──
+    { key: 'allow_org_own_bank', value: 'false', desc: '是否允许机构自建题库', group: 'general', inputType: 'boolean', options: null },
+    { key: 'org_bank_visibility', value: 'view_only', desc: '协会对机构题库可见性', group: 'general', inputType: 'select', options: '["hidden","view_only","full_access"]' },
+
+    // ── 培训配置 ──
+    { key: 'training_yearly_hour_limit', value: '90', desc: '年度学时上限', group: 'training', inputType: 'number', options: null },
+    { key: 'training_hour_cycle', value: 'yearly', desc: '学时考核周期', group: 'training', inputType: 'select', options: '["yearly","half_yearly","custom"]' },
+    { key: 'training_auto_record_enabled', value: 'true', desc: '自动记录学时开关', group: 'training', inputType: 'boolean', options: null },
+    { key: 'training_course_completion_threshold', value: '80', desc: '课程完成度阈值(%)', group: 'training', inputType: 'number', options: null },
+    { key: 'training_exam_pass_threshold', value: '60', desc: '考试及格触发自动学时分', group: 'training', inputType: 'number', options: null },
+    { key: 'training_default_exam_pass_score', value: '60', desc: '默认考试及格分数线', group: 'training', inputType: 'number', options: null },
+
+    // ── 考试配置 ──
+    { key: 'exam_cutoff_threshold', value: '3', desc: '切屏检测阈值(次)', group: 'exam', inputType: 'number', options: null },
+    { key: 'exam_retake_limit', value: '2', desc: '补考次数限制', group: 'exam', inputType: 'number', options: null },
+    { key: 'exam_retake_window_days', value: '7', desc: '补考窗口期(天)', group: 'exam', inputType: 'number', options: null },
+
+    // ── 通知配置 ──
+    { key: 'notif_cert_expiry_enabled', value: 'true', desc: '证书到期提醒开关', group: 'notification', inputType: 'boolean', options: null },
+    { key: 'notif_cert_expiry_days', value: '60', desc: '到期前提醒天数', group: 'notification', inputType: 'number', options: null },
+    { key: 'notif_approval_enabled', value: 'true', desc: '审批待办提醒开关', group: 'notification', inputType: 'boolean', options: null },
   ];
   for (const cfg of configDefaults) {
     await prisma.systemConfig.upsert({
       where: { key: cfg.key },
-      update: { value: cfg.value, desc: cfg.desc },
+      update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
       create: cfg,
     });
   }
   console.log(`✅ SystemConfig: ${configDefaults.length} 项`);
+
+  // ═══════════════════════════════════════
+  // 学时类型字典
+  // ═══════════════════════════════════════
+
+  const hourTypes = [
+    { code: 'PUBLIC_REQUIRED', name: '公需科目', sortOrder: 1, description: '公共必修学时' },
+    { code: 'PROFESSIONAL', name: '专业科目', sortOrder: 2, description: '专业领域学时' },
+    { code: 'OTHER', name: '其他', sortOrder: 3, description: '其他类型学时' },
+  ];
+  for (const ht of hourTypes) {
+    await prisma.learningHourType.upsert({
+      where: { code: ht.code },
+      update: { name: ht.name, sortOrder: ht.sortOrder, description: ht.description },
+      create: ht,
+    });
+  }
 
   // ── 最终输出 ──
   console.log('\n🎉 种子数据初始化完成!');

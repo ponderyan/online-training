@@ -7,6 +7,29 @@ import { Permissions } from '../../common/permissions.constants.js';
 export class ExamAnalysisController {
   constructor(private service: ExamAnalysisService) {}
 
+  // ═══════════════════════════════
+  //   质检报告
+  // ═══════════════════════════════
+
+  @Get(':id/quality-report')
+  @RequirePermission(Permissions.REPORT_VIEW)
+  async getQualityReport(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getQualityReport(id);
+  }
+
+  @Get(':id/quality-report/question/:questionId')
+  @RequirePermission(Permissions.REPORT_VIEW)
+  async getQuestionDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('questionId', ParseIntPipe) questionId: number,
+  ) {
+    return this.service.getQuestionDetail(id, questionId);
+  }
+
+  // ═══════════════════════════════
+  //   原有分析接口
+  // ═══════════════════════════════
+
   @Get(':id/analysis/overview')
   @RequirePermission(Permissions.REPORT_VIEW)
   async getOverview(@Param('id', ParseIntPipe) id: number) {

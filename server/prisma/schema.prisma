@@ -1415,6 +1415,20 @@ model VideoCourseLog {
   @@map("video_course_logs")
 }
 
+// 学时类型字典
+model LearningHourType {
+  id          Int                @id @default(autoincrement())
+  name        String             @db.VarChar(50)
+  code        String             @unique @db.VarChar(20)
+  description String?            @db.VarChar(200)
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+
+  learningHourRecords LearningHourRecord[]
+
+  @@map("learning_hour_types")
+}
+
 // Phase 1b: 学时记录（保留，关联 sourceId 指向 VideoCourse.id）
 model LearningHourRecord {
   id         Int              @id @default(autoincrement())
@@ -1424,7 +1438,11 @@ model LearningHourRecord {
   program    TrainingProgram? @relation(fields: [programId], references: [id])
   source     String           @db.VarChar(20) // VIDEO | OFFLINE
   sourceId   Int?             @map("source_id") // video_id or schedule_id
-  hours         Float                                 // 学时数
+  hours      Float            // 学时数
+
+  // ── 学时类型（新增，关联字典表）──
+  typeId Int?               @map("type_id")
+  type   LearningHourType?  @relation(fields: [typeId], references: [id])
 
   // ── 学时审核状态 ──
   status        String   @default("PENDING") @db.VarChar(20)  // PENDING | APPROVED | REJECTED
@@ -1437,6 +1455,10 @@ model LearningHourRecord {
 
   // ── 学员申报备注 ──
   note          String?  @map("note") @db.Text
+  description   String?  @map("description") @db.Text  // 申报说明
+
+  // ── 申报人 ──
+  submittedById Int?    @map("submitted_by_id")
 
   // ── 证据附件 ──
   evidenceUrl   String?  @map("evidence_url") @db.VarChar(500)
@@ -1567,8 +1589,11 @@ model SiteSetting {
 model SystemConfig {
   id        Int      @id @default(autoincrement())
   key       String   @unique @db.VarChar(100)     // 配置键名
-  value     String   @db.VarChar(500)              // 配置值
+  value     String   @db.VarChar(2000)             // 配置值（增到 2000）
   desc      String?  @db.VarChar(500)              // 配置说明
+  group     String?  @db.VarChar(50)               // 配置分组: training/exam/notification/general（seed 后非空）
+  inputType String   @default("text") @map("type") @db.VarChar(20)  // 输入类型: text/number/boolean/select/json
+  options   String?  @db.VarChar(500)              // 下拉选项（inputType=select 时用）
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("system_config")

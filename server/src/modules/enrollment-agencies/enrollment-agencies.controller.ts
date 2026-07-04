@@ -7,6 +7,30 @@ import { Permissions as P } from '../../common/permissions.constants.js';
 export class EnrollmentAgenciesController {
   constructor(private service: EnrollmentAgenciesService) {}
 
+  // ── 雷达图必须在 :id 之前注册，避免路由冲突 ──
+
+  @Get('radar') @RequirePermission(P.AGENCY_VIEW)
+  async getRadar(
+    @Req() req: any,
+    @Query('agencyId') agencyId?: string,
+    @Query('year') year?: string,
+    @Query('quarter') quarter?: string,
+    @Query('monthStart') monthStart?: string,
+    @Query('monthEnd') monthEnd?: string,
+  ) {
+    const params: any = {};
+    if (req.user?.roles?.includes('AGENCY_ADMIN') && req.user?.primaryAgencyId) {
+      params.agencyId = req.user.primaryAgencyId;
+    } else if (agencyId) {
+      params.agencyId = parseInt(agencyId);
+    }
+    if (year) params.year = parseInt(year);
+    if (quarter) params.quarter = parseInt(quarter);
+    if (monthStart) params.monthStart = monthStart;
+    if (monthEnd) params.monthEnd = monthEnd;
+    return this.service.getRadar(params);
+  }
+
   @Get() @RequirePermission(P.AGENCY_VIEW)
   async findAll(@Req() req: any, @Query('page') page?: string, @Query('keyword') keyword?: string) {
     return this.service.findAll(req.user, { page: page ? parseInt(page) : undefined, keyword });
@@ -14,7 +38,6 @@ export class EnrollmentAgenciesController {
 
   @Get(':id') @RequirePermission(P.AGENCY_VIEW)
   async findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    // AGENCY_ADMIN 只能看自己的机构
     if (req.user?.roles?.includes('AGENCY_ADMIN') && id !== req.user?.primaryAgencyId) {
       throw new ForbiddenException('无权查看其他机构数据');
     }
@@ -50,7 +73,7 @@ export class EnrollmentAgenciesController {
   }
 
   // ═══════════════════════════════════
-  // 机构成员管理（AGENCY_ADMIN 可管理本机构非管理员用户）
+  // 机构成员管理
   // ═══════════════════════════════════
 
   @Get(':id/members') @RequirePermission(P.AGENCY_MANAGE_STUDENTS)

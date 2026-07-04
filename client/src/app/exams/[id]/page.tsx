@@ -111,6 +111,10 @@ export default function ExamDetail() {
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--gold)', color: 'var(--gold)' }}>
                 📊 分析
               </button>
+              <button onClick={() => router.push(`/exams/${exam.id}/quality-report`)}
+                className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>
+                🧪 质检
+              </button>
             </>
           )}
           {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && (

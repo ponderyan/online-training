@@ -144,6 +144,153 @@ export class TrainingProgramsService {
     return actionMap[program.status] || [];
   }
 
+  // ═══════════════════════════════════════════
+  //   仪表盘统计
+  // ═══════════════════════════════════════════
+
+  async getDashboard(id: number) {
+    const program = await this.prisma.trainingProgram.findUnique({ where: { id }, select: { id: true, name: true, status: true } });
+    if (!program) throw new NotFoundException('培训班不存在');
+
+    // ── 并行查询所有数据 ──
+    const [
+      enrollCountResult,
+      examStatsResult,
+      scoreDistResult,
+      typeAccResult,
+      certCountResult,
+      leaderboardResult,
+    ] = await Promise.all([
+      // 1. 报名人数
+      this.prisma.programEnrollment.count({ where: { programId: id } }),
+
+      // 2. 参考人数 & 通过人数（一次查询）
+      this.prisma.$queryRawUnsafe<{ exam_count: bigint; pass_count: bigint }[]>(`
+        SELECT
+          COUNT(DISTINCT es.student_id) as exam_count,
+          COUNT(DISTINCT CASE WHEN es.final_score >= COALESCE(e.passing_score, 60) THEN es.student_id END) as pass_count
+        FROM exam_sessions es
+        JOIN exams e ON es.exam_id = e.id
+        WHERE e.program_id = ? AND es.submitted_at IS NOT NULL
+      `, id),
+
+      // 3. 分数段分布（取每个学员的最高分）
+      this.prisma.$queryRawUnsafe<{ score_range: string; count: bigint }[]>(`
+        SELECT
+          CASE
+            WHEN best_score < 60 THEN '0-59'
+            WHEN best_score < 70 THEN '60-69'
+            WHEN best_score < 80 THEN '70-79'
+            WHEN best_score < 90 THEN '80-89'
+            ELSE '90-100'
+          END as score_range,
+          COUNT(*) as count
+        FROM (
+          SELECT es.student_id, MAX(es.final_score) as best_score
+          FROM exam_sessions es
+          JOIN exams e ON es.exam_id = e.id
+          WHERE e.program_id = ? AND es.final_score IS NOT NULL
+          GROUP BY es.student_id
+        ) t
+        GROUP BY score_range
+        ORDER BY score_range
+      `, id),
+
+      // 4. 题型正确率
+      this.prisma.$queryRawUnsafe<{ type: string; total_count: bigint; correct_count: bigint }[]>(`
+        SELECT q.type,
+          COUNT(ea.id) as total_count,
+          SUM(CASE WHEN ea.is_correct = true THEN 1 ELSE 0 END) as correct_count
+        FROM exam_answers ea
+        JOIN exam_sessions ses ON ea.session_id = ses.id
+        JOIN exams e ON ses.exam_id = e.id
+        JOIN questions q ON ea.question_id = q.id
+        WHERE e.program_id = ? AND ea.is_correct IS NOT NULL
+        GROUP BY q.type
+      `, id),
+
+      // 5. 已出证人数
+      this.prisma.certificate.count({ where: { programId: id, isRevoked: false } }),
+
+      // 6. 排行榜 TOP 10
+      this.prisma.$queryRawUnsafe<{ student_id: number; display_name: string; best_score: number }[]>(`
+        SELECT u.id as student_id, u.display_name, MAX(es.final_score) as best_score
+        FROM exam_sessions es
+        JOIN exams e ON es.exam_id = e.id
+        JOIN users u ON es.student_id = u.id
+        WHERE e.program_id = ? AND es.final_score IS NOT NULL
+        GROUP BY u.id, u.display_name
+        ORDER BY best_score DESC
+        LIMIT 10
+      `, id),
+    ]);
+
+    // ── 解析参考/通过 ──
+    const examCount = Number(examStatsResult[0]?.exam_count || 0);
+    const passCount = Number(examStatsResult[0]?.pass_count || 0);
+
+    // ── 分数段 ──
+    const allRanges = ['0-59', '60-69', '70-79', '80-89', '90-100'];
+    const scoreDistMap = new Map((scoreDistResult || []).map(r => [r.score_range, Number(r.count)]));
+    const scoreDistribution = allRanges.map(range => ({
+      range,
+      count: scoreDistMap.get(range) || 0,
+    }));
+
+    // ── 题型正确率 ──
+    const typeLabels: Record<string, string> = {
+      SINGLE_CHOICE: '单选', MULTIPLE_CHOICE: '多选', TRUE_FALSE: '判断',
+      FILL_BLANK: '填空', SHORT_ANSWER: '问答', CASE_STUDY: '案例',
+    };
+    const typeAccuracy = (typeAccResult || []).map(r => {
+      const total = Number(r.total_count);
+      const correct = Number(r.correct_count);
+      return {
+        type: r.type,
+        label: typeLabels[r.type] || r.type,
+        total,
+        correct,
+        rate: total > 0 ? Math.round((correct / total) * 100) : 0,
+      };
+    });
+
+    // ── 排行榜（补充证书状态） ──
+    const studentIds = (leaderboardResult || []).map(r => r.student_id);
+    const certMap = new Map<number, boolean>();
+    if (studentIds.length > 0) {
+      const certs = await this.prisma.certificate.findMany({
+        where: { programId: id, studentId: { in: studentIds }, isRevoked: false },
+        select: { studentId: true },
+      });
+      certs.forEach(c => certMap.set(c.studentId, true));
+    }
+    const leaderboard = (leaderboardResult || []).map((r, i) => ({
+      rank: i + 1,
+      studentId: r.student_id,
+      studentName: r.display_name,
+      score: r.best_score,
+      certStatus: certMap.has(r.student_id) ? '已发放' : '—',
+    }));
+
+    return {
+      overview: {
+        enrollCount: enrollCountResult,
+        examCount,
+        passCount,
+        passRate: examCount > 0 ? Math.round((passCount / examCount) * 100) : null,
+      },
+      scoreDistribution,
+      typeAccuracy,
+      funnel: {
+        enrolled: enrollCountResult,
+        examined: examCount,
+        passed: passCount,
+        certified: Number(certCountResult),
+      },
+      leaderboard,
+    };
+  }
+
   async enrollStudents(id: number, studentIds: number[], agencyId?: number) {
     const program = await this.prisma.trainingProgram.findUnique({ where: { id }, select: { status: true } });
     if (!program) throw new NotFoundException('培训班不存在');

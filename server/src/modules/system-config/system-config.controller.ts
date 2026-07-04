@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Put, Param, Body, Req } from '@nestjs/common';
 import { SystemConfigService } from './system-config.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -7,7 +7,41 @@ import { Permissions } from '../../common/permissions.constants.js';
 export class SystemConfigController {
   constructor(private service: SystemConfigService) {}
 
-  /** 获取题库策略配置 */
+  /** 获取所有配置（按 group 分组） */
+  @Get()
+  @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
+  async getAll() {
+    return this.service.getAll();
+  }
+
+  /** 获取某分组的配置 */
+  @Get(':group')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
+  async getByGroup(@Param('group') group: string) {
+    return this.service.getByGroup(group);
+  }
+
+  /** 更新单个配置值 */
+  @Patch(':key')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async update(
+    @Param('key') key: string,
+    @Body() data: { value: string },
+    @Req() req: any,
+  ) {
+    const operatorId = req.user?.sub || req.user?.id;
+    return this.service.update(key, data.value, operatorId);
+  }
+
+  /** 批量同步配置（给 seed 脚本用） */
+  @Post('sync')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async sync(@Body() data: { configs: any[] }) {
+    return this.service.sync(data.configs);
+  }
+
+  // ── 向下兼容：原有 bank-policy 路由 ──
+
   @Get('bank-policy')
   @RequirePermission(Permissions.BANK_POLICY_VIEW)
   async getBankPolicy() {
@@ -15,35 +49,21 @@ export class SystemConfigController {
       this.service.getBoolean('allow_org_own_bank'),
       this.service.getConfig('org_bank_visibility'),
     ]);
-    return {
-      allow_org_own_bank,
-      org_bank_visibility: org_bank_visibility || 'view_only',
-    };
+    return { allow_org_own_bank, org_bank_visibility: org_bank_visibility || 'view_only' };
   }
 
-  /** 更新题库策略配置 */
   @Put('bank-policy')
   @RequirePermission(Permissions.BANK_POLICY_MANAGE)
-  async updateBankPolicy(
-    @Body() data: { allow_org_own_bank?: boolean; org_bank_visibility?: string },
-  ) {
+  async updateBankPolicy(@Body() data: { allow_org_own_bank?: boolean; org_bank_visibility?: string }) {
     if (data.allow_org_own_bank !== undefined) {
-      await this.service.setConfig(
-        'allow_org_own_bank',
-        String(data.allow_org_own_bank),
-        '是否允许机构自建题库',
-      );
+      await this.service.setConfig('allow_org_own_bank', String(data.allow_org_own_bank));
     }
     if (data.org_bank_visibility) {
       const valid = ['hidden', 'view_only', 'full_access'];
       if (!valid.includes(data.org_bank_visibility)) {
-        throw new ForbiddenException('无效的可见性值，可选: hidden/view_only/full_access');
+        throw new Error('无效的可见性值');
       }
-      await this.service.setConfig(
-        'org_bank_visibility',
-        data.org_bank_visibility,
-        '协会对机构题库可见性',
-      );
+      await this.service.setConfig('org_bank_visibility', data.org_bank_visibility);
     }
     return this.getBankPolicy();
   }

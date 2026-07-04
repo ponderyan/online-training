@@ -281,6 +281,9 @@ export const api = {
 
     // Phase 1d: 全链审计
     getAuditChain: (id: number) => request<any>(`/training-programs/${id}/audit-chain`),
+
+    // Phase: 培训班仪表盘
+    getDashboard: (id: number) => request<any>(`/training-programs/${id}/dashboard`),
   },
 
   // Phase 1c: 备案管理
@@ -308,6 +311,14 @@ export const api = {
     create: (data: any) => request<any>('/enrollment-agencies', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/enrollment-agencies/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/enrollment-agencies/${id}`, { method: 'DELETE' }),
+
+    // 机构质量雷达
+    radar: (params?: Record<string, string | number>) => {
+      const qs = params ? '?' + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+      ).toString() : '';
+      return request<any>(`/enrollment-agencies/radar${qs}`);
+    },
   },
 
   getPermissionCategories: () => request<any[]>('/permissions/categories'),
@@ -508,7 +519,7 @@ export const api = {
       request<any>('/learning-hours/approve', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
     reject: (ids: number[], comment: string) =>
       request<any>('/learning-hours/reject', { method: 'POST', body: JSON.stringify({ ids, comment }) }),
-    submit: (data: { studentId: number; programId?: number; hours: number; source?: string; evidenceUrl?: string; note?: string }) =>
+    submit: (data: { studentId: number; programId?: number; hours: number; source?: string; typeId?: number; evidenceUrl?: string; note?: string }) =>
       request<any>('/learning-hours/submit', { method: 'POST', body: JSON.stringify(data) }),
     uploadEvidence: (file: File) => {
       const formData = new FormData();
@@ -625,6 +636,11 @@ export const api = {
     overview: (examId: number) => request<any>(`/exams/${examId}/analysis/overview`),
     distribution: (examId: number) => request<any>(`/exams/${examId}/analysis/distribution`),
     questionAccuracy: (examId: number) => request<any>(`/exams/${examId}/analysis/question-accuracy`),
+
+    // 质检报告
+    qualityReport: (examId: number) => request<any>(`/exams/${examId}/quality-report`),
+    questionDetail: (examId: number, questionId: number) =>
+      request<any>(`/exams/${examId}/quality-report/question/${questionId}`),
   },
 
   // ── Phase F: 练习 ──
@@ -659,6 +675,15 @@ export const api = {
         return request<{ total: number; items: any[] }>(`/questions/practice/favorites${qs}`);
       },
     },
+  },
+
+  // ── 学时类型字典 ──
+  learningHourTypes: {
+    list: () => request<any[]>('/learning-hour-types'),
+    listAll: () => request<any[]>('/learning-hour-types/all'),
+    create: (data: any) => request<any>('/learning-hour-types', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: any) => request<any>(`/learning-hour-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: number) => request<any>(`/learning-hour-types/${id}`, { method: 'DELETE' }),
   },
 
   // ── 公开科目列表（无需登录） ──
@@ -708,7 +733,7 @@ export const api = {
     verify: (id: number) => request<any>(`/attachments/${id}/verify`, { method: 'POST' }),
   },
 
-  // ── 系统配置（题库策略）──
+  // ── 系统配置（题库策略+通用配置）──
   systemConfig: {
     bankPolicy: {
       get: () => request<{ allow_org_own_bank: boolean; org_bank_visibility: string }>(
@@ -720,5 +745,10 @@ export const api = {
           { method: 'PUT', body: JSON.stringify(data) }
         ),
     },
+    getAll: () => request<Record<string, any[]>>('/system-config'),
+    getByGroup: (group: string) => request<any[]>(`/system-config/${group}`),
+    update: (key: string, value: string) => request<any>(`/system-config/${key}`, {
+      method: 'PATCH', body: JSON.stringify({ value }),
+    }),
   },
 };

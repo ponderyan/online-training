@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import HoursTab from './hours-tab';
+import DashboardTab from './dashboard-tab';
 
 const STATUS_NAMES: Record<string, string> = {
   PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
@@ -289,11 +290,11 @@ export default function ProgramDetailPage() {
       </div>
 
       <div className="flex gap-1 mb-5 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
-        {['students', 'exams', 'schedule', 'evaluations', 'status', 'attendance', 'evidences', 'filing', 'hours'].map(tab => (
+        {['students', 'exams', 'dashboard', 'schedule', 'evaluations', 'status', 'attendance', 'evidences', 'filing', 'hours'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
             style={{ background: activeTab === tab ? 'var(--paper)' : 'transparent', color: activeTab === tab ? 'var(--fox)' : 'var(--ink-400)', boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
-            {tab === 'students' ? '👥 学员名单' : tab === 'exams' ? '📋 考试' : tab === 'schedule' ? '📅 课表' : tab === 'evaluations' ? '⭐ 评价' : tab === 'status' ? '🔄 状态流转' : tab === 'attendance' ? '✅ 出勤' : tab === 'evidences' ? '📎 证据' : tab === 'filing' ? '🏢 备案' : '⏱ 学时'}
+            {tab === 'students' ? '👥 学员名单' : tab === 'exams' ? '📋 考试' : tab === 'dashboard' ? '📊 数据看板' : tab === 'schedule' ? '📅 课表' : tab === 'evaluations' ? '⭐ 评价' : tab === 'status' ? '🔄 状态流转' : tab === 'attendance' ? '✅ 出勤' : tab === 'evidences' ? '📎 证据' : tab === 'filing' ? '🏢 备案' : '⏱ 学时'}
           </button>
         ))}
       </div>
@@ -350,6 +351,10 @@ export default function ProgramDetailPage() {
         <div className="card p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
           暂无关联考试。可在创建考试时选择此培训班。
         </div>
+      )}
+
+      {activeTab === 'dashboard' && (
+        <DashboardTab programId={params.id as string} />
       )}
 
       {activeTab === 'schedule' && (

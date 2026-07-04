@@ -159,6 +159,10 @@ export const Permissions = {
   // ── 题库策略配置（新） ──
   BANK_POLICY_VIEW: 'bankPolicy:view',
   BANK_POLICY_MANAGE: 'bankPolicy:manage',
+
+  // ── 系统配置（新） ──
+  SYSTEM_CONFIG_VIEW: 'systemConfig:view',
+  SYSTEM_CONFIG_MANAGE: 'systemConfig:manage',
 } as const;
 
 // 角色→权限映射表
@@ -170,6 +174,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
   [Role.ORG_ADMIN]: [
     Permissions.SYSTEM_CONFIG,
+    Permissions.SYSTEM_CONFIG_VIEW,
+    Permissions.SYSTEM_CONFIG_MANAGE,
     Permissions.SYSTEM_LOGS,
     Permissions.SYSTEM_DICTIONARY,
     Permissions.QUESTION_CREATE,

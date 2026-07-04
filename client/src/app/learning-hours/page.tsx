@@ -43,20 +43,32 @@ export default function LearningHoursPage() {
       ) : (
         <>
           {stats && (
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="card p-4 text-center">
-                <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{stats.totalHours}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总学时（小时）</div>
+            <>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="card p-4 text-center">
+                  <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{stats.totalHours}</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总学时（小时）</div>
+                </div>
+                <div className="card p-4 text-center">
+                  <div className="text-2xl font-bold" style={{ color: '#00897b' }}>{stats.completedVideos}</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成视频</div>
+                </div>
+                <div className="card p-4 text-center">
+                  <div className="text-2xl font-bold" style={{ color: '#1565c0' }}>{stats.programStats?.length || 0}</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>关联培训班</div>
+                </div>
               </div>
-              <div className="card p-4 text-center">
-                <div className="text-2xl font-bold" style={{ color: '#00897b' }}>{stats.completedVideos}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成视频</div>
-              </div>
-              <div className="card p-4 text-center">
-                <div className="text-2xl font-bold" style={{ color: '#1565c0' }}>{stats.programStats?.length || 0}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>关联培训班</div>
-              </div>
-            </div>
+              {stats.typeStats?.length > 0 && (
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  {stats.typeStats.map((ts: any) => (
+                    <div key={ts.typeCode} className="card p-4 text-center">
+                      <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{ts.hours}</div>
+                      <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{ts.typeName}（小时）</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {stats?.programStats?.length > 0 && (
@@ -84,7 +96,7 @@ export default function LearningHoursPage() {
               <table className="list-table">
                 <thead>
                   <tr>
-                    <th>来源</th><th>内容</th><th>培训班</th><th>学时</th><th>状态</th><th>时间</th>
+                    <th>来源</th><th>内容</th><th>培训班</th><th>学时类型</th><th>学时</th><th>状态</th><th>时间</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -101,6 +113,7 @@ export default function LearningHoursPage() {
                           {r.source === 'VIDEO' ? (r.videoName || '视频学习') : (r.note || '人工申报')}
                         </td>
                         <td className="text-xs">{r.program?.name || '—'}</td>
+                        <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{r.type?.name || '—'}</td>
                         <td>{r.hours} 小时</td>
                         <td>{statusBadge(r.status)}</td>
                         <td className="text-xs" style={{ color: 'var(--ink-400)' }}>

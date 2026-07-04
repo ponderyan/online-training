@@ -1,20 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class LearningHoursService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(studentId: number, params?: { programId?: number; source?: string }) {
-    const where: any = { studentId };
+  async findAll(params?: { studentId?: number; status?: string; programId?: number }) {
+    const where: any = {};
+    if (params?.studentId) where.studentId = params.studentId;
+    if (params?.status) where.status = params.status;
     if (params?.programId) where.programId = params.programId;
-    if (params?.source) where.source = params.source;
 
     const [items, total] = await Promise.all([
       this.prisma.learningHourRecord.findMany({
         where,
         orderBy: { recordedAt: 'desc' },
-        include: { program: { select: { id: true, name: true } } },
+        include: {
+          student: { select: { id: true, displayName: true, studentNumber: true, organization: true } },
+          program: { select: { id: true, name: true } },
+          type: { select: { id: true, name: true, code: true } },
+        },
       }),
       this.prisma.learningHourRecord.count({ where }),
     ]);
@@ -38,11 +43,26 @@ export class LearningHoursService {
   async stats(studentId: number) {
     const records = await this.prisma.learningHourRecord.findMany({
       where: { studentId },
-      include: { program: { select: { id: true, name: true } } },
+      include: {
+        program: { select: { id: true, name: true } },
+        type: { select: { id: true, name: true, code: true } },
+      },
     });
 
     const totalHours = records.reduce((sum, r) => sum + r.hours, 0);
     const completedVideos = records.filter(r => r.source === 'VIDEO').length;
+
+    // Group by type
+    const typeHours: Record<string, { typeName: string; typeCode: string; hours: number }> = {};
+    for (const r of records) {
+      if (r.type) {
+        const key = r.type.code;
+        if (!typeHours[key]) {
+          typeHours[key] = { typeName: r.type.name, typeCode: r.type.code, hours: 0 };
+        }
+        typeHours[key].hours += r.hours;
+      }
+    }
 
     // Group by program
     const programMap = new Map<number, { programId: number; programName: string; hours: number }>();
@@ -63,6 +83,10 @@ export class LearningHoursService {
     return {
       totalHours: Math.round(totalHours * 100) / 100,
       completedVideos,
+      typeStats: Object.values(typeHours).map(t => ({
+        ...t,
+        hours: Math.round(t.hours * 100) / 100,
+      })),
       programStats: Array.from(programMap.values()),
     };
   }
@@ -70,7 +94,10 @@ export class LearningHoursService {
   async programStats(programId: number) {
     const records = await this.prisma.learningHourRecord.findMany({
       where: { programId },
-      include: { student: { select: { id: true, displayName: true, studentNumber: true } } },
+      include: {
+        student: { select: { id: true, displayName: true, studentNumber: true } },
+        type: { select: { id: true, name: true, code: true } },
+      },
     });
 
     const studentMap = new Map<number, {
@@ -138,17 +165,27 @@ export class LearningHoursService {
     });
     if (existing) return;
 
+    // 自动标记为公需科目
+    const publicRequiredType = await this.prisma.learningHourType.findFirst({
+      where: { code: 'PUBLIC_REQUIRED' },
+    });
+
     // Create record for each linked program
     const programs = video.course?.programs || [];
     if (programs.length === 0) {
-      // Still record even without program linkage
       await this.prisma.learningHourRecord.create({
-        data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null },
+        data: {
+          studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null,
+          typeId: publicRequiredType?.id || null,
+        },
       });
     } else {
       for (const program of programs) {
         await this.prisma.learningHourRecord.create({
-          data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id },
+          data: {
+            studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id,
+            typeId: publicRequiredType?.id || null,
+          },
         });
       }
     }
@@ -163,35 +200,69 @@ export class LearningHoursService {
       include: {
         student: { select: { id: true, displayName: true, studentNumber: true, organization: true } },
         program: { select: { id: true, name: true, hoursPerDay: true } },
+        type: { select: { id: true, name: true, code: true } },
       },
       orderBy: { recordedAt: 'desc' },
     });
   }
 
+  // V1 主方法：单条审核/驳回
+  async review(id: number, action: 'approve' | 'reject', reviewerId: number, comment: string | null) {
+    const record = await this.prisma.learningHourRecord.findUnique({ where: { id } });
+    if (!record) throw new BadRequestException('记录不存在');
+    if (record.status !== 'PENDING') throw new BadRequestException('该记录已审核');
+    const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
+    return this.prisma.learningHourRecord.update({
+      where: { id },
+      data: { status, approvedById: reviewerId, approvedAt: new Date(), reviewComment: comment },
+    });
+  }
+
+  // 兼容旧路由：批量通过
   async approveHours(ids: number[], reviewerId: number, comment?: string) {
-    return this.prisma.learningHourRecord.updateMany({
-      where: { id: { in: ids }, status: 'PENDING' },
-      data: { status: 'APPROVED', approvedById: reviewerId, approvedAt: new Date(), reviewComment: comment || null },
-    });
+    let count = 0;
+    for (const id of ids) {
+      try { await this.review(id, 'approve', reviewerId, comment || null); count++; } catch {}
+    }
+    return { count };
   }
 
+  // 兼容旧路由：批量驳回
   async rejectHours(ids: number[], reviewerId: number, comment: string) {
-    return this.prisma.learningHourRecord.updateMany({
-      where: { id: { in: ids }, status: 'PENDING' },
-      data: { status: 'REJECTED', approvedById: reviewerId, approvedAt: new Date(), reviewComment: comment },
-    });
+    let count = 0;
+    for (const id of ids) {
+      try { await this.review(id, 'reject', reviewerId, comment); count++; } catch {}
+    }
+    return { count };
   }
 
-  async submit(studentId: number, data: { programId?: number; hours: number; source: string; evidenceUrl?: string; note?: string }) {
+  async submit(studentId: number, data: {
+    programId?: number; hours: number; source: string; typeId?: number;
+    description?: string; note?: string; evidenceUrl?: string;
+    operatorId?: number; operatorOrgId?: number | null;
+  }) {
+    // orgId 校验：申报人必须和学员在同一机构
+    if (data.operatorOrgId) {
+      const student = await this.prisma.user.findUnique({
+        where: { id: studentId },
+        select: { orgId: true, primaryAgencyId: true },
+      });
+      if (student && student.orgId && student.orgId !== data.operatorOrgId) {
+        throw new ForbiddenException('不能跨机构申报学时');
+      }
+    }
     return this.prisma.learningHourRecord.create({
       data: {
         studentId,
         programId: data.programId || null,
         hours: data.hours,
         source: data.source || 'OFFLINE',
+        typeId: data.typeId || null,
+        description: data.description || data.note || null,
+        note: data.note || null,
         status: 'PENDING',
         evidenceUrl: data.evidenceUrl || null,
-        note: data.note || null,
+        submittedById: data.operatorId || null,
       },
     });
   }

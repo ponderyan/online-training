@@ -20,7 +20,8 @@ export default function AgencyStudentsPage() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitTarget, setSubmitTarget] = useState<any>(null);
   const [programs, setPrograms] = useState<any[]>([]);
-  const [submitForm, setSubmitForm] = useState({ programId: '', hours: '', source: 'OFFLINE', note: '' });
+  const [hourTypes, setHourTypes] = useState<any[]>([]);
+  const [submitForm, setSubmitForm] = useState({ programId: '', hours: '', source: 'OFFLINE', typeId: '', note: '' });
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,6 +55,7 @@ export default function AgencyStudentsPage() {
 
       // Load agency list
       const list = await api.enrollmentAgencies.list();
+      api.learningHourTypes.list().then(setHourTypes).catch(() => {});
       const agencyList = list?.items || list || [];
       setAgencies(agencyList);
       if (agencyList.length > 0) {
@@ -83,7 +85,7 @@ export default function AgencyStudentsPage() {
 
   const openSubmitModal = async (student: any) => {
     setSubmitTarget(student);
-    setSubmitForm({ programId: '', hours: '', source: 'OFFLINE', note: '' });
+    setSubmitForm({ programId: '', hours: '', source: 'OFFLINE', typeId: '', note: '' });
     setEvidenceFile(null);
     setShowSubmitModal(true);
     try {
@@ -107,6 +109,7 @@ export default function AgencyStudentsPage() {
         programId: submitForm.programId ? parseInt(submitForm.programId) : undefined,
         hours,
         source: submitForm.source,
+        typeId: submitForm.typeId ? parseInt(submitForm.typeId) : undefined,
         evidenceUrl,
         note: submitForm.note || undefined,
       });
@@ -286,7 +289,7 @@ export default function AgencyStudentsPage() {
                   {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学时数 *</label>
                   <input type="number" min="0.5" step="0.5" value={submitForm.hours} onChange={e => setSubmitForm({...submitForm, hours: e.target.value})}
@@ -296,6 +299,13 @@ export default function AgencyStudentsPage() {
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>类型</label>
                   <select value={submitForm.source} onChange={e => setSubmitForm({...submitForm, source: e.target.value})} className="input select text-xs">
                     <option value="OFFLINE">线下培训</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学时类型</label>
+                  <select value={submitForm.typeId} onChange={e => setSubmitForm({...submitForm, typeId: e.target.value})} className="input select text-xs">
+                    <option value="">请选择…</option>
+                    {hourTypes.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
               </div>

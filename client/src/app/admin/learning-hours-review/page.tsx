@@ -72,7 +72,7 @@ export default function LearningHoursReviewPage() {
             <table className="list-table">
               <thead><tr>
                 <th><input type="checkbox" checked={selected.size === pendingHours.length} onChange={selectAll} className="accent-[#e87a30]" /></th>
-                <th>学员</th><th>培训班</th><th>线下学时</th><th>证据</th><th>提交时间</th>
+                <th>学员</th><th>培训班</th><th>学时类型</th><th>线下学时</th><th>证据</th><th>提交时间</th>
               </tr></thead>
               <tbody>
                 {pendingHours.map(h => (
@@ -80,6 +80,7 @@ export default function LearningHoursReviewPage() {
                     <td><input type="checkbox" checked={selected.has(h.id)} onChange={() => toggleSelect(h.id)} className="accent-[#e87a30]" /></td>
                     <td><div className="text-sm font-medium">{h.student?.displayName || '—'}</div><div className="text-xs" style={{ color: 'var(--ink-300)' }}>{h.student?.studentNumber || ''}</div></td>
                     <td className="text-xs">{h.program?.name || '—'}</td>
+                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{h.type?.name || '—'}</td>
                     <td className="text-sm font-medium">{h.hours}</td>
                     <td>{h.evidenceUrl ? <a href={h.evidenceUrl} target="_blank" className="text-xs" style={{ color: 'var(--fox)' }}>查看附件</a> : '—'}</td>
                     <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(h.recordedAt).toLocaleString('zh-CN')}</td>
