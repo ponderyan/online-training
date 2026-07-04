@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -24,6 +25,10 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
   const [subQuestions, setSubQuestions] = useState<{ content: string; answer: string }[]>([{ content: '', answer: '' }]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [kpTree, setKpTree] = useState<any[]>([]);
+  const [selectedKPIds, setSelectedKPIds] = useState<number[]>([]);
+  const [kpSearch, setKpSearch] = useState('');
+  const [kpLoading, setKpLoading] = useState(false);
 
   useEffect(() => {
     if (subjectId) {
@@ -77,6 +82,39 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
     }
   }, [editQuestion]);
 
+  // Load KP tree when modal opens
+  useEffect(() => {
+    if (!open) return;
+    setKpLoading(true);
+    setKpSearch('');
+    setSelectedKPIds([]);
+    api.knowledgePoints.getTree()
+      .then(data => {
+        const flatten = (nodes: any[]): any[] => {
+          const result: any[] = [];
+          const walk = (list: any[]) => {
+            for (const n of list) {
+              result.push(n);
+              if (n.children?.length) walk(n.children);
+            }
+          };
+          walk(nodes);
+          return result;
+        };
+        setKpTree(flatten(Array.isArray(data) ? data : []));
+      })
+      .catch(() => {})
+      .finally(() => setKpLoading(false));
+  }, [open]);
+
+  // Pre-select KPs when editing a question
+  useEffect(() => {
+    if (!editQuestion) return;
+    api.knowledgePoints.getQuestionKPs(editQuestion.id)
+      .then(data => setSelectedKPIds((data || []).map((kp: any) => kp.id)))
+      .catch(() => {});
+  }, [editQuestion]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -106,9 +144,24 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
         body.subQuestions = subQuestions.filter(s => s.content).map(s => ({ content: s.content, answer: s.answer || undefined }));
       }
 
-      await fetch(`/api/questions/${editQuestion ? editQuestion.id : ''}`, {
+      const res = await fetch(`/api/questions/${editQuestion ? editQuestion.id : ''}`, {
         method: editQuestion ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
+
+      // Try to get saved question ID (needed for new questions)
+      let savedId = editQuestion?.id;
+      if (!savedId && res.ok) {
+        try {
+          const saved = await res.json();
+          savedId = saved?.id;
+        } catch {}
+      }
+
+      // Save KP associations
+      if (savedId && selectedKPIds.length > 0) {
+        await api.knowledgePoints.setQuestionKPs(savedId, selectedKPIds).catch(() => {});
+      }
+
       onClose();
     } finally {
       setSaving(false);
@@ -273,6 +326,62 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                 className="input textarea" />
             </div>
           )}
+
+          {/* 关联知识点 */}
+          <div className="border-t pt-3 mt-4" style={{ borderColor: 'var(--ink-100)' }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              关联知识点 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+            </label>
+            {kpLoading ? (
+              <p className="text-xs py-2" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+            ) : kpTree.length === 0 ? (
+              <p className="text-xs py-2" style={{ color: 'var(--ink-300)' }}>
+                暂无知识点，请先在「知识点管理」中添加
+              </p>
+            ) : (
+              <div>
+                {/* Selected tags */}
+                {selectedKPIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {selectedKPIds.map(id => {
+                      const kp = kpTree.find(k => k.id === id);
+                      return kp ? (
+                        <span key={id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+                          {kp.name}
+                          <button onClick={() => setSelectedKPIds(prev => prev.filter(x => x !== id))}
+                            className="bg-transparent border-none cursor-pointer text-xs leading-none"
+                            style={{ color: 'var(--fox)' }}>✕</button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                {/* Search */}
+                <input value={kpSearch} onChange={e => setKpSearch(e.target.value)}
+                  className="input text-xs mb-1.5" placeholder="搜索知识点…"
+                  style={{ padding: '4px 8px', width: '100%' }} />
+                {/* Checkbox list */}
+                <div className="max-h-[120px] overflow-y-auto space-y-0.5">
+                  {kpTree
+                    .filter(kp => !kpSearch || kp.name.toLowerCase().includes(kpSearch.toLowerCase()) || (kp.code && kp.code.toLowerCase().includes(kpSearch.toLowerCase())))
+                    .map(kp => (
+                      <label key={kp.id} className="flex items-center gap-1.5 text-xs cursor-pointer py-0.5 px-1 rounded"
+                        style={{ color: selectedKPIds.includes(kp.id) ? 'var(--fox-dark)' : 'var(--ink-500)' }}>
+                        <input type="checkbox" checked={selectedKPIds.includes(kp.id)}
+                          onChange={e => {
+                            if (e.target.checked) setSelectedKPIds(prev => [...prev, kp.id]);
+                            else setSelectedKPIds(prev => prev.filter(x => x !== kp.id));
+                          }}
+                          style={{ accentColor: '#e87a30' }} />
+                        <span className="truncate flex-1">{kp.name}</span>
+                        {kp.code && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{kp.code}</span>}
+                      </label>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="modal-footer">

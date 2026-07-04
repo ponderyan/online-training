@@ -163,6 +163,10 @@ export const Permissions = {
   // ── 系统配置（新） ──
   SYSTEM_CONFIG_VIEW: 'systemConfig:view',
   SYSTEM_CONFIG_MANAGE: 'systemConfig:manage',
+
+  // ── 知识图谱（新） ──
+  KNOWLEDGE_VIEW: 'knowledge:view',
+  KNOWLEDGE_MANAGE: 'knowledge:manage',
 } as const;
 
 // 角色→权限映射表
@@ -257,6 +261,9 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.AI_CONFIG_VIEW,
     Permissions.AI_CONFIG_MANAGE,
     Permissions.AUDIT_LOG_VIEW,
+
+    Permissions.KNOWLEDGE_VIEW,
+    Permissions.KNOWLEDGE_MANAGE,
   ],
 
   [Role.LECTURER]: [
@@ -279,6 +286,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.CERT_VIEW,
     Permissions.COURSE_VIEW,
     Permissions.NOTIFICATION_VIEW,
+    Permissions.KNOWLEDGE_VIEW,
   ],
 
   [Role.PROCTOR]: [
@@ -295,6 +303,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.NOTIFICATION_VIEW,     // 消息通知
     Permissions.EVALUATION_VIEW,       // 评价
     Permissions.REPORT_VIEW,           // 成绩/报表
+    Permissions.KNOWLEDGE_VIEW,        // 知识图谱
   ],
 
   [Role.EXAM_OFFICER]: [
@@ -351,6 +360,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.REPORT_EXPORT,
     Permissions.TRANSCRIPT_VIEW,
     Permissions.NOTIFICATION_VIEW,
+    Permissions.KNOWLEDGE_VIEW,
+    Permissions.KNOWLEDGE_MANAGE,
   ],
 
   [Role.AGENCY_ADMIN]: [

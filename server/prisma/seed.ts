@@ -602,6 +602,85 @@ async function main() {
     });
   }
 
+  // ═══════════════════════════════════════
+  // 知识点树 seed
+  // ═══════════════════════════════════════
+
+  // 找第一个科目的 ID（信息系统项目管理假设为 subjectId=1）
+  const firstSubject = await prisma.subject.findFirst({ orderBy: { id: 'asc' }, select: { id: true } });
+  if (firstSubject) {
+    const sid = firstSubject.id;
+    const kpData = [
+      // 一级节点
+      { name: '项目管理基础', code: 'PM_BASIC', subjectId: sid, parentCode: null, sortOrder: 1, desc: '项目管理基础知识体系' },
+      { name: '进度管理', code: 'PM_SCHEDULE', subjectId: sid, parentCode: null, sortOrder: 2, desc: '项目进度规划与控制' },
+      { name: '成本管理', code: 'PM_COST', subjectId: sid, parentCode: null, sortOrder: 3, desc: '项目成本估算与控制' },
+      { name: '质量管理', code: 'PM_QUALITY', subjectId: sid, parentCode: null, sortOrder: 4, desc: '项目质量保证与控制' },
+      { name: '风险管理', code: 'PM_RISK', subjectId: sid, parentCode: null, sortOrder: 5, desc: '项目风险识别与应对' },
+      { name: '沟通与干系人管理', code: 'PM_COMM', subjectId: sid, parentCode: null, sortOrder: 6, desc: '项目沟通与干系人管理' },
+    ];
+
+    // 用 code 追踪父子关系
+    const createdMap = new Map<string, number>();
+    for (const kp of kpData) {
+      const { parentCode, subjectId, desc, ...rest } = kp as any;
+      const created = await prisma.knowledgePoint.upsert({
+        where: { code: rest.code },
+        update: { name: rest.name, sortOrder: rest.sortOrder, description: desc },
+        create: { ...rest, description: desc, subject: { connect: { id: subjectId } } },
+      });
+      createdMap.set(rest.code, created.id);
+    }
+
+    // 二级节点
+    const childData = [
+      { name: '项目与项目管理概念', code: 'PM_BASIC_CONCEPT', parentCode: 'PM_BASIC', sortOrder: 1 },
+      { name: '项目生命周期', code: 'PM_BASIC_LIFECYCLE', parentCode: 'PM_BASIC', sortOrder: 2 },
+      { name: '项目管理过程组', code: 'PM_BASIC_PROCESS', parentCode: 'PM_BASIC', sortOrder: 3 },
+      { name: '活动定义与排序', code: 'PM_SCHEDULE_DEFINE', parentCode: 'PM_SCHEDULE', sortOrder: 1 },
+      { name: '活动资源估算', code: 'PM_SCHEDULE_RESOURCE', parentCode: 'PM_SCHEDULE', sortOrder: 2 },
+      { name: '活动历时估算', code: 'PM_SCHEDULE_DURATION', parentCode: 'PM_SCHEDULE', sortOrder: 3 },
+      { name: '进度计划编制', code: 'PM_SCHEDULE_PLAN', parentCode: 'PM_SCHEDULE', sortOrder: 4 },
+      { name: '成本估算', code: 'PM_COST_ESTIMATE', parentCode: 'PM_COST', sortOrder: 1 },
+      { name: '成本预算', code: 'PM_COST_BUDGET', parentCode: 'PM_COST', sortOrder: 2 },
+      { name: '成本控制', code: 'PM_COST_CONTROL', parentCode: 'PM_COST', sortOrder: 3 },
+      { name: '质量规划', code: 'PM_QUALITY_PLAN', parentCode: 'PM_QUALITY', sortOrder: 1 },
+      { name: '质量保证', code: 'PM_QUALITY_ASSURANCE', parentCode: 'PM_QUALITY', sortOrder: 2 },
+      { name: '质量控制', code: 'PM_QUALITY_CONTROL', parentCode: 'PM_QUALITY', sortOrder: 3 },
+      { name: '风险识别', code: 'PM_RISK_IDENTIFY', parentCode: 'PM_RISK', sortOrder: 1 },
+      { name: '风险定性分析', code: 'PM_RISK_QUALITATIVE', parentCode: 'PM_RISK', sortOrder: 2 },
+      { name: '风险定量分析', code: 'PM_RISK_QUANTITATIVE', parentCode: 'PM_RISK', sortOrder: 3 },
+      { name: '风险应对', code: 'PM_RISK_RESPONSE', parentCode: 'PM_RISK', sortOrder: 4 },
+      { name: '沟通管理', code: 'PM_COMM_MANAGE', parentCode: 'PM_COMM', sortOrder: 1 },
+      { name: '干系人管理', code: 'PM_COMM_STAKEHOLDER', parentCode: 'PM_COMM', sortOrder: 2 },
+    ];
+
+    for (const child of childData) {
+      const parentId = createdMap.get(child.parentCode);
+      if (!parentId) continue;
+      // 检查是否已存在
+      const existing = await prisma.knowledgePoint.findUnique({ where: { code: child.code } });
+      if (!existing) {
+        await prisma.knowledgePoint.create({
+          data: {
+            name: child.name, code: child.code,
+            subject: { connect: { id: sid } },
+            parent: { connect: { id: parentId } },
+            sortOrder: child.sortOrder,
+            description: child.name,
+          },
+        });
+      } else {
+        await prisma.knowledgePoint.update({
+          where: { code: child.code },
+          data: { name: child.name, parentId, sortOrder: child.sortOrder },
+        });
+      }
+    }
+
+    console.log(`✅ 知识点树: ${kpData.length + childData.length} 个节点`);
+  }
+
   // ── 最终输出 ──
   console.log('\n🎉 种子数据初始化完成!');
   console.log(`   管理员:   admin / admin_temp`);

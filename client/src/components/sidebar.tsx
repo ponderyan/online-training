@@ -44,6 +44,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: '考务管理',
     items: [
       { path: '/questions', label: '题库管理', icon: '📝', perm: 'question:create' },
+      { path: '/admin/knowledge-points', label: '知识点管理', icon: '🧠', perm: 'knowledge:view' },
       { path: '/materials', label: '教材出题', icon: '📖', perm: 'material:upload' },
       { path: '/generate', label: '智能组卷', icon: '✨', perm: 'paper:generate' },
       { path: '/papers', label: '试卷管理', icon: '📄', perm: 'paper:view' },

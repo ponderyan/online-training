@@ -320,6 +320,7 @@ model Subject {
   templates       PaperTemplate[]
   papers          Paper[]
   knowledgeChunks KnowledgeChunk[]
+  knowledgePoints KnowledgePoint[]
   materials       Material[]
   paperNumberSeq  Int              @default(1) @map("paper_number_seq") // 当前编号序号
 
@@ -448,8 +449,46 @@ model Question {
   materialQuestions MaterialQuestion[]
   practiceRecords   PracticeRecord[]
   favoriteRecords   QuestionFavorite[]
+  knowledgePoints   QuestionKnowledgePoint[]
 
   @@map("questions")
+}
+
+// ═══════════════════════════════════════════
+// 知识点体系
+// ═══════════════════════════════════════════
+
+model KnowledgePoint {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(200)          // 知识点名称
+  code        String?  @unique @db.VarChar(50)   // 编码
+  description String?  @db.Text                   // 说明/学习目标
+  subjectId   Int?     @map("subject_id")         // 关联科目
+  subject     Subject? @relation(fields: [subjectId], references: [id])
+  parentId    Int?     @map("parent_id")          // 父知识点
+  parent      KnowledgePoint? @relation("KPHierarchy", fields: [parentId], references: [id])
+  children    KnowledgePoint[] @relation("KPHierarchy")
+  questions   QuestionKnowledgePoint[]
+
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([parentId])
+  @@index([subjectId])
+  @@map("knowledge_points")
+}
+
+model QuestionKnowledgePoint {
+  questionId       Int            @map("question_id")
+  question         Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  knowledgePointId Int            @map("knowledge_point_id")
+  knowledgePoint   KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Restrict)
+  weight           Float          @default(1.0)  // 考核权重
+
+  @@id([questionId, knowledgePointId])
+  @@map("question_knowledge_points")
 }
 
 // 单选题/多选题选项

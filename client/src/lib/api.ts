@@ -733,6 +733,20 @@ export const api = {
     verify: (id: number) => request<any>(`/attachments/${id}/verify`, { method: 'POST' }),
   },
 
+  // ── 知识图谱 ──
+  knowledgePoints: {
+    getTree: () => request<any[]>('/knowledge-points'),
+    getOne: (id: number) => request<any>(`/knowledge-points/${id}`),
+    create: (data: any) => request<any>('/knowledge-points', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: any) => request<any>(`/knowledge-points/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: number) => request<any>(`/knowledge-points/${id}`, { method: 'DELETE' }),
+    getQuestionKPs: (questionId: number) => request<any[]>(`/questions/${questionId}/knowledge-points`),
+    setQuestionKPs: (questionId: number, knowledgePointIds: number[]) =>
+      request<any>(`/questions/${questionId}/knowledge-points`, {
+        method: 'PATCH', body: JSON.stringify({ knowledgePointIds }),
+      }),
+  },
+
   // ── 系统配置（题库策略+通用配置）──
   systemConfig: {
     bankPolicy: {
