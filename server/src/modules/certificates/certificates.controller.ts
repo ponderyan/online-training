@@ -55,8 +55,15 @@ export class CertificatesController {
   async verify(
     @Query('no') certificateNo: string,
     @Query('code') verificationCode: string,
+    @Query('sig') signature?: string,
   ) {
-    return this.service.verifyCertificate(certificateNo, verificationCode);
+    const result = await this.service.verifyCertificate(certificateNo, verificationCode);
+    // 如果有 sig 参数，执行 HMAC 验签
+    if (signature && result.valid) {
+      const { verifyCertificateQrData } = await import('./cert-verify-utils.js');
+      (result as any).signatureValid = verifyCertificateQrData(certificateNo, verificationCode, signature);
+    }
+    return result;
   }
 
   // ═══════════════════════════════════════════════════════

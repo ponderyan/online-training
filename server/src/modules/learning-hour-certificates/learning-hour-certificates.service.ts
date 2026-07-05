@@ -340,6 +340,8 @@ export class LearningHourCertificatesService {
       return idCard.slice(0, 6) + '********' + idCard.slice(-4);
     };
 
+    const baseUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+
     return {
       valid: !cert.isRevoked,
       certificate: {
@@ -359,6 +361,7 @@ export class LearningHourCertificatesService {
         revokeReason: cert.revokeReason,
         contentHash: cert.contentHash,
         sealHash: cert.sealHash,
+        verificationUrl: `${baseUrl}/verify-hours?no=${cert.certificateNo}`,
       },
     };
   }

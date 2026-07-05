@@ -249,13 +249,15 @@ export class CertificatesService {
       String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    // 生成 QR 码
+    // 生成 QR 码（带 HMAC 签名防伪）
     let qrDataUrl = '';
     try {
       const QRCode = await import('qrcode');
+      const { signCertificateQrData } = await import('./cert-verify-utils.js');
       const siteUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+      const sig = signCertificateQrData(cert.certificateNo, cert.verificationCode);
       qrDataUrl = await QRCode.toDataURL(
-        `${siteUrl}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}`,
+        `${siteUrl}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}&sig=${sig}`,
         { width: 120, margin: 1, color: { dark: '#3a3028', light: '#ffffff00' } }
       );
     } catch {

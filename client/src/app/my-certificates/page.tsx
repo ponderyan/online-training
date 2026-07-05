@@ -95,7 +95,7 @@ export default function MyCertificatesPage() {
                       className="btn btn-fox btn-sm">📥 下载PDF</button>
                   )}
                   <button onClick={() => {
-                    window.open(`/api/certificates/verify?no=${cert.certificateNo}&code=${cert.verificationCode}`, '_blank');
+                    window.open(`/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}`, '_blank');
                   }} className="btn btn-ghost btn-sm">验证</button>
                 </div>
               </div>

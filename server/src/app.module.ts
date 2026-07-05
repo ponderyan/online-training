@@ -37,6 +37,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { UsersModule } from './modules/users/users.module.js';
 import { SystemConfigModule } from './modules/system-config/system-config.module.js';
 import { KnowledgePointsModule } from './modules/knowledge-points/knowledge-points.module.js';
+import { StatsModule } from './modules/stats/stats.module.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
 
 @Module({
@@ -78,6 +79,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     UsersModule,
     SystemConfigModule,
     KnowledgePointsModule,
+    StatsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: PermissionGuard },

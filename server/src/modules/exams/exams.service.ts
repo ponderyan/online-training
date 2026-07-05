@@ -544,6 +544,105 @@ export class ExamsService {
   //  阅卷进度统计
   // ═══════════════════════════════════════════
 
+  // ═══════════════════════════════════════════
+  //  我的学习（学员端首页聚合）
+  // ═══════════════════════════════════════════
+
+  async getMyLearning(studentId: number) {
+    // ── 考试统计 ──
+    const examSessions = await this.prisma.examSession.findMany({
+      where: { studentId },
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        exam: {
+          select: { id: true, title: true, passingScore: true, paper: { select: { id: true, name: true, totalScore: true } } },
+        },
+      },
+    });
+
+    const totalAttempts = examSessions.length;
+    const submitted = examSessions.filter(s => s.status === 'SUBMITTED');
+    const passed = submitted.filter(s => s.isPassed === true).length;
+    const failed = submitted.filter(s => s.isPassed === false).length;
+    const pendingScore = submitted.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === null).length;
+    const scored = submitted.filter(s => s.finalScore != null);
+    const avgScore = scored.length > 0
+      ? Math.round(scored.reduce((sum, s) => sum + (s.finalScore || 0), 0) / scored.length * 100) / 100
+      : 0;
+
+    const recentExams = examSessions.slice(0, 5).map(s => ({
+      examId: s.exam.id,
+      examTitle: s.exam.title,
+      paperName: s.exam.paper?.name || '',
+      totalScore: s.exam.paper?.totalScore || 0,
+      myScore: s.finalScore,
+      isPassed: s.isPassed,
+      scoringStatus: s.scoringStatus,
+      submittedAt: s.submittedAt,
+    }));
+
+    // ── 学时统计 ──
+    const hourRecords = await this.prisma.learningHourRecord.findMany({
+      where: { studentId },
+      orderBy: { recordedAt: 'desc' },
+      include: {
+        program: { select: { id: true, name: true } },
+        type: { select: { id: true, name: true, code: true } },
+      },
+    });
+
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    const sumHours = (records: typeof hourRecords) => round2(records.reduce((s, r) => s + r.hours, 0));
+    const totalHours = sumHours(hourRecords);
+    const approvedHours = sumHours(hourRecords.filter(r => r.status === 'APPROVED'));
+    const pendingHours = sumHours(hourRecords.filter(r => r.status === 'PENDING'));
+    const rejectedHours = sumHours(hourRecords.filter(r => r.status === 'REJECTED'));
+
+    const recentRecords = hourRecords.slice(0, 5).map(r => ({
+      id: r.id,
+      programName: r.program?.name || '—',
+      source: r.source,
+      hours: r.hours,
+      typeName: r.type?.name || null,
+      status: r.status,
+      recordedAt: r.recordedAt,
+    }));
+
+    // ── 证书统计 ──
+    const certs = await this.prisma.certificate.findMany({
+      where: { studentId, isRevoked: false },
+      orderBy: { issueDate: 'desc' },
+      select: {
+        id: true,
+        certificateNo: true,
+        courseName: true,
+        issueDate: true,
+      },
+    });
+
+    return {
+      examStats: {
+        totalAttempts,
+        passed,
+        failed,
+        pendingScore,
+        avgScore,
+        recentExams,
+      },
+      hoursStats: {
+        totalHours,
+        approvedHours,
+        pendingHours,
+        rejectedHours,
+        recentRecords,
+      },
+      certificates: {
+        total: certs.length,
+        items: certs,
+      },
+    };
+  }
+
   async getGradingProgress(examId: number) {
     const sessions = await this.prisma.examSession.findMany({
       where: { examId, status: 'SUBMITTED' },

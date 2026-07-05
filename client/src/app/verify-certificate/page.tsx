@@ -11,17 +11,6 @@ export default function VerifyCertificatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 扫码自动触发
-  useEffect(() => {
-    const no = searchParams.get('no');
-    const c = searchParams.get('code');
-    if (no && c) {
-      setCertNo(no);
-      setCode(c);
-      handleVerify(no, c);
-    }
-  }, []);
-
   const handleVerify = async (no?: string, c?: string) => {
     const finalNo = no || certNo;
     const finalCode = c || code;
@@ -39,6 +28,18 @@ export default function VerifyCertificatePage() {
     }
     setLoading(false);
   };
+
+  // 扫码/URL参数自动触发
+  useEffect(() => {
+    const no = searchParams.get('no');
+    const c = searchParams.get('code');
+    if (no && c) {
+      setCertNo(no);
+      setCode(c);
+      handleVerify(no, c);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ background: '#f5f0eb', fontFamily: '"PingFang SC","Microsoft YaHei",sans-serif' }}>
@@ -123,7 +124,7 @@ export default function VerifyCertificatePage() {
 
         {/* Footer */}
         <div className="text-center pt-4 pb-12">
-          <a href="/login" className="text-xs" style={{ color: '#e87a30', textDecoration: 'none' }}>← 返回首页</a>
+          <a href="/" className="text-xs" style={{ color: '#e87a30', textDecoration: 'none' }}>← 返回首页</a>
           <div className="mt-3 text-xs" style={{ color: '#b0a898' }}>© {new Date().getFullYear()} FoxLearn · 狐学</div>
         </div>
       </div>

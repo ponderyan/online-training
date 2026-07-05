@@ -26,6 +26,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/dashboard', label: '工作台', icon: '📋', perm: null },
       { path: '/my/profile', label: '个人中心', icon: '👤', perm: null },
       { path: '/notifications', label: '消息通知', icon: '🔔', perm: 'notification:view' },
+      { path: '/admin/dashboard', label: '统计看板', icon: '📊', perm: 'stats:view' },
     ],
   },
   {
@@ -115,6 +116,7 @@ const STUDENT_NAV_GROUPS: NavGroup[] = [
   {
     title: '我的档案',
     items: [
+      { path: '/my-learning', label: '我的学习', icon: '📚' },
       { path: '/learning-hours', label: '我的学时', icon: '🕐' },
       { path: '/my-certificates', label: '我的证书', icon: '🎓' },
       { path: '/my/profile', label: '个人中心', icon: '👤' },

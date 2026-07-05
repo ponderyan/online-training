@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import FoxLogo from '@/components/fox-logo';
+import ScoreReportModal from './ScoreReportModal';
 
 interface AnswerDetail {
   questionId: number;
@@ -88,6 +89,7 @@ export default function ExamResult() {
   const [result, setResult] = useState<ExamResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -137,14 +139,6 @@ export default function ExamResult() {
   return (
     <>
       <title>考试结果 · 狐学</title>
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-          .no-print { display: none !important; }
-        }
-      `}</style>
       <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
         {/* Header - hidden in print */}
         <div className="sticky top-0 z-10 backdrop-blur-md no-print" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
@@ -217,7 +211,7 @@ export default function ExamResult() {
                 {pendingCount > 0 && <span style={{ color: '#f59e0b' }}>● {pendingCount} 待判</span>}
               </div>
               <div className="flex gap-2 mt-3 no-print">
-                <button onClick={() => window.print()}
+                <button onClick={() => setShowPrintModal(true)}
                   className="btn btn-sm text-xs px-3 py-1.5"
                   style={{ background: 'var(--fox)', color: 'white', border: 'none', cursor: 'pointer' }}>
                   🖨️ 打印成绩单
@@ -391,6 +385,12 @@ export default function ExamResult() {
         </div>
       </div>
     </div>
+
+      <ScoreReportModal
+        open={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        result={result}
+      />
     </>
   );
 }

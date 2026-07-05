@@ -167,6 +167,9 @@ export const Permissions = {
   // ── 知识图谱（新） ──
   KNOWLEDGE_VIEW: 'knowledge:view',
   KNOWLEDGE_MANAGE: 'knowledge:manage',
+
+  // ── 数据统计 ──
+  STATS_VIEW: 'stats:view',
 } as const;
 
 // 角色→权限映射表
@@ -264,6 +267,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
     Permissions.KNOWLEDGE_VIEW,
     Permissions.KNOWLEDGE_MANAGE,
+    Permissions.STATS_VIEW,
   ],
 
   [Role.LECTURER]: [
