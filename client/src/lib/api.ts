@@ -686,6 +686,31 @@ export const api = {
     delete: (id: number) => request<any>(`/learning-hour-types/${id}`, { method: 'DELETE' }),
   },
 
+  // ── 学时证明 ──
+  learningHourCertificates: {
+    apply: (programId: number) => request<any>('/learning-hour-certificates/apply', {
+      method: 'POST', body: JSON.stringify({ programId }),
+    }),
+    preview: (programId: number, studentId?: number) => {
+      const qs = studentId ? `?programId=${programId}&studentId=${studentId}` : `?programId=${programId}`;
+      return request<any>(`/learning-hour-certificates/preview${qs}`);
+    },
+    my: () => request<any[]>('/learning-hour-certificates/my'),
+    list: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return request<{ items: any[]; total: number }>(`/learning-hour-certificates${qs}`);
+    },
+    get: (id: number) => request<any>(`/learning-hour-certificates/${id}`),
+    review: (id: number, action: string, note?: string) => request<any>(`/learning-hour-certificates/${id}/review`, {
+      method: 'PATCH', body: JSON.stringify({ action, note }),
+    }),
+    revoke: (id: number, reason: string) => request<any>(`/learning-hour-certificates/${id}/revoke`, {
+      method: 'PATCH', body: JSON.stringify({ reason }),
+    }),
+    pdf: (id: number) => `/api/learning-hour-certificates/${id}/pdf`,
+    verify: (no: string) => request<any>(`/learning-hour-certificates/verify?no=${encodeURIComponent(no)}`),
+  },
+
   // ── 公开科目列表（无需登录） ──
   subjectsPublic: async () => {
     const res = await fetch('/api/subjects/public');

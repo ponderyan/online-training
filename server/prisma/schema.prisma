@@ -73,6 +73,11 @@ model Organization {
   papers             Paper[]
   exams              Exam[]
 
+  // ── 印章 ──
+  sealUrl        String?  @map("seal_url") @db.VarChar(500)
+  sealHash       String?  @map("seal_hash") @db.VarChar(64)
+  useFoxLearnSeal Boolean @default(true) @map("use_foxlearn_seal")
+
   @@map("organizations")
 }
 
@@ -1231,6 +1236,61 @@ model CertificateApprovalLog {
 
   @@index([certificateId])
   @@map("certificate_approval_logs")
+}
+
+// ═══════════════════════════════════════════
+// 学时证明（与结业证书并列）
+// ═══════════════════════════════════════════
+
+model LearningHourCertificate {
+  id            Int      @id @default(autoincrement())
+  studentId     Int      @map("student_id")
+  programId     Int?     @map("program_id")
+
+  // ── 冗余显示字段 ──
+  studentName   String   @map("student_name") @db.VarChar(100)
+  idCard        String?  @map("id_card") @db.VarChar(18)
+  programName   String?  @map("program_name") @db.VarChar(200)
+  orgName       String?  @map("org_name") @db.VarChar(200)
+
+  // ── 学时汇总 ──
+  totalHours    Float    @map("total_hours")
+  hoursDetail   Json     @map("hours_detail")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+
+  // ── 防伪信息 ──
+  certificateNo    String   @unique @map("certificate_no") @db.VarChar(100)
+  verificationCode String   @map("verification_code") @db.VarChar(64)
+  contentHash      String?  @map("content_hash") @db.VarChar(64)
+
+  // ── 印章 ──
+  sealUrl      String?  @map("seal_url") @db.VarChar(500)
+  sealHash     String?  @map("seal_hash") @db.VarChar(64)
+
+  // ── 审批状态 ──
+  approvalStatus String @default("AUTO_APPROVED") @map("approval_status") @db.VarChar(20)
+
+  // ── 审批链 ──
+  appliedAt  DateTime  @default(now()) @map("applied_at")
+  approvedAt DateTime? @map("approved_at")
+  approvedBy Int?      @map("approved_by")
+  reviewNote String?   @map("review_note") @db.Text
+
+  // ── 基础字段 ──
+  orgId     Int?     @map("org_id")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  revokedAt DateTime? @map("revoked_at")
+  revokeReason String? @map("revoke_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([studentId])
+  @@index([programId])
+  @@index([approvalStatus])
+  @@index([certificateNo])
+  @@map("learning_hour_certificates")
 }
 
 // ═══════════════════════════════════════════
