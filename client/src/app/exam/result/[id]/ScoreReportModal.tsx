@@ -213,9 +213,7 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
 
         /* 打印状态：隐藏屏幕内容，只显示成绩单 */
         @media print {
-          body > *:not(.score-report-print-only):not(.score-report-print-only *) {
-            display: none !important;
-          }
+          body * { visibility: hidden; }
           html, body {
             height: auto !important;
             overflow: visible !important;
@@ -225,17 +223,20 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
           }
           .score-report-print-only {
             display: block !important;
-            position: static !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             padding: 20mm 15mm !important;
             box-sizing: border-box !important;
+            visibility: visible !important;
+          }
+          .score-report-print-only * {
+            visibility: visible !important;
           }
           .score-report-card {
             max-width: 720px !important;
             margin: 0 auto !important;
-          }
-          .score-report-card * {
-            visibility: visible !important;
           }
           .score-report-no-print {
             display: none !important;

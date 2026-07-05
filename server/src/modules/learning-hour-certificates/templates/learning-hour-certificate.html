@@ -3,77 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  @page { margin: 0; }
+  @page { margin: 15mm 12mm; }
   body {
     margin: 0;
     font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: #f5f0eb;
+    background: #fff;
+    color: #3a3028;
   }
   .certificate {
-    width: 800px;
-    min-height: 560px;
-    background: #fff;
-    border: 2px solid #d4a574;
-    padding: 48px 56px;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 40px 28px;
     box-sizing: border-box;
     position: relative;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
   }
-  .certificate::before {
-    content: '';
-    position: absolute;
-    top: 12px; left: 12px; right: 12px; bottom: 12px;
-    border: 1px solid #e8d5c0;
-    pointer-events: none;
-  }
+
   .header {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #d4a574;
   }
   .logo {
-    font-size: 18px;
+    font-size: 14px;
     color: #e87a30;
-    letter-spacing: 4px;
-    margin-bottom: 8px;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
   }
   .title {
-    font-size: 30px;
+    font-size: 26px;
     font-weight: bold;
     color: #3a3028;
-    letter-spacing: 16px;
+    letter-spacing: 12px;
   }
-  .info-section {
-    text-align: left;
-    font-size: 14px;
-    color: #5a5048;
-    line-height: 2.2;
-    margin: 28px 0;
-    padding: 0 20px;
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+    margin: 20px 0;
+    font-size: 13px;
+    line-height: 2;
   }
-  .info-section .label {
+  .info-grid .label {
     color: #8a8078;
-    display: inline-block;
-    width: 100px;
   }
-  .info-section .value {
+  .info-grid .value {
     color: #3a3028;
-    font-weight: 600;
-    font-size: 15px;
   }
-  .info-section .name-value {
-    font-size: 22px;
+  .info-grid .name-value {
+    font-size: 18px;
     font-weight: bold;
     color: #3a3028;
-    letter-spacing: 4px;
+    letter-spacing: 2px;
   }
+  .date-row {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: #a09890;
+    padding-top: 4px;
+    border-top: 1px dashed #e0d8d0;
+  }
+
   .hours-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 20px 0;
+    margin: 16px 0;
     font-size: 13px;
   }
   .hours-table th {
@@ -99,69 +95,48 @@
     border-top: 2px solid #d4a574;
     font-weight: bold;
     color: #3a3028;
-    padding-top: 12px;
+    padding-top: 10px;
   }
   .hours-table .total-row .hours-cell {
-    font-size: 16px;
+    font-size: 15px;
     color: #e87a30;
   }
+
   .meta {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
-    color: #8a8078;
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px dashed #d4a574;
-  }
-  .verify {
     font-size: 12px;
-    color: #a09890;
-    text-align: center;
-    margin-top: 8px;
+    color: #8a8078;
+    margin: 20px 0;
+    padding-top: 14px;
+    border-top: 1px solid #e0d8d0;
   }
+
   .footer {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-top: 24px;
-  }
-  .seal-area {
-    display: flex;
-    flex-direction: column;
+    justify-content: flex-end;
     align-items: center;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed #e0d8d0;
   }
-  .seal-circle {
-    width: 80px;
-    height: 80px;
+  .seal-area img {
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
-    border: 3px solid #c0392b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: #c0392b;
-    text-align: center;
-    font-weight: bold;
-    line-height: 1.3;
-    background: rgba(192, 57, 43, 0.03);
-    transform: rotate(-15deg);
-  }
-  .qr-area {
-    width: 120px;
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
   .qr-area img {
-    width: 100%;
-    height: 100%;
+    width: 100px;
+    height: 100px;
   }
-  .date-range {
-    font-size: 12px;
+
+  .verify {
+    font-size: 11px;
     color: #a09890;
-    margin-top: 4px;
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.6;
   }
 </style>
 </head>
@@ -172,35 +147,17 @@
     <div class="title">学 时 证 明</div>
   </div>
 
-  <div class="info-section">
-    <div>
-      <span class="label">姓　　名：</span>
-      <span class="name-value">{{studentName}}</span>
-    </div>
-    <div>
-      <span class="label">身份证号：</span>
-      <span class="value">{{idCardMasked}}</span>
-    </div>
-    <div>
-      <span class="label">培训班：</span>
-      <span class="value">{{programName}}</span>
-    </div>
-    <div>
-      <span class="label">所属机构：</span>
-      <span class="value">{{orgName}}</span>
-    </div>
-  </div>
-
-  <div class="date-range">
-    学时期间：{{startDate}} 至 {{endDate}}
+  <div class="info-grid">
+    <div><span class="label">姓　　名：</span><span class="name-value">{{studentName}}</span></div>
+    <div><span class="label">身份证号：</span><span class="value">{{idCardMasked}}</span></div>
+    <div><span class="label">培训班：</span><span class="value">{{programName}}</span></div>
+    <div><span class="label">所属机构：</span><span class="value">{{orgName}}</span></div>
+    <div class="date-row">学时期间：{{startDate}} 至 {{endDate}}</div>
   </div>
 
   <table class="hours-table">
     <thead>
-      <tr>
-        <th>学时类型</th>
-        <th style="text-align:right;">学时（小时）</th>
-      </tr>
+      <tr><th>学时类型</th><th style="text-align:right;">学时（小时）</th></tr>
     </thead>
     <tbody>
       {{hoursDetailTable}}
@@ -218,7 +175,7 @@
 
   <div class="footer">
     <div class="seal-area">
-      <img src="{{sealDataUrl}}" alt="FoxLearn 印章" style="width:120px;height:120px;border-radius:50%;" onerror="this.style.display='none'" />
+      <img src="{{sealDataUrl}}" alt="FoxLearn 印章" onerror="this.style.display='none'" />
     </div>
     <div class="qr-area">
       <img src="{{qrDataUrl}}" alt="QR Code" />
@@ -226,9 +183,7 @@
   </div>
 
   <div class="verify">
-    验证：foxlearn.cn/verify-hours | 编号 {{certificateNo}}
-  </div>
-  <div class="hash-line" style="font-size:8px;color:#c0b8a8;text-align:center;margin-top:4px;">
+    验证：foxlearn.cn/verify-hours<br/>
     防伪指纹：{{sealHash}}
   </div>
 </div>

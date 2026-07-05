@@ -34,10 +34,13 @@ export default function LearningHoursPage() {
     setApplyModal(true);
     setSelectedProgramId(null);
     setPreview(null);
-    try {
-      const pData = await api.programs.list({ pageSize: 200 });
-      setPrograms(pData.items || []);
-    } catch {}
+    // 从 stats 直接提取有学时的培训班，无需单独调 program API
+    const availablePrograms = (stats?.programStats || []).map((ps: any) => ({
+      id: ps.programId,
+      name: ps.programName,
+      hours: ps.hours,
+    }));
+    setPrograms(availablePrograms);
   };
 
   const handleProgramSelect = async (programId: number | null) => {
@@ -155,7 +158,7 @@ export default function LearningHoursPage() {
                 <thead><tr><th>证明编号</th><th>培训班</th><th>总学时</th><th>状态</th><th>申请时间</th><th>操作</th></tr></thead>
                 <tbody>
                   {certificates.map((c: any) => {
-                    const statusStyle = c.approvalStatus === 'APPROVED' ? { color: '#2e7d32', bg: '#2e7d3218' }
+                    const statusStyle = c.approvalStatus === 'APPROVED' || c.approvalStatus === 'AUTO_APPROVED' ? { color: '#2e7d32', bg: '#2e7d3218' }
                       : c.approvalStatus === 'REJECTED' ? { color: '#ef4444', bg: '#ef444418' }
                       : { color: '#e87a30', bg: '#e87a3018' };
                     return (
@@ -165,7 +168,7 @@ export default function LearningHoursPage() {
                         <td className="text-sm font-medium">{c.totalHours} 小时</td>
                         <td>
                           <span className="tag" style={{ background: statusStyle.bg, color: statusStyle.color, fontSize: '10px' }}>
-                            {c.approvalStatus === 'APPROVED' ? '✅ 已通过'
+                            {c.approvalStatus === 'APPROVED' || c.approvalStatus === 'AUTO_APPROVED' ? '✅ 已通过'
                               : c.approvalStatus === 'REJECTED' ? '❌ 已驳回'
                               : '⏳ 审批中'}
                           </span>
@@ -174,10 +177,20 @@ export default function LearningHoursPage() {
                           {c.appliedAt ? new Date(c.appliedAt).toLocaleDateString('zh-CN') : '—'}
                         </td>
                         <td>
-                          {c.approvalStatus === 'APPROVED' && (
-                            <a href={`/api/learning-hour-certificates/${c.id}/pdf`} target="_blank"
+                          {(c.approvalStatus === 'APPROVED' || c.approvalStatus === 'AUTO_APPROVED') && (
+                            <button onClick={() => {
+                              const token = localStorage.getItem('token');
+                              fetch(`/api/learning-hour-certificates/${c.id}/pdf`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                              }).then(r => r.blob()).then(blob => {
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url;
+                                a.download = `learning-hour-certificate-${c.id}.pdf`;
+                                a.click(); URL.revokeObjectURL(url);
+                              }).catch(() => alert('下载失败'));
+                            }}
                               className="text-xs bg-transparent border-none cursor-pointer"
-                              style={{ color: 'var(--fox)' }}>📥 下载</a>
+                              style={{ color: 'var(--fox)' }}>📥 下载</button>
                           )}
                         </td>
                       </tr>
@@ -244,12 +257,14 @@ export default function LearningHoursPage() {
                 onChange={e => handleProgramSelect(e.target.value ? parseInt(e.target.value) : null)}
                 className="input select w-full text-sm">
                 <option value="">请选择培训班…</option>
-                {programs.filter((p: any) => {
-                  const pStats = stats?.programStats || [];
-                  return pStats.some((ps: any) => ps.programId === p.id && (ps.hours || 0) > 0);
-                }).map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
+                {programs.map((p: any) => {
+                  const alreadyHasCert = certificates.some(c => c.programId === p.id && !c.isRevoked);
+                  return (
+                    <option key={p.id} value={p.id} disabled={alreadyHasCert}>
+                      {p.name} ({p.hours}h){alreadyHasCert ? ' — 已申请' : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
