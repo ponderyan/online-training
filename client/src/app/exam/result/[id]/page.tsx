@@ -31,6 +31,38 @@ interface ExamResult {
   answers: AnswerDetail[];
 }
 
+interface KpInfo {
+  id: number;
+  name: string;
+  code: string | null;
+}
+
+interface KpAnalysisItem {
+  kpId: number;
+  kpName: string;
+  kpCode: string;
+  totalQuestions: number;
+  correct: number;
+  rate: number;
+  level: string;
+}
+
+interface KpAnalysisData {
+  kpResults: KpAnalysisItem[];
+  questionKps: Record<number, KpInfo[]>;
+  overallRate: number;
+  weakest: { kpId: number; kpName: string; rate: number } | null;
+  strongest: { kpId: number; kpName: string; rate: number } | null;
+}
+
+const LEVEL_COLORS: Record<string, string> = {
+  '优秀': '#2e7d32',
+  '良好': '#558b2f',
+  '一般': '#f59e0b',
+  '薄弱': '#ef4444',
+  '危险': '#dc2626',
+};
+
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
@@ -90,16 +122,27 @@ export default function ExamResult() {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [kpAnalysis, setKpAnalysis] = useState<KpAnalysisData | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
-    fetch(`/api/student/exams/${params.id}/result`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(data => {
-      setResult(data);
-      setLoading(false);
-    }).catch(() => router.push('/exam'));
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    fetch(`/api/student/exams/${params.id}/result`, { headers })
+      .then(r => r.json()).then(data => {
+        setResult(data);
+        setLoading(false);
+      }).catch(() => router.push('/exam'));
+
+    // Fetch knowledge analysis
+    fetch(`/api/exams/${params.id}/knowledge-analysis`, { headers })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.kpResults && data.kpResults.length > 0) {
+          setKpAnalysis(data);
+        }
+      })
+      .catch(() => {});
   }, [params.id, router]);
 
   // 成绩尚未发布
@@ -254,6 +297,74 @@ export default function ExamResult() {
           ))}
         </div>
 
+        {/* ═══ 考点画像 ═══ */}
+        {kpAnalysis && kpAnalysis.kpResults.length > 0 && (
+          <div className="rounded-xl p-6 mb-8" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>📊 我的考点画像</h3>
+
+            {/* Overall rate */}
+            <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: '1px solid var(--ink-100)' }}>
+              <span className="text-xs" style={{ color: 'var(--ink-400)' }}>综合掌握率</span>
+              <div className="flex-1 h-2.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                <div className="h-full rounded-full transition-all" style={{
+                  width: `${kpAnalysis.overallRate}%`,
+                  background: kpAnalysis.overallRate >= 80 ? '#2e7d32' : kpAnalysis.overallRate >= 60 ? '#f59e0b' : '#ef4444',
+                }} />
+              </div>
+              <span className="text-sm font-bold" style={{ color: 'var(--ink-600)' }}>{kpAnalysis.overallRate}%</span>
+            </div>
+
+            {/* Individual KP bars */}
+            {kpAnalysis.kpResults.map(kp => (
+              <div key={kp.kpId} className="flex items-center gap-3 mb-2.5">
+                <div className="w-28 text-xs font-medium truncate flex-shrink-0" style={{ color: 'var(--ink-600)' }}
+                  title={kp.kpName}>
+                  {kp.kpCode || kp.kpName}
+                </div>
+                <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{
+                    width: `${kp.rate}%`,
+                    background: LEVEL_COLORS[kp.level] || '#f59e0b',
+                  }} />
+                </div>
+                <div className="w-9 text-right text-xs font-medium" style={{ color: 'var(--ink-500)' }}>
+                  {kp.rate}%
+                </div>
+                <div className="w-12 text-right">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{
+                    background: `${(LEVEL_COLORS[kp.level] || '#f59e0b')}18`,
+                    color: LEVEL_COLORS[kp.level] || '#f59e0b',
+                  }}>
+                    {kp.level}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {/* Strongest / Weakest hints */}
+            <div className="mt-4 pt-3 flex items-center gap-6 text-xs" style={{ borderTop: '1px solid var(--ink-100)' }}>
+              {kpAnalysis.strongest && (
+                <div>
+                  <span style={{ color: 'var(--ink-400)' }}>💪 最强：</span>
+                  <span style={{ color: '#2e7d32', fontWeight: 600 }}>
+                    {kpAnalysis.strongest.kpName}
+                  </span>
+                  <span style={{ color: 'var(--ink-300)' }}> — 继续保持</span>
+                </div>
+              )}
+              {kpAnalysis.weakest && (
+                <div>
+                  <span style={{ color: 'var(--ink-400)' }}>⚠️ 最弱：</span>
+                  <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                    {kpAnalysis.weakest.kpName}
+                  </span>
+                  <span style={{ color: 'var(--ink-300)' }}> — 建议回看相关课程</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Answer Details */}
         <div className="rounded-xl overflow-hidden" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
           <div className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: 'var(--ink-100)' }}>
@@ -299,6 +410,12 @@ export default function ExamResult() {
                         <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
                           {TYPE_NAMES[a.questionType] || a.questionType}
                         </span>
+                        {kpAnalysis?.questionKps?.[a.questionId]?.map(kp => (
+                          <span key={kp.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+                            {kp.code || kp.name}
+                          </span>
+                        ))}
                         {a.score !== null && (
                           <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
                             得分：{a.score}

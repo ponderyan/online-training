@@ -367,6 +367,146 @@ export class ExamAnalysisService {
     return { buckets };
   }
 
+  /**
+   * 知识点掌握分析 — 按学员考试场次分析各知识点的正确率
+   */
+  async getKnowledgeAnalysis(examId: number, studentId: number) {
+    // 1. 获取该学员的考试场次（含答案）
+    const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+      select: {
+        id: true,
+        examId: true,
+        answers: {
+          select: {
+            questionId: true,
+            isCorrect: true,
+          },
+        },
+      },
+    });
+    if (!session) throw new NotFoundException('考试记录不存在');
+
+    // 2. 收集答案中所有 questionId
+    const questionIds = [...new Set(session.answers.map(a => a.questionId))];
+    if (questionIds.length === 0) {
+      return {
+        examId,
+        sessionId: session.id,
+        kpResults: [],
+        overallRate: 0,
+        weakest: null,
+        strongest: null,
+      };
+    }
+
+    // 3. 批量查询 QuestionKnowledgePoint 关联
+    const qkps = await this.prisma.questionKnowledgePoint.findMany({
+      where: { questionId: { in: questionIds } },
+      include: {
+        knowledgePoint: {
+          select: { id: true, name: true, code: true },
+        },
+      },
+    });
+
+    // questionId -> KPs 映射
+    const questionKps = new Map<number, typeof qkps>();
+    for (const qkp of qkps) {
+      if (!questionKps.has(qkp.questionId)) {
+        questionKps.set(qkp.questionId, []);
+      }
+      questionKps.get(qkp.questionId)!.push(qkp);
+    }
+
+    // 4. 按知识点分组统计
+    const kpMap = new Map<number, { total: number; correct: number; name: string; code: string }>();
+    for (const qkp of qkps) {
+      if (!kpMap.has(qkp.knowledgePointId)) {
+        kpMap.set(qkp.knowledgePointId, {
+          total: 0,
+          correct: 0,
+          name: qkp.knowledgePoint.name,
+          code: qkp.knowledgePoint.code || '',
+        });
+      }
+    }
+
+    // 一道题可能关联多个知识点，每个知识点各计一次
+    for (const answer of session.answers) {
+      const kps = questionKps.get(answer.questionId) || [];
+      for (const kp of kps) {
+        const entry = kpMap.get(kp.knowledgePointId);
+        if (entry) {
+          entry.total++;
+          if (answer.isCorrect === true) {
+            entry.correct++;
+          }
+        }
+      }
+    }
+
+    // 5. 构建题目→知识点映射（前端展示标签用）
+    const questionKpsRecord: Record<number, { id: number; name: string; code: string | null }[]> = {};
+    for (const [qId, kps] of questionKps) {
+      questionKpsRecord[qId] = kps.map(qkp => ({
+        id: qkp.knowledgePoint.id,
+        name: qkp.knowledgePoint.name,
+        code: qkp.knowledgePoint.code,
+      }));
+    }
+
+    // 5. 计算正确率 + 等级
+    const getLevel = (rate: number): string => {
+      if (rate >= 0.9) return '优秀';
+      if (rate >= 0.75) return '良好';
+      if (rate >= 0.6) return '一般';
+      if (rate >= 0.4) return '薄弱';
+      return '危险';
+    };
+
+    const kpResults = Array.from(kpMap.entries())
+      .map(([kpId, data]) => ({
+        kpId,
+        kpName: data.name,
+        kpCode: data.code,
+        totalQuestions: data.total,
+        correct: data.correct,
+        rate: data.total > 0 ? Math.round((data.correct / data.total) * 10000) / 100 : 0,
+        level: getLevel(data.total > 0 ? data.correct / data.total : 0),
+      }))
+      .filter(kp => kp.totalQuestions > 0);
+
+    // 6. 综合正确率
+    const totalCorrect = kpResults.reduce((sum, kp) => sum + kp.correct, 0);
+    const totalQuestions = kpResults.reduce((sum, kp) => sum + kp.totalQuestions, 0);
+    const overallRate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 10000) / 100
+      : 0;
+
+    // 7. 最强 / 最弱知识点
+    let weakest: { kpId: number; kpName: string; rate: number } | null = null;
+    let strongest: { kpId: number; kpName: string; rate: number } | null = null;
+    for (const kp of kpResults) {
+      if (!weakest || kp.rate < weakest.rate) {
+        weakest = { kpId: kp.kpId, kpName: kp.kpName, rate: kp.rate };
+      }
+      if (!strongest || kp.rate > strongest.rate) {
+        strongest = { kpId: kp.kpId, kpName: kp.kpName, rate: kp.rate };
+      }
+    }
+
+    return {
+      examId,
+      sessionId: session.id,
+      kpResults,
+      questionKps: questionKpsRecord,
+      overallRate,
+      weakest,
+      strongest,
+    };
+  }
+
   async getQuestionAccuracy(examId: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },

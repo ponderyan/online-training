@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Param, Body, ParseIntPipe, Req, UnauthorizedException } from '@nestjs/common';
 import { ExamsService } from './exams.service.js';
+import { ExamAnalysisService } from './exam-analysis.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
 
 @Controller('api/student/exams')
 export class StudentExamController {
-  constructor(private service: ExamsService) {}
+  constructor(
+    private service: ExamsService,
+    private examAnalysisService: ExamAnalysisService,
+  ) {}
 
   /** 从请求中提取学员ID（当前简化版：从 JWT payload 取） */
   private getStudentId(req: any): number {
@@ -69,5 +73,15 @@ export class StudentExamController {
   @Get(':id/result')
   result(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.getResult(id, this.getStudentId(req));
+  }
+
+  @Get(':examId/knowledge-analysis')
+  async getKnowledgeAnalysis(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Req() req: any,
+  ) {
+    const studentId = req.user?.id;
+    if (!studentId) throw new UnauthorizedException();
+    return this.examAnalysisService.getKnowledgeAnalysis(examId, studentId);
   }
 }

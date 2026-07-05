@@ -618,6 +618,12 @@ async function main() {
       { name: '质量管理', code: 'PM_QUALITY', subjectId: sid, parentCode: null, sortOrder: 4, desc: '项目质量保证与控制' },
       { name: '风险管理', code: 'PM_RISK', subjectId: sid, parentCode: null, sortOrder: 5, desc: '项目风险识别与应对' },
       { name: '沟通与干系人管理', code: 'PM_COMM', subjectId: sid, parentCode: null, sortOrder: 6, desc: '项目沟通与干系人管理' },
+      // DT 考点（与考试章节对应）
+      { name: '数字化转型概述', code: 'DT_OVERVIEW', subjectId: sid, parentCode: null, sortOrder: 11, desc: '数字化转型的基本概念、驱动因素和战略框架' },
+      { name: '数据驱动决策', code: 'DT_DATA_DECISION', subjectId: sid, parentCode: null, sortOrder: 12, desc: '数据驱动的决策方法和工具' },
+      { name: 'AI技术基础与应用', code: 'DT_AI_TECH', subjectId: sid, parentCode: null, sortOrder: 13, desc: '人工智能、云计算等技术基础与应用场景' },
+      { name: '数字化组织与人才', code: 'DT_ORG_TALENT', subjectId: sid, parentCode: null, sortOrder: 14, desc: '数字化组织变革与人才培养' },
+      { name: '数据治理与安全', code: 'DT_DATA_GOV', subjectId: sid, parentCode: null, sortOrder: 15, desc: '数据治理、数据安全与合规管理' },
     ];
 
     // 用 code 追踪父子关系

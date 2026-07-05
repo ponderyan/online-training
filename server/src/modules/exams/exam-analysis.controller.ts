@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Req } from '@nestjs/common';
 import { ExamAnalysisService } from './exam-analysis.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -46,5 +46,19 @@ export class ExamAnalysisController {
   @RequirePermission(Permissions.REPORT_VIEW)
   async getQuestionAccuracy(@Param('id', ParseIntPipe) id: number) {
     return this.service.getQuestionAccuracy(id);
+  }
+
+  // ═══════════════════════════════
+  //   学员知识点分析
+  // ═══════════════════════════════
+
+  @Get(':id/knowledge-analysis')
+  @RequirePermission(Permissions.REPORT_VIEW)
+  async getKnowledgeAnalysis(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    const studentId = req.user?.sub || req.user?.id;
+    return this.service.getKnowledgeAnalysis(id, studentId);
   }
 }
