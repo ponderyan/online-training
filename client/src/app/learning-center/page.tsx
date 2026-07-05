@@ -46,7 +46,7 @@ export default function LearningCenterPage() {
 
       {/* Stats */}
       {data?.stats && !loading && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{data.stats.totalVideos}</div>
             <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>视频课程</div>
@@ -61,6 +61,48 @@ export default function LearningCenterPage() {
           </div>
         </div>
       )}
+
+      {/* 最近学习 — in-progress videos */}
+      {data?.videos && !loading && (() => {
+        const recent = data.videos
+          .filter((v: any) => v.progress && !v.progress.completed && v.progress.progress > 0)
+          .slice(0, 3);
+        if (recent.length === 0) return null;
+        return (
+          <div className="mb-6">
+            <h2 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-600)' }}>📖 最近学习</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recent.map((v: any) => {
+                const pct = Math.min(100, Math.round(v.progress.progress || 0));
+                return (
+                  <div key={v.id} className="card p-0 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => router.push(`/learning-center/${v.id}/play`)}>
+                    <div className="relative" style={{ paddingTop: '40%', background: 'linear-gradient(135deg, var(--fox), var(--gold))' }}>
+                      {v.coverUrl ? (
+                        <img src={v.coverUrl} alt={v.name} className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl opacity-30">🎬</div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 h-1.5" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                        <div className="h-full" style={{ width: `${pct}%`, background: 'var(--fox)', transition: 'width 0.3s' }} />
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium text-sm truncate">{v.name}</h3>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{pct}%</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: '#e87a3018', color: '#e87a30' }}>
+                          继续学习 →
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Filter + Search */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">

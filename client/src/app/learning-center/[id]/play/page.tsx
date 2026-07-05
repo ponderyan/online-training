@@ -18,6 +18,8 @@ export default function LearningCenterPlayPage() {
   const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const [allVideos, setAllVideos] = useState<any[]>([]);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const playerRef = useRef<Plyr | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,10 +29,12 @@ export default function LearningCenterPlayPage() {
     Promise.all([
       api.videoCourses.get(videoId),
       api.videoCourses.getProgress(videoId).catch(() => null),
-    ]).then(([videoData, progressData]) => {
+      api.videoCourses.getStudentVisible().catch(() => null),
+    ]).then(([videoData, progressData, visibleData]) => {
       setVideo(videoData);
       setProgress(progressData);
       setCompleted(progressData?.completed || false);
+      setAllVideos(visibleData?.videos || []);
     }).catch(() => router.push('/learning-center'))
     .finally(() => setLoading(false));
   }, []);
@@ -130,68 +134,142 @@ export default function LearningCenterPlayPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/learning-center')} className="text-xs bg-transparent border-none cursor-pointer mb-3" style={{ color: 'var(--fox)' }}>
-        ← 返回学习中心
-      </button>
-
-      <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
-        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-          <video ref={videoRef} className="plyr"
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-            controls playsInline>
-            <source src={`${API_STREAM_BASE}/api/video-courses/${videoId}/stream`} type="video/mp4" />
-          </video>
-        </div>
+      <div className="flex items-center gap-2 mb-3">
+        <button onClick={() => router.push('/learning-center')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+          ← 返回学习中心
+        </button>
+        {allVideos.length > 0 && (
+          <button onClick={() => setShowSidebar(!showSidebar)}
+            className="ml-auto btn btn-outline btn-xs">
+            📋 {showSidebar ? '收起列表' : '课程列表'}
+          </button>
+        )}
       </div>
 
-      <div className="card p-4 mb-6" style={{ maxWidth: 960 }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-lg">{video.name}</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
-              {video.instructorName && `${video.instructorName}${video.instructorLevel ? ` (${video.instructorLevel})` : ''}`}
-              {video.duration ? ` · ${formatDuration(video.duration)}` : ''}
-              {video.hours ? ` · ${video.hours} 课时` : ''}
-              {video.isContinuingEducation && ' · 计入学时'}
-            </p>
-            {/* 关联课程/培训班信息 */}
-            {video.courseLinks?.length > 0 && (
-              <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
-                📎 关联课程：{video.courseLinks.map((cl: any) => cl.course?.name).filter(Boolean).join('、')}
-              </p>
-            )}
-          </div>
-          <div>
-            {completed ? (
-              <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>🎉 已完成</span>
-            ) : (
-              <span className="tag" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中</span>
-            )}
-          </div>
-        </div>
-        {video.description && (
-          <p className="text-sm mt-3" style={{ color: 'var(--ink-400)' }}>{video.description}</p>
-        )}
-        {progress && (
-          <div className="mt-3">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
-                <div className="h-full rounded-full" style={{
-                  width: `${Math.min(100, progress.progress || 0)}%`,
-                  background: completed ? '#2e7d32' : 'var(--fox)',
-                  transition: 'width 0.3s',
-                }} />
-              </div>
-              <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{Math.round(progress.progress || 0)}%</span>
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0">
+          <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
+            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+              <video ref={videoRef} className="plyr"
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                controls playsInline>
+                <source src={`${API_STREAM_BASE}/api/video-courses/${videoId}/stream`} type="video/mp4" />
+              </video>
             </div>
           </div>
-        )}
-        {completed && (
-          <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: '#f0faf0', border: '1px solid #c8e6c9' }}>
-            <span className="text-lg">🎉 恭喜完成本视频学习！</span>
+
+          <div className="card p-4 mb-6" style={{ maxWidth: 960 }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-lg">{video.name}</h2>
+                <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+                  {video.instructorName && `${video.instructorName}${video.instructorLevel ? ` (${video.instructorLevel})` : ''}`}
+                  {video.duration ? ` · ${formatDuration(video.duration)}` : ''}
+                  {video.hours ? ` · ${video.hours} 课时` : ''}
+                  {video.isContinuingEducation && ' · 计入学时'}
+                </p>
+                {/* 关联课程/培训班信息 */}
+                {video.courseLinks?.length > 0 && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+                    📎 关联课程：{video.courseLinks.map((cl: any) => cl.course?.name).filter(Boolean).join('、')}
+                  </p>
+                )}
+              </div>
+              <div>
+                {completed ? (
+                  <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>🎉 已完成</span>
+                ) : (
+                  <span className="tag" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中</span>
+                )}
+              </div>
+            </div>
+            {video.description && (
+              <p className="text-sm mt-3" style={{ color: 'var(--ink-400)' }}>{video.description}</p>
+            )}
+            {progress && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                    <div className="h-full rounded-full" style={{
+                      width: `${Math.min(100, progress.progress || 0)}%`,
+                      background: completed ? '#2e7d32' : 'var(--fox)',
+                      transition: 'width 0.3s',
+                    }} />
+                  </div>
+                  <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{Math.round(progress.progress || 0)}%</span>
+                </div>
+              </div>
+            )}
+            {completed && (
+              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: '#f0faf0', border: '1px solid #c8e6c9' }}>
+                <span className="text-lg">🎉 恭喜完成本视频学习！</span>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Desktop sidebar */}
+        {showSidebar && allVideos.length > 0 && (
+          <aside className="w-[240px] flex-shrink-0 hidden lg:block">
+            <div className="sticky top-24 card p-3 max-h-[calc(100vh-120px)] overflow-y-auto">
+              <h3 className="text-xs font-bold mb-3" style={{ color: 'var(--ink-500)' }}>课程列表</h3>
+              <div className="space-y-0.5">
+                {allVideos.map((v: any) => {
+                  const isCurrent = v.id === videoId;
+                  const vPct = v.progress ? Math.min(100, Math.round(v.progress.progress || 0)) : 0;
+                  const vDone = v.progress?.completed || false;
+                  let icon = '•';
+                  let iconColor = 'var(--ink-300)';
+                  if (vDone) { icon = '✅'; iconColor = '#2e7d32'; }
+                  else if (isCurrent) { icon = '▶️'; iconColor = 'var(--fox)'; }
+                  else if (vPct > 0) { icon = '⏳'; iconColor = '#e87a30'; }
+                  return (
+                    <div key={v.id} onClick={() => !isCurrent && router.push(`/learning-center/${v.id}/play`)}
+                      className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-all ${isCurrent ? 'font-bold' : 'cursor-pointer hover:bg-[var(--fox-glow)]'}`}
+                      style={{
+                        background: isCurrent ? 'var(--fox-glow)' : 'transparent',
+                        color: isCurrent ? 'var(--fox)' : 'var(--ink-600)',
+                      }}>
+                      <span style={{ color: iconColor, flexShrink: 0 }}>{icon}</span>
+                      <span className="truncate">{v.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
         )}
       </div>
+
+      {/* Mobile sidebar (below video when toggled) */}
+      {showSidebar && allVideos.length > 0 && (
+        <div className="lg:hidden card p-3 mb-6">
+          <h3 className="text-xs font-bold mb-3" style={{ color: 'var(--ink-500)' }}>课程列表</h3>
+          <div className="space-y-0.5">
+            {allVideos.map((v: any) => {
+              const isCurrent = v.id === videoId;
+              const vPct = v.progress ? Math.min(100, Math.round(v.progress.progress || 0)) : 0;
+              const vDone = v.progress?.completed || false;
+              let icon = '•';
+              let iconColor = 'var(--ink-300)';
+              if (vDone) { icon = '✅'; iconColor = '#2e7d32'; }
+              else if (isCurrent) { icon = '▶️'; iconColor = 'var(--fox)'; }
+              else if (vPct > 0) { icon = '⏳'; iconColor = '#e87a30'; }
+              return (
+                <div key={v.id} onClick={() => !isCurrent && router.push(`/learning-center/${v.id}/play`)}
+                  className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-all ${isCurrent ? 'font-bold' : 'cursor-pointer hover:bg-[var(--fox-glow)]'}`}
+                  style={{
+                    background: isCurrent ? 'var(--fox-glow)' : 'transparent',
+                    color: isCurrent ? 'var(--fox)' : 'var(--ink-600)',
+                  }}>
+                  <span style={{ color: iconColor, flexShrink: 0 }}>{icon}</span>
+                  <span className="truncate">{v.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

@@ -76,7 +76,8 @@ export default function CertificateApplications() {
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="list-table">
+          <div className="overflow-x-auto">
+            <table className="list-table">
             <thead>
               <tr>
                 {statusFilter === 'PENDING' && <th style={{ width: 40 }}></th>}
@@ -115,6 +116,7 @@ export default function CertificateApplications() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

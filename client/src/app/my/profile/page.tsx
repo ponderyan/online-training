@@ -177,7 +177,7 @@ export default function ProfilePage() {
 
               {/* Stats row */}
               {isStudent && (
-                <div className="grid grid-cols-4 gap-3 mt-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
                   {[
                     { value: `${totalHours}h`, label: '总学时', color: 'var(--fox)' },
                     { value: passedCount, label: '通过考试', color: '#2e7d32' },
@@ -213,7 +213,7 @@ export default function ProfilePage() {
         {editing && (
           <div className="card p-5">
             <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ink-700)' }}>编辑资料</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { key: 'displayName', label: '姓名', type: 'text' },
                 { key: 'phone', label: '手机号', type: 'text' },
@@ -251,7 +251,7 @@ export default function ProfilePage() {
               <h3 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>🏅 我的证书（{certificates.length}）</h3>
               <button onClick={() => router.push('/my-certificates')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看全部 →</button>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {certificates.slice(0, 6).map((cert: any) => (
                 <div key={cert.id} className="p-4 rounded-xl text-center" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                   <div className="text-2xl mb-2">🏅</div>

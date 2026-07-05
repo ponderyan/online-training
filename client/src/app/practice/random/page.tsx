@@ -18,6 +18,7 @@ export default function RandomPracticePage() {
   const [subjectId, setSubjectId] = useState('');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [types, setTypes] = useState<string[]>([...ALL_TYPES]);
+  const [onlyWrong, setOnlyWrong] = useState(false);
 
   useState(() => { api.subjects.list().then(setSubjects).catch(() => {}); });
 
@@ -53,6 +54,14 @@ export default function RandomPracticePage() {
                 {COUNT_OPTIONS.map(c => <option key={c} value={c}>{c}题</option>)}
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+                <input type="checkbox" checked={onlyWrong}
+                  onChange={() => setOnlyWrong(!onlyWrong)}
+                  className="accent-[#e87a30]" />
+                ❌ 错题优先（仅抽取做错的题目）
+              </label>
+            </div>
             <button onClick={() => setStarted(true)} className="btn btn-fox w-full">开始练习</button>
           </div>
         </div>
@@ -64,6 +73,7 @@ export default function RandomPracticePage() {
     const params: Record<string, any> = { random: 'true', count };
     if (subjectId) params.subjectId = subjectId;
     if (types.length < 4) params.types = types.join(',');
+    if (onlyWrong) params.onlyWrong = 'true';
     return api.practice.questions(params);
   };
 

@@ -1,21 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function VerifyCertificatePage() {
+  const searchParams = useSearchParams();
   const [certNo, setCertNo] = useState('');
   const [code, setCode] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleVerify = async () => {
-    if (!certNo || !code) { setError('请输入证书编号和防伪码'); return; }
+  // 扫码自动触发
+  useEffect(() => {
+    const no = searchParams.get('no');
+    const c = searchParams.get('code');
+    if (no && c) {
+      setCertNo(no);
+      setCode(c);
+      handleVerify(no, c);
+    }
+  }, []);
+
+  const handleVerify = async (no?: string, c?: string) => {
+    const finalNo = no || certNo;
+    const finalCode = c || code;
+    if (!finalNo || !finalCode) { setError('请输入证书编号和防伪码'); return; }
     setLoading(true);
     setError('');
     setResult(null);
     try {
-      const res = await fetch(`/api/certificates/verify?no=${encodeURIComponent(certNo)}&code=${encodeURIComponent(code)}`);
+      const res = await fetch(`/api/certificates/verify?no=${encodeURIComponent(finalNo)}&code=${encodeURIComponent(finalCode)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || '查询失败');
       setResult(data);
@@ -54,7 +69,7 @@ export default function VerifyCertificatePage() {
                 style={{ border: '1px solid #e0d8d0', outline: 'none', background: '#faf8f6' }}
                 onKeyDown={e => e.key === 'Enter' && handleVerify()} />
             </div>
-            <button onClick={handleVerify} disabled={loading}
+            <button onClick={() => handleVerify()} disabled={loading}
               className="w-full py-2.5 rounded-lg text-sm font-medium text-white border-none cursor-pointer transition-all"
               style={{ background: loading ? '#c8a888' : '#e87a30' }}>
               {loading ? '查询中…' : '🔍 查询验证'}

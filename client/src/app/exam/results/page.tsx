@@ -39,7 +39,8 @@ export default function ExamResultsPage() {
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
-          <table className="list-table">
+          <div className="overflow-x-auto">
+            <table className="list-table">
             <thead><tr>
               <th>考试名称</th><th>试卷</th><th>总分</th><th>得分</th><th>结果</th><th>提交时间</th><th>操作</th>
             </tr></thead>
@@ -62,6 +63,7 @@ export default function ExamResultsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AppLayout>

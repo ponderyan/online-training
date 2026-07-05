@@ -167,7 +167,7 @@ export class CertificatesService {
         isRevoked: cert.isRevoked,
         revokedAt: cert.revokedAt,
         revokeReason: cert.revokeReason,
-        verificationUrl: `https:foxlearn.cn/certificates/verify?no=${cert.certificateNo}&code=${cert.verificationCode}`,
+        verificationUrl: `${process.env.SITE_URL || 'https://foxlearn.cn'}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}`,
       },
     };
   }
@@ -249,12 +249,26 @@ export class CertificatesService {
       String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+    // 生成 QR 码
+    let qrDataUrl = '';
+    try {
+      const QRCode = await import('qrcode');
+      const siteUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+      qrDataUrl = await QRCode.toDataURL(
+        `${siteUrl}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}`,
+        { width: 120, margin: 1, color: { dark: '#3a3028', light: '#ffffff00' } }
+      );
+    } catch {
+      qrDataUrl = '';
+    }
+
     html = html
       .replace(/{{studentName}}/g, escapeHtml(cert.studentName))
       .replace(/{{courseName}}/g, escapeHtml(cert.courseName))
       .replace(/{{certificateNo}}/g, escapeHtml(cert.certificateNo))
       .replace(/{{issueDate}}/g, escapeHtml(cert.issueDate.toISOString().slice(0, 10)))
-      .replace(/{{verificationCode}}/g, escapeHtml(cert.verificationCode.slice(0, 8).toUpperCase()));
+      .replace(/{{verificationCode}}/g, escapeHtml(cert.verificationCode.slice(0, 8).toUpperCase()))
+      .replace(/{{qrDataUrl}}/g, qrDataUrl);
 
     // 动态导入 puppeteer
     const puppeteer = await import('puppeteer');
