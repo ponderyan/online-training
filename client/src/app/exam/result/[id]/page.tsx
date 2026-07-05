@@ -135,7 +135,7 @@ export default function ExamResult() {
       }).catch(() => router.push('/exam'));
 
     // Fetch knowledge analysis
-    fetch(`/api/exams/${params.id}/knowledge-analysis`, { headers })
+    fetch(`/api/student/exams/${params.id}/knowledge-analysis`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data && data.kpResults && data.kpResults.length > 0) {

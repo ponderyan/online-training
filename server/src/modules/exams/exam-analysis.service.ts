@@ -369,6 +369,11 @@ export class ExamAnalysisService {
 
   /**
    * 知识点掌握分析 — 按学员考试场次分析各知识点的正确率
+   *
+   * 以下数据结构已为 AI 推荐/学习路径引擎预留：
+   * - 每学员每考点的掌握率 → 推荐薄弱考点的课程/视频补习
+   * - Phase 2 将新增 VideoCourse ↔ KnowledgePoint 关联
+   * - Phase 2 将新增 LearningPath 模型（学习路径规划）
    */
   async getKnowledgeAnalysis(examId: number, studentId: number) {
     // 1. 获取该学员的考试场次（含答案）
