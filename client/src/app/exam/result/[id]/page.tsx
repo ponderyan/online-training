@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import FoxLogo from '@/components/fox-logo';
 import ScoreReportModal from './ScoreReportModal';
@@ -123,6 +123,9 @@ export default function ExamResult() {
   const [showAll, setShowAll] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [kpAnalysis, setKpAnalysis] = useState<KpAnalysisData | null>(null);
+  const [recommendations, setRecommendations] = useState<any>(null);
+  const [maxRecHeight, setMaxRecHeight] = useState(0);
+  const kpSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -143,7 +146,20 @@ export default function ExamResult() {
         }
       })
       .catch(() => {});
+
+    // Fetch recommendations
+    fetch('/api/student/recommendations', { headers })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setRecommendations(data))
+      .catch(() => {});
   }, [params.id, router]);
+
+  // Measure KP section height for recommendations ratio
+  useEffect(() => {
+    if (kpSectionRef.current && kpAnalysis) {
+      setMaxRecHeight(Math.round(kpSectionRef.current.offsetHeight * 0.4));
+    }
+  }, [kpAnalysis]);
 
   // 成绩尚未发布
   if (result && result.published === false) {
@@ -299,7 +315,7 @@ export default function ExamResult() {
 
         {/* ═══ 考点画像 ═══ */}
         {kpAnalysis && kpAnalysis.kpResults.length > 0 && (
-          <div className="rounded-xl p-6 mb-8" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+          <div ref={kpSectionRef} className="rounded-xl p-6 mb-8" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>📊 我的考点画像</h3>
 
             {/* Overall rate */}
@@ -362,6 +378,51 @@ export default function ExamResult() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ═══ 薄弱考点推荐课程 ═══ */}
+        {recommendations?.recommendedCourses?.length > 0 && (
+          <div className="rounded-xl p-6 mb-8" style={{
+            background: 'white',
+            border: '1px solid var(--ink-100)',
+            maxHeight: maxRecHeight > 0 ? maxRecHeight : undefined,
+            overflowY: 'auto',
+          }}>
+            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>📺 针对薄弱考点推荐课程</h3>
+            {recommendations.recommendedCourses.map((group: any) => (
+              <div key={group.kpId} className="mb-4 last:mb-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-medium" style={{ color: 'var(--ink-700)' }}>{group.kpName}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{
+                    background: `${(LEVEL_COLORS[group.level] || '#f59e0b')}18`,
+                    color: LEVEL_COLORS[group.level] || '#f59e0b',
+                  }}>
+                    {group.level}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {group.courses.map((course: any) => (
+                    <div key={course.id} className="flex items-center justify-between p-2.5 rounded-lg text-xs" style={{
+                      background: 'var(--paper)',
+                      border: '1px solid var(--ink-100)',
+                    }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate" style={{ color: 'var(--ink-600)' }}>{course.title}</span>
+                        {course.duration != null && (
+                          <span className="flex-shrink-0" style={{ color: 'var(--ink-300)' }}>{course.duration}分钟</span>
+                        )}
+                      </div>
+                      <button onClick={() => router.push(`/video/${course.id}`)}
+                        className="text-xs px-2.5 py-1 rounded-md border-none cursor-pointer font-medium flex-shrink-0 ml-2"
+                        style={{ background: 'var(--fox)', color: 'white' }}>
+                        去学习
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

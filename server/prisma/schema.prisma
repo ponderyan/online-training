@@ -474,6 +474,7 @@ model KnowledgePoint {
   parent      KnowledgePoint? @relation("KPHierarchy", fields: [parentId], references: [id])
   children    KnowledgePoint[] @relation("KPHierarchy")
   questions   QuestionKnowledgePoint[]
+  courseKnowledgePoints CourseKnowledgePoint[]
 
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
@@ -1410,8 +1411,9 @@ model Course {
   parentCourse     Course?             @relation("CourseHierarchy", fields: [parentCourseId], references: [id])
   childCourses     Course[]            @relation("CourseHierarchy")
   programs         TrainingProgram[]
-  videos           CourseVideo[] // ← 即将废弃，迁移到 VideoCourse
-  videoCourseLinks VideoCourseCourse[] // ← Phase 2: 视频-课程多对多关联
+  videos           CourseVideo[]
+  videoCourseLinks VideoCourseCourse[]
+  knowledgePoints  CourseKnowledgePoint[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1419,6 +1421,20 @@ model Course {
   @@index([status])
   @@index([type])
   @@map("courses")
+}
+
+/// 课程/视频 ↔ 知识点关联（用于AI推荐、学习路径）
+model CourseKnowledgePoint {
+  id                Int            @id @default(autoincrement())
+  courseId          Int            @map("course_id")
+  course            Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  knowledgePointId  Int            @map("knowledge_point_id")
+  knowledgePoint    KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Restrict)
+  weight            Float          @default(1.0)
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  @@unique([courseId, knowledgePointId])
+  @@map("course_knowledge_points")
 }
 
 // Phase 1b: 课程视频

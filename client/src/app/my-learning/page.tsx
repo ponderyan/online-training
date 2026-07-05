@@ -52,6 +52,16 @@ export default function MyLearningPage() {
   const router = useRouter();
   const [data, setData] = useState<MyLearningData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [learningPath, setLearningPath] = useState<any[] | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  const LEVEL_COLORS: Record<string, string> = {
+    '优秀': '#2e7d32',
+    '良好': '#558b2f',
+    '一般': '#f59e0b',
+    '薄弱': '#ef4444',
+    '危险': '#dc2626',
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -63,7 +73,45 @@ export default function MyLearningPage() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    fetch('/api/student/recommendations', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.learningPath?.length > 0) {
+          setLearningPath(data.learningPath);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  // Track step completion via localStorage
+  useEffect(() => {
+    if (learningPath) {
+      const completed = new Set<number>();
+      learningPath.forEach((step: any) => {
+        const val = localStorage.getItem(`learning-path-completed-${step.kpId}`);
+        if (val === 'true') completed.add(step.kpId);
+      });
+      setCompletedSteps(completed);
+    }
+  }, [learningPath]);
+
+  const toggleComplete = (kpId: number) => {
+    const key = `learning-path-completed-${kpId}`;
+    const current = localStorage.getItem(key) === 'true';
+    if (current) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, 'true');
+    }
+    setCompletedSteps(prev => {
+      const next = new Set(prev);
+      if (current) next.delete(kpId); else next.add(kpId);
+      return next;
+    });
+  };
 
   const statusBadge = (status: string | null) => {
     if (status === 'PUBLISHED' || status === 'ADJUSTED') {
@@ -83,6 +131,12 @@ export default function MyLearningPage() {
     if (status === 'REJECTED') return <span className="text-xs" style={{ color: '#ef4444' }}>❌ 已驳回</span>;
     return <span className="text-xs" style={{ color: '#e87a30' }}>⏳ 待审核</span>;
   };
+
+  // Learning path computation
+  const firstUncompletedIdx = (learningPath || []).findIndex(
+    (s: any) => !completedSteps.has(s.kpId)
+  );
+  const allDone = (learningPath?.length ?? 0) > 0 && firstUncompletedIdx === -1;
 
   if (loading) {
     return (
@@ -317,6 +371,84 @@ export default function MyLearningPage() {
             </div>
           )}
         </div>
+
+        {/* ═══ 学习路径 ═══ */}
+        {learningPath && learningPath.length > 0 && (
+          <div className="card p-5 mb-8">
+            <h2 className="font-bold text-sm mb-4" style={{ color: 'var(--ink-700)' }}>
+              📋 你的专属学习路径
+            </h2>
+
+            {allDone ? (
+              <div className="text-center py-8">
+                <div className="text-2xl mb-2">🎉</div>
+                <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>恭喜！你已完成所有推荐课程</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {learningPath.map((step: any, idx: number) => {
+                  const isCompleted = completedSteps.has(step.kpId);
+                  const isCurrent = idx === firstUncompletedIdx;
+
+                  return (
+                    <div key={step.kpId} className={`p-4 rounded-xl ${isCurrent ? 'border-2' : 'border'}`} style={{
+                      borderColor: isCurrent ? 'var(--fox)' : 'var(--ink-100)',
+                      background: isCurrent ? 'var(--fox-pale)' : 'white',
+                    }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {isCurrent && <span className="text-sm">➡️</span>}
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{
+                            background: isCompleted ? '#2e7d3218' : isCurrent ? 'var(--fox)' : 'var(--ink-100)',
+                            color: isCompleted ? '#2e7d32' : isCurrent ? 'white' : 'var(--ink-400)',
+                          }}>
+                          {isCompleted ? '✅' : idx + 1}
+                        </span>
+                        <span className="text-xs font-medium truncate" style={{ color: 'var(--ink-700)' }}>{step.kpName}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0" style={{
+                          background: `${(LEVEL_COLORS[step.level] || '#f59e0b')}18`,
+                          color: LEVEL_COLORS[step.level] || '#f59e0b',
+                        }}>
+                          {step.level}
+                        </span>
+                        <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--ink-300)' }}>
+                          {step.avgRate}% 掌握
+                        </span>
+                        {!isCompleted && (
+                          <button onClick={() => toggleComplete(step.kpId)}
+                            className="text-[10px] px-2 py-0.5 rounded border-none cursor-pointer ml-auto flex-shrink-0"
+                            style={{ background: 'var(--ink-100)', color: 'var(--ink-500)' }}>
+                            标记完成
+                          </button>
+                        )}
+                      </div>
+                      {step.courses?.length > 0 && (
+                        <div className="ml-9 space-y-1">
+                          {step.courses.map((course: any) => (
+                            <div key={course.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs"
+                              style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="truncate" style={{ color: 'var(--ink-600)' }}>{course.title}</span>
+                                {course.duration != null && (
+                                  <span className="flex-shrink-0" style={{ color: 'var(--ink-300)' }}>{course.duration}分钟</span>
+                                )}
+                              </div>
+                              <button onClick={() => router.push(`/video/${course.id}`)}
+                                className="text-xs px-2.5 py-1 rounded-md border-none cursor-pointer font-medium flex-shrink-0 ml-2"
+                                style={{ background: 'var(--fox)', color: 'white' }}>
+                                去学习
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
