@@ -500,10 +500,9 @@ export class ExamAnalysisService {
         strongest = { kpId: kp.kpId, kpName: kp.kpName, rate: kp.rate };
       }
     }
-    // 所有考点掌握率相同时，不区分最强最弱
+    // 所有考点掌握率相同时，最强正常显示，最弱显示"—"
     if (weakest && strongest && weakest.rate === strongest.rate) {
-      weakest = null;
-      strongest = null;
+      weakest = { kpId: 0, kpName: '—', rate: -1 };
     }
 
     return {
