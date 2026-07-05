@@ -402,13 +402,17 @@ h1, h2, h3, h4, h5 {
 .animate-fadeIn { animation: fadeIn 0.2s ease; }
 
 /* ══════════════════════════════════════
-   滚动条
+   滚动条（Chrome + Firefox）
    ══════════════════════════════════════ */
 
+/* Chrome / Safari / Edge */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--ink-100); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-300); }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--ink-100) transparent; }
 
 /* ══════════════════════════════════════
    响应式
