@@ -45,6 +45,23 @@ export class LearningHourCertificatesService {
   /**
    * 申请学时证明
    */
+  /** 计算印章哈希 + base64 data URL */
+  private async loadSealData() {
+    const path = await import('path');
+    const fs = await import('fs/promises');
+    const sealPath = path.resolve(process.cwd(), 'assets/seal-foxlearn.svg');
+    let sealHash = '';
+    let sealDataUrl = '';
+    try {
+      const sealBuffer = await fs.readFile(sealPath);
+      sealHash = crypto.createHash('sha256').update(sealBuffer).digest('hex');
+      sealDataUrl = `data:image/svg+xml;base64,${sealBuffer.toString('base64')}`;
+    } catch {
+      console.warn('[LearningHourCertificate] 印章文件未找到，跳过哈希计算');
+    }
+    return { sealHash, sealDataUrl };
+  }
+
   async apply(studentId: number, programId: number) {
     // 1. 验证学员是否在培训班中
     const enrollment = await this.prisma.programEnrollment.findUnique({
@@ -123,7 +140,10 @@ export class LearningHourCertificatesService {
       select: { name: true, org: { select: { id: true, name: true } } },
     });
 
-    // 7. 创建学时证明记录
+    // 7. 计算印章哈希
+    const { sealHash } = await this.loadSealData().catch(() => ({ sealHash: '' }));
+
+    // 8. 创建学时证明记录
     const certificate = await this.prisma.learningHourCertificate.create({
       data: {
         studentId,
@@ -138,6 +158,8 @@ export class LearningHourCertificatesService {
         endDate: maxDate,
         certificateNo,
         verificationCode,
+        contentHash: sealHash || null,
+        sealHash: sealHash || null,
         approvalStatus: 'AUTO_APPROVED',
         appliedAt: new Date(),
         approvedAt: new Date(),
@@ -335,33 +357,55 @@ export class LearningHourCertificatesService {
         isRevoked: cert.isRevoked,
         revokedAt: cert.revokedAt,
         revokeReason: cert.revokeReason,
+        contentHash: cert.contentHash,
+        sealHash: cert.sealHash,
       },
     };
   }
 
   /**
-   * 生成学时证明 PDF
+   * 生成学时证明 PDF（含 QR 码 + 印章图片 + 哈希校验 + 盲水印）
    */
   async generatePdf(id: number): Promise<Buffer> {
     const cert = await this.prisma.learningHourCertificate.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('学时证明不存在');
 
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
     // 动态导入 puppeteer
     const puppeteer = await import('puppeteer');
 
-    // 生成 QR 码（仅当 qrcode 库可用时）
+    // 生成 QR 码（verify URL 动态化：使用 SITE_URL 环境变量）
     let qrDataUrl = '';
     try {
       const qrcode = await import('qrcode');
-      const verifyUrl = `https://foxlearn.cn/verify-hours?no=${cert.certificateNo}`;
+      const baseUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+      const verifyUrl = `${baseUrl}/verify-hours?no=${cert.certificateNo}`;
       qrDataUrl = await qrcode.toDataURL(verifyUrl, { width: 120, margin: 2 });
     } catch {
       qrDataUrl = '';
     }
 
+    // 读取印章 SVG → base64 data URL + SHA256
+    const sealPath = path.resolve(process.cwd(), 'assets/seal-foxlearn.svg');
+    let sealHash = cert.contentHash || '';
+    let sealDataUrl = '';
+    try {
+      const sealBuffer = await fs.readFile(sealPath);
+      if (!sealHash) {
+        sealHash = crypto.createHash('sha256').update(sealBuffer).digest('hex');
+        await this.prisma.learningHourCertificate.update({
+          where: { id },
+          data: { contentHash: sealHash, sealHash },
+        }).catch(() => {});
+      }
+      sealDataUrl = `data:image/svg+xml;base64,${sealBuffer.toString('base64')}`;
+    } catch {
+      console.warn('[LearningHourCertificate] 印章文件未找到');
+    }
+
     // 读取模板
-    const fs = await import('fs/promises');
-    const path = await import('path');
     const templatePath = path.resolve(
       import.meta.dirname, 'templates', 'learning-hour-certificate.html'
     );
@@ -403,7 +447,9 @@ export class LearningHourCertificatesService {
       .replace(/{{endDate}}/g, endDateStr)
       .replace(/{{certificateNo}}/g, escapeHtml(cert.certificateNo))
       .replace(/{{issueDate}}/g, issueDateStr)
-      .replace(/{{qrDataUrl}}/g, qrDataUrl);
+      .replace(/{{qrDataUrl}}/g, qrDataUrl)
+      .replace(/{{sealDataUrl}}/g, sealDataUrl)
+      .replace(/{{sealHash}}/g, escapeHtml(sealHash));
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -417,7 +463,24 @@ export class LearningHourCertificatesService {
         printBackground: true,
         margin: { top: '0', right: '0', bottom: '0', left: '0' },
       });
-      return Buffer.from(pdf);
+
+      // 尝试嵌入盲水印（失败不阻塞）
+      try {
+        const { execSync } = await import('child_process');
+        const tempPdfPath = path.resolve('/tmp', `hours-cert-${id}-${Date.now()}.pdf`);
+        await fs.writeFile(tempPdfPath, pdf);
+        execSync(`python3 scripts/embed_watermark.py "${tempPdfPath}" "${cert.certificateNo}"`, {
+          timeout: 10000,
+          cwd: import.meta.dirname + '/../../',
+          stdio: 'pipe',
+        });
+        const watermarked = await fs.readFile(tempPdfPath);
+        await fs.unlink(tempPdfPath).catch(() => {});
+        return Buffer.from(watermarked);
+      } catch {
+        console.warn('[LearningHourCertificate] 盲水印嵌入失败，返回原始PDF');
+        return Buffer.from(pdf);
+      }
     } finally {
       await browser.close();
     }

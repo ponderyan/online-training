@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
   PENDING: { text: '待审批', color: '#e87a30' },
+  AUTO_APPROVED: { text: '已通过（自动）', color: '#2e7d32' },
   APPROVED: { text: '已通过', color: '#2e7d32' },
   REJECTED: { text: '已驳回', color: '#ef4444' },
   REVOKED: { text: '已撤销', color: '#6b7280' },

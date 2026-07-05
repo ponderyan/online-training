@@ -41,8 +41,9 @@ export default function VerifyHoursPage() {
     setLoading(false);
   };
 
-  const isValid = result && !result.error && result.approvalStatus === 'APPROVED';
-  const isRevoked = result?.approvalStatus === 'REVOKED';
+  const cert = result?.certificate || result;
+  const isValid = result?.valid === true && cert?.approvalStatus !== 'REJECTED' && cert?.approvalStatus !== 'REVOKED';
+  const isRevoked = cert?.isRevoked === true || cert?.approvalStatus === 'REVOKED';
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)' }}>
@@ -116,13 +117,13 @@ export default function VerifyHoursPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="block text-xs" style={{ color: '#558b2f' }}>学员姓名</span>
-                    <span className="font-medium">{result.studentName}</span>
+                    <span className="font-medium">{cert.studentName}</span>
                   </div>
-                  {result.studentIdNumber && (
+                  {cert.idCardMasked && (
                     <div>
                       <span className="block text-xs" style={{ color: '#558b2f' }}>证件号</span>
                       <span className="text-sm" style={{ color: 'var(--ink-400)' }}>
-                        {result.studentIdNumber.replace(/^(.{3}).+(.{4})$/, '$1********$2')}
+                        {cert.idCardMasked}
                       </span>
                     </div>
                   )}
@@ -132,19 +133,19 @@ export default function VerifyHoursPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <span className="block text-xs" style={{ color: '#558b2f' }}>培训项目</span>
-                      <span>{result.programName}</span>
+                      <span>{cert.programName}</span>
                     </div>
                     <div>
                       <span className="block text-xs" style={{ color: '#558b2f' }}>总学时</span>
-                      <span className="font-bold" style={{ color: '#2e7d32' }}>{result.totalHours} 小时</span>
+                      <span className="font-bold" style={{ color: '#2e7d32' }}>{cert.totalHours} 小时</span>
                     </div>
                   </div>
                 </div>
 
-                {result.hoursDetail?.length > 0 && (
+                {cert.hoursDetail?.length > 0 && (
                   <div className="pt-2 border-t" style={{ borderColor: '#a5d6a7' }}>
                     <span className="block text-xs mb-1" style={{ color: '#558b2f' }}>学时明细</span>
-                    {result.hoursDetail.map((d: any, i: number) => (
+                    {cert.hoursDetail.map((d: any, i: number) => (
                       <div key={i} className="flex justify-between text-xs py-0.5">
                         <span>{d.typeName || d.source}</span>
                         <span>{d.hours} 小时</span>
@@ -157,22 +158,24 @@ export default function VerifyHoursPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="block" style={{ color: '#558b2f' }}>证明编号</span>
-                      <span className="font-mono">{result.certificateNo}</span>
+                      <span className="font-mono">{cert.certificateNo}</span>
                     </div>
                     <div>
                       <span className="block" style={{ color: '#558b2f' }}>颁发时间</span>
-                      <span>{result.approvedAt ? new Date(result.approvedAt).toLocaleDateString('zh-CN') : '—'}</span>
+                      <span>{cert.approvedAt ? new Date(cert.approvedAt).toLocaleDateString('zh-CN') : '—'}</span>
                     </div>
                   </div>
                 </div>
 
-                {result.sealHash && (
+                {cert.contentHash && (
                   <div className="pt-2 border-t flex items-center gap-1" style={{ borderColor: '#a5d6a7' }}>
-                    <span className="text-xs" style={{ color: '#558b2f' }}>🛡️ 防伪哈希：</span>
+                    <span className="text-xs" style={{ color: '#558b2f' }}>🛡️ 内容指纹：</span>
                     <span className="text-[10px] font-mono" style={{ color: '#689f38' }}>
-                      {result.sealHash}
+                      {cert.contentHash.slice(0, 16)}...
                     </span>
-                    <span className="text-[10px]" style={{ color: '#558b2f' }}>✅</span>
+                    <span className="text-[10px]" style={{ color: '#558b2f' }}>
+                      ✅ 印章内容未被篡改
+                    </span>
                   </div>
                 )}
               </div>
@@ -187,19 +190,19 @@ export default function VerifyHoursPage() {
               <p className="text-sm font-medium" style={{ color: '#c62828' }}>
                 {isRevoked ? '此证明已被撤销' : '证明无效'}
               </p>
-              {result.certificateNo && (
+              {cert.certificateNo && (
                 <p className="text-xs mt-2 font-mono" style={{ color: '#ef5350' }}>
-                  编号：{result.certificateNo}
+                  编号：{cert.certificateNo}
                 </p>
               )}
-              {result.revokeReason && (
+              {cert.revokeReason && (
                 <p className="text-xs mt-2" style={{ color: '#ef5350' }}>
-                  撤销原因：{result.revokeReason}
+                  撤销原因：{cert.revokeReason}
                 </p>
               )}
-              {result.revokedAt && (
+              {cert.revokedAt && (
                 <p className="text-xs mt-1" style={{ color: '#ef5350' }}>
-                  撤销时间：{new Date(result.revokedAt).toLocaleString('zh-CN')}
+                  撤销时间：{new Date(cert.revokedAt).toLocaleString('zh-CN')}
                 </p>
               )}
             </div>

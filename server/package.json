@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nest build && cp -r src/modules/certificates/templates dist/modules/certificates/ && cp -r src/modules/learning-hour-certificates/templates dist/modules/learning-hour-certificates/",
+    "build": "nest build && cp -r src/modules/certificates/templates dist/modules/certificates/ && cp -r src/modules/learning-hour-certificates/templates dist/modules/learning-hour-certificates/ && cp -r assets dist/",
     "start": "nest start",
     "dev": "nest start --watch",
     "start:prod": "node dist/main",

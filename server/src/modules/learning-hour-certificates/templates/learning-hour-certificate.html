@@ -218,7 +218,7 @@
 
   <div class="footer">
     <div class="seal-area">
-      <div class="seal-circle">🦊<br>FoxLearn<br>学时证明</div>
+      <img src="{{sealDataUrl}}" alt="FoxLearn 印章" style="width:120px;height:120px;border-radius:50%;" onerror="this.style.display='none'" />
     </div>
     <div class="qr-area">
       <img src="{{qrDataUrl}}" alt="QR Code" />
@@ -227,6 +227,9 @@
 
   <div class="verify">
     验证：foxlearn.cn/verify-hours | 编号 {{certificateNo}}
+  </div>
+  <div class="hash-line" style="font-size:8px;color:#c0b8a8;text-align:center;margin-top:4px;">
+    防伪指纹：{{sealHash}}
   </div>
 </div>
 </body>
