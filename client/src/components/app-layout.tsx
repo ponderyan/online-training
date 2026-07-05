@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar user={user} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top header bar */}
         <header className="flex items-center justify-end px-8 py-2.5" style={{
           background: 'white',
@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <NotificationBell user={user} />
         </header>
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 xl:p-10">
+        <main className="main-content flex-1 overflow-y-auto min-h-0 p-6 md:p-8 xl:p-10">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

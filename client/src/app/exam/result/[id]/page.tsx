@@ -161,7 +161,7 @@ export default function ExamResult() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="print-area max-w-4xl mx-auto px-6 py-8">
         {/* Score Card */}
         <div className="rounded-xl p-8 mb-8" style={{
           background: isPassed

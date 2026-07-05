@@ -179,7 +179,7 @@ export default function Sidebar({ user }: { user: any }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="sidebar-nav flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {visibleGroups.map(group => (
           <div key={group.title}>
             {!isStudent && (

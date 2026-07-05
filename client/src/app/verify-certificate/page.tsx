@@ -41,7 +41,7 @@ export default function VerifyCertificatePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f0eb', fontFamily: '"PingFang SC","Microsoft YaHei",sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#f5f0eb', fontFamily: '"PingFang SC","Microsoft YaHei",sans-serif' }}>
       <div className="max-w-lg mx-auto pt-16 px-4">
         {/* Header */}
         <div className="text-center mb-10">

@@ -67,8 +67,14 @@ body {
   font-size: 14px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh;
 }
+
+/* Safari 100dvh 兼容：全局覆盖 h-screen / min-h-screen */
+.h-screen { height: 100vh; height: 100dvh; }
+.min-h-screen { min-height: 100vh; min-height: 100dvh; }
 
 h1, h2, h3, h4, h5 {
   font-family: 'Noto Serif SC', serif;
@@ -311,6 +317,7 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .modal-card {
   background: var(--paper-bright);
@@ -411,8 +418,10 @@ h1, h2, h3, h4, h5 {
 ::-webkit-scrollbar-thumb { background: var(--ink-100); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-300); }
 
-/* Firefox */
-* { scrollbar-width: thin; scrollbar-color: var(--ink-100) transparent; }
+/* Firefox — 只给滚动容器，不给全局 *，避免布局错位 */
+html { scrollbar-width: thin; scrollbar-color: var(--ink-100) transparent; }
+.sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(196,188,176,0.2) transparent; }
+.main-content { scrollbar-width: thin; scrollbar-color: var(--ink-100) transparent; }
 
 /* ══════════════════════════════════════
    响应式
