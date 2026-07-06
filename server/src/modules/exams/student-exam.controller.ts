@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Param, Body, ParseIntPipe, Req, UnauthorizedException } from '@nestjs/common';
 import { ExamsService } from './exams.service.js';
 import { ExamAnalysisService } from './exam-analysis.service.js';
+import { LearningReportService } from './learning-report.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
 
@@ -9,6 +10,7 @@ export class StudentExamController {
   constructor(
     private service: ExamsService,
     private examAnalysisService: ExamAnalysisService,
+    private learningReportService: LearningReportService,
   ) {}
 
   /** 从请求中提取学员ID（当前简化版：从 JWT payload 取） */
@@ -83,5 +85,12 @@ export class StudentExamController {
     const studentId = req.user?.id;
     if (!studentId) throw new UnauthorizedException();
     return this.examAnalysisService.getKnowledgeAnalysis(examId, studentId);
+  }
+
+  @Get('learning-report')
+  async getLearningReport(@Req() req: any) {
+    const studentId = req.user?.id || req.user?.sub;
+    if (!studentId) throw new UnauthorizedException();
+    return this.learningReportService.getReport(studentId);
   }
 }
