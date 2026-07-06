@@ -18,6 +18,7 @@ function timeAgo(dateStr: string) {
 const TYPE_ICONS: Record<string, string> = {
   EXAM_PUBLISHED: '📢',
   EXAM_CONFIRMED: '🔒',
+  EXAM_GRADED: '📝',
   APPEAL_SUBMITTED: '⚖️',
   APPEAL_RESOLVED: '⚖️',
   GRADING_ASSIGNED: '📝',
@@ -25,11 +26,14 @@ const TYPE_ICONS: Record<string, string> = {
   CERT_APPROVED: '✅',
   CERT_REJECTED: '❌',
   CERT_APPLICATION: '📋',
+  LEARNING_HOUR_APPROVED: '✅',
+  LEARNING_HOUR_REJECTED: '❌',
 };
 
 const TYPE_ROUTES: Record<string, string> = {
   EXAM_PUBLISHED: '/exam',
   EXAM_CONFIRMED: '/exam',
+  EXAM_GRADED: '/exam',
   APPEAL_SUBMITTED: '/grading',
   APPEAL_RESOLVED: '/exams/appeals',
   GRADING_ASSIGNED: '/grading',
@@ -37,6 +41,8 @@ const TYPE_ROUTES: Record<string, string> = {
   CERT_APPROVED: '/my-certificates',
   CERT_REJECTED: '/my-certificates',
   CERT_APPLICATION: '/certificates/applications',
+  LEARNING_HOUR_APPROVED: '/learning-hours',
+  LEARNING_HOUR_REJECTED: '/learning-hours',
 };
 
 export default function NotificationBell({ user }: { user: any }) {

@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class ExamsService {
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
+    private notificationService: NotificationsService,
   ) {}
 
   // ═══════════════════════════════════════════
@@ -157,6 +159,23 @@ export class ExamsService {
   async publish(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.findOne(id, userOrgId, userRoles);
     if (exam.status !== 'DRAFT') throw new BadRequestException('只能发布草稿状态的考试');
+
+    // 发布后通知所有已分配学员
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId: id },
+      select: { studentId: true },
+    });
+    const studentIds = [...new Set(sessions.map(s => s.studentId))];
+    if (studentIds.length > 0) {
+      void this.notificationService.createMany(
+        studentIds,
+        'EXAM_PUBLISHED' as any,
+        `考试已发布「${exam.title}」`,
+        `考试已发布，请及时参加：${exam.title}`,
+        id, 'exam',
+      );
+    }
+
     return this.prisma.exam.update({ where: { id }, data: { status: 'PUBLISHED' } });
   }
 
@@ -799,6 +818,23 @@ export class ExamsService {
       where: { examId, scoringStatus: { notIn: ['PUBLISHED', 'ADJUSTED'] } },
       data: { scoringStatus: 'PUBLISHED', scoringPublishedAt: new Date() },
     });
+
+    // 成绩发布后通知学员
+    const submittedSessions = await this.prisma.examSession.findMany({
+      where: { examId, status: 'SUBMITTED' },
+      select: { studentId: true },
+    });
+    const gradedStudentIds = [...new Set(submittedSessions.map(s => s.studentId))];
+    if (gradedStudentIds.length > 0) {
+      void this.notificationService.createMany(
+        gradedStudentIds,
+        'EXAM_GRADED' as any,
+        `成绩已发布「${exam.title}」`,
+        `考试成绩已发布，请查看你的成绩`,
+        examId, 'exam',
+      );
+    }
+
     return { ok: true, publishedCount: result.count, message: `已发布 ${result.count} 份成绩` };
   }
 

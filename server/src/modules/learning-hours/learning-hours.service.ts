@@ -1,9 +1,13 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class LearningHoursService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationsService,
+  ) {}
 
   async findAll(params?: { studentId?: number; status?: string; programId?: number }) {
     const where: any = {};
@@ -212,10 +216,22 @@ export class LearningHoursService {
     if (!record) throw new BadRequestException('记录不存在');
     if (record.status !== 'PENDING') throw new BadRequestException('该记录已审核');
     const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
-    return this.prisma.learningHourRecord.update({
+    const updated = await this.prisma.learningHourRecord.update({
       where: { id },
       data: { status, approvedById: reviewerId, approvedAt: new Date(), reviewComment: comment },
     });
+
+    // 审核完成后通知学员
+    const type = action === 'approve' ? 'LEARNING_HOUR_APPROVED' : 'LEARNING_HOUR_REJECTED';
+    void this.notificationService.create(
+      record.studentId,
+      type as any,
+      action === 'approve' ? '学时申报已通过' : '学时申报被驳回',
+      action === 'approve' ? `学时申报已通过，共 ${record.hours} 学时` : `学时申报被驳回${comment ? '，原因：' + comment : ''}`,
+      record.id, 'learning_hour',
+    );
+
+    return updated;
   }
 
   // 兼容旧路由：批量通过

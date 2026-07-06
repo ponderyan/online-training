@@ -12,7 +12,6 @@ export class NotificationsController {
   ) {}
 
   @Get()
-  @RequirePermission(Permissions.NOTIFICATION_VIEW)
   async findAll(
     @Req() req: any,
     @Query('page') page?: string,
