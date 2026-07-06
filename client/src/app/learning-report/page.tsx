@@ -158,7 +158,7 @@ export default function LearningReportPage() {
         router.push('/login');
         return;
       }
-      const res = await fetch('/api/student/learning-report', {
+      const res = await fetch('/api/student/exams/learning-report', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {

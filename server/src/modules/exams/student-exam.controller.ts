@@ -20,6 +20,13 @@ export class StudentExamController {
     return user.sub || user.id;
   }
 
+  @Get('learning-report')
+  async getLearningReport(@Req() req: any) {
+    const studentId = req.user?.id || req.user?.sub;
+    if (!studentId) throw new UnauthorizedException();
+    return this.learningReportService.getReport(studentId);
+  }
+
   @Get()
   @RequirePermission(Permissions.EXAM_VIEW)
   list(@Req() req: any) {
@@ -28,8 +35,8 @@ export class StudentExamController {
 
   @Get(':id')
   @RequirePermission(Permissions.EXAM_VIEW)
-  start(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.service.startExam(id, this.getStudentId(req));
+  start(@Param('id') id: string, @Req() req: any) {
+    return this.service.startExam(parseInt(id, 10), this.getStudentId(req));
   }
 
   @Post(':id/submit')
@@ -87,10 +94,4 @@ export class StudentExamController {
     return this.examAnalysisService.getKnowledgeAnalysis(examId, studentId);
   }
 
-  @Get('learning-report')
-  async getLearningReport(@Req() req: any) {
-    const studentId = req.user?.id || req.user?.sub;
-    if (!studentId) throw new UnauthorizedException();
-    return this.learningReportService.getReport(studentId);
-  }
 }

@@ -31,9 +31,9 @@ export class LearningReportService {
     // Run independent sections in parallel
     const [summary, examTrend, hoursDistribution, learningActivity, programProgress] = await Promise.all([
       this.getSummary(studentId).catch(() => ({
-        examStats: { totalAttempts: 0, passed: 0, failed: 0, avgScore: 0, passRate: 0 },
-        hoursStats: { totalHours: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0 },
-        certificates: { total: 0 },
+        passRate: 0, passed: 0, failed: 0, pending: 0,
+        totalHours: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0,
+        certificateCount: 0, avgScore: 0,
       })),
       this.getExamTrend(studentId).catch(() => []),
       this.getHoursDistribution(studentId).catch(() => []),
@@ -46,29 +46,41 @@ export class LearningReportService {
     ]);
 
     // Knowledge mastery might be heavy, run after lightweight sections
-    const knowledgeMastery = await this.getKnowledgeMastery(studentId).catch(() => []);
+    const kpMastery = await this.getKnowledgeMastery(studentId).catch(() => []);
 
     // Derive weak areas from knowledge mastery
-    const weakAreas = knowledgeMastery.length > 0
-      ? knowledgeMastery
+    const weakAreas = kpMastery.length > 0
+      ? kpMastery
           .slice()
-          .sort((a, b) => a.masteryRate - b.masteryRate)
+          .sort((a, b) => a.rate - b.rate)
           .slice(0, 5)
           .map(kp => ({
             kpId: kp.kpId,
             kpName: kp.kpName,
-            masteryRate: kp.masteryRate,
+            rate: kp.rate,
             level: kp.level,
           }))
       : [];
 
+    const lastActiveDate = learningActivity.dailyActivity.length > 0
+      ? learningActivity.dailyActivity
+          .filter(d => d.isActive)
+          .slice(-1)[0]?.date || null
+      : null;
+
     return {
       summary,
       examTrend,
-      knowledgeMastery,
+      kpMastery,
       hoursDistribution,
       weakAreas,
-      learningActivity,
+      streak: {
+        totalActiveDays: learningActivity.totalActiveDays,
+        currentStreak: learningActivity.currentStreak,
+        lastActiveDate,
+      },
+      dailyActivity: learningActivity.dailyActivity,
+      recent30DayActive: learningActivity.totalActiveDays,
       programProgress,
     };
   }
@@ -78,7 +90,7 @@ export class LearningReportService {
   // ──────────────────────────────
 
   private async getSummary(studentId: number) {
-    const [examSessions, hourRecords, certCount] = await Promise.all([
+    const [examSessions, hourRecords, certCount, pendingCount] = await Promise.all([
       this.prisma.examSession.findMany({
         where: { studentId, submittedAt: { not: null } },
         select: { isPassed: true, finalScore: true },
@@ -89,6 +101,9 @@ export class LearningReportService {
       }),
       this.prisma.certificate.count({
         where: { studentId, isRevoked: false },
+      }),
+      this.prisma.examSession.count({
+        where: { studentId, status: 'SUBMITTED', finalScore: null },
       }),
     ]);
 
@@ -114,9 +129,16 @@ export class LearningReportService {
       .reduce((s, r) => s + r.hours, 0);
 
     return {
-      examStats: { totalAttempts, passed, failed, avgScore, passRate: pct(passed, totalAttempts) },
-      hoursStats: { totalHours, approvedHours, pendingHours, rejectedHours },
-      certificates: { total: certCount },
+      passRate: pct(passed, totalAttempts),
+      passed,
+      failed,
+      pending: pendingCount,
+      totalHours: round2(totalHours),
+      approvedHours: round2(approvedHours),
+      pendingHours: round2(pendingHours),
+      rejectedHours: round2(rejectedHours),
+      certificateCount: certCount,
+      avgScore,
     };
   }
 
@@ -228,14 +250,14 @@ export class LearningReportService {
     return Array.from(kpMap.entries())
       .filter(([, data]) => data.total > 0)
       .map(([kpId, data]) => {
-        const masteryRate = pct(data.correct, data.total);
+        const rate = pct(data.correct, data.total);
         return {
           kpId,
           kpName: data.name,
-          masteryRate,
-          level: getLevel(masteryRate),
+          rate,
+          level: getLevel(rate),
           examCount: data.sessions.size,
-          correctRate: masteryRate,
+          correctRate: rate,
         };
       });
   }
@@ -305,15 +327,15 @@ export class LearningReportService {
     // Init all 30 days
     const dailyMap = new Map<
       string,
-      { examCount: number; hoursCount: number; videoCount: number; practiceCount: number }
+      { examCount: number; studyHours: number; videoHours: number; practiceCount: number }
     >();
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       dailyMap.set(d.toISOString().slice(0, 10), {
         examCount: 0,
-        hoursCount: 0,
-        videoCount: 0,
+        studyHours: 0,
+        videoHours: 0,
         practiceCount: 0,
       });
     }
@@ -326,7 +348,7 @@ export class LearningReportService {
     for (const r of hourRecords) {
       const key = r.recordedAt.toISOString().slice(0, 10);
       const entry = dailyMap.get(key);
-      if (entry) entry.hoursCount += r.hours;
+      if (entry) entry.studyHours += r.hours;
     }
     for (const p of practiceRecords) {
       const key = p.createdAt.toISOString().slice(0, 10);
@@ -336,16 +358,16 @@ export class LearningReportService {
     for (const v of videoProgresses) {
       const key = v.updatedAt.toISOString().slice(0, 10);
       const entry = dailyMap.get(key);
-      if (entry) entry.videoCount++;
+      if (entry) entry.videoHours++;
     }
 
     const dailyActivity = Array.from(dailyMap.entries()).map(([date, data]) => ({
       date,
       examCount: data.examCount,
-      hoursCount: data.hoursCount,
-      videoCount: data.videoCount,
+      studyHours: data.studyHours,
+      videoHours: data.videoHours,
       practiceCount: data.practiceCount,
-      isActive: data.examCount > 0 || data.hoursCount > 0 || data.videoCount > 0 || data.practiceCount > 0,
+      isActive: data.examCount > 0 || data.studyHours > 0 || data.videoHours > 0 || data.practiceCount > 0,
     }));
 
     const totalActiveDays = dailyActivity.filter(d => d.isActive).length;
@@ -404,7 +426,7 @@ export class LearningReportService {
         return {
           programId: program.id,
           programName: program.name,
-          progress: pct(completedCourses, totalCourses),
+          progressRate: pct(completedCourses, totalCourses),
           totalCourses,
           completedCourses: Math.min(completedCourses, totalCourses),
         };
