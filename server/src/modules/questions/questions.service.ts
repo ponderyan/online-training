@@ -495,6 +495,84 @@ export class QuestionsService {
     }
   }
 
+  async getPracticeTrend(studentId: number, days: number) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // 一次查询所有记录 + 关联的知识点
+    const records = await this.prisma.practiceRecord.findMany({
+      where: { studentId, createdAt: { gte: startDate } },
+      select: { createdAt: true, isCorrect: true, questionId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // 收集所有 questionId，批量查知识点关联
+    const qIds = [...new Set(records.map(r => r.questionId))];
+    const qkps = qIds.length > 0
+      ? await this.prisma.questionKnowledgePoint.findMany({
+          where: { questionId: { in: qIds } },
+          include: { knowledgePoint: { select: { id: true, name: true } } },
+        })
+      : [];
+
+    // questionId → knowledgePoints map
+    const qKpMap = new Map<number, { kpId: number; kpName: string }[]>();
+    for (const qkp of qkps) {
+      const existing = qKpMap.get(qkp.questionId) || [];
+      existing.push({ kpId: qkp.knowledgePointId, kpName: qkp.knowledgePoint.name });
+      qKpMap.set(qkp.questionId, existing);
+    }
+
+    // 按天分组
+    const dayMap = new Map<string, { total: number; correct: number; kpStats: Map<number, { kpName: string; total: number; correct: number }> }>();
+
+    for (const r of records) {
+      const dateKey = r.createdAt.toISOString().slice(0, 10);
+      if (!dayMap.has(dateKey)) {
+        dayMap.set(dateKey, { total: 0, correct: 0, kpStats: new Map() });
+      }
+      const day = dayMap.get(dateKey)!;
+      day.total++;
+      if (r.isCorrect) day.correct++;
+
+      // 知识点统计
+      const kps = qKpMap.get(r.questionId) || [];
+      for (const kp of kps) {
+        if (!day.kpStats.has(kp.kpId)) {
+          day.kpStats.set(kp.kpId, { kpName: kp.kpName, total: 0, correct: 0 });
+        }
+        const ks = day.kpStats.get(kp.kpId)!;
+        ks.total++;
+        if (r.isCorrect) ks.correct++;
+      }
+    }
+
+    // 构建返回
+    const result: any[] = [];
+    for (const [date, day] of dayMap) {
+      const kpAccuracy: any[] = [];
+      for (const [kpId, ks] of day.kpStats) {
+        kpAccuracy.push({
+          kpId,
+          kpName: ks.kpName,
+          total: ks.total,
+          correct: ks.correct,
+          accuracy: ks.total > 0 ? Math.round((ks.correct / ks.total) * 1000) / 10 : 0,
+        });
+      }
+      result.push({
+        date,
+        total: day.total,
+        correct: day.correct,
+        accuracy: day.total > 0 ? Math.round((day.correct / day.total) * 1000) / 10 : 0,
+        kpAccuracy,
+      });
+    }
+
+    return result;
+  }
+
   private formatCorrectAnswer(question: any): string {
     switch (question.type) {
       case 'SINGLE_CHOICE':

@@ -148,6 +148,9 @@ export default function LearningReportPage() {
   const [data, setData] = useState<LearningReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [practiceTrend, setPracticeTrend] = useState<any[]>([]);
+  const [activeKps, setActiveKps] = useState<string[]>([]);
+  const [topKps, setTopKps] = useState<string[]>([]);
 
   const loadReport = async () => {
     setLoading(true);
@@ -167,6 +170,28 @@ export default function LearningReportPage() {
       }
       const json = await res.json();
       setData(json);
+      const trendRes = await fetch('/api/questions/practice/trend?days=30', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (trendRes.ok) {
+        const trendData = await trendRes.json();
+        setPracticeTrend(trendData);
+        // Extract top 5 KPs by total practice count
+        const kpCounts: Record<string, number> = {};
+        trendData.forEach((d: any) => {
+          if (d.kpBreakdown) {
+            Object.entries(d.kpBreakdown).forEach(([kp, stats]: [string, any]) => {
+              kpCounts[kp] = (kpCounts[kp] || 0) + (stats.totalQuestions || 0);
+            });
+          }
+        });
+        const sorted = Object.entries(kpCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([kp]) => kp);
+        setTopKps(sorted);
+        setActiveKps(sorted);
+      }
     } catch (e: any) {
       setError(e.message || '加载学习报告失败');
     } finally {
@@ -251,7 +276,7 @@ export default function LearningReportPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6 pb-6">
 
         {/* ════════ 1. 标题 ════════ */}
         <div className="mb-2">
@@ -344,53 +369,138 @@ export default function LearningReportPage() {
           </div>
         </div>
 
-        {/* ════════ 3. 考试趋势图 ════════ */}
+        {/* ════════ 3. 练习正确率趋势 ════════ */}
         <div className="card p-5">
-          <h2 className="section-title">考试趋势</h2>
-          {lineData.length === 0 ? (
-            <EmptySection icon="📝" message="暂无考试数据" />
+          <h2 className="section-title">练习正确率趋势</h2>
+          {practiceTrend.length < 3 ? (
+            <div
+              onClick={() => router.push('/practice')}
+              className="flex flex-col items-center justify-center py-12 cursor-pointer"
+              style={{ color: 'var(--ink-300)' }}
+            >
+              <p className="text-xs">
+                继续练习，积累更多记录后自动生成趋势图 →
+              </p>
+            </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={lineData} margin={{ top: 8, right: 20, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--ink-100)" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: 'var(--ink-400)' }}
-                  axisLine={{ stroke: 'var(--ink-100)' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 11, fill: 'var(--ink-400)' }}
-                  axisLine={{ stroke: 'var(--ink-100)' }}
-                  tickLine={false}
-                  tickFormatter={(v: any) => `${v}`}
-                />
-                <Tooltip content={<CustomLineTooltip />} />
-                <Legend
-                  wrapperStyle={{ fontSize: 12, color: 'var(--ink-500)' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  name="实际得分"
-                  stroke="#e87a30"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: '#e87a30', strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: '#e87a30' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey={() => 60}
-                  name="合格线 (60%)"
-                  stroke="#8b8174"
-                  strokeWidth={1.5}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  activeDot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart
+                  data={practiceTrend.map((d: any) => ({
+                    ...d,
+                    dateLabel: (() => {
+                      const dt = new Date(d.date);
+                      return `${dt.getMonth() + 1}/${dt.getDate()}`;
+                    })(),
+                  }))}
+                  margin={{ top: 8, right: 20, left: 0, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--ink-100)" />
+                  <XAxis
+                    dataKey="dateLabel"
+                    tick={{ fontSize: 11, fill: 'var(--ink-400)' }}
+                    axisLine={{ stroke: 'var(--ink-100)' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 11, fill: 'var(--ink-400)' }}
+                    axisLine={{ stroke: 'var(--ink-100)' }}
+                    tickLine={false}
+                    tickFormatter={(v: any) => `${v}%`}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }: any) => {
+                      if (!active || !payload?.length) return null;
+                      const data = payload[0]?.payload;
+                      return (
+                        <div style={chartTooltipStyle}>
+                          <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--ink-700)' }}>
+                            {label}
+                          </div>
+                          <div style={{ color: '#e87a30', fontSize: 12 }}>
+                            正确率: {data?.accuracy ?? 0}%
+                          </div>
+                          <div style={{ color: 'var(--ink-400)', fontSize: 12 }}>
+                            总题数: {data?.totalQuestions ?? 0}
+                          </div>
+                          <div style={{ color: 'var(--ink-400)', fontSize: 12 }}>
+                            正确: {data?.correctCount ?? 0}
+                          </div>
+                          {payload.slice(1).map((entry: any, idx: number) => (
+                            <div key={idx} style={{ color: entry.color, fontSize: 12 }}>
+                              {entry.name}: {entry.value}%
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, color: 'var(--ink-500)' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="accuracy"
+                    name="每日正确率"
+                    stroke="#e87a30"
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: '#e87a30', strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: '#e87a30' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={() => 60}
+                    name="合格线 (60%)"
+                    stroke="#8b8174"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={false}
+                  />
+                  {topKps.map((kp, idx) => (
+                    activeKps.includes(kp) && (
+                      <Line
+                        key={kp}
+                        type="monotone"
+                        dataKey={(d: any) => d.kpBreakdown?.[kp]?.accuracy ?? null}
+                        name={kp}
+                        stroke={PIE_COLORS[idx]}
+                        strokeWidth={1.5}
+                        dot={{ r: 3 }}
+                        connectNulls
+                      />
+                    )
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+              {/* KP filter buttons */}
+              {topKps.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {topKps.map((kp, idx) => (
+                    <button
+                      key={kp}
+                      onClick={() => {
+                        setActiveKps(prev =>
+                          prev.includes(kp)
+                            ? prev.filter(k => k !== kp)
+                            : [...prev, kp]
+                        );
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full transition-all"
+                      style={{
+                        background: activeKps.includes(kp) ? `${PIE_COLORS[idx]}22` : 'var(--paper-dark)',
+                        color: activeKps.includes(kp) ? PIE_COLORS[idx] : 'var(--ink-400)',
+                        border: `1px solid ${activeKps.includes(kp) ? PIE_COLORS[idx] : 'transparent'}`,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {kp}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 

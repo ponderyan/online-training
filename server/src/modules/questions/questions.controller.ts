@@ -103,6 +103,12 @@ export class QuestionsController {
     return this.service.getPracticeStats(req.user.id);
   }
 
+  @Get('practice/trend')
+  @UseGuards(JwtAuthGuard)
+  getPracticeTrend(@Req() req: any, @Query('days') days?: string) {
+    return this.service.getPracticeTrend(req.user.id, days ? parseInt(days) : 30);
+  }
+
   @Post('practice/favorite/toggle')
   @UseGuards(JwtAuthGuard)
   async toggleFavorite(
