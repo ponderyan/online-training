@@ -32,11 +32,30 @@ export class AiAssistantService {
       };
     }
 
-    // 2. 关键词提取（简单分词：去标点，按空格拆分）
-    const keywords = question
-      .replace(/[，。！？、；：""''（）【】《》\s]+/g, ' ')
+    // 2. 关键词提取（中文优化版：去停用词 → 分词 → 中文 bigram）
+    const STOPWORDS = ['什么','怎么','如何','为什么','哪些','哪个','怎样','几时','多少','为何','是否','可否',
+      '是','的','了','在','有','和','与','或','就','不','都','一','上','也','很','到','要','去',
+      '会','着','没有','看','好','自己','这','那','她','它','们','吗','呢','吧','啊','哦','嗯',
+      '请问','请教','帮忙','帮','我','你','他','能','可以','应该','需要'];
+    let cleaned = question;
+    for (const sw of STOPWORDS) {
+      cleaned = cleaned.replace(new RegExp(sw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ');
+    }
+    let keywords: string[] = cleaned
+      .replace(/[，。！？、；：""''（）【】《》\s,;:!?.'"()【】《》\t\n\r]+/g, ' ')
       .split(/\s+/)
       .filter(k => k.length >= 2);
+
+    // Generate overlapping 2-char bigrams for Chinese-only sequences ≥4 chars
+    const bigrams = new Set<string>();
+    for (const word of keywords) {
+      if (/^[\u4e00-\u9fff]+$/.test(word) && word.length >= 4) {
+        for (let i = 0; i <= word.length - 2; i++) {
+          bigrams.add(word.substring(i, i + 2));
+        }
+      }
+    }
+    keywords = [...new Set([...keywords, ...bigrams])];
 
     if (keywords.length === 0) {
       return { answer: '请提供更具体的问题，包含至少 2 个字符的关键词。', sources: [] };
@@ -65,7 +84,7 @@ export class AiAssistantService {
   }
 
   private async searchChunks(keywords: string[], limit: number): Promise<SourceInfo[]> {
-    const conditions = keywords.map(k => `content ILIKE '%${k.replace(/'/g, "''")}%'`);
+    const conditions = keywords.map(k => `content LIKE '%${k.replace(/'/g, "''")}%'`);
     const sql = `
       SELECT kc.id, kc.content, kc.source, mc.title as chapter_title, m.name as material_name
       FROM knowledge_chunks kc
@@ -90,7 +109,7 @@ export class AiAssistantService {
   }
 
   private async searchChapters(keywords: string[], limit: number): Promise<SourceInfo[]> {
-    const conditions = keywords.map(k => `mc.content ILIKE '%${k.replace(/'/g, "''")}%'`);
+    const conditions = keywords.map(k => `mc.content LIKE '%${k.replace(/'/g, "''")}%'`);
     const sql = `
       SELECT mc.id, mc.content, mc.title as chapter_title, m.name as material_name
       FROM material_chapters mc
