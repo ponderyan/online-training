@@ -8,6 +8,7 @@ import { QuestionsModule } from './modules/questions/questions.module.js';
 import { TemplatesModule } from './modules/templates/templates.module.js';
 import { PapersModule } from './modules/papers/papers.module.js';
 import { AiConfigModule } from './modules/ai-config/ai-config.module.js';
+import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { DataDictionaryModule } from './modules/data-dictionary/data-dictionary.module.js';
 import { TagsModule } from './modules/tags/tags.module.js';
@@ -52,6 +53,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     TemplatesModule,
     PapersModule,
     AiConfigModule,
+    AiAssistantModule,
     MaterialsModule,
     StudentsModule,
     ExamsModule,
