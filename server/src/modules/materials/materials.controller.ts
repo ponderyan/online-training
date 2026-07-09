@@ -52,10 +52,11 @@ export class MaterialsController {
   @Post('upload')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB — 教材PDF经常很大
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
     fileFilter: (req, file, cb) => {
-      if (extname(file.originalname).toLowerCase() !== '.pdf') {
-        cb(new BadRequestException('仅支持 PDF 格式'), false);
+      const ext = extname(file.originalname).toLowerCase();
+      if (ext !== '.pdf' && ext !== '.pptx') {
+        cb(new BadRequestException('仅支持 PDF / PPTX 格式'), false);
       } else {
         cb(null, true);
       }

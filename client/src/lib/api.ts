@@ -425,6 +425,8 @@ export const api = {
     batchReview: (materialId: number, data: { action: 'approve' | 'reject'; questionIds?: number[] }) =>
       request<any>(`/materials/${materialId}/batch-review`, { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/materials/${id}`, { method: 'DELETE' }),
+    create: (data: { name: string; subjectId: number; content: string; batchNote?: string }) =>
+      request<any>('/materials', { method: 'POST', body: JSON.stringify({ ...data, createdBy: 1 }) }),
   },
 
   // ── Phase C: 讲师管理 ──

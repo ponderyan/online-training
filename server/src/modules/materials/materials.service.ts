@@ -4,6 +4,9 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { PDFParse } from 'pdf-parse';
+import { execFile } from 'child_process';
+import * as util from 'util';
+const execFileAsync = util.promisify(execFile);
 
 @Injectable()
 export class MaterialsService {
@@ -161,29 +164,37 @@ export class MaterialsService {
   }
 
   async upload(file: Express.Multer.File, body: { subjectId: string; name?: string; batchNote?: string; createdBy: string }) {
-    if (!file) throw new BadRequestException('请上传PDF文件');
+    if (!file) throw new BadRequestException('请上传PDF或PPTX文件');
 
     // 修复文件名编码：浏览器上传的中文文件名可能被 multer 以 Latin-1 解码
     const fixEncoding = (s: string) => {
       try {
         const buf = Buffer.from(s, 'latin1');
         const utf = buf.toString('utf8');
-        // 如果解码后出现正常中文，说明是二次编码，使用修复后的
         if (/[一-鿿]/.test(utf)) return utf;
       } catch {}
       return s;
     };
 
-    const savedName = `${crypto.randomUUID()}.pdf`;
+    // ── 魔数检测：从内存 buffer 判断真实文件类型 ──
+    const headerHex = file.buffer.slice(0, 4).toString('hex');
+    let detectedExt: string;
+    let detectedType: string;
+    if (headerHex === '25504446') { detectedExt = '.pdf'; detectedType = 'pdf'; }
+    else if (headerHex === '504b0304') { detectedExt = '.pptx'; detectedType = 'pptx'; }
+    else { detectedExt = '.pdf'; detectedType = 'unknown'; }
+
+    const savedName = `${crypto.randomUUID()}${detectedExt}`;
     const filePath = path.join(this.uploadDir, savedName);
     await fs.writeFile(filePath, file.buffer);
 
     const material = await this.prisma.material.create({
       data: {
-        name: body.name || fixEncoding(file.originalname).replace(/\.pdf$/i, ''),
+        name: body.name || fixEncoding(file.originalname).replace(/\.(pdf|pptx)$/i, ''),
         fileName: fixEncoding(file.originalname),
         fileSize: file.size,
         filePath: savedName,
+        fileType: detectedType,
         subjectId: parseInt(body.subjectId),
         batchNote: body.batchNote || null,
         status: 'UPLOADED',
@@ -191,22 +202,52 @@ export class MaterialsService {
       },
     });
 
-    // ── PDF 文字提取 + 章节识别 ──
+    // ── 根据格式路由到不同提取管线 ──
+    if (detectedType === 'pptx') {
+      await this.processPptx(material.id, filePath);
+    } else if (detectedType === 'pdf') {
+      await this.processPdf(material.id, filePath, file.originalname);
+    } else {
+      await this.prisma.material.update({
+        where: { id: material.id },
+        data: { errorMessage: '未能识别文件格式，请上传 PDF 或 PPTX 文件' },
+      });
+    }
+
+    return this.findOne(material.id);
+  }
+
+  /**
+   * 处理 PDF 教材：pdf-parse 提取，不足时走 OCR 兜底
+   */
+  private async processPdf(materialId: number, filePath: string, originalName: string) {
     try {
       const { text, numPages } = await this.extractPdfText(filePath);
       if (text.trim().length < 10) {
-        console.warn(`PDF text extraction returned too little text for ${file.originalname}`);
-        // 文字太少的 PDF 可能是扫描件，保持 UPLOADED 状态
+        console.warn(`PDF text extraction too little for ${originalName}, trying OCR...`);
+        // 走 OCR 兜底
+        try {
+          const ocrText = await this.ocrPdfFallback(filePath);
+          if (ocrText.length > 20) {
+            const chapters = this.parseTextToChapters(ocrText);
+            await this.saveChapters(materialId, chapters);
+            await this.prisma.material.update({
+              where: { id: materialId },
+              data: { status: 'OCR_DONE', totalPages: numPages || 1, errorMessage: null },
+            });
+            return;
+          }
+        } catch {}
+        // OCR 也失败，保持 UPLOADED + 提示
         await this.prisma.material.update({
-          where: { id: material.id },
-          data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字，PDF 可能为扫描件' },
+          where: { id: materialId },
+          data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字，PDF 可能为扫描件，建议手动录入正文' },
         });
       } else {
         const chapters = this.parseTextToChapters(text);
-        await this.saveChapters(material.id, chapters);
-
+        await this.saveChapters(materialId, chapters);
         await this.prisma.material.update({
-          where: { id: material.id },
+          where: { id: materialId },
           data: {
             status: 'OCR_DONE',
             totalPages: numPages || Math.ceil(text.length / 2000) || 1,
@@ -216,16 +257,94 @@ export class MaterialsService {
       }
     } catch (e: any) {
       console.error('PDF text extraction failed:', e.message);
-      // 提取失败时保持 UPLOADED 状态，记录错误信息
       await this.prisma.material.update({
-        where: { id: material.id },
-        data: {
-          errorMessage: 'PDF 文字提取失败：' + e.message,
-        },
+        where: { id: materialId },
+        data: { errorMessage: 'PDF 文字提取失败：' + e.message },
       }).catch(() => {});
     }
+  }
 
-    return this.findOne(material.id);
+  /**
+   * 处理 PPTX 教材：调用 Python 脚本提取幻灯片文字
+   */
+  private async processPptx(materialId: number, filePath: string) {
+    try {
+      const { text, totalSlides } = await this.extractPptxText(filePath);
+      if (text.trim().length < 10) {
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { totalPages: totalSlides, errorMessage: 'PPTX 中未找到文字内容，PPT 可能为纯图片' },
+        });
+      } else {
+        const chapters = this.parseTextToChapters(text);
+        await this.saveChapters(materialId, chapters);
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { status: 'OCR_DONE', totalPages: totalSlides, errorMessage: null },
+        });
+      }
+    } catch (e: any) {
+      console.error('PPTX extraction failed:', e.message);
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { errorMessage: 'PPTX 文字提取失败：' + e.message },
+      }).catch(() => {});
+    }
+  }
+
+  /**
+   * 检测文件魔数以确定真实格式（从磁盘文件读取）
+   */
+  private async detectFileTypeFromPath(filePath: string): Promise<'pdf' | 'pptx' | 'unknown'> {
+    const fd = await fs.open(filePath, 'r');
+    try {
+      const buf = Buffer.alloc(4);
+      await fd.read(buf, 0, 4, 0);
+      const hex = buf.toString('hex');
+      if (hex === '25504446') return 'pdf';
+      if (hex === '504b0304') return 'pptx';
+      return 'unknown';
+    } finally {
+      await fd.close();
+    }
+  }
+
+  /**
+   * 通过 Python 脚本提取 PPTX 幻灯片文字
+   */
+  private async extractPptxText(filePath: string): Promise<{ text: string; totalSlides: number }> {
+    const scriptPath = path.resolve('scripts/extract-pptx-text.py');
+    try {
+      const { stdout } = await execFileAsync('python3', [scriptPath, filePath], {
+        timeout: 60000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      const result = JSON.parse(stdout);
+      if (result.error) throw new Error(result.error);
+      const text = result.slides.map((s: any) => s.text).filter(Boolean).join('\n\n');
+      return { text, totalSlides: result.total };
+    } catch (e: any) {
+      throw new Error(`PPTX 文字提取失败: ${e.message}`);
+    }
+  }
+
+  /**
+   * OCR 兜底 — 调用 Python ocr-pdf.py 脚本
+   */
+  private async ocrPdfFallback(filePath: string): Promise<string> {
+    const scriptPath = path.resolve('scripts/ocr-pdf.py');
+    const outPath = filePath + '_ocr.txt';
+    try {
+      await execFileAsync('python3', [scriptPath, filePath, outPath], {
+        timeout: 300000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      const text = await fs.readFile(outPath, 'utf-8');
+      await fs.unlink(outPath).catch(() => {});
+      return text.trim();
+    } catch (e: any) {
+      throw new Error(`OCR 识别失败: ${e.message}`);
+    }
   }
 
   async getStats(id: number) {

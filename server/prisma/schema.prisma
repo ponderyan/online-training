@@ -721,6 +721,7 @@ model Material {
   fileName     String         @map("file_name") @db.VarChar(500) // 原始文件名
   fileSize     Int            @map("file_size") // 文件大小（字节）
   filePath     String         @map("file_path") @db.VarChar(500) // 存储路径
+  fileType     String?        @map("file_type") @db.VarChar(20) // 实际文件类型: pdf / pptx / unknown
   subjectId    Int            @map("subject_id")
   subject      Subject        @relation(fields: [subjectId], references: [id])
   batchNote    String?        @map("batch_note") @db.Text // 批次说明

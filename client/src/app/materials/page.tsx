@@ -23,6 +23,7 @@ export default function MaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [showUpload, setShowUpload] = useState(false);
+  const [showEntry, setShowEntry] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -55,7 +56,10 @@ export default function MaterialsPage() {
             已出题 {generatedCount} 份 · 待审核 {pendingReview} 份
           </p>
         </div>
-        <button onClick={() => setShowUpload(true)} className="btn btn-fox btn-sm">+ 上传教材</button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowEntry(true)} className="btn btn-ink btn-sm">📝 录入正文</button>
+          <button onClick={() => setShowUpload(true)} className="btn btn-fox btn-sm">+ 上传教材</button>
+        </div>
       </div>
 
       {loading ? (
@@ -97,6 +101,11 @@ export default function MaterialsPage() {
                 <span>{m._count?.questions || 0} 题</span>
               </div>
 
+              {m.status === 'UPLOADED' && m.errorMessage && (
+                <div className="text-xs p-2 rounded mb-2" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+                  ⚠ {m.errorMessage}
+                </div>
+              )}
               {m.status === 'FAILED' && m.errorMessage && (
                 <div className="text-xs p-2 rounded mb-2" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
                   ⚠ {m.errorMessage}
@@ -132,6 +141,8 @@ export default function MaterialsPage() {
 
       {/* Upload Modal */}
       {showUpload && <UploadModal subjects={subjects} onClose={() => { setShowUpload(false); load(); }} />}
+      {/* Manual Entry Modal */}
+      {showEntry && <ManualEntryModal subjects={subjects} onClose={() => { setShowEntry(false); load(); }} />}
     </AppLayout>
   );
 }
@@ -167,7 +178,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('name', materialName || file.name.replace(/\.pdf$/i, ''));
+      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx)$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
       formData.append('createdBy', '1');
@@ -215,7 +226,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
               className="input textarea" rows={5} />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF）</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF / PPTX）</label>
             <div className="border-2 border-dashed rounded-lg p-8 text-center transition-all"
               style={{
                 borderColor: file ? 'var(--fox)' : 'var(--ink-100)',
@@ -225,7 +236,8 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
               onDrop={e => {
                 e.preventDefault();
                 const f = e.dataTransfer.files[0];
-                if (f?.type === 'application/pdf') setFile(f);
+                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx'))) setFile(f);
+
               }}>
               {file ? (
                 <div>
@@ -240,7 +252,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
                 <label className="cursor-pointer block">
                   <div className="text-3xl mb-2">📂</div>
                   <p className="text-sm" style={{ color: 'var(--ink-500)' }}>拖拽或点击上传 PDF</p>
-                  <input type="file" accept=".pdf" className="hidden"
+                  <input type="file" accept=".pdf,.pptx" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                 </label>
               )}
@@ -257,6 +269,106 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
           <button onClick={handleSubmit} disabled={!file || !subjectId || uploading}
             className="btn btn-fox btn-sm">
             {uploading ? '上传中…' : '上传并开始处理'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManualEntryModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
+  const router = useRouter();
+  const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
+  const [name, setName] = useState('');
+  const [content, setContent] = useState('');
+  const [batchNote, setBatchNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState('');
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !subjectId || !content.trim()) { alert('请填写教材名称和正文内容'); return; }
+    setSubmitting(true);
+    setProgress('提交中…');
+    try {
+      const result = await api.materials.create({
+        name: name.trim(),
+        subjectId: Number(subjectId),
+        content: content.trim(),
+        batchNote: batchNote.trim() || undefined,
+      });
+      setProgress('✅ 创建成功！小狐狸马上开始处理');
+      setTimeout(() => {
+        onClose();
+        router.push(`/materials/${result.id}`);
+      }, 1500);
+    } catch (e: any) {
+      setProgress('❌ ' + e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Backspace guard (same as UploadModal)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace') {
+        const tag = (e.target as HTMLElement)?.tagName;
+        const isEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || !!(e.target as HTMLElement)?.isContentEditable;
+        if (!isEditable) e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget && !submitting) onClose(); }}>
+      <div className="modal-card max-w-[560px] animate-fadeSlide">
+        <div className="modal-header">
+          <h3 className="font-serif font-bold text-base">📝 录入正文</h3>
+          <button onClick={onClose} disabled={submitting}
+            className="text-lg bg-transparent border-none cursor-pointer"
+            style={{ color: 'var(--ink-300)' }}>✕</button>
+        </div>
+        <div className="modal-body space-y-4">
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>所属科目</label>
+            <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="input select">
+              {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材名称</label>
+            <input value={name} onChange={e => setName(e.target.value)}
+              placeholder="如：DTIV上册" className="input" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              正文内容 <span style={{ color: 'var(--verm)' }}>*必填</span>
+            </label>
+            <textarea value={content} onChange={e => setContent(e.target.value)}
+              placeholder={'请粘贴教材正文内容。支持自然段分隔，小狐狸会自动识别章节标题（如"第一章 数字化转型"）并拆分。\n\n可以直接从 Word、PPT 或 PDF 复制文字过来。'}
+              className="input textarea" rows={12} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+              出题要求 <span className="text-xs" style={{ color: 'var(--ink-400)' }}>（可选）</span>
+            </label>
+            <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
+              placeholder={'示例：题型——单选题30道、判断题10道、简答题5道\n难度——60%基础、30%变形、10%场景题'}
+              className="input textarea" rows={3} />
+          </div>
+          {progress && (
+            <div className="text-sm text-center py-2" style={{
+              color: progress.startsWith('✅') ? 'var(--cyan)' : progress.startsWith('❌') ? 'var(--verm)' : 'var(--fox)',
+            }}>{progress}</div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button onClick={onClose} disabled={submitting} className="btn btn-ghost btn-sm">取消</button>
+          <button onClick={handleSubmit} disabled={!name.trim() || !subjectId || !content.trim() || submitting}
+            className="btn btn-fox btn-sm">
+            {submitting ? '提交中…' : '创建教材'}
           </button>
         </div>
       </div>
