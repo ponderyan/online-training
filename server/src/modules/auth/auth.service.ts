@@ -71,6 +71,15 @@ export class AuthService {
       expiresIn: '24h',
     });
 
+    // 更新登录统计
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: new Date(),
+        loginCount: { increment: 1 },
+      },
+    });
+
     return {
       accessToken,
       user: {
