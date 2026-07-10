@@ -344,7 +344,32 @@ export class ExamsService {
       where: { id: session.id },
       data: updateData,
     });
-    return { ok: true, remainingTime: updateData.remainingTime };
+
+    // 查询未读消息
+    const unreadMessages = await this.prisma.examMessage.findMany({
+      where: { examSessionId: session.id, readAt: null },
+      orderBy: { sentAt: 'asc' },
+      select: { id: true, messageType: true, content: true, senderName: true, sentAt: true },
+    });
+
+    return {
+      ok: true,
+      remainingTime: updateData.remainingTime,
+      messages: unreadMessages,
+    };
+  }
+
+  async markMessageRead(examId: number, studentId: number, messageId: number) {
+    const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+    });
+    if (!session) throw new NotFoundException('考试记录不存在');
+
+    await this.prisma.examMessage.updateMany({
+      where: { id: messageId, examSessionId: session.id, readAt: null },
+      data: { readAt: new Date() },
+    });
+    return { success: true };
   }
 
   async getResult(examId: number, studentId: number, viewerId?: number) {

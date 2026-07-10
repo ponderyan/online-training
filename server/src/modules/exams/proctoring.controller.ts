@@ -48,6 +48,15 @@ export class ProctoringController {
     return this.service.warn(examId, sessionId, data.message, data.operatorName);
   }
 
+  @Get('sessions/:sessionId/messages')
+  @RequirePermission(Permissions.PROCTOR_VIEW)
+  getMessages(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+  ) {
+    return this.service.getMessages(examId, sessionId);
+  }
+
   @Put('sessions/:sessionId/force-submit')
   @RequirePermission(Permissions.PROCTOR_FORCE_SUBMIT)
   async forceSubmit(

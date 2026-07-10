@@ -209,6 +209,8 @@ export const api = {
         request<any>(`/exams/${examId}/proctoring/sessions/${sessionId}/force-submit`, { method: 'PUT', body: JSON.stringify(data) }),
       extendTime: (examId: number, sessionId: number, data: { extraSeconds: number; reason: string; operatorName: string }) =>
         request<any>(`/exams/${examId}/proctoring/sessions/${sessionId}/extend-time`, { method: 'PUT', body: JSON.stringify(data) }),
+      messages: (examId: number, sessionId: number) =>
+        request<any[]>(`/exams/${examId}/proctoring/sessions/${sessionId}/messages`),
     },
   },
 

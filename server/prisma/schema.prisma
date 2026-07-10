@@ -1052,9 +1052,26 @@ model ExamSession {
   certificateApplications CertificateApplication[]
   gradingReviews          GradingReview[]
   scoreAppeal             ScoreAppeal?
+  examMessages            ExamMessage[]
 
   @@unique([examId, studentId])
   @@map("exam_sessions")
+}
+
+// ═══════════════════════════════════════════
+// 监考消息（考生-监考员通信）
+// ═══════════════════════════════════════════
+model ExamMessage {
+  id            Int          @id @default(autoincrement())
+  examSessionId Int          @map("exam_session_id")
+  examSession   ExamSession  @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  messageType   String       @db.VarChar(50) // WARN / INFO / FORCE_SUBMIT_NOTICE / EXTEND_TIME_NOTICE
+  content       String       @db.Text
+  senderName    String       @db.VarChar(100) // 监考员姓名
+  sentAt        DateTime     @default(now())  @map("sent_at")
+  readAt        DateTime?    @map("read_at")
+
+  @@map("exam_messages")
 }
 
 // 学员答案

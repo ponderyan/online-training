@@ -24,6 +24,7 @@ export default function ProctoringDetail() {
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [sessionMessages, setSessionMessages] = useState<any[]>([]);
   const [showDetail, setShowDetail] = useState(false);
   const [lastRefresh, setLastRefresh] = useState('');
   const [detailLoading, setDetailLoading] = useState(false);
@@ -73,8 +74,12 @@ export default function ProctoringDetail() {
     setDetailLoading(true);
     setShowDetail(true);
     try {
-      const data = await api.exams.proctoring.sessionDetail(examId, sessionId);
+      const [data, msgs] = await Promise.all([
+        api.exams.proctoring.sessionDetail(examId, sessionId),
+        api.exams.proctoring.messages(examId, sessionId).catch(() => []),
+      ]);
       setSelectedSession(data);
+      setSessionMessages(Array.isArray(msgs) ? msgs : []);
     } catch {}
     setDetailLoading(false);
   };
@@ -264,6 +269,30 @@ export default function ProctoringDetail() {
                     </div>
                   ) : (
                     <p className="text-xs" style={{ color: 'var(--ink-300)' }}>无操作记录</p>
+                  )}
+                </div>
+
+                {/* 消息记录 */}
+                <div>
+                  <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--ink-600)' }}>消息记录</h3>
+                  {sessionMessages.length > 0 ? (
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {sessionMessages.map((m: any) => (
+                        <div key={m.id} className="text-xs px-3 py-1.5 rounded" style={{
+                          background: m.messageType === 'WARN' ? '#fef2f2' : '#f0f7fa',
+                        }}>
+                          <span className="font-medium">{m.messageType === 'WARN' ? '⚠️ 警告' : 'ℹ️ 消息'}</span> — {m.content}
+                          <div className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                            <span>{m.senderName} · {new Date(m.sentAt).toLocaleString('zh-CN')}</span>
+                            <span style={{ color: m.readAt ? 'var(--cyan)' : 'var(--fox)', fontWeight: m.readAt ? 400 : 600 }}>
+                              {m.readAt ? '🟢 已读' : '🔴 未读'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无消息</p>
                   )}
                 </div>
 

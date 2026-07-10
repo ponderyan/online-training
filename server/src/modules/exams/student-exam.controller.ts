@@ -84,6 +84,17 @@ export class StudentExamController {
     return this.service.getResult(id, this.getStudentId(req));
   }
 
+  @Post(':id/messages/:messageId/read')
+  @RequirePermission(Permissions.EXAM_VIEW)
+  async readMessage(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Req() req: any,
+  ) {
+    const studentId = this.getStudentId(req);
+    return this.service.markMessageRead(id, studentId, messageId);
+  }
+
   @Get(':examId/knowledge-analysis')
   async getKnowledgeAnalysis(
     @Param('examId', ParseIntPipe) examId: number,

@@ -157,18 +157,44 @@ export class ProctoringService {
     };
   }
 
-  async warn(examId: number, sessionId: number, message: string, operatorName: string) {
+  async sendMessage(examId: number, sessionId: number, data: {
+    messageType: string;
+    content: string;
+    senderName: string;
+  }) {
     const session = await this.prisma.examSession.findUnique({ where: { id: sessionId } });
     if (!session) throw new NotFoundException('考试记录不存在');
 
-    const action = { timestamp: new Date().toISOString(), action: 'WARN', message, operatorName };
-    const existingActions = Array.isArray(session.proctorActions) ? session.proctorActions : [];
+    // 1. 写入 exam_messages 表（消息通道）
+    const msg = await this.prisma.examMessage.create({
+      data: {
+        examSessionId: sessionId,
+        messageType: data.messageType,
+        content: data.content,
+        senderName: data.senderName,
+      },
+    });
 
+    // 2. 保留审计日志（proctorActions）
+    const action = { timestamp: new Date().toISOString(), action: data.messageType, message: data.content, operatorName: data.senderName };
+    const existingActions = Array.isArray(session.proctorActions) ? session.proctorActions : [];
     await this.prisma.examSession.update({
       where: { id: sessionId },
       data: { proctorActions: [...existingActions, action] },
     });
-    return { success: true };
+
+    return msg;
+  }
+
+  async warn(examId: number, sessionId: number, message: string, operatorName: string) {
+    return this.sendMessage(examId, sessionId, { messageType: 'WARN', content: message, senderName: operatorName });
+  }
+
+  async getMessages(examId: number, sessionId: number) {
+    return this.prisma.examMessage.findMany({
+      where: { examSessionId: sessionId },
+      orderBy: { sentAt: 'asc' },
+    });
   }
 
   async forceSubmit(examId: number, sessionId: number, reason: string, operatorName: string) {

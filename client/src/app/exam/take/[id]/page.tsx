@@ -50,6 +50,8 @@ export default function ExamTake() {
   const heartbeatRef = useRef<any>(null);
   const heartbeatFailCount = useRef(0);
   const [networkError, setNetworkError] = useState(false);
+  const [proctorMessages, setProctorMessages] = useState<any[]>([]);
+  const dismissedMessagesRef = useRef<Set<number>>(new Set());
   const tabSwitchLogRef = useRef<{time: string; duration: number}[]>([]);
   const tabSwitchStartRef = useRef<number | null>(null);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
@@ -212,16 +214,32 @@ export default function ExamTake() {
   useEffect(() => {
     if (loading || submitted) return;
     const token = localStorage.getItem('token');
-    heartbeatRef.current = setInterval(() => {
-      fetch(`/api/student/exams/${params.id}/heartbeat`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` },
-      }).then(r => {
-        if (r.ok) heartbeatFailCount.current = 0;
-        else heartbeatFailCount.current++;
-      }).catch(() => {
+    heartbeatRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/student/exams/${params.id}/heartbeat`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          heartbeatFailCount.current = 0;
+          const data = await res.json();
+          if (data.messages?.length > 0) {
+            const newMessages = data.messages.filter(
+              (m: any) => !dismissedMessagesRef.current.has(m.id)
+            );
+            if (newMessages.length > 0) {
+              setProctorMessages(prev => {
+                const existing = new Set(prev.map((m: any) => m.id));
+                return [...prev, ...newMessages.filter((m: any) => !existing.has(m.id))];
+              });
+            }
+          }
+        } else {
+          heartbeatFailCount.current++;
+        }
+      } catch {
         heartbeatFailCount.current++;
         if (heartbeatFailCount.current >= 3) setNetworkError(true);
-      });
+      }
     }, 30000);
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
   }, [loading, submitted, params.id]);
@@ -502,6 +520,43 @@ export default function ExamTake() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+      {/* 监考消息弹窗 */}
+      {proctorMessages.map(msg => (
+        <div key={msg.id}
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
+          style={{ animation: 'slideDown 0.3s ease-out' }}>
+          <div className="rounded-xl p-4 shadow-lg backdrop-blur-md" style={{
+            background: msg.messageType === 'WARN' ? 'rgba(254, 202, 202, 0.95)' : 'rgba(219, 234, 254, 0.95)',
+            border: `1px solid ${msg.messageType === 'WARN' ? '#fca5a5' : '#93c5fd'}`,
+          }}>
+            <div className="flex items-start gap-3">
+              <span className="text-lg flex-shrink-0 mt-0.5">{msg.messageType === 'WARN' ? '⚠️' : 'ℹ️'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>
+                  {msg.messageType === 'WARN' ? '监考员警告' : '监考员消息'}
+                </p>
+                <p className="text-sm mt-1" style={{ color: 'var(--ink-600)' }}>{msg.content}</p>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--ink-400)' }}>
+                  {msg.senderName} · {new Date(msg.sentAt).toLocaleTimeString('zh-CN')}
+                </p>
+              </div>
+              <button onClick={async () => {
+                const token = localStorage.getItem('token');
+                await fetch(`/api/student/exams/${params.id}/messages/${msg.id}/read`, {
+                  method: 'POST', headers: { Authorization: `Bearer ${token}` },
+                }).catch(() => {});
+                dismissedMessagesRef.current.add(msg.id);
+                setProctorMessages(prev => prev.filter(m => m.id !== msg.id));
+              }}
+                className="text-xs px-3 py-1.5 rounded-lg cursor-pointer border-none font-medium"
+                style={{ background: 'rgba(255,255,255,0.8)', color: 'var(--ink-500)' }}>
+                我知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
       {/* Top bar */}
       <div className="sticky top-0 z-10 backdrop-blur-md relative" style={{ background: 'rgba(246,241,232,0.95)', borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
