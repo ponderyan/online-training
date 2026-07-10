@@ -49,7 +49,6 @@ export default function ExamTake() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const heartbeatRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const remindedRef = useRef<Set<number>>(new Set());
   const heartbeatFailCount = useRef(0);
   const [networkError, setNetworkError] = useState(false);
   const [proctorMessages, setProctorMessages] = useState<any[]>([]);
@@ -286,22 +285,6 @@ export default function ExamTake() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [loading, submitted]);
-
-  // === P4: 时间提醒 ===
-  const REMINDER_THRESHOLDS = [600, 300, 60];
-  useEffect(() => {
-    if (loading || submitted || !exam) return;
-    const triggered = REMINDER_THRESHOLDS.find(t => timeLeft <= t && !remindedRef.current.has(t));
-    if (triggered !== undefined) {
-      remindedRef.current.add(triggered);
-      const messages: Record<number, string> = {
-        600: '⏰ 距考试结束还有 10 分钟，请抓紧时间！',
-        300: '⏰ 距考试结束还有 5 分钟，请准备提交答案。',
-        60: '⏰ 距考试结束还有 1 分钟，系统将自动交卷！',
-      };
-      alert(messages[triggered]);
-    }
-  }, [timeLeft, loading, submitted, exam]);
 
   // 键盘快捷键
   useEffect(() => {
@@ -574,14 +557,25 @@ export default function ExamTake() {
           className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
           style={{ animation: 'slideDown 0.3s ease-out' }}>
           <div className="rounded-xl p-4 shadow-lg backdrop-blur-md" style={{
-            background: msg.messageType === 'WARN' ? 'rgba(254, 202, 202, 0.95)' : 'rgba(219, 234, 254, 0.95)',
-            border: `1px solid ${msg.messageType === 'WARN' ? '#fca5a5' : '#93c5fd'}`,
+            background: msg.messageType === 'WARN' ? 'rgba(254, 202, 202, 0.95)' :
+                         msg.messageType === 'AUTO_REMINDER' ? 'rgba(254, 243, 199, 0.95)' :
+                         'rgba(219, 234, 254, 0.95)',
+            border: `1px solid ${
+              msg.messageType === 'WARN' ? '#fca5a5' :
+              msg.messageType === 'AUTO_REMINDER' ? '#fcd34d' :
+              '#93c5fd'
+            }`,
           }}>
             <div className="flex items-start gap-3">
-              <span className="text-lg flex-shrink-0 mt-0.5">{msg.messageType === 'WARN' ? '⚠️' : 'ℹ️'}</span>
+              <span className="text-lg flex-shrink-0 mt-0.5">
+                {msg.messageType === 'WARN' ? '⚠️' :
+                 msg.messageType === 'AUTO_REMINDER' ? '⏰' : 'ℹ️'}
+              </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>
-                  {msg.messageType === 'WARN' ? '监考员警告' : '监考员消息'}
+                  {msg.messageType === 'WARN' ? '监考员警告' :
+                   msg.messageType === 'AUTO_REMINDER' ? '⏰ 时间提醒' :
+                   '监考员消息'}
                 </p>
                 <p className="text-sm mt-1" style={{ color: 'var(--ink-600)' }}>{msg.content}</p>
                 <p className="text-[10px] mt-1" style={{ color: 'var(--ink-400)' }}>

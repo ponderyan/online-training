@@ -338,6 +338,39 @@ export class ExamsService {
       updateData.remainingTime = session.remainingTime - 30;
     }
 
+    // === 时间提醒：当剩余时间跨阈值时自动创建消息 ===
+    if (session.remainingTime && updateData.remainingTime !== undefined) {
+      const REMINDER_THRESHOLDS = [600, 300, 60];
+      const REMINDER_MESSAGES: Record<number, string> = {
+        600: '⏰ 距考试结束还有 10 分钟，请抓紧时间！',
+        300: '⏰ 距考试结束还有 5 分钟，请准备提交答案。',
+        60: '⏰ 距考试结束还有 1 分钟，系统将自动交卷！',
+      };
+      const existingAuto = await this.prisma.examMessage.findMany({
+        where: { examSessionId: session.id, messageType: 'AUTO_REMINDER' },
+        select: { content: true },
+      });
+      const sentThresholds = new Set(
+        existingAuto.map(m => {
+          const match = m.content.match(/@threshold:(\d+)/);
+          return match ? parseInt(match[1]) : null;
+        }).filter((t): t is number => t !== null)
+      );
+      for (const threshold of REMINDER_THRESHOLDS) {
+        if (updateData.remainingTime <= threshold && !sentThresholds.has(threshold)) {
+          await this.prisma.examMessage.create({
+            data: {
+              examSessionId: session.id,
+              messageType: 'AUTO_REMINDER',
+              content: `${REMINDER_MESSAGES[threshold]} @threshold:${threshold}`,
+              senderName: '系统',
+            },
+          });
+          sentThresholds.add(threshold);
+        }
+      }
+    }
+
     // 追加切屏数据到 violationLog
     if (tabSwitchData && tabSwitchData.length > 0) {
       const existingLog = Array.isArray(session.violationLog) ? session.violationLog : [];
