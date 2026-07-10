@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import ChapterStructureTab from './chapter-structure-tab';
+import QuestionPlanTab from './question-plan-tab';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -703,32 +704,11 @@ export default function MaterialDetailPage() {
       )}
 
       {activeTab === 'plan' && (
-        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
-          🤖 出题配置功能开发中…
-          <div className="mt-3">
-            <p className="text-xs mb-3">可以使用原出题方式快速生成试题</p>
-            <button onClick={async () => {
-              if (!confirm('确认使用大模型生成试题？将覆盖该教材之前生成的所有试题。')) return;
-              setGenerating(true);
-              try {
-                const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${apiBase}/api/materials/${materialId}/generate`, {
-                  method: 'POST',
-                  headers: token ? { Authorization: `Bearer ${token}` } : {},
-                });
-                if (!res.ok) { const err = await res.text(); throw new Error(err); }
-                const data = await res.json();
-                alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);
-                load();
-              } catch (e: any) { alert('出题失败：' + e.message); }
-              setGenerating(false);
-            }} disabled={generating}
-              className="btn btn-fox btn-sm">
-              {generating ? '🤖 出题中…' : '🤖 快速出题（旧版）'}
-            </button>
-          </div>
-        </div>
+        <QuestionPlanTab
+          materialId={materialId}
+          chapters={material.chapters || []}
+          onGenerate={load}
+        />
       )}
 
       {activeTab === 'review' && (

@@ -999,4 +999,380 @@ ${
     if (!chapter) throw new NotFoundException('章节不存在');
     return chapter;
   }
+
+  // ═══════════════════════════════════════════════
+  // 出题计划 API（Part B）
+  // ═══════════════════════════════════════════════
+
+  /**
+   * 获取教材的所有出题计划
+   */
+  async getQuestionPlans(materialId: number) {
+    return this.prisma.materialQuestionPlan.findMany({
+      where: { materialId },
+      include: {
+        configs: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * 创建新的出题计划
+   */
+  async createQuestionPlan(materialId: number, data: {
+    name?: string;
+    configs: { chapterId: number; type: string; count: number; difficultyEasy?: number; difficultyMedium?: number; difficultyHard?: number; focusKeywords?: string }[];
+  }) {
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material) throw new NotFoundException('教材不存在');
+    if (!data.configs?.length) throw new BadRequestException('请至少添加一个出题配置');
+
+    const planName = data.name || `出题计划 ${new Date().toLocaleDateString('zh-CN')} #${Date.now().toString(36).slice(-4).toUpperCase()}`;
+
+    const plan = await this.prisma.materialQuestionPlan.create({
+      data: {
+        materialId,
+        name: planName,
+        status: 'DRAFT',
+        configs: {
+          create: data.configs.map((c, i) => ({
+            chapterId: c.chapterId,
+            type: c.type,
+            count: c.count,
+            difficultyEasy: c.difficultyEasy ?? 30,
+            difficultyMedium: c.difficultyMedium ?? 50,
+            difficultyHard: c.difficultyHard ?? 20,
+            focusKeywords: c.focusKeywords || null,
+            sortOrder: i,
+          })),
+        },
+      },
+      include: { configs: { orderBy: { sortOrder: 'asc' } } },
+    });
+
+    return plan;
+  }
+
+  /**
+   * 执行出题计划（并发出题）
+   */
+  async executeQuestionPlan(materialId: number, planId: number) {
+    const plan = await this.prisma.materialQuestionPlan.findFirst({
+      where: { id: planId, materialId },
+      include: {
+        configs: {
+          include: { chapter: { select: { id: true, title: true, content: true } } },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+    if (!plan) throw new NotFoundException('出题计划不存在');
+    if (plan.status !== 'DRAFT') throw new BadRequestException('计划只能从 DRAFT 状态执行');
+
+    const material = await this.prisma.material.findUnique({
+      where: { id: materialId },
+      include: { subject: true },
+    });
+    if (!material) throw new NotFoundException('教材不存在');
+
+    const config = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
+    if (!config) throw new BadRequestException('请先在系统设置中配置大模型');
+
+    // 更新状态
+    await this.prisma.materialQuestionPlan.update({
+      where: { id: planId },
+      data: { status: 'EXECUTING' },
+    });
+    await this.prisma.material.update({
+      where: { id: materialId },
+      data: { status: 'PROCESSING' },
+    });
+
+    // 删除旧生成的试题
+    await this.prisma.materialQuestion.deleteMany({ where: { materialId } });
+
+    // 过滤有内容且 count > 0 的配置
+    const validConfigs = plan.configs.filter(c => c.count > 0 && c.chapter?.content && c.chapter.content.trim().length >= 20);
+
+    let totalGenerated = 0;
+    let totalFailed = 0;
+
+    // 分批并发（每批5个）
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < validConfigs.length; i += BATCH_SIZE) {
+      const batch = validConfigs.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(cfg =>
+          this.callAiForPlanConfig(material, config, cfg)
+            .then(async (questions) => {
+              if (questions.length > 0) {
+                for (const q of questions) {
+                  await this.prisma.materialQuestion.create({
+                    data: {
+                      materialId,
+                      chapterId: cfg.chapterId,
+                      type: q.type || cfg.type,
+                      difficulty: q.difficulty || 'MEDIUM_EASY',
+                      knowledgePoint: q.knowledgePoint || null,
+                      sourceChunk: q.sourceChunk || null,
+                      content: q.content || '',
+                      options: q.options || undefined,
+                      blanks: q.blanks || undefined,
+                      answer: q.answer || null,
+                      explanation: q.explanation || null,
+                      suggestedGroup: q.suggestedGroup || 'EXAM_GROUP',
+                      reviewStatus: 'PENDING',
+                    },
+                  });
+                }
+                totalGenerated += questions.length;
+                return { cfgId: cfg.id, count: questions.length, error: null };
+              }
+              return { cfgId: cfg.id, count: 0, error: 'AI 返回了空结果' };
+            })
+            .catch((err) => {
+              totalFailed++;
+              return { cfgId: cfg.id, count: 0, error: err.message };
+            })
+        )
+      );
+
+      // 更新每个 config 的状态
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          const { cfgId, count, error } = result.value;
+          if (error) {
+            await this.prisma.materialQuestionPlanConfig.update({
+              where: { id: cfgId },
+              data: { errorMessage: error },
+            });
+          } else {
+            await this.prisma.materialQuestionPlanConfig.update({
+              where: { id: cfgId },
+              data: { errorMessage: null },
+            });
+          }
+        }
+      }
+    }
+
+    // 更新章节题数
+    for (const cfg of validConfigs) {
+      if (!cfg.chapterId) continue;
+      const cnt = await this.prisma.materialQuestion.count({
+        where: { materialId, chapterId: cfg.chapterId },
+      });
+      await this.prisma.materialChapter.update({
+        where: { id: cfg.chapterId },
+        data: { questionCount: cnt },
+      });
+    }
+
+    // 完成
+    const finalStatus = totalGenerated > 0 ? 'GENERATED' : 'UPLOADED';
+    await this.prisma.materialQuestionPlan.update({
+      where: { id: planId },
+      data: { status: totalGenerated > 0 ? 'COMPLETED' : 'FAILED' },
+    });
+    await this.prisma.material.update({
+      where: { id: materialId },
+      data: { status: finalStatus },
+    });
+
+    const chaptersProcessed = new Set(validConfigs.filter(c => c.chapterId).map(c => c.chapterId)).size;
+    return {
+      total: totalGenerated,
+      failed: totalFailed,
+      configs: validConfigs.length,
+      chapters: chaptersProcessed,
+      status: finalStatus,
+    };
+  }
+
+  /**
+   * 为单个出题配置调用 AI 生成试题
+   */
+  private async callAiForPlanConfig(
+    material: any,
+    config: any,
+    cfg: { id: number; type: string; count: number; difficultyEasy?: number | null; difficultyMedium?: number | null; difficultyHard?: number | null; focusKeywords?: string | null; chapter?: any },
+  ): Promise<any[]> {
+    const content = cfg.chapter?.content || '';
+    if (content.trim().length < 20) return [];
+
+    const typeLabel: Record<string, string> = {
+      'SINGLE_CHOICE': '单选题',
+      'MULTIPLE_CHOICE': '多选题',
+      'TRUE_FALSE': '判断题',
+      'FILL_BLANK': '填空题',
+      'SHORT_ANSWER': '简答题',
+    };
+
+    const typeInstructions = cfg.type === 'SINGLE_CHOICE' ? '提供4个选项(A/B/C/D)' :
+      cfg.type === 'MULTIPLE_CHOICE' ? '提供4-5个选项' :
+      cfg.type === 'TRUE_FALSE' ? '答案填true或false' :
+      cfg.type === 'FILL_BLANK' ? '给出正确答案及填空位置' :
+      cfg.type === 'SHORT_ANSWER' ? '给出参考答案要点' : '';
+
+    const difficultyNote = `难度分布：易${cfg.difficultyEasy ?? 30}%、中${cfg.difficultyMedium ?? 50}%、难${cfg.difficultyHard ?? 20}%`;
+    const focusNote = cfg.focusKeywords ? `重点关注的考点/关键词：${cfg.focusKeywords}` : '';
+
+    const url = (config.apiBaseUrl?.replace(/\/+$/, '') || 'https://api.deepseek.com') + '/chat/completions';
+
+    const systemPrompt = `你是一名资深学科命题专家。请根据提供的教材内容，生成符合中国考试标准的${typeLabel[cfg.type] || cfg.type}。
+
+要求：
+1. 严格基于教材内容出题，不要编造教材中没有的知识点
+2. 题型：${typeLabel[cfg.type] || cfg.type}
+3. ${typeInstructions}
+4. 标注难度：EASY/MEDIUM_EASY/MEDIUM_HARD/HARD
+5. 标注所属知识点
+6. 返回严格的JSON数组格式`;
+
+    const userPrompt = `教材名称：${material.name}
+${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
+章节：${cfg.chapter?.title || ''}
+${difficultyNote}
+${focusNote}
+
+以下为章节内容：
+${content.slice(0, 15000)}
+
+请根据以上内容生成 ${cfg.count} 道${typeLabel[cfg.type] || cfg.type}，难度分布遵循要求。
+返回格式（严格 JSON 数组，不要有任何其他文字）：
+[
+  {
+    "type": "${cfg.type}",
+    "difficulty": "EASY|MEDIUM_EASY|MEDIUM_HARD|HARD",
+    "knowledgePoint": "知识点名称",
+    "sourceChunk": "引用的原文片段(20-50字)",
+    "content": "题目内容",
+    "options": [ { "label": "A", "content": "选项内容", "isCorrect": false } ],
+    "blanks": [ { "blankIndex": 0, "answer": "正确答案" } ],
+    "answer": "参考答案",
+    "explanation": "答案解析",
+    "suggestedGroup": "EXAM_GROUP"
+  }
+]`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: config.modelVersion,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: Math.min(config.temperature || 0.7, 0.5),
+          max_tokens: config.maxTokens || 4096,
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+
+      if (!response.ok) {
+        let detail = '';
+        try { const body: any = await response.json(); detail = body.error?.message || JSON.stringify(body); }
+        catch { detail = await response.text().catch(() => ''); }
+        throw new Error(`API 错误 (${response.status}): ${detail}`);
+      }
+
+      const body: any = await response.json();
+      const reply = body.choices?.[0]?.message?.content || '';
+
+      let jsonStr = reply.trim();
+      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) jsonStr = jsonMatch[1].trim();
+
+      const questions = JSON.parse(jsonStr);
+      if (!Array.isArray(questions)) throw new Error('AI 返回格式异常：非数组');
+
+      return questions.filter((q: any) => q.content).map((q: any) => ({
+        ...q,
+        type: cfg.type,
+        difficulty: ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'].includes(q.difficulty) ? q.difficulty : 'MEDIUM_EASY',
+      }));
+    } catch (e: any) {
+      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+        throw new Error('AI 请求超时');
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * 查询出题进度
+   */
+  async getPlanProgress(materialId: number, planId: number) {
+    const plan = await this.prisma.materialQuestionPlan.findFirst({
+      where: { id: planId, materialId },
+      include: { configs: true },
+    });
+    if (!plan) throw new NotFoundException('出题计划不存在');
+
+    const totalConfigs = plan.configs.length;
+    const completedConfigs = plan.configs.filter(c => !c.errorMessage && c.count > 0).length;
+    const failedConfigs = plan.configs.filter(c => c.errorMessage).length;
+
+    const totalQuestions = plan.configs.reduce((sum, c) => sum + c.count, 0);
+    const generatedQuestions = await this.prisma.materialQuestion.count({ where: { materialId } });
+
+    return {
+      planStatus: plan.status,
+      totalConfigs,
+      completedConfigs,
+      failedConfigs,
+      totalQuestions,
+      generatedQuestions,
+    };
+  }
+
+  /**
+   * 从 batchNote 生成出题计划并执行（兼容旧流程）
+   */
+  async generateFromBatchNote(materialId: number) {
+    const material = await this.prisma.material.findUnique({
+      where: { id: materialId },
+      include: {
+        chapters: { where: { content: { not: null } }, orderBy: { chapterIndex: 'asc' } },
+        subject: true,
+      },
+    });
+    if (!material) throw new NotFoundException('教材不存在');
+    if (!material.batchNote?.trim()) throw new BadRequestException('该教材没有出题要求(batchNote)，无法自动生成出题计划');
+
+    const counts = this.parseQuestionCounts(material.batchNote);
+    const validTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'];
+    const configs: any[] = [];
+
+    for (const ch of material.chapters) {
+      // 只有有内容且足够多的章节才出题
+      if ((ch.content?.length || 0) < 20) continue;
+      for (const type of validTypes) {
+        if ((counts[type] || 0) > 0) {
+          // 在章节间均匀分配
+          const perChapter = Math.max(1, Math.floor((counts[type] || 0) / material.chapters.length));
+          if (perChapter > 0) {
+            configs.push({ chapterId: ch.id, type, count: perChapter });
+          }
+        }
+      }
+    }
+
+    if (configs.length === 0) throw new BadRequestException('batchNote 解析后无有效出题配置');
+
+    // 创建计划
+    const plan = await this.createQuestionPlan(materialId, {
+      name: `${material.name} 自动出题`,
+      configs,
+    });
+
+    // 执行
+    return this.executeQuestionPlan(materialId, plan.id);
+  }
 }

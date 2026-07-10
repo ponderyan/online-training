@@ -157,6 +157,47 @@ export class MaterialsController {
     return this.service.getChapterContent(id, chapterId);
   }
 
+  // ── 出题计划 API ──
+
+  @Get(':id/question-plans')
+  @RequirePermission(Permissions.MATERIAL_GENERATE)
+  getQuestionPlans(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getQuestionPlans(id);
+  }
+
+  @Post(':id/question-plans')
+  @RequirePermission(Permissions.MATERIAL_GENERATE)
+  createQuestionPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { name?: string; configs: { chapterId: number; type: string; count: number; difficultyEasy?: number; difficultyMedium?: number; difficultyHard?: number; focusKeywords?: string }[] },
+  ) {
+    return this.service.createQuestionPlan(id, data);
+  }
+
+  @Post(':id/execute-plan/:planId')
+  @RequirePermission(Permissions.MATERIAL_GENERATE)
+  executeQuestionPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('planId', ParseIntPipe) planId: number,
+  ) {
+    return this.service.executeQuestionPlan(id, planId);
+  }
+
+  @Get(':id/plan-progress/:planId')
+  @RequirePermission(Permissions.MATERIAL_GENERATE)
+  getPlanProgress(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('planId', ParseIntPipe) planId: number,
+  ) {
+    return this.service.getPlanProgress(id, planId);
+  }
+
+  @Post(':id/generate-from-batchNote')
+  @RequirePermission(Permissions.MATERIAL_GENERATE)
+  generateFromBatchNote(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateFromBatchNote(id);
+  }
+
   @Delete(':id')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   remove(@Param('id', ParseIntPipe) id: number) {

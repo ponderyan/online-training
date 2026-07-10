@@ -736,6 +736,7 @@ model Material {
 
   chapters  MaterialChapter[]
   questions MaterialQuestion[]
+  questionPlans MaterialQuestionPlan[]
 
   @@map("materials")
 }
@@ -761,8 +762,46 @@ model MaterialChapter {
   sortOrder     Int                   @default(0) @map("sort_order")
 
   questions MaterialQuestion[]
+  planConfigs MaterialQuestionPlanConfig[]
 
   @@map("material_chapters")
+}
+
+// ═══════════════════════════════════════════════
+// 出题计划（Part B）
+// ═══════════════════════════════════════════════
+
+model MaterialQuestionPlan {
+  id         Int      @id @default(autoincrement())
+  materialId Int      @map("material_id")
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  name       String   @default("") @db.VarChar(200)     // 计划名称，自动生成
+  status     String   @default("DRAFT") @map("status") // DRAFT / EXECUTING / COMPLETED / FAILED
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  configs MaterialQuestionPlanConfig[]
+
+  @@map("material_question_plans")
+}
+
+model MaterialQuestionPlanConfig {
+  id                Int                     @id @default(autoincrement())
+  planId            Int                     @map("plan_id")
+  plan              MaterialQuestionPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  chapterId         Int?                    @map("chapter_id")
+  chapter           MaterialChapter?        @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  type              String                  @map("type")         // 题型
+  count             Int                     @default(0)          // 题数
+  difficultyEasy    Int?                    @default(30)         @map("difficulty_easy")
+  difficultyMedium  Int?                    @default(50)         @map("difficulty_medium")
+  difficultyHard    Int?                    @default(20)         @map("difficulty_hard")
+  focusKeywords     String?                 @map("focus_keywords") @db.VarChar(500)
+  sortOrder         Int                     @default(0)          @map("sort_order")
+  errorMessage      String?                 @map("error_message") @db.Text // 执行失败信息
+
+  @@map("material_question_plan_configs")
 }
 
 enum ReviewStatus {

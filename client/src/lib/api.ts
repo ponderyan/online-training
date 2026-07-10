@@ -440,6 +440,17 @@ export const api = {
       request<any>(`/materials/${materialId}/confirm-structure`, { method: 'POST' }),
     getChapterContent: (materialId: number, chapterId: number) =>
       request<any>(`/materials/${materialId}/chapters/${chapterId}/content`),
+    // ── 出题计划 ──
+    getQuestionPlans: (materialId: number) =>
+      request<any[]>(`/materials/${materialId}/question-plans`),
+    createQuestionPlan: (materialId: number, data: any) =>
+      request<any>(`/materials/${materialId}/question-plans`, { method: 'POST', body: JSON.stringify(data) }),
+    executeQuestionPlan: (materialId: number, planId: number) =>
+      request<any>(`/materials/${materialId}/execute-plan/${planId}`, { method: 'POST' }),
+    getPlanProgress: (materialId: number, planId: number) =>
+      request<any>(`/materials/${materialId}/plan-progress/${planId}`),
+    generateFromBatchNote: (materialId: number) =>
+      request<any>(`/materials/${materialId}/generate-from-batchNote`, { method: 'POST' }),
   },
 
   // ── Phase C: 讲师管理 ──
