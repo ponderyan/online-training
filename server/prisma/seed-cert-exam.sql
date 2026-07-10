@@ -178,7 +178,7 @@ UPDATE `exams` SET `program_id` = 100 WHERE `id` = 100;
 
 -- ── 7. 分配示例学员 ──
 -- 为 stu001 (id=2) 和 stu002 (id=3) 创建 exam_sessions
-INSERT IGNORE INTO `exam_sessions` (`exam_id`, `student_id`, `status`, `remaining_time`, `suspicion_level`, `created_at`, `last_heartbeat_at`)
+INSERT IGNORE INTO `exam_sessions` (`exam_id`, `student_id`, `status`, `remaining_time`, `suspicion_level`, `created_at`, `updated_at`, `last_heartbeat_at`)
 VALUES
-  (100, 2, 'ACTIVE', 1500, 0, NOW(), NOW()),
-  (100, 3, 'ACTIVE', 1800, 0, NOW(), NOW());
+  (100, 2, 'ACTIVE', 1500, 0, NOW(), NOW(), NOW()),
+  (100, 3, 'ACTIVE', 1800, 0, NOW(), NOW(), NOW());
