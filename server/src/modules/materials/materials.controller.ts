@@ -16,12 +16,14 @@ export class MaterialsController {
     @Query('pageSize') pageSize?: string,
     @Query('subjectId') subjectId?: string,
     @Query('status') status?: string,
+    @Query('includeArchived') includeArchived?: string,
   ) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
       subjectId: subjectId ? parseInt(subjectId) : undefined,
       status,
+      includeArchived: includeArchived === 'true',
     });
   }
 
@@ -202,6 +204,18 @@ export class MaterialsController {
   @RequirePermission(Permissions.MATERIAL_GENERATE)
   generateFromBatchNote(@Param('id', ParseIntPipe) id: number) {
     return this.service.generateFromBatchNote(id);
+  }
+
+  @Post(':id/archive')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  archive(@Param('id', ParseIntPipe) id: number) {
+    return this.service.archive(id);
+  }
+
+  @Post(':id/unarchive')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  unarchive(@Param('id', ParseIntPipe) id: number) {
+    return this.service.unarchive(id);
   }
 
   @Delete(':id')

@@ -342,9 +342,11 @@ export default function QuestionsPage() {
                 <td><span className="tag tag-ink">{TYPE_LABELS[q.type]}</span></td>
                 <td><span className={`tag ${DIFF_LABELS[q.difficulty]?.cls}`}>{DIFF_LABELS[q.difficulty]?.label}</span></td>
                 <td><span className="tag tag-gold">{q.subject?.code}</span></td>
-                <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 0, overflow: 'hidden' }}>
                   {q.materialName ? (
-                    <span>📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}</span>
+                    <span className="truncate block" style={{ maxWidth: '100%' }} title={`${q.materialName}${q.chapterTitle ? ` > ${q.chapterTitle}` : ''}`}>
+                      📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}
+                    </span>
                   ) : q.orgId ? (
                     <>
                       {q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'}

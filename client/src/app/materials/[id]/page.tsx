@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import ChapterStructureTab from './chapter-structure-tab';
@@ -28,6 +28,7 @@ const TYPE_SHORT: Record<string, string> = {
 export default function MaterialDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const materialId = Number(params.id);
 
   const [material, setMaterial] = useState<any>(null);
@@ -38,7 +39,11 @@ export default function MaterialDetailPage() {
   const [editData, setEditData] = useState<any>({});
   const [importing, setImporting] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('structure');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const tab = searchParams?.get('tab');
+    if (tab === 'plan' || tab === 'review' || tab === 'structure') return tab;
+    return 'structure';
+  });
 
   // ── 新模式状态 ──
   const [reviewMode, setReviewMode] = useState<'detail' | 'list'>('detail');

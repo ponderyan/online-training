@@ -22,12 +22,15 @@ export class MaterialsService {
     pageSize?: number;
     subjectId?: number;
     status?: string;
+    includeArchived?: boolean;
   }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
     if (params.subjectId) where.subjectId = params.subjectId;
     if (params.status) where.status = params.status;
+    // 默认排除已归档（除非显式要求包含）
+    if (!params.includeArchived) where.archivedAt = null;
 
     const [items, total] = await Promise.all([
       this.prisma.material.findMany({
@@ -773,6 +776,48 @@ ${
     }
   }
 
+  /**
+   * 归档教材 — 软删除，不影响已入库试题
+   */
+  async archive(id: number) {
+    const material = await this.prisma.material.findUnique({
+      where: { id },
+      include: { questions: { where: { questionId: { not: null } }, select: { questionId: true } } },
+    });
+    if (!material) throw new NotFoundException('教材不存在');
+    if (material.archivedAt) throw new BadRequestException('教材已归档');
+
+    // 标记已入库试题的来源快照
+    const questionIds = material.questions.map(q => q.questionId).filter(Boolean) as number[];
+    if (questionIds.length > 0) {
+      const note = `来源教材：${material.name}（该教材已归档）`;
+      await this.prisma.question.updateMany({
+        where: { id: { in: questionIds } },
+        data: { sourceNote: note },
+      });
+    }
+
+    // 清理知识块
+    await this.prisma.knowledgeChunk.deleteMany({
+      where: { source: { contains: material.fileName } },
+    }).catch(() => {});
+
+    await this.prisma.material.update({ where: { id }, data: { archivedAt: new Date() } });
+    return this.findOne(id);
+  }
+
+  /**
+   * 取消归档
+   */
+  async unarchive(id: number) {
+    const material = await this.prisma.material.findUnique({ where: { id } });
+    if (!material) throw new NotFoundException('教材不存在');
+    if (!material.archivedAt) throw new BadRequestException('教材未归档');
+
+    await this.prisma.material.update({ where: { id }, data: { archivedAt: null } });
+    return this.findOne(id);
+  }
+
   async delete(id: number) {
     const material = await this.prisma.material.findUnique({ where: { id } });
     if (!material) throw new NotFoundException('教材不存在');
@@ -781,6 +826,11 @@ ${
     try {
       await fs.unlink(path.join(this.uploadDir, material.filePath));
     } catch {}
+
+    // 清除相关知识块
+    await this.prisma.knowledgeChunk.deleteMany({
+      where: { source: { contains: material.fileName } },
+    }).catch(() => {});
 
     return this.prisma.material.delete({ where: { id } });
   }
@@ -1479,25 +1529,60 @@ ${content.slice(0, 15000)}
 }
 
 /**
+ * 去除JSON中的尾随逗号（Node原生JSON.parse不支持尾逗号）
+ */
+function removeTrailingCommas(s: string): string {
+  // 去掉对象/数组最后一个元素后的逗号：{...}, → {...} 以及 [...] → [...]
+  return s.replace(/,\s*([}\]])/g, '$1');
+}
+
+/**
  * 多策略JSON解析：从AI回复中提取试题数组
- * 策略：① 直接JSON.parse → ② 去markdown代码块 → ③ 去尾部非JSON文本 → ④ 去代码块+去尾部文本
+ *
+ * 策略说明：
+ *  ① 直接 JSON.parse
+ *  ② 去 markdown 代码块 → JSON.parse
+ *  ③ 去尾部非JSON文本（截断到最后一个 ]）→ JSON.parse
+ *  ④ 去代码块 + 去尾部文本
+ *  ⑤ 去掉所有 ``` 标记后尝试解析
+ *  ⑥ 以上策略均配合去除尾逗号再试一次（共12条路径）
+ *
+ *  ⑦ 兜底：去掉所有 markdown 标记 + 在中括号级别上平衡提取
  */
 function parseAIJsonResponse(reply: string): any[] {
+  // 去除尾逗号的包装器
+  const withClean = (fn: (s: string) => any) =>
+    (s: string) => fn(removeTrailingCommas(s));
+
   const strategies = [
     // 策略1：直接解析
     (s: string) => JSON.parse(s),
+    withClean((s: string) => JSON.parse(s)),
+
     // 策略2：去markdown代码块
     (s: string) => {
       const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
       if (m) return JSON.parse(m[1].trim());
       throw new Error('no code block');
     },
+    withClean((s: string) => {
+      const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+      if (m) return JSON.parse(m[1].trim());
+      throw new Error('no code block');
+    }),
+
     // 策略3：去尾部非JSON文本（找到最后一个 ] 后截断）
     (s: string) => {
       const lastBracket = s.lastIndexOf(']');
       if (lastBracket >= 0) return JSON.parse(s.slice(0, lastBracket + 1));
       throw new Error('no array');
     },
+    withClean((s: string) => {
+      const lastBracket = s.lastIndexOf(']');
+      if (lastBracket >= 0) return JSON.parse(s.slice(0, lastBracket + 1));
+      throw new Error('no array');
+    }),
+
     // 策略4：去markdown + 去尾部文本
     (s: string) => {
       const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
@@ -1508,14 +1593,57 @@ function parseAIJsonResponse(reply: string): any[] {
       }
       throw new Error('all strategies failed');
     },
+    withClean((s: string) => {
+      const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+      if (m) {
+        const trimmed = m[1].trim();
+        const lastB = trimmed.lastIndexOf(']');
+        if (lastB >= 0) return JSON.parse(trimmed.slice(0, lastB + 1));
+      }
+      throw new Error('all strategies failed');
+    }),
+
+    // 策略5：去掉所有 ``` 标记（含json/JSON语言标注），剩下的纯文本尝试解析
+    (s: string) => {
+      const cleaned = s.replace(/```(?:json|JSON)?\s*/g, '').replace(/\s*```/g, '').trim();
+      const lastB = cleaned.lastIndexOf(']');
+      if (lastB >= 0) return JSON.parse(cleaned.slice(0, lastB + 1));
+      throw new Error('no array after stripping markers');
+    },
+    withClean((s: string) => {
+      const cleaned = s.replace(/```(?:json|JSON)?\s*/g, '').replace(/\s*```/g, '').trim();
+      const lastB = cleaned.lastIndexOf(']');
+      if (lastB >= 0) return JSON.parse(cleaned.slice(0, lastB + 1));
+      throw new Error('no array after stripping markers');
+    }),
+
+    // 策略6：提取第一个 [ 到最后一个 ] 之间的内容（去除头部和尾部的非JSON文本）
+    (s: string) => {
+      const firstBracket = s.indexOf('[');
+      const lastBracket = s.lastIndexOf(']');
+      if (firstBracket >= 0 && lastBracket > firstBracket) {
+        return JSON.parse(s.slice(firstBracket, lastBracket + 1));
+      }
+      throw new Error('no bracket pair');
+    },
+    withClean((s: string) => {
+      const firstBracket = s.indexOf('[');
+      const lastBracket = s.lastIndexOf(']');
+      if (firstBracket >= 0 && lastBracket > firstBracket) {
+        return JSON.parse(s.slice(firstBracket, lastBracket + 1));
+      }
+      throw new Error('no bracket pair');
+    }),
   ];
 
   for (const fn of strategies) {
     try {
       const result = fn(reply);
-      if (Array.isArray(result)) return result;
+      if (Array.isArray(result) && result.length > 0) return result;
     } catch { /* try next */ }
   }
+
+  // 全策略失败，尝试逐行提取：找内容最多的 [ 和 ] 之间的文本
   throw new Error('AI返回的JSON无法解析：不是有效的JSON数组');
 }
 

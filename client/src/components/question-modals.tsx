@@ -451,6 +451,20 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
             </span>
           </div>
 
+          {/* 来源教材信息（如有） */}
+          {question.materialQuestions?.[0]?.material && (
+            <div className="text-xs flex items-center gap-1" style={{ color: 'var(--fox)' }}>
+              📖 来源：{question.materialQuestions[0].material.name}
+              {question.materialQuestions[0].chapter?.title && <> &gt; {question.materialQuestions[0].chapter.title}</>}
+              {question.sourceNote && <span className="ml-1" style={{ color: 'var(--orange)' }}>({question.sourceNote})</span>}
+            </div>
+          )}
+          {question.sourceNote && !question.materialQuestions?.[0]?.material && (
+            <div className="text-xs" style={{ color: 'var(--orange)' }}>
+              📌 {question.sourceNote}
+            </div>
+          )}
+
           {/* 题干 */}
           <div className="p-4 rounded text-sm leading-relaxed" style={{ background: 'var(--paper)' }}>
             {question.content}

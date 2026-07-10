@@ -452,6 +452,8 @@ export const api = {
       request<any>(`/materials/${materialId}/plan-progress/${planId}`),
     generateFromBatchNote: (materialId: number) =>
       request<any>(`/materials/${materialId}/generate-from-batchNote`, { method: 'POST' }),
+    archive: (id: number) => request<any>(`/materials/${id}/archive`, { method: 'POST' }),
+    unarchive: (id: number) => request<any>(`/materials/${id}/unarchive`, { method: 'POST' }),
   },
 
   // ── Phase C: 讲师管理 ──

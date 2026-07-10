@@ -159,6 +159,15 @@ export class QuestionsService {
         options: { orderBy: { sortOrder: 'asc' } },
         blanks: { orderBy: { blankIndex: 'asc' } },
         subQuestions: { orderBy: { sortOrder: 'asc' } },
+        materialQuestions: {
+          select: {
+            materialId: true,
+            material: { select: { name: true } },
+            chapterId: true,
+            chapter: { select: { title: true } },
+          },
+          take: 1,
+        },
       },
     });
     if (!q) throw new NotFoundException(`Question ${id} not found`);

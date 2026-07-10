@@ -433,6 +433,7 @@ model Question {
   usageCount      Int            @default(0) @map("usage_count")
   isPublic        Boolean        @default(false) @map("is_public") // 通用/公共题
   practiceVisible Boolean        @default(false) @map("practice_visible") // 练习模式可见
+  sourceNote      String?        @map("source_note") @db.VarChar(300) // 来源快照
   createdBy       Int?           @map("created_by") // 出题人用户ID
 
   // ── 机构归属（2026-07-02）──
@@ -734,6 +735,7 @@ model Material {
   creator      User           @relation(fields: [createdBy], references: [id])
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
+  archivedAt   DateTime?      @map("archived_at") // 归档时间，非空=已归档
 
   chapters  MaterialChapter[]
   questions MaterialQuestion[]
