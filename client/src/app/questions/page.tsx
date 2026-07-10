@@ -30,7 +30,11 @@ export default function QuestionsPage() {
   const [filterType, setFilterType] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
+  const [filterMaterial, setFilterMaterial] = useState('');
+  const [filterMatChapter, setFilterMatChapter] = useState('');
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [matChapters, setMatChapters] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -80,12 +84,14 @@ export default function QuestionsPage() {
     if (filterType) params.type = filterType;
     if (filterDifficulty) params.difficulty = filterDifficulty;
     if (filterSubject) params.subjectId = filterSubject;
+    if (filterMaterial) params.materialId = filterMaterial;
+    if (filterMatChapter) params.chapterId = filterMatChapter;
 
     const data = await api.questions.list(params);
     setQuestions(data.items);
     setTotal(data.total);
     setTotalPages(data.totalPages);
-  }, [page, pageSize, keyword, filterType, filterDifficulty, filterSubject]);
+  }, [page, pageSize, keyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -106,7 +112,17 @@ export default function QuestionsPage() {
     }).catch(() => {
       api.subjects.list().then(setSubjects).catch(() => {});
     });
+    // 加载教材列表（供筛选用）
+    api.materials.listForFilter().then(setMaterials).catch(() => {});
   }, []);
+  // 选择教材后加载该教材的章节
+  useEffect(() => {
+    if (!filterMaterial) { setMatChapters([]); setFilterMatChapter(''); return; }
+    api.materials.get(Number(filterMaterial)).then(m => {
+      setMatChapters(m.chapters?.map((ch: any) => ({ id: ch.id, title: ch.title })) || []);
+    }).catch(() => setMatChapters([]));
+  }, [filterMaterial]);
+
   useEffect(() => {
     api.systemConfig.bankPolicy.get()
       .then(data => setBankPolicy(data))
@@ -258,6 +274,18 @@ export default function QuestionsPage() {
           <option value="">全部难度</option>
           {Object.entries(DIFF_LABELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
+        <select value={filterMaterial} onChange={e => { setFilterMaterial(e.target.value); setPage(1); }}
+          className="input select" style={{ width: '140px' }}>
+          <option value="">全部教材</option>
+          {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        {filterMaterial && (
+          <select value={filterMatChapter} onChange={e => { setFilterMatChapter(e.target.value); setPage(1); }}
+            className="input select" style={{ width: '140px' }}>
+            <option value="">全部章节</option>
+            {matChapters.map((ch: any) => <option key={ch.id} value={ch.id}>{ch.title}</option>)}
+          </select>
+        )}
       </div>
 
       {/* ── 表格 ── */}
@@ -315,7 +343,9 @@ export default function QuestionsPage() {
                 <td><span className={`tag ${DIFF_LABELS[q.difficulty]?.cls}`}>{DIFF_LABELS[q.difficulty]?.label}</span></td>
                 <td><span className="tag tag-gold">{q.subject?.code}</span></td>
                 <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                  {q.orgId ? (
+                  {q.materialName ? (
+                    <span>📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}</span>
+                  ) : q.orgId ? (
                     <>
                       {q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'}
                       <span className="ml-1.5 tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px' }}>

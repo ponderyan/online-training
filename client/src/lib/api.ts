@@ -440,6 +440,7 @@ export const api = {
       request<any>(`/materials/${materialId}/confirm-structure`, { method: 'POST' }),
     getChapterContent: (materialId: number, chapterId: number) =>
       request<any>(`/materials/${materialId}/chapters/${chapterId}/content`),
+    listForFilter: () => request<any[]>('/materials/list-for-filter'),
     // ── 出题计划 ──
     getQuestionPlans: (materialId: number) =>
       request<any[]>(`/materials/${materialId}/question-plans`),

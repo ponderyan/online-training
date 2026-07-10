@@ -989,6 +989,18 @@ ${
   }
 
   /**
+   * 获取教材精简列表（供筛选下拉框用）
+   */
+  async listForFilter() {
+    const items = await this.prisma.material.findMany({
+      where: { status: { notIn: ['UPLOADED', 'FAILED'] } },
+      select: { id: true, name: true, subject: { select: { code: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return items.map(m => ({ id: m.id, name: `${m.subject?.code || ''} - ${m.name}` }));
+  }
+
+  /**
    * 获取章节正文内容
    */
   async getChapterContent(materialId: number, chapterId: number) {

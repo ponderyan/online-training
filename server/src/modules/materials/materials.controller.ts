@@ -148,6 +148,12 @@ export class MaterialsController {
     return this.service.confirmStructure(id);
   }
 
+  @Get('list-for-filter')
+  @RequirePermission(Permissions.QUESTION_CREATE)
+  listForFilter() {
+    return this.service.listForFilter();
+  }
+
   @Get(':id/chapters/:chapterId/content')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   getChapterContent(

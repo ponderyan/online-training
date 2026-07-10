@@ -64,7 +64,7 @@ export class QuestionsService {
   // ═══════════════════════════════════════════
 
   async findAll(params: {
-    subjectId?: number; chapterId?: number; type?: QuestionType;
+    subjectId?: number; chapterId?: number; materialId?: number; type?: QuestionType;
     difficulty?: string; status?: string; keyword?: string;
     isPublic?: boolean; page?: number; pageSize?: number;
     createdBy?: number;
@@ -84,6 +84,16 @@ export class QuestionsService {
     if (params.keyword) where.content = { contains: params.keyword };
     if (params.isPublic !== undefined) where.isPublic = params.isPublic;
     if (params.createdBy !== undefined) where.createdBy = params.createdBy;
+
+    // materialId 过滤：查 MaterialQuestion 找到关联的 questionId
+    if (params.materialId) {
+      const linked = await this.prisma.materialQuestion.findMany({
+        where: { materialId: params.materialId, questionId: { not: null } },
+        select: { questionId: true },
+      });
+      const ids = linked.map(l => l.questionId).filter(Boolean) as number[];
+      where.id = { in: ids };
+    }
 
     // ★ orgId 隔离
     const userOrgId = params.userOrgId ?? null;
@@ -111,12 +121,32 @@ export class QuestionsService {
           chapter: { select: { name: true } },
           tags: { include: { tag: true } },
           _count: { select: { paperQuestions: true } },
+          materialQuestions: {
+            select: {
+              materialId: true,
+              material: { select: { name: true } },
+              chapterId: true,
+              chapter: { select: { title: true } },
+            },
+          },
         },
       }),
       this.prisma.question.count({ where }),
     ]);
 
-    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    // 给每条记录附加来源教材/章节信息
+    const enriched = items.map(q => {
+      const mq = q.materialQuestions?.[0];
+      return {
+        ...q,
+        materialQuestions: undefined,
+        materialName: mq?.material?.name || null,
+        materialId: mq?.materialId || null,
+        chapterTitle: mq?.chapter?.title || null,
+      };
+    });
+
+    return { items: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
   async findOne(id: number, userOrgId?: number | null, userRoles?: string[]) {

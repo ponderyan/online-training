@@ -19,6 +19,7 @@ export class QuestionsController {
     @Req() req: any,
     @Query('subjectId') subjectId?: string,
     @Query('chapterId') chapterId?: string,
+    @Query('materialId') materialId?: string,
     @Query('type') type?: QuestionType,
     @Query('difficulty') difficulty?: string,
     @Query('status') status?: string,
@@ -30,6 +31,7 @@ export class QuestionsController {
     const params: any = {
       subjectId: subjectId ? parseInt(subjectId) : undefined,
       chapterId: chapterId ? parseInt(chapterId) : undefined,
+      materialId: materialId ? parseInt(materialId) : undefined,
       type, difficulty, status, keyword,
       isPublic: isPublic !== undefined ? isPublic === 'true' : undefined,
       page: page ? parseInt(page) : undefined,
