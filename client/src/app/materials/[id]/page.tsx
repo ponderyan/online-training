@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ChapterStructureTab from './chapter-structure-tab';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -36,6 +37,7 @@ export default function MaterialDetailPage() {
   const [editData, setEditData] = useState<any>({});
   const [importing, setImporting] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('structure');
 
   // ── 新模式状态 ──
   const [reviewMode, setReviewMode] = useState<'detail' | 'list'>('detail');
@@ -639,7 +641,7 @@ export default function MaterialDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {material?.chapters?.some((ch: any) => ch.content) && !['PROCESSING', 'GENERATING'].includes(material?.status) && (
+          {activeTab === 'review' && material?.chapters?.some((ch: any) => ch.content) && !['PROCESSING', 'GENERATING'].includes(material?.status) && (
             <button onClick={async () => {
               if (!confirm('确认使用大模型生成试题？将覆盖该教材之前生成的所有试题。')) return;
               setGenerating(true);
@@ -673,6 +675,63 @@ export default function MaterialDetailPage() {
         </div>
       </div>
 
+      {/* ── Tab 导航 ── */}
+      <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+        {[
+          { key: 'structure', label: '📖 章节结构', condition: true },
+          { key: 'plan', label: '🤖 出题配置', condition: material.status !== 'UPLOADED' && material.status !== 'FAILED' },
+          { key: 'review', label: '📝 试题审核', condition: totalQuestions > 0 || material.status === 'PROCESSING' || material.status === 'GENERATING' },
+        ].filter(t => t.condition).map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className="px-4 py-2.5 text-sm font-medium cursor-pointer border-b-2 transition-colors bg-transparent"
+            style={{
+              borderColor: activeTab === tab.key ? 'var(--fox)' : 'transparent',
+              color: activeTab === tab.key ? 'var(--ink-800)' : 'var(--ink-300)',
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab 内容 ── */}
+      {activeTab === 'structure' && (
+        <ChapterStructureTab
+          materialId={materialId}
+          chapters={material.chapters || []}
+          onConfirm={load}
+        />
+      )}
+
+      {activeTab === 'plan' && (
+        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
+          🤖 出题配置功能开发中…
+          <div className="mt-3">
+            <p className="text-xs mb-3">可以使用原出题方式快速生成试题</p>
+            <button onClick={async () => {
+              if (!confirm('确认使用大模型生成试题？将覆盖该教材之前生成的所有试题。')) return;
+              setGenerating(true);
+              try {
+                const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${apiBase}/api/materials/${materialId}/generate`, {
+                  method: 'POST',
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                const data = await res.json();
+                alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);
+                load();
+              } catch (e: any) { alert('出题失败：' + e.message); }
+              setGenerating(false);
+            }} disabled={generating}
+              className="btn btn-fox btn-sm">
+              {generating ? '🤖 出题中…' : '🤖 快速出题（旧版）'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'review' && (
       <div className="flex gap-6 items-start">
         {/* Chapter sidebar */}
         <div className="w-[200px] flex-shrink-0 space-y-1">
@@ -764,6 +823,8 @@ export default function MaterialDetailPage() {
           </div>
         </div>
       </div>
+      )}
+
     </AppLayout>
   );
 }

@@ -122,12 +122,7 @@ export default function SettingsPage() {
               <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无编码，请添加</p>
             ) : (
               dictionaries.map((d: any) => (
-                <div key={d.id} className="flex justify-between items-center py-1.5 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
-                  <span className="text-sm"><span className="font-medium">{d.code}</span> — {d.name}</span>
-                  <button onClick={() => deleteDict(d.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
-                </div>
+                <DictItem key={d.id} dict={d} onUpdate={() => api.dataDictionaries.list().then(setDictionaries)} onDelete={() => deleteDict(d.id)} />
               ))
             )}
           </div>
@@ -258,5 +253,54 @@ export default function SettingsPage() {
         </div>
       )}
     </AppLayout>
+  );
+}
+
+function DictItem({ dict, onUpdate, onDelete }: { dict: any; onUpdate: () => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(dict.name);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!editName.trim() || editName === dict.name) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await api.dataDictionaries.update(dict.id, { name: editName.trim() });
+      setEditing(false);
+      onUpdate();
+    } catch (e: any) {
+      alert('保存失败：' + (e.message || '未知错误'));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="flex justify-between items-center py-1.5 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
+      {editing ? (
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-sm font-medium min-w-[60px]">{dict.code}</span>
+          <input value={editName} onChange={e => setEditName(e.target.value)}
+            className="input text-sm flex-1" autoFocus
+            onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setEditName(dict.name); setEditing(false); } }} />
+          <button onClick={handleSave} disabled={saving}
+            className="btn btn-fox btn-xs">{saving ? '保存中…' : '保存'}</button>
+          <button onClick={() => { setEditName(dict.name); setEditing(false); }}
+            className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>取消</button>
+        </div>
+      ) : (
+        <>
+          <span className="text-sm"><span className="font-medium">{dict.code}</span> — {dict.name}</span>
+          <div className="flex gap-1">
+            <button onClick={() => { setEditName(dict.name); setEditing(true); }}
+              className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--fox)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>编辑</button>
+            <button onClick={onDelete} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

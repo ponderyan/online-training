@@ -103,6 +103,60 @@ export class MaterialsController {
     return this.service.generateQuestions(id);
   }
 
+  // ── 章节编辑 API ──
+
+  @Put(':id/chapters/:chapterId')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  updateChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+    @Body() data: { title: string },
+  ) {
+    return this.service.updateChapter(id, chapterId, data);
+  }
+
+  @Post(':id/chapters/merge')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  mergeChapters(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { chapterIds: number[] },
+  ) {
+    return this.service.mergeChapters(id, data);
+  }
+
+  @Post(':id/chapters/split')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  splitChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { chapterId: number; splitPosition: number },
+  ) {
+    return this.service.splitChapter(id, data);
+  }
+
+  @Delete(':id/chapters/:chapterId')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  deleteChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+  ) {
+    return this.service.deleteChapter(id, chapterId);
+  }
+
+  @Post(':id/confirm-structure')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  confirmStructure(@Param('id', ParseIntPipe) id: number) {
+    return this.service.confirmStructure(id);
+  }
+
+  @Get(':id/chapters/:chapterId/content')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  getChapterContent(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+  ) {
+    return this.service.getChapterContent(id, chapterId);
+  }
+
   @Delete(':id')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   remove(@Param('id', ParseIntPipe) id: number) {

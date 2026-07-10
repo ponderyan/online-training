@@ -427,6 +427,19 @@ export const api = {
     delete: (id: number) => request(`/materials/${id}`, { method: 'DELETE' }),
     create: (data: { name: string; subjectId: number; content: string; batchNote?: string }) =>
       request<any>('/materials', { method: 'POST', body: JSON.stringify({ ...data, createdBy: 1 }) }),
+    // ── 章节编辑 ──
+    updateChapter: (materialId: number, chapterId: number, data: { title: string }) =>
+      request<any>(`/materials/${materialId}/chapters/${chapterId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    mergeChapters: (materialId: number, data: { chapterIds: number[] }) =>
+      request<any>(`/materials/${materialId}/chapters/merge`, { method: 'POST', body: JSON.stringify(data) }),
+    splitChapter: (materialId: number, data: { chapterId: number; splitPosition: number }) =>
+      request<any>(`/materials/${materialId}/chapters/split`, { method: 'POST', body: JSON.stringify(data) }),
+    deleteChapter: (materialId: number, chapterId: number) =>
+      request<any>(`/materials/${materialId}/chapters/${chapterId}`, { method: 'DELETE' }),
+    confirmStructure: (materialId: number) =>
+      request<any>(`/materials/${materialId}/confirm-structure`, { method: 'POST' }),
+    getChapterContent: (materialId: number, chapterId: number) =>
+      request<any>(`/materials/${materialId}/chapters/${chapterId}/content`),
   },
 
   // ── Phase C: 讲师管理 ──

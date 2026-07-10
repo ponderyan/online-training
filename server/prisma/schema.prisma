@@ -708,6 +708,7 @@ enum MaterialStatus {
   UPLOADED
   PROCESSING
   OCR_DONE
+  STRUCTURED       // 章节结构已由用户确认
   GENERATING
   GENERATED
   REVIEWING
@@ -741,6 +742,7 @@ model Material {
 
 enum MaterialChapterStatus {
   PENDING
+  STRUCTURED       // 章节已确认结构化
   GENERATING
   GENERATED
 }
@@ -752,6 +754,8 @@ model MaterialChapter {
   title         String                @db.VarChar(500) // 章节标题
   chapterIndex  Int                   @map("chapter_index") // 章节序号
   content       String?               @db.MediumText // 该章节的完整文本（OCR结果，支持16MB）
+  contentLength Int                   @default(0) @map("content_length") // 字符数
+  errorMessage  String?               @map("error_message") @db.Text // 出题失败错误信息
   status        MaterialChapterStatus @default(PENDING)
   questionCount Int                   @default(0) @map("question_count")
   sortOrder     Int                   @default(0) @map("sort_order")

@@ -68,7 +68,7 @@ export class MaterialsService {
    */
   private parseTextToChapters(text: string): Array<{ title: string; content: string }> {
     const lines = text.split('\n').filter(l => l.trim());
-    const sectionPattern = /^(第[一二三四五六七八九十百千]+章|第\d+章|#+\s*|Chapter\s+\d+|Part\s+\d+)/i;
+    const sectionPattern = /^(第[一二三四五六七八九十百千]+章|第\d+章|\d+\.\d+(?!\.\d)\s+|#+\s*|Chapter\s+\d+|Part\s+\d+|[一二三四五六七八九十]+、)/i;
     const chapters: Array<{ title: string; content: string }> = [];
     let currentTitle = '全文';
     let currentContent: string[] = [];
@@ -101,6 +101,7 @@ export class MaterialsService {
           title: chapters[i].title,
           chapterIndex: i,
           content: chapters[i].content,
+          contentLength: Buffer.byteLength(chapters[i].content, 'utf-8'),
           status: 'GENERATED',
           sortOrder: i,
         },
@@ -537,6 +538,38 @@ export class MaterialsService {
     const config = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
     if (!config) throw new BadRequestException('请先在系统设置中配置大模型并保存');
 
+    // 解析 batchNote 中各题型总量，按章节内容长度比例分配
+    const typeCounts = this.parseQuestionCounts(material.batchNote || '');
+    const hasTypeCounts = Object.keys(typeCounts).length > 0;
+    const chapterCounts = new Map<number, Record<string, number>>();
+    if (hasTypeCounts) {
+      const totalQCount = Object.values(typeCounts).reduce((a, b) => a + b, 0);
+      const validChapters = material.chapters.filter(ch => (ch.content || '').trim().length >= 20);
+      const totalLength = validChapters.reduce((sum, ch) => sum + (ch.content || '').length, 0);
+      const typeNames = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+      for (const ch of validChapters) {
+        const ratio = (ch.content || '').length / totalLength;
+        let chTotal = Math.round(totalQCount * ratio);
+        if (chTotal === 0 && (ch.content || '').length >= 200) chTotal = 1;
+        if (chTotal === 0) continue;
+        const perCh: Record<string, number> = {};
+        let remaining = chTotal;
+        for (let i = 0; i < typeNames.length; i++) {
+          const [type, total] = typeNames[i];
+          if (i === typeNames.length - 1) {
+            perCh[type] = remaining;
+          } else {
+            const count = Math.min(remaining, Math.round(total * ratio));
+            perCh[type] = count;
+            remaining -= count;
+          }
+        }
+        if (Object.values(perCh).reduce((a, b) => a + b, 0) > 0) {
+          chapterCounts.set(ch.id, perCh);
+        }
+      }
+    }
+
     // 更新状态为出题中
     await this.prisma.material.update({ where: { id }, data: { status: 'PROCESSING' } });
     for (const ch of material.chapters) {
@@ -555,7 +588,7 @@ export class MaterialsService {
 
       try {
         const result = await this.callAiForQuestions(
-          config, material, chapter, content
+          config, material, chapter, content, chapterCounts.get(chapter.id)
         );
         if (result.questions?.length > 0) {
           for (const q of result.questions) {
@@ -607,7 +640,8 @@ export class MaterialsService {
 
   // 调用大模型 API 生成试题
   private async callAiForQuestions(
-    config: any, material: any, chapter: any, content: string
+    config: any, material: any, chapter: any, content: string,
+    chapterCounts?: Record<string, number>
   ): Promise<{ questions: any[]; tokens: number }> {
     const url = config.apiBaseUrl.replace(/\/+$/, '') + '/chat/completions';
 
@@ -625,15 +659,27 @@ export class MaterialsService {
 9. 题目覆盖教材的重点和难点
 10. 返回严格的 JSON 格式，不要包含任何其他文字`;
 
+    // 如果有按比例分配的章节题量，优先使用；否则回退到 batchNote 整份说明
+    let countNote = '';
+    if (chapterCounts) {
+      countNote = `本小节需严格按照以下题型和数量出题：\n${this.formatChapterCounts(chapterCounts)}。`;
+    } else if (material.batchNote) {
+      countNote = `教材说明：${material.batchNote}`;
+    }
+
     const userPrompt = `教材名称：${material.name}
-${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
+${countNote}
 章节：${chapter.title}
 
 以下为章节内容：
 
 ${content.slice(0, 20000)}
 
-请根据以上内容和教材说明中的题型数量要求生成试题，题型分布要符合教材说明的要求，总量可适当超出说明以覆盖考点。
+${
+  chapterCounts
+    ? '请根据以上内容严格按照本小节要求的题型和数量生成试题，总量不要超过要求。'
+    : '请根据以上内容和教材说明中的题型数量要求生成试题，题型分布要符合教材说明的要求，总量可适当超出说明以覆盖考点。'
+}
 返回格式（严格 JSON 数组，不要有任何其他文字）：
 [
   {
@@ -715,5 +761,242 @@ ${content.slice(0, 20000)}
     } catch {}
 
     return this.prisma.material.delete({ where: { id } });
+  }
+
+  // 解析 batchNote 中各题型总量（如"单选题10道、判断题5道、简答题2道"）
+  private parseQuestionCounts(batchNote: string): Record<string, number> {
+    const mapping: Record<string, string> = {
+      '单选题': 'SINGLE_CHOICE',
+      '多选题': 'MULTIPLE_CHOICE',
+      '判断题': 'TRUE_FALSE',
+      '填空题': 'FILL_BLANK',
+      '简答题': 'SHORT_ANSWER',
+    };
+    const counts: Record<string, number> = {};
+    for (const [cn, en] of Object.entries(mapping)) {
+      const match = batchNote.match(new RegExp(`${cn}(\\d+)道`));
+      if (match) counts[en] = parseInt(match[1], 10);
+    }
+    return counts;
+  }
+
+  // 格式化章节题目数量，如"单选题2道、判断题1道、简答题1道"
+  private formatChapterCounts(counts: Record<string, number>): string {
+    const labelMap: Record<string, string> = {
+      'SINGLE_CHOICE': '单选题',
+      'MULTIPLE_CHOICE': '多选题',
+      'TRUE_FALSE': '判断题',
+      'FILL_BLANK': '填空题',
+      'SHORT_ANSWER': '简答题',
+    };
+    const parts: string[] = [];
+    for (const [type, count] of Object.entries(counts)) {
+      if (count > 0) {
+        parts.push(`${labelMap[type] || type}${count}道`);
+      }
+    }
+    return parts.join('、');
+  }
+
+  // ═══════════════════════════════════════════════
+  // 章节编辑 API
+  // ═══════════════════════════════════════════════
+
+  /**
+   * 编辑章节标题
+   */
+  async updateChapter(materialId: number, chapterId: number, data: { title: string }) {
+    const chapter = await this.prisma.materialChapter.findFirst({
+      where: { id: chapterId, materialId },
+    });
+    if (!chapter) throw new NotFoundException('章节不存在');
+    if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可编辑');
+    if (!data.title?.trim()) throw new BadRequestException('标题不能为空');
+
+    return this.prisma.materialChapter.update({
+      where: { id: chapterId },
+      data: { title: data.title.trim() },
+    });
+  }
+
+  /**
+   * 合并相邻章节
+   */
+  async mergeChapters(materialId: number, data: { chapterIds: number[] }) {
+    if (!data.chapterIds || data.chapterIds.length < 2) throw new BadRequestException('请至少选择2个章节合并');
+
+    const chapters = await this.prisma.materialChapter.findMany({
+      where: { id: { in: data.chapterIds }, materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    if (chapters.length !== data.chapterIds.length) throw new NotFoundException('部分章节不存在');
+    if (chapters.some(c => c.status === 'STRUCTURED')) throw new BadRequestException('章节已确认结构化，不可编辑');
+
+    // 验证连续性
+    for (let i = 1; i < chapters.length; i++) {
+      if (chapters[i].sortOrder !== chapters[i - 1].sortOrder + 1) {
+        throw new BadRequestException('只能合并相邻章节（sortOrder 连续）');
+      }
+    }
+
+    const first = chapters[0];
+    const mergedContent = chapters.map(c => c.content || '').join('\n\n');
+
+    // 更新第一个章节，删除其余
+    await this.prisma.materialChapter.update({
+      where: { id: first.id },
+      data: { content: mergedContent, contentLength: Buffer.byteLength(mergedContent, 'utf-8') },
+    });
+    await this.prisma.materialChapter.deleteMany({
+      where: { id: { in: chapters.slice(1).map(c => c.id) } },
+    });
+
+    // 重新整理 sortOrder
+    const remaining = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    for (let i = 0; i < remaining.length; i++) {
+      await this.prisma.materialChapter.update({
+        where: { id: remaining[i].id },
+        data: { sortOrder: i, chapterIndex: i + 1 },
+      });
+    }
+
+    return this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  /**
+   * 分割章节
+   */
+  async splitChapter(materialId: number, data: { chapterId: number; splitPosition: number }) {
+    const chapter = await this.prisma.materialChapter.findFirst({
+      where: { id: data.chapterId, materialId },
+    });
+    if (!chapter) throw new NotFoundException('章节不存在');
+    if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可编辑');
+    if (!chapter.content || chapter.content.length <= data.splitPosition) {
+      throw new BadRequestException('分割位置超出内容长度');
+    }
+
+    const before = chapter.content.slice(0, data.splitPosition);
+    const after = chapter.content.slice(data.splitPosition);
+
+    // 更新原章节为前半段
+    await this.prisma.materialChapter.update({
+      where: { id: chapter.id },
+      data: {
+        content: before,
+        contentLength: Buffer.byteLength(before, 'utf-8'),
+      },
+    });
+
+    // 创建新章节（后半段）
+    const maxSortOrder = await this.prisma.materialChapter.aggregate({
+      where: { materialId },
+      _max: { sortOrder: true },
+    });
+    const newSortOrder = (maxSortOrder._max.sortOrder || 0) + 1;
+
+    await this.prisma.materialChapter.create({
+      data: {
+        materialId,
+        title: chapter.title + '(续)',
+        chapterIndex: newSortOrder + 1,
+        content: after,
+        contentLength: Buffer.byteLength(after, 'utf-8'),
+        sortOrder: newSortOrder,
+      },
+    });
+
+    // 重新整理 sortOrder
+    const remaining = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    for (let i = 0; i < remaining.length; i++) {
+      await this.prisma.materialChapter.update({
+        where: { id: remaining[i].id },
+        data: { sortOrder: i, chapterIndex: i + 1 },
+      });
+    }
+
+    return this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  /**
+   * 删除章节
+   */
+  async deleteChapter(materialId: number, chapterId: number) {
+    const chapter = await this.prisma.materialChapter.findFirst({
+      where: { id: chapterId, materialId },
+    });
+    if (!chapter) throw new NotFoundException('章节不存在');
+    if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可删除');
+
+    await this.prisma.materialChapter.delete({ where: { id: chapterId } });
+
+    // 重新整理 sortOrder
+    const remaining = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    for (let i = 0; i < remaining.length; i++) {
+      await this.prisma.materialChapter.update({
+        where: { id: remaining[i].id },
+        data: { sortOrder: i, chapterIndex: i + 1 },
+      });
+    }
+
+    return this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  /**
+   * 确认章节结构
+   */
+  async confirmStructure(materialId: number) {
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material) throw new NotFoundException('教材不存在');
+
+    const chapters = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+    });
+    if (chapters.length === 0) throw new BadRequestException('暂无章节，请先上传教材或录入正文');
+
+    // 将所有章节标记为 STRUCTURED
+    await this.prisma.materialChapter.updateMany({
+      where: { materialId },
+      data: { status: 'STRUCTURED' },
+    });
+
+    // 更新教材状态
+    await this.prisma.material.update({
+      where: { id: materialId },
+      data: { status: 'STRUCTURED' },
+    });
+
+    return this.findOne(materialId);
+  }
+
+  /**
+   * 获取章节正文内容
+   */
+  async getChapterContent(materialId: number, chapterId: number) {
+    const chapter = await this.prisma.materialChapter.findFirst({
+      where: { id: chapterId, materialId },
+      select: { id: true, title: true, content: true, contentLength: true, status: true },
+    });
+    if (!chapter) throw new NotFoundException('章节不存在');
+    return chapter;
   }
 }
