@@ -5,10 +5,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class KnowledgePointsService {
   constructor(private prisma: PrismaService) {}
 
-  // 获取树形结构
-  async getTree() {
+  // 获取树形结构，可按科目过滤
+  async getTree(subjectId?: number) {
+    const where: any = { isActive: true };
+    if (subjectId !== undefined) where.subjectId = subjectId;
     const all = await this.prisma.knowledgePoint.findMany({
-      where: { isActive: true },
+      where,
       orderBy: { sortOrder: 'asc' },
     });
     return this.buildTree(all, null);

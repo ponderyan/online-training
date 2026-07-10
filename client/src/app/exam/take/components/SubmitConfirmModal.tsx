@@ -66,6 +66,20 @@ export default function SubmitConfirmModal({
           </div>
         </div>
 
+        {/* 已答率进度条 */}
+        <div className="mb-4">
+          <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--ink-400)' }}>
+            <span>已答率</span>
+            <span>{totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0}%</span>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--ink-100)' }}>
+            <div className="h-full rounded-full transition-all" style={{
+              width: `${totalCount > 0 ? (answeredCount / totalCount) * 100 : 0}%`,
+              background: answeredCount === totalCount ? 'var(--cyan)' : 'var(--fox)',
+            }} />
+          </div>
+        </div>
+
         {unanswered > 0 && unanswered <= 10 && unansweredIndices.length > 0 && (
           <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>
             未答题目：第{' '}

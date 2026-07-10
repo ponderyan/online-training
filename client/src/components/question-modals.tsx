@@ -451,17 +451,42 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
             </span>
           </div>
 
-          {/* 来源教材信息（如有） */}
+          {/* ── 来源教材信息（蓝绿卡片，有教材关联） ── */}
           {question.materialQuestions?.[0]?.material && (
-            <div className="text-xs flex items-center gap-1" style={{ color: 'var(--fox)' }}>
-              📖 来源：{question.materialQuestions[0].material.name}
-              {question.materialQuestions[0].chapter?.title && <> &gt; {question.materialQuestions[0].chapter.title}</>}
-              {question.sourceNote && <span className="ml-1" style={{ color: 'var(--orange)' }}>({question.sourceNote})</span>}
+            <div className="rounded-lg px-4 py-3 flex items-center gap-3"
+              style={{ background: '#f0f7fa', border: '1px solid #d8e8ed' }}>
+              <span style={{ fontSize: '18px' }}>📖</span>
+              <div className="flex-1 min-w-0">
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a7a8a' }}>
+                  {question.materialQuestions[0].material.name}
+                </div>
+                {question.materialQuestions[0].chapter?.title && (
+                  <div style={{ fontSize: '11px', color: '#4a9aaa', marginTop: '1px' }}>
+                    {question.materialQuestions[0].chapter.title}
+                  </div>
+                )}
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#d8e8ed', color: '#1a7a8a', whiteSpace: 'nowrap' }}>
+                结构化出题
+              </span>
             </div>
           )}
+          {/* ── 已归档来源（金色卡片） ── */}
           {question.sourceNote && !question.materialQuestions?.[0]?.material && (
-            <div className="text-xs" style={{ color: 'var(--orange)' }}>
-              📌 {question.sourceNote}
+            <div className="rounded-lg px-4 py-3 flex items-center gap-3"
+              style={{ background: '#fef8ee', border: '1px solid #edd9b0' }}>
+              <span style={{ fontSize: '18px' }}>🗂️</span>
+              <div className="flex-1 min-w-0">
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#b87a20' }}>
+                  {question.sourceNote}
+                </div>
+                <div style={{ fontSize: '11px', color: '#d4a050', marginTop: '1px' }}>
+                  该教材已归档，试题信息保留
+                </div>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#edd9b0', color: '#8a6010', whiteSpace: 'nowrap' }}>
+                已归档
+              </span>
             </div>
           )}
 
@@ -536,6 +561,15 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
 
           {/* 元信息 */}
           <div className="pt-4 border-t text-xs space-y-1.5" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-400)' }}>
+            {question.materialQuestions?.[0]?.material && (
+              <div className="flex justify-between">
+                <span>来源教材</span>
+                <span style={{ color: 'var(--ink-700)', fontWeight: 500 }}>
+                  {question.materialQuestions[0].material.name}
+                  {question.materialQuestions[0].chapter?.title ? ` · ${question.materialQuestions[0].chapter.title}` : ''}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>创建时间</span>
               <span>{fmtDate(question.createdAt)}</span>

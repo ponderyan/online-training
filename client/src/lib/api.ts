@@ -789,7 +789,7 @@ export const api = {
 
   // ── 知识图谱 ──
   knowledgePoints: {
-    getTree: () => request<any[]>('/knowledge-points'),
+    getTree: (subjectId?: number) => request<any[]>(subjectId ? `/knowledge-points?subjectId=${subjectId}` : '/knowledge-points'),
     getOne: (id: number) => request<any>(`/knowledge-points/${id}`),
     create: (data: any) => request<any>('/knowledge-points', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/knowledge-points/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

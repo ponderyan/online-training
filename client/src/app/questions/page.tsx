@@ -53,19 +53,26 @@ export default function QuestionsPage() {
   const [kpTree, setKpTree] = useState<any[]>([]);
   const [kpSelected, setKpSelected] = useState<Set<number>>(new Set());
   const [kpLoading, setKpLoading] = useState(false);
+  const [kpSubjectId, setKpSubjectId] = useState<number>(0);
+
+  const loadKpTree = async (subjectId: number) => {
+    setKpLoading(true);
+    try {
+      const tree = await api.knowledgePoints.getTree(subjectId);
+      setKpTree(tree);
+    } catch {}
+    setKpLoading(false);
+  };
 
   const openKpModal = async (q: any) => {
     setKpModalQuestion(q);
-    setKpLoading(true);
+    setKpTree([]);
+    setKpSelected(new Set());
+    setKpSubjectId(0);
     try {
-      const [tree, existing] = await Promise.all([
-        api.knowledgePoints.getTree(),
-        api.knowledgePoints.getQuestionKPs(q.id),
-      ]);
-      setKpTree(tree);
+      const existing = await api.knowledgePoints.getQuestionKPs(q.id);
       setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
     } catch {}
-    setKpLoading(false);
   };
 
   /** 展平知识点树为列表 */
@@ -387,7 +394,7 @@ export default function QuestionsPage() {
                       <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
                         className="btn btn-xs btn-ghost"
                         disabled={isViewOnly}
-                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingLoading ? '…' : '修改'}</button>
+                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingLoading ? '…' : '编辑'}</button>
                       {q.status === 'PUBLISHED' ? (
                         <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
                           className="btn btn-xs" style={{ color: 'var(--verm)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
@@ -526,9 +533,22 @@ export default function QuestionsPage() {
               <h3 className="font-serif font-bold text-base">🧠 标记知识点 — {kpModalQuestion.content?.slice(0, 30)}…</h3>
               <button onClick={() => setKpModalQuestion(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
-            <div className="modal-body max-h-[60vh] overflow-y-auto">
+            {/* 科目选择器 */}
+            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg" style={{ background: 'var(--paper)' }}>
+              <span className="text-xs font-medium" style={{ color: 'var(--ink-400)', whiteSpace: 'nowrap' }}>科目</span>
+              <select value={kpSubjectId} onChange={e => { const sid = Number(e.target.value); setKpSubjectId(sid); if (sid > 0) loadKpTree(sid); }}
+                className="input text-sm flex-1" style={{ padding: '6px 10px', height: '36px' }}>
+                <option value={0}>请选择科目</option>
+                {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+              </select>
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto">
               {kpLoading ? (
                 <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              ) : kpSubjectId === 0 ? (
+                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>请先选择科目后查看知识点树</div>
+              ) : kpTree.length === 0 ? (
+                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>该科目暂无知识点</div>
               ) : (
                 <div className="space-y-1">
                   {flattenTree(kpTree).map(kp => (

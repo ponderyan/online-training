@@ -31,6 +31,7 @@ interface ExamData {
   remainingTime: number;
   sessionStatus: string;
   questions: QuestionData[];
+  shuffleOptions?: boolean;
 }
 
 export default function ExamTake() {
@@ -51,6 +52,9 @@ export default function ExamTake() {
   const [networkError, setNetworkError] = useState(false);
   const tabSwitchLogRef = useRef<{time: string; duration: number}[]>([]);
   const tabSwitchStartRef = useRef<number | null>(null);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const TAB_SWITCH_WARN = 3;
+  const TAB_SWITCH_MAX = 5;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -75,14 +79,57 @@ export default function ExamTake() {
         if (q.yourAnswer !== null) ans[q.pqId] = q.yourAnswer;
         if (q.isMarked) marked.add(q.questionId);
       }
+      // 从 localStorage 恢复（服务器答案优先）
+      try {
+        const saved = localStorage.getItem(`exam_${params.id}_answers`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          for (const [k, v] of Object.entries(parsed)) {
+            const pk = parseInt(k);
+            // localStorage 已有且服务器没有的答案（刷新前刚答的题）
+            if (ans[pk] === undefined || ans[pk] === null) ans[pk] = v;
+          }
+        }
+      } catch {}
       setAnswers(ans);
       setMarkedQuestions(marked);
       setLoading(false);
     }).catch(() => router.push('/exam'));
   }, [params.id, router]);
 
+  // 选项随机排序（确定性种子，同一考生每次相同）
+  useEffect(() => {
+    if (!exam || !exam.shuffleOptions) return;
+    const seed = `${exam.examId}-${localStorage.getItem('userId') || '0'}`;
+    let seedIdx = 0;
+    const seededRandom = () => {
+      seedIdx++;
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) {
+        hash = ((hash << 5) - hash) + seed.charCodeAt(i) + seedIdx;
+        hash |= 0;
+      }
+      return Math.abs(hash % 10000) / 10000;
+    };
+    const shuffled = exam.questions.map(q => {
+      if (!q.options || q.options.length <= 1) return q;
+      const opts = [...q.options];
+      for (let i = opts.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [opts[i], opts[j]] = [opts[j], opts[i]];
+      }
+      return { ...q, options: opts };
+    });
+    setExam(prev => prev ? { ...prev, questions: shuffled } : prev);
+  }, [exam?.examId, exam?.shuffleOptions]);
+
   const handleAnswer = useCallback((pqId: number, value: any) => {
-    setAnswers(prev => ({ ...prev, [pqId]: value }));
+    setAnswers(prev => {
+      const next = { ...prev, [pqId]: value };
+      // 自动保存到 localStorage
+      try { localStorage.setItem(`exam_${params.id}_answers`, JSON.stringify(next)); } catch {}
+      return next;
+    });
     // 自动跳转（单选题/判断题答完自动下一题）
     if (autoAdvance && exam) {
       const q = exam.questions.find(qx => qx.pqId === pqId);
@@ -140,6 +187,7 @@ export default function ExamTake() {
       });
       setSubmitted(true);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      localStorage.removeItem(`exam_${params.id}_answers`);
       router.push(`/exam/result/${params.id}`);
     } catch {
       setSubmitting(false);
@@ -233,12 +281,23 @@ export default function ExamTake() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [exam, submitted, currentQ, handleAnswer]);
 
-  // 切屏检测（记而不罚）
+  // 切屏检测 + 惩罚
   useEffect(() => {
     if (loading || submitted) return;
     const handleVisibility = () => {
       if (document.hidden) {
         tabSwitchStartRef.current = Date.now();
+        setTabSwitchCount(prev => {
+          const next = prev + 1;
+          if (next >= TAB_SWITCH_MAX) {
+            setTimeout(() => submitRef.current(), 100);
+            return next;
+          }
+          if (next >= TAB_SWITCH_WARN) {
+            alert(`⚠️ 检测到切屏操作（${next}/${TAB_SWITCH_MAX}次），再次切屏将被强制交卷`);
+          }
+          return next;
+        });
       } else if (tabSwitchStartRef.current !== null) {
         const duration = Math.round((Date.now() - tabSwitchStartRef.current) / 1000);
         tabSwitchLogRef.current = [...tabSwitchLogRef.current, {
@@ -268,6 +327,22 @@ export default function ExamTake() {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
+    };
+  }, [loading, submitted]);
+
+  // 禁止复制粘贴（考试中生效）
+  useEffect(() => {
+    if (loading || submitted) return;
+    const preventEvent = (e: Event) => { e.preventDefault(); };
+    document.addEventListener('copy', preventEvent);
+    document.addEventListener('cut', preventEvent);
+    document.addEventListener('paste', preventEvent);
+    document.addEventListener('contextmenu', preventEvent);
+    return () => {
+      document.removeEventListener('copy', preventEvent);
+      document.removeEventListener('cut', preventEvent);
+      document.removeEventListener('paste', preventEvent);
+      document.removeEventListener('contextmenu', preventEvent);
     };
   }, [loading, submitted]);
 

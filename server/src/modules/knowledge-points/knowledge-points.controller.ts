@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { KnowledgePointsService } from './knowledge-points.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
@@ -9,7 +9,9 @@ export class KnowledgePointsController {
 
   @Get('knowledge-points')
   @RequirePermission(P.KNOWLEDGE_VIEW)
-  getTree() { return this.service.getTree(); }
+  getTree(@Query('subjectId') subjectId?: string) {
+    return this.service.getTree(subjectId ? parseInt(subjectId) : undefined);
+  }
 
   @Get('knowledge-points/:id')
   @RequirePermission(P.KNOWLEDGE_VIEW)
