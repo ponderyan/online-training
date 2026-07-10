@@ -8,7 +8,7 @@ export default function AdminLearningHoursPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/admin/learning-hours-review');
+    router.push('/admin/learning-hours-review');
   }, [router]);
 
   return (

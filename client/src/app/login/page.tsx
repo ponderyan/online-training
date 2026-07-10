@@ -8,6 +8,12 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 export default function LoginPage() {
   const router = useRouter();
   const settings = useSiteSettings();
+
+  // ── 已登录用户回退到登录页时自动跳回 dashboard ──
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) router.push('/dashboard');
+  }, [router]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [captchaId, setCaptchaId] = useState('');
@@ -56,7 +62,7 @@ export default function LoginPage() {
           roles: data.user.roles || [],
         }));
       }
-      router.replace('/dashboard');
+      router.push('/dashboard');
     } catch (e: any) {
       setError(e.message);
       fetchCaptcha();

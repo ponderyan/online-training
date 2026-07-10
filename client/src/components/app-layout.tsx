@@ -42,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
         setLoading(false);
       }
-    } else { router.replace('/login'); }
+    } else { router.push('/login'); }
   }, [router]);
 
   if (loading) return null;
