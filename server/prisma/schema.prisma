@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = "mysql://training_user:training_2024@localhost:3306/prisma_migrate_shadow"
 }
 
 // ═══════════════════════════════════════════

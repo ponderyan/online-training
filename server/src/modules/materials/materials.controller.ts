@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { MaterialsService } from './materials.service.js';
@@ -25,6 +25,12 @@ export class MaterialsController {
     });
   }
 
+  @Get('list-for-filter')
+  @RequirePermission(Permissions.QUESTION_CREATE)
+  listForFilter() {
+    return this.service.listForFilter();
+  }
+
   @Get(':id')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -42,11 +48,11 @@ export class MaterialsController {
   async create(@Body() data: {
     name: string;
     subjectId: number;
-    createdBy: number;
+    createdBy?: number;
     batchNote?: string;
     content?: string;
-  }) {
-    return this.service.create(data);
+  }, @Req() req: any) {
+    return this.service.create({ ...data, createdBy: req.user.id });
   }
 
   @Post('upload')
@@ -146,12 +152,6 @@ export class MaterialsController {
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   confirmStructure(@Param('id', ParseIntPipe) id: number) {
     return this.service.confirmStructure(id);
-  }
-
-  @Get('list-for-filter')
-  @RequirePermission(Permissions.QUESTION_CREATE)
-  listForFilter() {
-    return this.service.listForFilter();
   }
 
   @Get(':id/chapters/:chapterId/content')

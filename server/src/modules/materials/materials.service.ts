@@ -627,14 +627,15 @@ export class MaterialsService {
       }
     }
 
-    const finalStatus = allQuestions.length > 0 ? 'GENERATED' : 'UPLOADED';
-    await this.prisma.material.update({ where: { id }, data: { status: finalStatus } });
+    if (allQuestions.length > 0) {
+      await this.prisma.material.update({ where: { id }, data: { status: 'GENERATED' } });
+    }
 
     return {
       total: allQuestions.length,
       chapters: material.chapters.length,
       tokens: totalTokens,
-      status: finalStatus,
+      status: allQuestions.length > 0 ? 'GENERATED' : 'FAILED',
     };
   }
 
@@ -1181,16 +1182,17 @@ ${
       });
     }
 
-    // 完成
-    const finalStatus = totalGenerated > 0 ? 'GENERATED' : 'UPLOADED';
+    // 完成 — 只更新素材状态到 GENERATED（有题时），0题时不降级
     await this.prisma.materialQuestionPlan.update({
       where: { id: planId },
       data: { status: totalGenerated > 0 ? 'COMPLETED' : 'FAILED' },
     });
-    await this.prisma.material.update({
-      where: { id: materialId },
-      data: { status: finalStatus },
-    });
+    if (totalGenerated > 0) {
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { status: 'GENERATED' },
+      });
+    }
 
     const chaptersProcessed = new Set(validConfigs.filter(c => c.chapterId).map(c => c.chapterId)).size;
     return {
@@ -1198,7 +1200,7 @@ ${
       failed: totalFailed,
       configs: validConfigs.length,
       chapters: chaptersProcessed,
-      status: finalStatus,
+      status: totalGenerated > 0 ? 'GENERATED' : 'FAILED',
     };
   }
 

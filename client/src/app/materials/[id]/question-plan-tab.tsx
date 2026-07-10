@@ -31,10 +31,12 @@ interface PlanConfig {
 
 export default function QuestionPlanTab({
   materialId,
+  materialStatus,
   chapters,
   onGenerate,
 }: {
   materialId: number;
+  materialStatus: string;
   chapters: Chapter[];
   onGenerate: () => void;
 }) {
@@ -205,6 +207,18 @@ export default function QuestionPlanTab({
 
   return (
     <div>
+      {/* 指引文案 */}
+      {materialStatus === 'STRUCTURED' && plans.length === 0 && !showNewForm && (
+        <div className="p-4 mb-4 rounded-lg text-sm" style={{ background: 'var(--cyan-glow)', color: 'var(--cyan)', border: '1px solid var(--cyan)' }}>
+          ✅ 教材结构已确认，点击下方「新建出题计划」开始配置各章节的题型和题量 →
+        </div>
+      )}
+      {materialStatus !== 'STRUCTURED' && materialStatus !== 'GENERATED' && materialStatus !== 'REVIEWING' && materialStatus !== 'COMPLETED' && (
+        <div className="p-4 mb-4 rounded-lg text-sm" style={{ background: 'var(--fox-pale)', color: 'var(--fox-dark)', border: '1px solid var(--fox-glow)' }}>
+          ℹ️ 请先在「📖 章节结构」Tab 中确认章节结构后再进行出题配置
+        </div>
+      )}
+
       {/* 执行进度 */}
       {executingPlanId && renderProgress()}
 

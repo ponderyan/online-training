@@ -706,6 +706,7 @@ export default function MaterialDetailPage() {
       {activeTab === 'plan' && (
         <QuestionPlanTab
           materialId={materialId}
+          materialStatus={material.status}
           chapters={material.chapters || []}
           onGenerate={load}
         />

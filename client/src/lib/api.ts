@@ -426,7 +426,7 @@ export const api = {
       request<any>(`/materials/${materialId}/batch-review`, { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/materials/${id}`, { method: 'DELETE' }),
     create: (data: { name: string; subjectId: number; content: string; batchNote?: string }) =>
-      request<any>('/materials', { method: 'POST', body: JSON.stringify({ ...data, createdBy: 1 }) }),
+      request<any>('/materials', { method: 'POST', body: JSON.stringify(data) }),
     // ── 章节编辑 ──
     updateChapter: (materialId: number, chapterId: number, data: { title: string }) =>
       request<any>(`/materials/${materialId}/chapters/${chapterId}`, { method: 'PUT', body: JSON.stringify(data) }),
