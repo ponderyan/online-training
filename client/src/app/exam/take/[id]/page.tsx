@@ -77,7 +77,7 @@ export default function ExamTake() {
       return r.json();
     }).then(data => {
       setExam(data);
-      setTimeLeft(data.remainingTime || data.durationMinutes * 60);
+      setTimeLeft(data.remainingTime ?? data.durationMinutes * 60);
       // 恢复已有答案和标记状态
       const ans: Record<number, any> = {};
       const marked = new Set<number>();
@@ -99,6 +99,10 @@ export default function ExamTake() {
       } catch {}
       setAnswers(ans);
       setMarkedQuestions(marked);
+      // 进入考试自动全屏
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
       setLoading(false);
     }).catch(() => router.push('/exam'));
   }, [params.id, router]);
@@ -295,6 +299,26 @@ export default function ExamTake() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [loading, submitted]);
 
+  // 全屏退出监测 + 重新进入
+  useEffect(() => {
+    if (loading || submitted) return;
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+        setTimeout(() => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        }, 500);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [loading, submitted]);
+
   // === P3: 拦截浏览器后退/前进 ===
   useEffect(() => {
     if (loading || submitted) return;
@@ -315,6 +339,12 @@ export default function ExamTake() {
     if (!exam || submitted) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 阻止 F5 / Ctrl+R / Cmd+R 刷新
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || (e.metaKey && e.key === 'r')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       // ← → 切换题目
       if (e.key === 'ArrowLeft') {
         setCurrentQ(prev => Math.max(0, prev - 1));

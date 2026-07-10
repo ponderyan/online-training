@@ -616,7 +616,7 @@ export class ExamsService {
       examId: exam.id,
       title: exam.title,
       durationMinutes: exam.durationMinutes,
-      remainingTime: session.remainingTime || exam.durationMinutes * 60,
+      remainingTime: session.remainingTime ?? exam.durationMinutes * 60,
       sessionStatus: session.status,
       questions: exam.paper.questions.map((pq: any) => ({
         pqId: pq.id, questionId: pq.question.id, type: pq.question.type,
