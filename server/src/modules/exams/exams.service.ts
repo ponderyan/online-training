@@ -81,6 +81,8 @@ export class ExamsService {
     accessType?: string; shuffleQuestions?: boolean; shuffleOptions?: boolean;
     password?: string;
     programId?: number; passingScore?: number;
+    timeMode?: string; paperMode?: string;
+    tabSwitchLimit?: number; copyProtection?: boolean; autoSaveInterval?: number;
     orgId?: number | null;
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
@@ -119,6 +121,11 @@ export class ExamsService {
         password: data.password || null,
         programId: data.programId || null,
         passingScore: data.passingScore ?? undefined,
+        timeMode: (data.timeMode as any) || 'FIXED',
+        paperMode: (data.paperMode as any) || 'SAME',
+        tabSwitchLimit: data.tabSwitchLimit ?? 5,
+        copyProtection: data.copyProtection ?? true,
+        autoSaveInterval: data.autoSaveInterval ?? 30,
         status: 'DRAFT',
         totalStudents: students.length,
         createdBy: data.createdBy,

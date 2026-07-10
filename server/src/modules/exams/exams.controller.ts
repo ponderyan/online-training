@@ -43,6 +43,8 @@ export class ExamsController {
     accessType?: string; shuffleQuestions?: boolean; shuffleOptions?: boolean;
     password?: string;
     programId?: number; passingScore?: number;
+    timeMode?: string; paperMode?: string;
+    tabSwitchLimit?: number; copyProtection?: boolean; autoSaveInterval?: number;
   }, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
     return this.service.create({ ...data, createdBy: userId, orgId: req.user?.orgId ?? null });
