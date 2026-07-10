@@ -853,6 +853,16 @@ model MaterialQuestion {
 // 考试场次
 // ═══════════════════════════════════════════
 
+enum ExamTimeMode {
+  FIXED     // 统一开考（固定时间）
+  FLEXIBLE  // 随到随考（灵活时间）
+}
+
+enum ExamPaperMode {
+  SAME      // 统一试卷
+  RANDOM    // 随机抽题
+}
+
 enum ExamStatus {
   DRAFT
   PUBLISHED
@@ -952,6 +962,13 @@ model Exam {
 
   shuffleQuestions Boolean @default(true) @map("shuffle_questions")
   shuffleOptions   Boolean @default(true) @map("shuffle_options")
+
+  // ── Part 4: 场景配置 ──
+  timeMode          ExamTimeMode  @default(FIXED)    @map("time_mode")
+  paperMode         ExamPaperMode @default(SAME)     @map("paper_mode")
+  tabSwitchLimit    Int           @default(5)        @map("tab_switch_limit")   // 切屏N次后自动交卷，0=不限制
+  copyProtection    Boolean       @default(true)     @map("copy_protection")    // 禁止复制粘贴
+  autoSaveInterval  Int           @default(30)       @map("auto_save_interval") // 自动保存间隔（秒）
 
   status         ExamStatus @default(DRAFT)
   totalStudents  Int        @default(0) @map("total_students")
