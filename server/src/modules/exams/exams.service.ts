@@ -321,7 +321,13 @@ export class ExamsService {
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
     });
-    if (!session || session.status !== 'ACTIVE') return { ok: false };
+    if (!session || session.status !== 'ACTIVE') {
+      return {
+        ok: false,
+        remainingTime: Math.max(0, session?.remainingTime || 0),
+        sessionStatus: session?.status || 'TERMINATED',
+      };
+    }
 
     const updateData: any = {
       lastHeartbeatAt: new Date(),
@@ -355,6 +361,7 @@ export class ExamsService {
     return {
       ok: true,
       remainingTime: updateData.remainingTime,
+      sessionStatus: session.status,
       messages: unreadMessages,
     };
   }

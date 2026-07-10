@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import FoxLogo from '@/components/fox-logo';
 
 interface ExamItem {
@@ -15,6 +16,7 @@ interface ExamItem {
   status: string;
   accessType: string;
   sessionStatus: string;
+  remainingTime?: number;
   myScore: number | null;
   myFinalScore: number | null;
   isPassed: boolean | null;
@@ -22,47 +24,42 @@ interface ExamItem {
   submittedAt: string | null;
 }
 
-type TabKey = 'pending' | 'active' | 'awaiting' | 'completed';
-
-const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'pending', label: '待考', icon: '⏳' },
-  { key: 'active', label: '考试中', icon: '📝' },
-  { key: 'awaiting', label: '待公布', icon: '⏸️' },
-  { key: 'completed', label: '已完成', icon: '✅' },
-];
-
-function formatCountdown(target: Date): string {
-  const diff = target.getTime() - Date.now();
-  if (diff <= 0) return '已开始';
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const d = Math.floor(diff / 86400000);
-  if (d > 0) return `${d}天${h % 24}小时后`;
-  if (h > 0) return `${h}小时${m}分后`;
-  return `${m}分钟后`;
+function formatRemainingTime(seconds?: number): string {
+  if (!seconds || seconds <= 0) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function formatDuration(minutes: number): string {
-  if (minutes >= 60) {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}小时${m}分钟` : `${h}小时`;
-  }
-  return `${minutes}分钟`;
+function formatExamTime(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return '已开始';
+  if (diffDays === 1) return '明天 ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  if (diffDays <= 7) return `${diffDays}天后 ` + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+}
+
+const styles = {
+  container: { maxWidth: '800px', margin: '0 auto', padding: '24px 16px 48px' } as const,
+  section: { marginBottom: '40px' } as const,
+  sectionTitle: { fontSize: '16px', fontWeight: 600, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' } as const,
+  emptyText: { fontSize: '14px', color: '#94a3b8', padding: '32px 0', textAlign: 'center' } as const,
+};
 
 export default function ExamList() {
   const router = useRouter();
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabKey>('pending');
-  const [now, setNow] = useState(new Date());
-
-  // Tick every 10s for countdown
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -70,41 +67,17 @@ export default function ExamList() {
     fetch('/api/student/exams', {
       headers: { Authorization: `Bearer ${token}` },
     }).then(r => r.json()).then(data => {
-      const list: ExamItem[] = Array.isArray(data) ? data : [];
-      setExams(list);
-      // Auto-switch to active tab if there are active exams
-      const active = list.filter(e => e.sessionStatus === 'ACTIVE');
-      if (active.length > 0) setActiveTab('active');
+      setExams(Array.isArray(data) ? data : []);
     }).finally(() => setLoading(false));
   }, [router]);
 
-  const categorized = useCallback((): { pending: ExamItem[]; active: ExamItem[]; awaiting: ExamItem[]; completed: ExamItem[] } => {
-    const pending: ExamItem[] = [];
-    const awaiting: ExamItem[] = [];
-    const active: ExamItem[] = [];
-    const completed: ExamItem[] = [];
+  const activeExams = exams.filter(e => e.sessionStatus === 'ACTIVE');
+  const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE');
+  const historyExams = exams.filter(e => e.submittedAt);
 
-    exams.forEach(e => {
-      if (e.scoringStatus === 'PUBLISHED' || e.scoringStatus === 'ADJUSTED') {
-        completed.push(e);
-      } else if (e.submittedAt) {
-        awaiting.push(e);
-      } else if (e.sessionStatus === 'ACTIVE') {
-        active.push(e);
-      } else {
-        pending.push(e);
-      }
-    });
-
-    pending.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    awaiting.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
-    completed.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
-
-    return { pending, active, awaiting, completed };
-  }, [exams]);
-
-  const { pending, active, awaiting, completed } = categorized();
-  const tabCounts = { pending: pending.length, active: active.length, awaiting: awaiting.length, completed: completed.length };
+  const sortedActive = [...activeExams].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const sortedPending = [...pendingExams].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const sortedHistory = [...historyExams].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--paper)' }}>
@@ -113,180 +86,10 @@ export default function ExamList() {
     </div>
   );
 
-  const renderExamCard = (exam: ExamItem, variant: 'pending' | 'active' | 'awaiting' | 'completed') => {
-    const startTime = new Date(exam.startTime);
-    const endTime = new Date(exam.endTime);
-    const isAvailable = startTime <= now && new Date(exam.endTime) > now && !exam.submittedAt;
-
-    if (variant === 'active') {
-      return (
-        <div
-          key={exam.id}
-          onClick={() => router.push(`/exam/take/${exam.id}`)}
-          className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-lg active:scale-[0.99]"
-          style={{
-            background: 'white',
-            border: '2px solid var(--fox)',
-            boxShadow: '0 4px 20px rgba(232,122,48,0.12)',
-          }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-base" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{exam.paperName}</p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0" style={{
-              background: '#e87a3018',
-              color: 'var(--fox)',
-            }}>
-              📝 考试中
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
-            <span>⏱ {formatDuration(exam.durationMinutes)}</span>
-            <span>📊 {exam.totalScore}分</span>
-            {exam.endTime && (
-              <span style={{ color: new Date(exam.endTime) < now ? '#ef4444' : 'var(--ink-400)' }}>
-                ⏰ 截止 {new Date(exam.endTime).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <div className="w-full h-2 rounded-full" style={{ background: 'var(--ink-100)' }}>
-              <div className="h-full rounded-full bg-[var(--fox)]" style={{
-                width: '35%',
-                transition: 'width 0.3s',
-              }} />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px]" style={{ color: 'var(--fox)' }}>答题进度</span>
-              <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>继续答题 →</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (variant === 'awaiting') {
-    return (
-      <div key={exam.id} className="rounded-xl p-5 opacity-70" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-base" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{exam.paperName} · {exam.totalScore}分</p>
-          </div>
-          <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: '#fff8e1', color: '#f57f17' }}>已交卷</span>
-        </div>
-        <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
-          交卷时间：{exam.submittedAt ? new Date(exam.submittedAt).toLocaleString('zh-CN') : '—'}
-        </div>
-        <div className="mt-3 text-xs italic" style={{ color: 'var(--ink-300)' }}>成绩尚未发布，请等待管理员发布</div>
-      </div>
-    );
-  }
-
-  if (variant === 'completed') {
-      const passed = exam.isPassed === true;
-      return (
-        <div
-          key={exam.id}
-          onClick={() => router.push(`/exam/result/${exam.id}`)}
-          className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-          style={{
-            background: 'white',
-            border: `1px solid ${passed ? 'var(--sage)' : 'var(--ink-100)'}`,
-            opacity: 0.85,
-          }}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-                {passed ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#2e7d3218', color: '#2e7d32' }}>✅ 通过</span>
-                ) : exam.isPassed === false ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#ef444418', color: '#ef4444' }}>❌ 未通过</span>
-                ) : (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>⏳ 待阅卷</span>
-                )}
-              </div>
-              <p className="text-xs" style={{ color: 'var(--ink-400)' }}>{exam.paperName}</p>
-              <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-                <span>⏱ {formatDuration(exam.durationMinutes)}</span>
-                <span>📊 {exam.totalScore}分</span>
-                {exam.myFinalScore !== null && (
-                  <span className="font-semibold" style={{ color: passed ? '#2e7d32' : '#ef4444' }}>
-                    🏆 得分：{exam.myFinalScore}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0 ml-4">
-              <div className="text-2xl">{passed ? '🎉' : exam.isPassed === false ? '😅' : '⏳'}</div>
-              <div className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>
-                {exam.submittedAt ? new Date(exam.submittedAt).toLocaleDateString('zh-CN') : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Pending
-    const canStart = isAvailable && (exam.status === 'PUBLISHED' || exam.status === 'IN_PROGRESS');
-    return (
-      <div
-        key={exam.id}
-        className="rounded-xl p-5 transition-all hover:shadow-md"
-        style={{
-          background: 'white',
-          border: '1px solid var(--ink-100)',
-        }}>
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{exam.paperName}</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>⏱ {formatDuration(exam.durationMinutes)}</span>
-              <span>📊 {exam.totalScore}分</span>
-              <span>📅 {startTime.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}</span>
-              {startTime > now && (
-                <span className="font-medium" style={{ color: 'var(--fox)' }}>
-                  ⏰ {formatCountdown(startTime)}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex-shrink-0 ml-4 self-start">
-            {canStart ? (
-              <button
-                onClick={() => router.push(`/exam/take/${exam.id}`)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all hover:brightness-110 active:scale-95"
-                style={{ background: 'var(--fox)', color: '#fff' }}>
-                进入考试
-              </button>
-            ) : isAvailable ? (
-              <span className="text-xs px-3 py-2 rounded-lg" style={{ background: 'var(--ink-100)', color: 'var(--ink-300)' }}>
-                暂未开放
-              </span>
-            ) : (
-              <div className="text-right">
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
-                  {startTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 开放
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const currentList = activeTab === 'active' ? active : activeTab === 'completed' ? completed : pending;
+  const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
-      {/* Header */}
       <div className="sticky top-0 z-10 backdrop-blur-md" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -295,63 +98,110 @@ export default function ExamList() {
           </div>
           <button onClick={() => router.push('/dashboard')}
             className="text-xs px-3 py-1.5 rounded-md bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-400)' }}>
-            ← 返回
-          </button>
+            style={{ color: 'var(--ink-400)' }}>← 返回</button>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-6">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.04)' }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border-none cursor-pointer"
-              style={{
-                background: activeTab === tab.key ? 'white' : 'transparent',
-                color: activeTab === tab.key ? 'var(--ink-700)' : 'var(--ink-400)',
-                boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              }}>
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-              {tabCounts[tab.key] > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
-                  background: activeTab === tab.key ? 'var(--fox-glow)' : 'var(--ink-100)',
-                  color: activeTab === tab.key ? 'var(--fox)' : 'var(--ink-400)',
+      <div style={styles.container}>
+        {/* 📝 当前考试 */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>📝 当前考试</h2>
+          {!hasCurrent ? (
+            <p style={styles.emptyText}>暂无当前考试</p>
+          ) : (
+            <>
+              {sortedActive.map(exam => (
+                <div key={exam.id} style={{
+                  background: 'white', borderRadius: '12px', border: '2px solid #e87a30',
+                  padding: '20px 24px', marginBottom: '12px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
-                  {tabCounts[tab.key]}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: '#fef3e7', color: '#e87a30', fontWeight: 600 }}>📝 考试中</span>
+                    </div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                      {exam.paperName} · ⏱ {formatRemainingTime(exam.remainingTime)}
+                    </p>
+                  </div>
+                  <Link href={`/exam/take/${exam.id}`} style={{
+                    padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                    fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
+                  }}>继续答题 →</Link>
+                </div>
+              ))}
+              {sortedPending.map(exam => (
+                <div key={exam.id} style={{
+                  background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+                  padding: '20px 24px', marginBottom: '12px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 2px' }}>
+                      ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 📅 {formatExamTime(exam.startTime)}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{exam.paperName}</p>
+                  </div>
+                  <Link href={`/exam/take/${exam.id}`} style={{
+                    padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                    fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
+                  }}>进入考试 →</Link>
+                </div>
+              ))}
+            </>
+          )}
+        </section>
 
-        {/* Content */}
-        {currentList.length === 0 ? (
-          <div className="card p-12 text-center">
-            <div className="text-5xl mb-4">
-              {activeTab === 'pending' ? '📋' : activeTab === 'active' ? '📝' : '🎉'}
-            </div>
-            <p className="text-base font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-              {activeTab === 'pending' ? '暂无待考考试' : activeTab === 'active' ? '没有正在进行的考试' : '还没有完成过考试'}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
-              {activeTab === 'pending' ? '当有考试安排时会显示在这里' : activeTab === 'active' ? '开始考试后，这里会显示答题进度' : '完成考试后，成绩会显示在这里'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {currentList.map(exam => renderExamCard(exam, activeTab))}
-          </div>
-        )}
+        {/* 📋 历史记录 */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>📋 历史记录</h2>
+          {sortedHistory.length === 0 ? (
+            <p style={styles.emptyText}>暂无历史记录</p>
+          ) : (
+            sortedHistory.map(exam => {
+              const isPublished = exam.scoringStatus === 'PUBLISHED' || exam.scoringStatus === 'ADJUSTED';
+              const isPassed = exam.isPassed === true;
+              const badge = !isPublished
+                ? { text: '⏸️ 待公布', bg: '#f8fafc', color: '#94a3b8' }
+                : isPassed
+                ? { text: '✅ 通过', bg: '#f0fdf4', color: '#16a34a' }
+                : { text: '❌ 未通过', bg: '#fef2f2', color: '#dc2626' };
+
+              return (
+                <div key={exam.id} onClick={() => isPublished ? router.push(`/exam/result/${exam.id}`) : undefined}
+                  style={{
+                    background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+                    padding: '16px 24px', marginBottom: '8px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    cursor: isPublished ? 'pointer' : 'default',
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '999px', background: badge.bg, color: badge.color, fontWeight: 600 }}>
+                      {badge.text}
+                    </span>
+                    <div>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b' }}>{exam.title}</span>
+                      {isPublished && (
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#e87a30', marginLeft: '12px' }}>
+                          {exam.myFinalScore || exam.myScore}分
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>{formatDate(exam.submittedAt)}</span>
+                    {isPublished && <span style={{ fontSize: '14px', color: '#94a3b8' }}>→</span>}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </section>
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs py-6" style={{ color: 'var(--ink-200)' }}>
-        FoxLearn · 跟着小狐狸，知识不迷路 🐾
-      </p>
+      <p className="text-center text-xs py-6" style={{ color: 'var(--ink-200)' }}>FoxLearn · 跟着小狐狸，知识不迷路 🐾</p>
     </div>
   );
 }

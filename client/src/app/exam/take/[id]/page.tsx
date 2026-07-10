@@ -48,6 +48,8 @@ export default function ExamTake() {
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const heartbeatRef = useRef<any>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const remindedRef = useRef<Set<number>>(new Set());
   const heartbeatFailCount = useRef(0);
   const [networkError, setNetworkError] = useState(false);
   const [proctorMessages, setProctorMessages] = useState<any[]>([]);
@@ -201,13 +203,13 @@ export default function ExamTake() {
   submitRef.current = handleSubmit;
   useEffect(() => {
     if (loading || submitted || !exam) return;
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setTimeLeft(t => {
-        if (t <= 1) { clearInterval(timer); submitRef.current(); return 0; }
+        if (t <= 1) { if (timerRef.current) clearInterval(timerRef.current); submitRef.current(); return 0; }
         return t - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [loading, submitted, exam]);
 
   // 心跳（每30秒）
@@ -222,6 +224,21 @@ export default function ExamTake() {
         if (res.ok) {
           heartbeatFailCount.current = 0;
           const data = await res.json();
+
+          // === P2: 检查会话状态（强制交卷/超时/终止）===
+          if (data.sessionStatus && data.sessionStatus !== 'ACTIVE') {
+            alert('考试已被结束，系统将退出答题页面。');
+            setSubmitted(true);
+            if (timerRef.current) clearInterval(timerRef.current);
+            router.push('/exam');
+            return;
+          }
+
+          // === P1: 同步服务端剩余时间（监考延长后生效）===
+          if (typeof data.remainingTime === 'number') {
+            setTimeLeft(data.remainingTime);
+          }
+
           if (data.messages?.length > 0) {
             const newMessages = data.messages.filter(
               (m: any) => !dismissedMessagesRef.current.has(m.id)
@@ -254,6 +271,37 @@ export default function ExamTake() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [loading, submitted]);
+
+  // === P3: 拦截浏览器后退/前进 ===
+  useEffect(() => {
+    if (loading || submitted) return;
+    const currentUrl = window.location.href;
+    window.history.pushState({ exam: true }, '', currentUrl);
+    const handlePopState = () => {
+      const confirmLeave = window.confirm('考试正在进行中，确定要离开吗？离开后考试不会自动交卷，回来后可继续作答。');
+      if (!confirmLeave) {
+        window.history.pushState({ exam: true }, '', currentUrl);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [loading, submitted]);
+
+  // === P4: 时间提醒 ===
+  const REMINDER_THRESHOLDS = [600, 300, 60];
+  useEffect(() => {
+    if (loading || submitted || !exam) return;
+    const triggered = REMINDER_THRESHOLDS.find(t => timeLeft <= t && !remindedRef.current.has(t));
+    if (triggered !== undefined) {
+      remindedRef.current.add(triggered);
+      const messages: Record<number, string> = {
+        600: '⏰ 距考试结束还有 10 分钟，请抓紧时间！',
+        300: '⏰ 距考试结束还有 5 分钟，请准备提交答案。',
+        60: '⏰ 距考试结束还有 1 分钟，系统将自动交卷！',
+      };
+      alert(messages[triggered]);
+    }
+  }, [timeLeft, loading, submitted, exam]);
 
   // 键盘快捷键
   useEffect(() => {
