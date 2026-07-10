@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import { PDFParse } from 'pdf-parse';
 import { execFile } from 'child_process';
 import * as util from 'util';
+import * as mammoth from 'mammoth';
 const execFileAsync = util.promisify(execFile);
 
 @Injectable()
@@ -165,7 +166,7 @@ export class MaterialsService {
   }
 
   async upload(file: Express.Multer.File, body: { subjectId: string; name?: string; batchNote?: string; createdBy: string }) {
-    if (!file) throw new BadRequestException('请上传PDF或PPTX文件');
+    if (!file) throw new BadRequestException('请上传PDF、PPTX或Word文件');
 
     // 修复文件名编码：浏览器上传的中文文件名可能被 multer 以 Latin-1 解码
     const fixEncoding = (s: string) => {
@@ -181,9 +182,18 @@ export class MaterialsService {
     const headerHex = file.buffer.slice(0, 4).toString('hex');
     let detectedExt: string;
     let detectedType: string;
-    if (headerHex === '25504446') { detectedExt = '.pdf'; detectedType = 'pdf'; }
-    else if (headerHex === '504b0304') { detectedExt = '.pptx'; detectedType = 'pptx'; }
-    else { detectedExt = '.pdf'; detectedType = 'unknown'; }
+    if (headerHex === '25504446') {
+      detectedExt = '.pdf'; detectedType = 'pdf';
+    } else if (headerHex === '504b0304') {
+      // ZIP容器，需区分 PPTX / DOCX
+      const detected = detectOfficeType(file.buffer, file.originalname);
+      detectedExt = detected.ext;
+      detectedType = detected.type;
+    } else if (headerHex.startsWith('d0cf11e0')) {
+      detectedExt = '.doc'; detectedType = 'doc';
+    } else {
+      detectedExt = '.pdf'; detectedType = 'unknown';
+    }
 
     const savedName = `${crypto.randomUUID()}${detectedExt}`;
     const filePath = path.join(this.uploadDir, savedName);
@@ -191,7 +201,7 @@ export class MaterialsService {
 
     const material = await this.prisma.material.create({
       data: {
-        name: body.name || fixEncoding(file.originalname).replace(/\.(pdf|pptx)$/i, ''),
+        name: body.name || fixEncoding(file.originalname).replace(/\.(pdf|pptx|docx|doc)$/i, ''),
         fileName: fixEncoding(file.originalname),
         fileSize: file.size,
         filePath: savedName,
@@ -208,10 +218,14 @@ export class MaterialsService {
       await this.processPptx(material.id, filePath);
     } else if (detectedType === 'pdf') {
       await this.processPdf(material.id, filePath, file.originalname);
+    } else if (detectedType === 'docx') {
+      await this.processDocx(material.id, filePath);
+    } else if (detectedType === 'doc') {
+      await this.processDoc(material.id, filePath);
     } else {
       await this.prisma.material.update({
         where: { id: material.id },
-        data: { errorMessage: '未能识别文件格式，请上传 PDF 或 PPTX 文件' },
+        data: { errorMessage: '未能识别文件格式，请上传 PDF、PPTX 或 DOCX 文件' },
       });
     }
 
@@ -652,13 +666,18 @@ export class MaterialsService {
 1. 严格基于教材内容出题，不要编造教材中没有的知识点
 2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)
 3. 每题标注难度：EASY(易)、MEDIUM_EASY(较易)、MEDIUM_HARD(较难)、HARD(难)
-4. 标注所属知识点
+4. 标注所属知识点(knowledgePoint)
 5. 单选题需提供4个选项(A/B/C/D)，多选题提供4-5个选项
 6. 判断题答案填 true 或 false
 7. 填空题需给出正确答案
 8. 简答题需给出参考答案要点
 9. 题目覆盖教材的重点和难点
-10. 返回严格的 JSON 格式，不要包含任何其他文字`;
+10. 返回严格的 JSON 格式，不要包含任何其他文字
+11. 每道题必须包含以下所有字段（不可省略任一）：
+    - type - difficulty - knowledgePoint - sourceChunk(20-50字原文引用)
+    - content - options(选择题必填) - blanks(填空题必填)
+    - answer - explanation(答案解析，必须包含)
+    - suggestedGroup(默认"EXAM_GROUP")`;
 
     // 如果有按比例分配的章节题量，优先使用；否则回退到 batchNote 整份说明
     let countNote = '';
@@ -728,20 +747,22 @@ ${
       const usage = body.usage || {};
       const totalTokens = (usage.total_tokens || 0) + (usage.completion_tokens || 0);
 
-      // 解析 JSON — 可能被 markdown 代码块包裹
-      let jsonStr = reply.trim();
-      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) jsonStr = jsonMatch[1].trim();
-
-      const questions = JSON.parse(jsonStr);
-      if (!Array.isArray(questions)) throw new Error('AI 返回格式异常：非数组');
+      const questions = parseAIJsonResponse(reply);
 
       // 验证和清洗
-      const validQuestions = questions.filter((q: any) => q.content && q.type).map((q: any) => ({
-        ...q,
-        type: ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'].includes(q.type) ? q.type : 'SINGLE_CHOICE',
-        difficulty: ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'].includes(q.difficulty) ? q.difficulty : 'MEDIUM_EASY',
-      }));
+      const validQuestions = questions
+        .filter((q: any) => q.content && q.type)
+        .map((q: any) => {
+          const { question, warnings } = validateAndFixQuestion(q);
+          if (warnings.length > 0) {
+            console.warn(`[AI出题质量] 章节 "${chapter.title}" 题目: ${warnings.join('; ')}`);
+          }
+          return {
+            ...question,
+            type: question.type,
+            difficulty: question.difficulty,
+          };
+        });
 
       return { questions: validQuestions, tokens: totalTokens };
     } catch (e: any) {
@@ -1241,8 +1262,13 @@ ${
 2. 题型：${typeLabel[cfg.type] || cfg.type}
 3. ${typeInstructions}
 4. 标注难度：EASY/MEDIUM_EASY/MEDIUM_HARD/HARD
-5. 标注所属知识点
-6. 返回严格的JSON数组格式`;
+5. 标注所属知识点(knowledgePoint)
+6. 返回严格的JSON数组格式
+7. 每道题必须包含以下所有字段（不可省略任一）：
+   - type - difficulty - knowledgePoint - sourceChunk(20-50字原文引用)
+   - content - options(选择题必填) - blanks(填空题必填)
+   - answer - explanation(答案解析，必须包含)
+   - suggestedGroup(默认"EXAM_GROUP")`;
 
     const userPrompt = `教材名称：${material.name}
 ${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
@@ -1299,18 +1325,21 @@ ${content.slice(0, 15000)}
       const body: any = await response.json();
       const reply = body.choices?.[0]?.message?.content || '';
 
-      let jsonStr = reply.trim();
-      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) jsonStr = jsonMatch[1].trim();
+      const questions = parseAIJsonResponse(reply);
 
-      const questions = JSON.parse(jsonStr);
-      if (!Array.isArray(questions)) throw new Error('AI 返回格式异常：非数组');
-
-      return questions.filter((q: any) => q.content).map((q: any) => ({
-        ...q,
-        type: cfg.type,
-        difficulty: ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'].includes(q.difficulty) ? q.difficulty : 'MEDIUM_EASY',
-      }));
+      return questions
+        .filter((q: any) => q.content)
+        .map((q: any) => {
+          const { question, warnings } = validateAndFixQuestion(q);
+          if (warnings.length > 0) {
+            console.warn(`[AI出题质量] 章节 "${cfg.chapter?.title || ''}" 题型 ${cfg.type}: ${warnings.join('; ')}`);
+          }
+          return {
+            ...question,
+            type: cfg.type,
+            difficulty: question.difficulty,
+          };
+        });
     } catch (e: any) {
       if (e.name === 'TimeoutError' || e.name === 'AbortError') {
         throw new Error('AI 请求超时');
@@ -1389,4 +1418,203 @@ ${content.slice(0, 15000)}
     // 执行
     return this.executeQuestionPlan(materialId, plan.id);
   }
+
+  /**
+   * 处理 DOCX 教材 — 使用 mammoth 提取文字
+   */
+  private async processDocx(materialId: number, filePath: string) {
+    try {
+      const result = await mammoth.extractRawText({ path: filePath });
+      const text = result.value;
+      if (text.trim().length < 10) {
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { errorMessage: 'Word文档中未找到文字内容' },
+        });
+      } else {
+        const chapters = this.parseTextToChapters(text);
+        await this.saveChapters(materialId, chapters);
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: {
+            status: 'OCR_DONE',
+            totalPages: Math.ceil(text.length / 2000) || 1,
+            errorMessage: null,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('Word text extraction failed:', e.message);
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { errorMessage: 'Word文字提取失败：' + e.message },
+      }).catch(() => {});
+    }
+  }
+
+  /**
+   * 处理旧版 DOC 教材 — 尝试 catdoc，失败则提示转换
+   */
+  private async processDoc(materialId: number, filePath: string) {
+    try {
+      const { stdout } = await execFileAsync('catdoc', [filePath], {
+        timeout: 30000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      const text = stdout.trim();
+      if (text.length < 10) throw new Error('catdoc returned empty');
+      const chapters = this.parseTextToChapters(text);
+      await this.saveChapters(materialId, chapters);
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { status: 'OCR_DONE', totalPages: Math.ceil(text.length / 2000) || 1, errorMessage: null },
+      });
+    } catch {
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { errorMessage: '旧版 .doc 格式暂不支持自动提取，请转换为 .docx 后重试，或使用"录入正文"功能手动输入' },
+      });
+    }
+  }
+}
+
+/**
+ * 多策略JSON解析：从AI回复中提取试题数组
+ * 策略：① 直接JSON.parse → ② 去markdown代码块 → ③ 去尾部非JSON文本 → ④ 去代码块+去尾部文本
+ */
+function parseAIJsonResponse(reply: string): any[] {
+  const strategies = [
+    // 策略1：直接解析
+    (s: string) => JSON.parse(s),
+    // 策略2：去markdown代码块
+    (s: string) => {
+      const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+      if (m) return JSON.parse(m[1].trim());
+      throw new Error('no code block');
+    },
+    // 策略3：去尾部非JSON文本（找到最后一个 ] 后截断）
+    (s: string) => {
+      const lastBracket = s.lastIndexOf(']');
+      if (lastBracket >= 0) return JSON.parse(s.slice(0, lastBracket + 1));
+      throw new Error('no array');
+    },
+    // 策略4：去markdown + 去尾部文本
+    (s: string) => {
+      const m = s.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+      if (m) {
+        const trimmed = m[1].trim();
+        const lastB = trimmed.lastIndexOf(']');
+        if (lastB >= 0) return JSON.parse(trimmed.slice(0, lastB + 1));
+      }
+      throw new Error('all strategies failed');
+    },
+  ];
+
+  for (const fn of strategies) {
+    try {
+      const result = fn(reply);
+      if (Array.isArray(result)) return result;
+    } catch { /* try next */ }
+  }
+  throw new Error('AI返回的JSON无法解析：不是有效的JSON数组');
+}
+
+/**
+ * 逐题校验和修复
+ */
+function validateAndFixQuestion(q: any): { question: any; warnings: string[] } {
+  const warnings: string[] = [];
+  const fixed = { ...q };
+
+  // 1. 类型验证
+  const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'];
+  if (!VALID_TYPES.includes(fixed.type)) {
+    warnings.push(`无效题型: ${fixed.type}，回退至 SINGLE_CHOICE`);
+    fixed.type = 'SINGLE_CHOICE';
+  }
+
+  // 2. 难度标准化
+  const VALID_DIFF = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'];
+  if (!VALID_DIFF.includes(fixed.difficulty)) {
+    const d = String(fixed.difficulty || '').toLowerCase();
+    if (d.includes('易') || d === 'easy') fixed.difficulty = 'EASY';
+    else if (d.includes('较易') || d === 'medium_easy') fixed.difficulty = 'MEDIUM_EASY';
+    else if (d.includes('较难') || d === 'medium_hard' || d.includes('中')) fixed.difficulty = 'MEDIUM_HARD';
+    else if (d.includes('难') || d === 'hard') fixed.difficulty = 'HARD';
+    else {
+      warnings.push(`无效难度: ${fixed.difficulty}，回退至 MEDIUM_EASY`);
+      fixed.difficulty = 'MEDIUM_EASY';
+    }
+  }
+
+  // 3. 答案解析强制提示
+  if (!fixed.explanation || !fixed.explanation.trim()) {
+    warnings.push('缺少答案解析(explanation)');
+  }
+
+  // 4. 知识点提示
+  if (!fixed.knowledgePoint || !fixed.knowledgePoint.trim()) {
+    warnings.push('缺少知识点(knowledgePoint)');
+  }
+
+  // 5. 原文引用提示
+  if (!fixed.sourceChunk || !fixed.sourceChunk.trim()) {
+    warnings.push('缺少原文引用(sourceChunk)');
+  }
+
+  // 6. 选择题校验
+  if (['SINGLE_CHOICE', 'MULTIPLE_CHOICE'].includes(fixed.type)) {
+    if (!fixed.options || !Array.isArray(fixed.options) || fixed.options.length < 2) {
+      warnings.push('选择题选项不足');
+    }
+    if (fixed.type === 'SINGLE_CHOICE') {
+      const correct = (fixed.options || []).filter((o: any) => o.isCorrect);
+      if (correct.length !== 1) {
+        warnings.push(`单选题应有1个正确选项，当前${correct.length}个`);
+      }
+    }
+  }
+
+  // 7. 判断题答案标准化
+  if (fixed.type === 'TRUE_FALSE') {
+    const ans = String(fixed.answer || '').trim().toLowerCase();
+    if (['true', 't', '对', '正确', '√', '✓', '是', '1'].includes(ans)) {
+      fixed.answer = 'true';
+    } else if (['false', 'f', '错', '错误', '×', '✕', '否', '0'].includes(ans)) {
+      fixed.answer = 'false';
+    } else if (fixed.answer) {
+      warnings.push(`判断题答案格式异常: ${fixed.answer}，未标准化`);
+    }
+  }
+
+  // 8. 填空题校验
+  if (fixed.type === 'FILL_BLANK') {
+    if (!fixed.blanks || !Array.isArray(fixed.blanks) || fixed.blanks.length === 0) {
+      warnings.push('填空题缺少空白(blanks)');
+    }
+  }
+
+  // 9. 清洗options标签
+  if (fixed.options && Array.isArray(fixed.options)) {
+    fixed.options = fixed.options.map((o: any, i: number) => ({
+      ...o,
+      label: o.label || String.fromCharCode(65 + i),
+    }));
+  }
+
+  return { question: fixed, warnings };
+}
+
+/**
+ * 通过 ZIP 内部路径区分 DOCX / PPTX
+ */
+function detectOfficeType(buffer: Buffer, originalName: string): { ext: string; type: string } {
+  const str = buffer.toString('utf-8', 0, Math.min(buffer.length, 100 * 1024));
+  if (str.includes('word/')) return { ext: '.docx', type: 'docx' };
+  if (str.includes('ppt/')) return { ext: '.pptx', type: 'pptx' };
+  // 回退到文件扩展名
+  const ext = path.extname(originalName).toLowerCase();
+  if (ext === '.docx') return { ext: '.docx', type: 'docx' };
+  if (ext === '.doc') return { ext: '.doc', type: 'doc' };
+  return { ext: '.pptx', type: 'pptx' };
 }

@@ -52,7 +52,7 @@ export default function MaterialsPage() {
         <div>
           <h1 className="page-title">📖 教材出题</h1>
           <p className="page-subtitle">
-            上传教材PDF → AI自动出题 → 逐题审核入库 &nbsp;|&nbsp;
+            上传教材（PDF/PPTX/Word）→ AI自动出题 → 逐题审核入库 &nbsp;|&nbsp;
             已出题 {generatedCount} 份 · 待审核 {pendingReview} 份
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function MaterialsPage() {
         <div className="text-center py-20" style={{ color: 'var(--ink-300)' }}>
           <div className="text-4xl mb-4">📖</div>
           <p className="mb-2">小狐狸还没收到教材呢</p>
-          <p className="text-xs mb-5">上传PDF教材 → AI自动识别章节 → 智能出题</p>
+          <p className="text-xs mb-5">上传教材（PDF/PPTX/Word）→ AI自动识别章节 → 智能出题</p>
           <button onClick={() => setShowUpload(true)} className="btn btn-fox">上传第一本教材</button>
         </div>
       ) : (
@@ -178,7 +178,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx)$/i, ''));
+      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx)$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
       formData.append('createdBy', '1');
@@ -226,7 +226,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
               className="input textarea" rows={5} />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF / PPTX）</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF / PPTX / DOCX）</label>
             <div className="border-2 border-dashed rounded-lg p-8 text-center transition-all"
               style={{
                 borderColor: file ? 'var(--fox)' : 'var(--ink-100)',
@@ -236,7 +236,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
               onDrop={e => {
                 e.preventDefault();
                 const f = e.dataTransfer.files[0];
-                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx'))) setFile(f);
+                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx') || f.name.endsWith('.docx'))) setFile(f);
 
               }}>
               {file ? (
@@ -252,7 +252,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
                 <label className="cursor-pointer block">
                   <div className="text-3xl mb-2">📂</div>
                   <p className="text-sm" style={{ color: 'var(--ink-500)' }}>拖拽或点击上传 PDF</p>
-                  <input type="file" accept=".pdf,.pptx" className="hidden"
+                  <input type="file" accept=".pdf,.pptx,.docx" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                 </label>
               )}
