@@ -155,6 +155,11 @@ export class ExamsService {
     if (data.accessType) updateData.accessType = data.accessType;
     if (data.shuffleQuestions !== undefined) updateData.shuffleQuestions = data.shuffleQuestions;
     if (data.shuffleOptions !== undefined) updateData.shuffleOptions = data.shuffleOptions;
+    if (data.timeMode) updateData.timeMode = data.timeMode;
+    if (data.paperMode) updateData.paperMode = data.paperMode;
+    if (data.tabSwitchLimit !== undefined) updateData.tabSwitchLimit = data.tabSwitchLimit;
+    if (data.copyProtection !== undefined) updateData.copyProtection = data.copyProtection;
+    if (data.autoSaveInterval !== undefined) updateData.autoSaveInterval = data.autoSaveInterval;
     return this.prisma.exam.update({ where: { id }, data: updateData });
   }
 

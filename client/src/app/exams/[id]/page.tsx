@@ -87,7 +87,13 @@ export default function ExamDetail() {
         </div>
         <div className="flex gap-2">
           {exam.status === 'DRAFT' && (
-            <button onClick={handlePublish} className="btn btn-fox text-sm px-4 py-2">发布考试</button>
+            <>
+              <button onClick={() => router.push(`/exams/${exam.id}/edit`)}
+                className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-500)' }}>
+                ✏️ 编辑
+              </button>
+              <button onClick={handlePublish} className="btn btn-fox text-sm px-4 py-2">发布考试</button>
+            </>
           )}
           {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && (
             <button onClick={handleFinish} className="btn text-sm px-4 py-2"
@@ -145,10 +151,13 @@ export default function ExamDetail() {
       {/* Info */}
       <div className="rounded-xl p-4 mb-6 text-xs space-y-1" style={{ background: 'white', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
         <p>📅 {new Date(exam.startTime).toLocaleString('zh-CN')} — {new Date(exam.endTime).toLocaleString('zh-CN')}</p>
-        <p>⏱ 单人次限时 {exam.durationMinutes} 分钟 · {exam.accessType === 'UNIFIED' ? '统一开考' : '随到随考'} · {exam.shuffleQuestions ? '题目乱序' : '顺序出题'}</p>
+        <p>⏱ 单人次限时 {exam.durationMinutes} 分钟 · {exam.timeMode === 'FLEXIBLE' ? '随到随考' : '统一开考'} · {exam.paperMode === 'RANDOM' ? '随机抽题' : '统一试卷'} · {exam.shuffleQuestions ? '题目乱序' : '顺序出题'}</p>
         {exam.program && <p>📚 所属培训项目：{exam.program.name}{exam.program.code ? `（${exam.program.code}）` : ''}</p>}
         {exam.passingScore != null && <p>🎯 合格线：{exam.passingScore} 分</p>}
         {exam.isOpenBook && <p>📖 开卷考试 · 允许携带纸质资料，禁止电子设备</p>}
+        {exam.tabSwitchLimit != null && (
+          <p>🛡️ 切屏限制 {exam.tabSwitchLimit > 0 ? `${exam.tabSwitchLimit}次后强制交卷` : '不限制'} · {exam.copyProtection ? '禁止复制粘贴' : '允许复制'} · 自动保存每{exam.autoSaveInterval || 30}秒</p>
+        )}
       </div>
 
       {/* Student list / Proctoring table */}
