@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import SubmitConfirmModal from '../components/SubmitConfirmModal';
+import AlertModal from '../components/AlertModal';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -47,6 +48,8 @@ export default function ExamTake() {
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [alertModal, setAlertModal] = useState<{type: 'FORCE_END'|'TAB_WARN'|'TIME_REMINDER'; message: string} | null>(null);
+  const alertConfirmRef = useRef<(() => void) | null>(null);
   const heartbeatRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatFailCount = useRef(0);
@@ -226,10 +229,12 @@ export default function ExamTake() {
 
           // === P2: 检查会话状态（强制交卷/超时/终止）===
           if (data.sessionStatus && data.sessionStatus !== 'ACTIVE') {
-            alert('考试已被结束，系统将退出答题页面。');
-            setSubmitted(true);
-            if (timerRef.current) clearInterval(timerRef.current);
-            router.push('/exam');
+            alertConfirmRef.current = () => {
+              setSubmitted(true);
+              if (timerRef.current) clearInterval(timerRef.current);
+              router.push('/exam');
+            };
+            setAlertModal({ type: 'FORCE_END', message: '考试已被监考员结束，系统将退出答题页面。' });
             return;
           }
 
@@ -247,6 +252,25 @@ export default function ExamTake() {
                 const existing = new Set(prev.map((m: any) => m.id));
                 return [...prev, ...newMessages.filter((m: any) => !existing.has(m.id))];
               });
+              // TIME_REMINDER 消息额外弹出居中模态
+              for (const m of newMessages) {
+                if (m.messageType === 'AUTO_REMINDER') {
+                  const cleanMsg = m.content.replace(/ @threshold:\d+$/, '');
+                  setAlertModal({ type: 'TIME_REMINDER', message: cleanMsg });
+                }
+                // 非 WARN 消息 5 秒后自动消失
+                if (m.messageType !== 'WARN') {
+                  const msgId = m.id;
+                  setTimeout(async () => {
+                    const token = localStorage.getItem('token');
+                    await fetch(`/api/student/exams/${params.id}/messages/${msgId}/read`, {
+                      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+                    }).catch(() => {});
+                    dismissedMessagesRef.current.add(msgId);
+                    setProctorMessages(prev => prev.filter((x: any) => x.id !== msgId));
+                  }, 5000);
+                }
+              }
             }
           }
         } else {
@@ -343,7 +367,7 @@ export default function ExamTake() {
             return next;
           }
           if (next >= TAB_SWITCH_WARN) {
-            alert(`⚠️ 检测到切屏操作（${next}/${TAB_SWITCH_MAX}次），再次切屏将被强制交卷`);
+            setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到切屏操作（${next}/${TAB_SWITCH_MAX}次），再次切屏将被强制交卷` });
           }
           return next;
         });
@@ -551,6 +575,13 @@ export default function ExamTake() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+      <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+        .animate-pulse-fast { animation: pulse 0.8s ease-in-out infinite; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      `}</style>
       {/* 监考消息弹窗 */}
       {proctorMessages.map(msg => (
         <div key={msg.id}
@@ -609,7 +640,7 @@ export default function ExamTake() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="font-mono text-lg font-bold"
+            <span className={`font-mono text-lg font-bold ${timeLeft < 60 ? 'animate-pulse-fast' : timeLeft < 300 ? 'animate-pulse' : ''}`}
               style={{ color: timeLeft < 60 ? '#ef4444' : timeLeft < 300 ? '#f59e0b' : 'var(--fox)' }}>
               {formatTime(timeLeft)}
             </span>
@@ -750,6 +781,14 @@ export default function ExamTake() {
           })
           .map(({ i }) => i)}
         submitting={submitting}
+      />
+      <AlertModal
+        open={alertModal !== null}
+        type={alertModal?.type || 'TAB_WARN'}
+        message={alertModal?.message || ''}
+        onClose={() => setAlertModal(null)}
+        onConfirm={alertConfirmRef.current ? () => { alertConfirmRef.current!(); alertConfirmRef.current = null; } : undefined}
+        autoCloseMs={3000}
       />
     </div>
   );
