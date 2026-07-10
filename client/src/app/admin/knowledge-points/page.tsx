@@ -11,6 +11,7 @@ interface KnowledgePoint {
   description: string | null;
   sortOrder: number;
   parentId: number | null;
+  subjectId: number;
   children: KnowledgePoint[];
   createdAt: string;
   updatedAt: string;
@@ -30,6 +31,8 @@ export default function KnowledgePointsPage() {
   const [selectedNode, setSelectedNode] = useState<KnowledgePoint | null>(null);
   const [editForm, setEditForm] = useState({ name: '', code: '', description: '', sortOrder: 0 });
   const [saving, setSaving] = useState(false);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjectId, setSubjectId] = useState<number>(0);
 
   // modal state for creating a new node
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -38,14 +41,18 @@ export default function KnowledgePointsPage() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await api.knowledgePoints.getTree();
+      const data = subjectId > 0 ? await api.knowledgePoints.getTree(subjectId) : [];
       setTree(Array.isArray(data) ? data : []);
     } catch {}
     setLoading(false);
-  }, []);
+  }, [subjectId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    api.subjects.list().then(setSubjects).catch(() => {});
+  }, []);
 
   // When a node is selected, populate the edit form
   useEffect(() => {
@@ -123,9 +130,10 @@ export default function KnowledgePointsPage() {
 
   const handleCreate = async () => {
     if (!createForm.name) { alert('知识点名称不能为空'); return; }
+    if (subjectId === 0) { alert('请先选择科目'); return; }
     setCreating(true);
     try {
-      const data: any = { ...createForm };
+      const data: any = { ...createForm, subjectId };
       if (createParentId !== null) data.parentId = createParentId;
       data.code = data.code || undefined;
       data.description = data.description || undefined;
@@ -239,9 +247,28 @@ export default function KnowledgePointsPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="page-title">🧠 知识点管理</h1>
-          <p className="page-subtitle">共 {allNodes.length} 个知识点，树形层级结构</p>
+          <p className="page-subtitle">
+            {subjectId === 0
+              ? '树形层级结构'
+              : `${subjects.find((s: any) => s.id === subjectId)?.name || '未命名'} — 共 ${allNodes.length} 个知识点`
+            }
+          </p>
         </div>
-        <button onClick={openCreateRoot} className="btn btn-fox btn-sm">➕ 新增根节点</button>
+        {subjectId > 0 && <button onClick={openCreateRoot} className="btn btn-fox btn-sm">➕ 新增根节点</button>}
+      </div>
+
+      {/* 科目选择器 */}
+      <div className="flex items-center gap-2 mb-6 p-3 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+        <span className="text-xs font-medium" style={{ color: 'var(--ink-500)', whiteSpace: 'nowrap' }}>科目</span>
+        <select value={subjectId} onChange={e => {
+          const sid = Number(e.target.value);
+          setSubjectId(sid);
+          setExpandedIds(new Set());
+          setSelectedNode(null);
+        }} className="input text-sm flex-1" style={{ padding: '6px 10px', height: '36px' }}>
+          <option value={0}>请选择科目</option>
+          {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+        </select>
       </div>
 
       <div className="flex gap-6">
@@ -260,12 +287,20 @@ export default function KnowledgePointsPage() {
               <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
                 小狐狸正在加载… 🦊
               </div>
+            ) : subjectId === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-4xl mb-3">👈</p>
+                <p style={{ color: 'var(--ink-400)' }}>请先选择科目</p>
+                <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
+                  从上方下拉框选择一个科目以查看知识体系
+                </p>
+              </div>
             ) : tree.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-4xl mb-3">🧠</p>
-                <p style={{ color: 'var(--ink-400)' }}>暂无知识点</p>
+                <p style={{ color: 'var(--ink-400)' }}>该科目暂无知识点</p>
                 <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
-                  点击「新增根节点」开始构建知识体系
+                  点击右侧「新增根节点」开始构建知识体系
                 </p>
               </div>
             ) : (
@@ -300,6 +335,9 @@ export default function KnowledgePointsPage() {
                 <div className="text-xs flex flex-wrap gap-2" style={{ color: 'var(--ink-400)' }}>
                   <span className="tag tag-ink">ID: {selectedNode.id}</span>
                   {selectedNode.code && <span className="tag tag-gold">{selectedNode.code}</span>}
+                  <span className="tag tag-cyan">
+                    {subjects.find((s: any) => s.id === selectedNode.subjectId)?.code || `科目#${selectedNode.subjectId}`}
+                  </span>
                 </div>
 
                 {/* Name */}
