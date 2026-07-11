@@ -28,6 +28,7 @@ interface QuestionData {
 interface ExamData {
   examId: number;
   title: string;
+  timeMode: 'FIXED' | 'FLEXIBLE';
   durationMinutes: number;
   remainingTime: number;
   sessionStatus: string;
@@ -56,7 +57,7 @@ export default function ExamTake() {
   const [networkError, setNetworkError] = useState(false);
   const [proctorMessages, setProctorMessages] = useState<any[]>([]);
   const dismissedMessagesRef = useRef<Set<number>>(new Set());
-  const tabSwitchLogRef = useRef<{time: string; duration: number}[]>([]);
+  const tabSwitchLogRef = useRef<{time: string; duration: number; type?: string}[]>([]);
   const tabSwitchStartRef = useRef<number | null>(null);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const TAB_SWITCH_WARN = 3;
@@ -101,7 +102,7 @@ export default function ExamTake() {
       setMarkedQuestions(marked);
       // 进入考试自动全屏
       if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
+        document.documentElement.requestFullscreen().catch(err => console.warn('全屏请求失败:', err));
       }
       setLoading(false);
     }).catch(() => router.push('/exam'));
@@ -288,27 +289,50 @@ export default function ExamTake() {
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
   }, [loading, submitted, params.id]);
 
-  // 离开页面确认提示
+  // 离开页面确认提示（FIXED 模式自动交卷）
   useEffect(() => {
     if (loading || submitted) return;
+    const isFIXED = exam?.timeMode === 'FIXED';
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isFIXED) {
+        const token = localStorage.getItem('token');
+        fetch(`/api/student/exams/${params.id}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            answers: Object.entries(answers).map(([pqId, answer]) => ({
+              paperQuestionId: parseInt(pqId),
+              questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
+              answer,
+            })),
+            tabSwitchLog: [...tabSwitchLogRef.current, { time: new Date().toISOString(), duration: 0, type: 'PAGE_CLOSE' as const }],
+          }),
+          keepalive: true,
+        });
+      }
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [loading, submitted]);
+  }, [loading, submitted, exam?.timeMode, answers]);
 
   // 全屏退出监测 + 重新进入
   useEffect(() => {
     if (loading || submitted) return;
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
-        setTimeout(() => {
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => {});
-          }
-        }, 500);
+        document.documentElement.requestFullscreen().catch(() => {
+          setTabSwitchCount(prev => {
+            const next = prev + 1;
+            if (next >= TAB_SWITCH_MAX) {
+              setTimeout(() => submitRef.current(), 100);
+            } else if (next >= TAB_SWITCH_WARN) {
+              setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到全屏退出（${next}/${TAB_SWITCH_MAX}次），请重新进入全屏模式` });
+            }
+            return next;
+          });
+        });
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -319,20 +343,30 @@ export default function ExamTake() {
     };
   }, [loading, submitted]);
 
-  // === P3: 拦截浏览器后退/前进 ===
+  // === P3: 拦截浏览器后退/前进（FIXED 硬拦截，FLEXIBLE 确认）===
   useEffect(() => {
     if (loading || submitted) return;
+    const isFIXED = exam?.timeMode === 'FIXED';
     const currentUrl = window.location.href;
     window.history.pushState({ exam: true }, '', currentUrl);
     const handlePopState = () => {
-      const confirmLeave = window.confirm('考试正在进行中，确定要离开吗？离开后考试不会自动交卷，回来后可继续作答。');
-      if (!confirmLeave) {
+      if (isFIXED) {
+        // FIXED 模式：硬拦截，不给离开选项
         window.history.pushState({ exam: true }, '', currentUrl);
+        setAlertModal({ type: 'TAB_WARN', message: '统一开考模式下不允许离开考试页面' });
+      } else {
+        // FLEXIBLE 模式：保留确认弹窗，记录违规
+        const confirmLeave = window.confirm('考试正在进行中，确定要离开吗？离开后考试不会自动交卷，回来后可继续作答。');
+        if (!confirmLeave) {
+          window.history.pushState({ exam: true }, '', currentUrl);
+        } else {
+          tabSwitchLogRef.current = [...tabSwitchLogRef.current, { time: new Date().toISOString(), duration: 0, type: 'MANUAL_LEAVE' }];
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [loading, submitted]);
+  }, [loading, submitted, exam?.timeMode]);
 
   // 键盘快捷键
   useEffect(() => {
@@ -343,6 +377,12 @@ export default function ExamTake() {
       if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || (e.metaKey && e.key === 'r')) {
         e.preventDefault();
         e.stopPropagation();
+        return;
+      }
+      // 阻止 ESC（防止退出全屏后关闭弹窗）
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setAlertModal({ type: 'TAB_WARN', message: '考试期间请保持全屏模式' });
         return;
       }
       // ← → 切换题目

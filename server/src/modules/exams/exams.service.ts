@@ -272,15 +272,21 @@ export class ExamsService {
     if (!session) throw new ForbiddenException('你没有被分配该考试');
     if (session.status === 'SUBMITTED') throw new BadRequestException('你已提交答卷');
 
-    if (session.status === 'ACTIVE' || session.status === 'PAUSED') {
+    if (session.status === 'ACTIVE') {
       return this.prepareExamQuestions(exam, session);
     }
-
-    await this.prisma.examSession.update({
-      where: { id: session.id },
-      data: { status: 'ACTIVE', startedAt: new Date(), remainingTime: exam.durationMinutes * 60 },
-    });
-    return this.prepareExamQuestions(exam, { ...session, status: 'ACTIVE' });
+    if (session.status === 'PAUSED') {
+      if (exam.timeMode === 'FIXED') {
+        throw new BadRequestException('统一开考模式不允许暂停续答');
+      }
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: { status: 'ACTIVE' },
+      });
+      return this.prepareExamQuestions(exam, session);
+    }
+    // 其他状态视为异常
+    throw new BadRequestException('考试状态异常，无法开始');
   }
 
   async submitExam(examId: number, studentId: number, answers: { questionId: number; paperQuestionId: number; answer: any }[], tabSwitchLog?: any[]) {
@@ -291,6 +297,7 @@ export class ExamsService {
     if (!session) throw new NotFoundException('考试记录不存在');
     if (session.status === 'SUBMITTED') throw new BadRequestException('已提交，不可重复提交');
     if (session.exam.endTime && new Date() > new Date(session.exam.endTime)) throw new BadRequestException('考试已结束，无法提交');
+    if (session.remainingTime !== null && session.remainingTime <= 0) throw new BadRequestException('考试时间已到，无法提交');
 
     for (const ans of answers) {
       await this.prisma.examAnswer.upsert({
@@ -334,12 +341,30 @@ export class ExamsService {
     };
 
     // 递减剩余时间
-    if (session.remainingTime && session.remainingTime > 0) {
-      updateData.remainingTime = session.remainingTime - 30;
+    if (session.remainingTime !== null && session.remainingTime > 0) {
+      updateData.remainingTime = Math.max(0, session.remainingTime - 30);
+    }
+
+    // ★ 检测剩余时间归零 → 自动交卷
+    if (updateData.remainingTime === 0 || session.remainingTime === 0) {
+      await this.autoGrade(session.id);
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: { status: 'SUBMITTED', submittedAt: new Date(), scoringStatus: 'PENDING' },
+      });
+      await this.prisma.exam.update({
+        where: { id: examId },
+        data: { submittedCount: { increment: 1 } },
+      });
+      return {
+        ok: false,
+        remainingTime: 0,
+        sessionStatus: 'SUBMITTED',
+      };
     }
 
     // === 时间提醒：当剩余时间跨阈值时自动创建消息 ===
-    if (session.remainingTime && updateData.remainingTime !== undefined) {
+    if (session.remainingTime !== null && updateData.remainingTime !== undefined) {
       const REMINDER_THRESHOLDS = [600, 300, 60];
       const REMINDER_MESSAGES: Record<number, string> = {
         600: '⏰ 距考试结束还有 10 分钟，请抓紧时间！',
@@ -615,6 +640,7 @@ export class ExamsService {
     return {
       examId: exam.id,
       title: exam.title,
+      timeMode: exam.timeMode || 'FIXED',
       durationMinutes: exam.durationMinutes,
       remainingTime: session.remainingTime ?? exam.durationMinutes * 60,
       sessionStatus: session.status,
