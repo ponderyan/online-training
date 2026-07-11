@@ -55,6 +55,7 @@ export default function ExamTake() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatFailCount = useRef(0);
   const [networkError, setNetworkError] = useState(false);
+  const [fullscreenOverlay, setFullscreenOverlay] = useState(false);
   const [proctorMessages, setProctorMessages] = useState<any[]>([]);
   const dismissedMessagesRef = useRef<Set<number>>(new Set());
   const tabSwitchLogRef = useRef<{time: string; duration: number; type?: string}[]>([]);
@@ -323,11 +324,12 @@ export default function ExamTake() {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {
+          setFullscreenOverlay(true);
           setTabSwitchCount(prev => {
             const next = prev + 1;
             if (next >= TAB_SWITCH_MAX) {
               setTimeout(() => submitRef.current(), 100);
-            } else if (next >= TAB_SWITCH_WARN) {
+            } else {
               setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到全屏退出（${next}/${TAB_SWITCH_MAX}次），请重新进入全屏模式` });
             }
             return next;
@@ -512,50 +514,79 @@ export default function ExamTake() {
   const q = exam.questions[currentQ];
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = exam.questions.length;
+  const markedCount = markedQuestions.size;
+  const totalSeconds = exam.durationMinutes * 60;
+  const questionTypeSummary = (() => {
+    const map: Record<string, { type: string; label: string; count: number }> = {};
+    exam.questions.forEach((q: any) => {
+      const label = TYPE_NAMES[q.type] || q.type;
+      if (!map[q.type]) map[q.type] = { type: q.type, label, count: 0 };
+      map[q.type].count++;
+    });
+    return Object.values(map);
+  })();
 
   // 渲染题目
   const renderQuestion = (question: QuestionData) => {
     switch (question.type) {
       case 'SINGLE_CHOICE':
         return (
-          <div className="space-y-2">
-            {question.options?.map(opt => (
-              <label key={opt.id}
-                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
-                style={{
-                  background: answers[question.pqId] === opt.label ? '#fef3e7' : '#faf8f5',
-                  border: `1px solid ${answers[question.pqId] === opt.label ? 'var(--fox)' : 'var(--ink-100)'}`,
-                }}>
-                <input type="radio" name={`q-${question.pqId}`} value={opt.label}
-                  checked={answers[question.pqId] === opt.label}
-                  onChange={() => handleAnswer(question.pqId, opt.label)}
-                  className="accent-[#e87a30]" />
-                <span className="text-sm"><b>{opt.label}.</b> {opt.content}</span>
-              </label>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+            {question.options?.map(opt => {
+              const isSelected = answers[question.pqId] === opt.label;
+              return (
+                <button key={opt.id} onClick={() => handleAnswer(question.pqId, opt.label)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                    padding: '12px 16px', border: `2px solid ${isSelected ? '#e87a30' : '#e5e7eb'}`,
+                    borderRadius: 10, background: isSelected ? '#fff7ed' : '#fff',
+                    cursor: 'pointer', textAlign: 'left', fontSize: 15, lineHeight: 1.5,
+                    transition: 'all 0.15s ease', boxSizing: 'border-box',
+                  }}
+                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#d1d5db'; }}
+                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}>
+                  <span style={{
+                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 600, fontSize: 12,
+                    background: isSelected ? '#e87a30' : '#f3f4f6', color: isSelected ? '#fff' : '#666',
+                  }}>{opt.label}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}>{opt.content}</span>
+                  {isSelected && <span style={{ color: '#e87a30', fontSize: 16 }}>✓</span>}
+                </button>
+              );
+            })}
           </div>
         );
       case 'MULTIPLE_CHOICE': {
         const selected: string[] = answers[question.pqId] || [];
         return (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {question.options?.map(opt => {
-              const checked = selected.includes(opt.label);
+              const isSelected = selected.includes(opt.label);
               return (
-                <label key={opt.id}
-                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
+                <button key={opt.id} onClick={() => {
+                  const newSel = isSelected ? selected.filter(s => s !== opt.label) : [...selected, opt.label];
+                  handleAnswer(question.pqId, newSel);
+                }}
                   style={{
-                    background: checked ? '#fef3e7' : '#faf8f5',
-                    border: `1px solid ${checked ? 'var(--fox)' : 'var(--ink-100)'}`,
-                  }}>
-                  <input type="checkbox" checked={checked}
-                    onChange={() => {
-                      const newSel = checked ? selected.filter(s => s !== opt.label) : [...selected, opt.label];
-                      handleAnswer(question.pqId, newSel);
-                    }}
-                    className="accent-[#e87a30]" />
-                  <span className="text-sm"><b>{opt.label}.</b> {opt.content}</span>
-                </label>
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                    padding: '12px 16px', border: `2px solid ${isSelected ? '#e87a30' : '#e5e7eb'}`,
+                    borderRadius: 10, background: isSelected ? '#fff7ed' : '#fff',
+                    cursor: 'pointer', textAlign: 'left', fontSize: 15, lineHeight: 1.5,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#d1d5db'; }}
+                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}>
+                  <span style={{
+                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 600, fontSize: 12,
+                    background: isSelected ? '#e87a30' : '#f3f4f6', color: isSelected ? '#fff' : '#666',
+                  }}>{opt.label}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}>{opt.content}</span>
+                  {isSelected && <span style={{ color: '#e87a30', fontSize: 16 }}>✓</span>}
+                </button>
               );
             })}
           </div>
@@ -700,66 +731,101 @@ export default function ExamTake() {
         </div>
       ))}
 
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 backdrop-blur-md relative" style={{ background: 'rgba(246,241,232,0.95)', borderBottom: '1px solid var(--ink-100)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</span>
-            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-              {answeredCount}/{totalQuestions} 已答
-            </span>
+      {/* Top bar — 紧凑信息头 (Part 10) */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 24px', background: '#fff', borderBottom: '1px solid #e5e7eb',
+        position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#111', whiteSpace: 'nowrap' }}>{exam.title}</span>
+          <div style={{ display: 'flex', gap: 6, fontSize: 12, color: '#666', flexWrap: 'wrap' }}>
+            {questionTypeSummary.map(qt => (
+              <span key={qt.type} style={{ padding: '1px 7px', background: '#f3f4f6', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                {qt.label}×{qt.count}
+              </span>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <span className={`font-mono text-lg font-bold ${timeLeft < 60 ? 'animate-pulse-fast' : timeLeft < 300 ? 'animate-pulse' : ''}`}
-              style={{ color: timeLeft < 60 ? '#ef4444' : timeLeft < 300 ? '#f59e0b' : 'var(--fox)' }}>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+          {markedCount > 0 && <span style={{ fontSize: 12, color: '#e87a30' }}>⭐ {markedCount}</span>}
+          <span style={{ fontSize: 13, color: '#666', whiteSpace: 'nowrap' }}>
+            {answeredCount}/{totalQuestions} ({totalQuestions > 0 ? Math.round(answeredCount / totalQuestions * 100) : 0}%)
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 100, height: 5, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                width: `${totalSeconds > 0 ? (1 - timeLeft / totalSeconds) * 100 : 0}%`,
+                height: '100%', borderRadius: 3,
+                background: timeLeft <= 60 ? '#ef4444' : timeLeft <= 300 ? '#f59e0b' : '#22c55e',
+                transition: 'width 1s linear',
+              }} />
+            </div>
+            <span className={`font-mono font-bold ${timeLeft < 60 ? 'animate-pulse-fast' : timeLeft < 300 ? 'animate-pulse' : ''}`}
+              style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums', color: timeLeft <= 60 ? '#ef4444' : timeLeft <= 300 ? '#f59e0b' : '#111' }}>
               {formatTime(timeLeft)}
             </span>
-            <button onClick={() => setShowSubmitModal(true)}
-              disabled={submitting}
-              className="btn btn-fox text-xs py-1.5 px-4">
-              {submitting ? '提交中…' : '交 卷'}
-            </button>
           </div>
+          <button onClick={() => setShowSubmitModal(true)} disabled={submitting}
+            style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#e87a30', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            {submitting ? '提交中…' : '交卷'}
+          </button>
         </div>
-        {/* 时间进度条 */}
-        <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: 'var(--ink-100)' }}>
-          <div className="h-full transition-all duration-1000" style={{
-            width: `${(1 - timeLeft / (exam.durationMinutes * 60)) * 100}%`,
-            background: timeLeft < 60 ? '#ef4444' : timeLeft < 300 ? '#f59e0b' : '#22c55e',
-          }} />
-        </div>
+      </div>
+      {/* 全宽答题进度条 */}
+      <div style={{ width: '100%', height: 3, background: '#f3f4f6' }}>
+        <div style={{
+          width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%`,
+          height: '100%', background: 'linear-gradient(90deg, #22c55e, #16a34a)', transition: 'width 0.3s ease',
+        }} />
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex max-w-6xl mx-auto w-full px-6 py-6 gap-6">
-        {/* Question navigation sidebar */}
-        <div className="w-48 flex-shrink-0">
+        {/* 答题卡 — 按题型分组 (Part 11) */}
+        <div style={{ width: 230, flexShrink: 0, overflowY: 'auto' }}>
           <div className="sticky top-24">
-            <p className="text-xs font-medium mb-3" style={{ color: 'var(--ink-400)' }}>答题卡</p>
-            {exam.questions.map((q, i) => {
-              const isAnswered = answers[q.pqId] !== undefined && answers[q.pqId] !== '' &&
-                !(Array.isArray(answers[q.pqId]) && answers[q.pqId].length === 0);
-              const isMarked = markedQuestions.has(q.questionId);
-              const isCurrent = i === currentQ;
-              let bg: string, fg: string, bd: string;
-              if (isCurrent) { bg = 'var(--fox)'; fg = 'white'; bd = 'var(--fox)'; }
-              else if (isMarked) { bg = '#fefce8'; fg = '#ca8a04'; bd = '#fde68a'; }
-              else if (isAnswered) { bg = '#fef3e7'; fg = 'var(--fox)'; bd = 'var(--fox)'; }
-              else { bg = '#faf8f5'; fg = 'var(--ink-400)'; bd = 'var(--ink-100)'; }
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: '#333' }}>答题卡</p>
+            {questionTypeSummary.map(section => {
+              const sectionQuestions = exam.questions.filter((q: any) => q.type === section.type);
               return (
-                <button key={q.pqId} onClick={() => setCurrentQ(i)}
-                  className="w-8 h-8 rounded-md text-xs font-medium transition-all mb-1.5 mr-1.5"
-                  style={{ background: bg, color: fg, border: `1px solid ${bd}` }}>
-                  {i + 1}
-                </button>
+                <div key={section.type} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#999', marginBottom: 6, borderBottom: '1px solid #eee', paddingBottom: 3 }}>
+                    {section.label}（{section.count}）
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+                    {sectionQuestions.map((q: any) => {
+                      const qIndex = exam.questions.indexOf(q);
+                      const isAnswered = answers[q.pqId] !== undefined && answers[q.pqId] !== '' &&
+                        !(Array.isArray(answers[q.pqId]) && answers[q.pqId].length === 0);
+                      const isMarked = markedQuestions.has(q.questionId);
+                      const isCurrent = qIndex === currentQ;
+                      let bg = '#fff', bd = '#e5e7eb', fg = '#666';
+                      if (isCurrent) { bg = '#fff7ed'; bd = '#e87a30'; fg = '#e87a30'; }
+                      else if (isMarked) { bg = '#fef9c3'; bd = '#eab308'; fg = '#ca8a04'; }
+                      else if (isAnswered) { bg = '#dcfce7'; bd = '#22c55e'; fg = '#16a34a'; }
+                      return (
+                        <button key={q.pqId} onClick={() => setCurrentQ(qIndex)}
+                          style={{
+                            width: 30, height: 30, padding: 0, border: `1px solid ${bd}`,
+                            borderRadius: 4, background: bg, cursor: 'pointer',
+                            fontSize: 11, fontWeight: 500, color: fg,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                          title={`第${qIndex + 1}题${isAnswered ? '（已答）' : '（未答）'}${isMarked ? ' ⭐' : ''}`}>
+                          {qIndex + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
-            <div className="mt-2 text-xs space-y-1.5" style={{ color: 'var(--ink-400)' }}>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ background: 'var(--fox)' }}></span> 当前
-                <span className="w-3 h-3 rounded ml-2" style={{ background: '#fef3e7', border: '1px solid var(--fox)' }}></span> 已答
-                <span className="w-3 h-3 rounded ml-2" style={{ background: '#fefce8', border: '1px solid #fde68a' }}></span> 标记
-              </div>
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #eee', display: 'flex', gap: 8, fontSize: 10, color: '#999', flexWrap: 'wrap' }}>
+              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#dcfce7', borderRadius: 2, marginRight: 2, border: '1px solid #22c55e' }}/> 已答</span>
+              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fff', borderRadius: 2, marginRight: 2, border: '1px solid #e5e7eb' }}/> 未答</span>
+              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fff7ed', borderRadius: 2, marginRight: 2, border: '1px solid #e87a30' }}/> 当前</span>
+              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fef9c3', borderRadius: 2, marginRight: 2, border: '1px solid #eab308' }}/> 标记</span>
             </div>
           </div>
         </div>
@@ -860,6 +926,27 @@ export default function ExamTake() {
         onConfirm={alertConfirmRef.current ? () => { alertConfirmRef.current!(); alertConfirmRef.current = null; } : undefined}
         autoCloseMs={3000}
       />
+      {fullscreenOverlay && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 9999, backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '40px 48px', textAlign: 'center', maxWidth: 400 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600 }}>全屏模式已退出</h2>
+            <p style={{ color: '#666', margin: '0 0 24px', lineHeight: 1.5 }}>考试需要全屏模式下进行。<br/>操作已记录，请重新进入全屏。</p>
+            <button onClick={() => {
+              document.documentElement.requestFullscreen().then(() => setFullscreenOverlay(false)).catch(() => alert('全屏被阻止，请按 F11 或浏览器全屏按钮'));
+            }} style={{
+              padding: '12px 32px', fontSize: 16, fontWeight: 500,
+              background: '#e87a30', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
+            }}>
+              点击重新进入全屏
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
