@@ -272,21 +272,35 @@ export class ExamsService {
     if (!session) throw new ForbiddenException('你没有被分配该考试');
     if (session.status === 'SUBMITTED') throw new BadRequestException('你已提交答卷');
 
+    let questionsData: any;
     if (session.status === 'ACTIVE') {
-      return this.prepareExamQuestions(exam, session);
+      questionsData = this.prepareExamQuestions(exam, session);
+    } else if (session.status === 'PAUSED') {
+      if (exam.timeMode === 'FIXED') throw new BadRequestException('统一开考模式不允许暂停续答');
+      await this.prisma.examSession.update({ where: { id: session.id }, data: { status: 'ACTIVE' } });
+      questionsData = this.prepareExamQuestions(exam, session);
+    } else {
+      throw new BadRequestException('考试状态异常，无法开始');
     }
-    if (session.status === 'PAUSED') {
-      if (exam.timeMode === 'FIXED') {
-        throw new BadRequestException('统一开考模式不允许暂停续答');
-      }
-      await this.prisma.examSession.update({
-        where: { id: session.id },
-        data: { status: 'ACTIVE' },
-      });
-      return this.prepareExamQuestions(exam, session);
-    }
-    // 其他状态视为异常
-    throw new BadRequestException('考试状态异常，无法开始');
+
+    // 补充考生信息和考试属性
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true, displayName: true, studentNumber: true, avatar: true, gender: true },
+    });
+
+    return {
+      ...questionsData,
+      isOpenBook: exam.isOpenBook,
+      openBookRules: exam.openBookRules,
+      autoSaveInterval: exam.autoSaveInterval,
+      studentInfo: student ? {
+        displayName: student.displayName,
+        studentNumber: student.studentNumber,
+        avatar: student.avatar,
+        gender: student.gender,
+      } : null,
+    };
   }
 
   async submitExam(examId: number, studentId: number, answers: { questionId: number; paperQuestionId: number; answer: any }[], tabSwitchLog?: any[]) {
@@ -322,6 +336,31 @@ export class ExamsService {
       data: { submittedCount: { increment: 1 } },
     });
     return { success: true };
+  }
+
+  async saveSingleAnswer(
+    examId: number,
+    studentId: number,
+    data: { questionId: number; paperQuestionId: number; answer: any },
+  ) {
+    const session = await this.prisma.examSession.findUnique({
+      where: { examId_studentId: { examId, studentId } },
+      select: { id: true, status: true, remainingTime: true },
+    });
+
+    if (!session) throw new NotFoundException('考试记录不存在');
+    if (session.status === 'SUBMITTED') throw new BadRequestException('考试已提交，无法保存答案');
+    if (session.remainingTime !== null && session.remainingTime <= 0) {
+      throw new BadRequestException('考试时间已到');
+    }
+
+    await this.prisma.examAnswer.upsert({
+      where: { sessionId_paperQuestionId: { sessionId: session.id, paperQuestionId: data.paperQuestionId } },
+      create: { sessionId: session.id, questionId: data.questionId, paperQuestionId: data.paperQuestionId, answer: data.answer },
+      update: { answer: data.answer },
+    });
+
+    return { success: true, savedAt: new Date().toISOString() };
   }
 
   async heartbeat(examId: number, studentId: number, tabSwitchData?: any[]) {

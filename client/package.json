@@ -9,8 +9,10 @@
     "start": "next start"
   },
   "dependencies": {
+    "@types/quill": "^2.0.14",
     "next": "^16.0.0",
     "plyr": "^3.8.4",
+    "quill": "^2.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.9.1",

@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 
 import SubmitConfirmModal from '../components/SubmitConfirmModal';
 import AlertModal from '../components/AlertModal';
+import ExamInfoBar from '../../components/ExamInfoBar';
+import SaveIndicator from '../../components/SaveIndicator';
+import RichAnswerEditor from '../../components/RichAnswerEditor';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -34,6 +37,15 @@ interface ExamData {
   sessionStatus: string;
   questions: QuestionData[];
   shuffleOptions?: boolean;
+  isOpenBook?: boolean;
+  openBookRules?: string;
+  autoSaveInterval?: number;
+  studentInfo?: {
+    displayName: string;
+    studentNumber: string | null;
+    avatar: string | null;
+    gender: string | null;
+  };
 }
 
 export default function ExamTake() {
@@ -48,6 +60,9 @@ export default function ExamTake() {
   const [submitted, setSubmitted] = useState(false);
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
   const [autoAdvance, setAutoAdvance] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const lastSavedRef = useRef<string>('');
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [alertModal, setAlertModal] = useState<{type: 'FORCE_END'|'TAB_WARN'|'TIME_REMINDER'; message: string} | null>(null);
   const alertConfirmRef = useRef<(() => void) | null>(null);
@@ -153,6 +168,35 @@ export default function ExamTake() {
       }
     }
   }, [autoAdvance, exam]);
+
+  const saveCurrentAnswer = useCallback(async () => {
+    if (!exam || submitted) return;
+    const qObj = exam.questions[currentQ];
+    if (!qObj) return;
+    const answer = answers[qObj.pqId];
+    if (answer === undefined || answer === null) return;
+
+    setSaveStatus('saving');
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/student/exams/${exam.examId}/save-answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ questionId: qObj.questionId, paperQuestionId: qObj.pqId, answer }),
+      });
+      lastSavedRef.current = new Date().toISOString();
+      setSaveStatus('saved');
+      // localStorage 兜底
+      try {
+        const saved = localStorage.getItem(`exam_${exam.examId}_answers`);
+        const all = saved ? JSON.parse(saved) : {};
+        all[qObj.pqId] = answer;
+        localStorage.setItem(`exam_${exam.examId}_answers`, JSON.stringify(all));
+      } catch {}
+    } catch {
+      setSaveStatus('error');
+    }
+  }, [exam, currentQ, answers, submitted]);
 
   const toggleMark = useCallback(async (pqId: number) => {
     const q = exam?.questions.find(qx => qx.pqId === pqId);
@@ -389,11 +433,11 @@ export default function ExamTake() {
       }
       // ← → 切换题目
       if (e.key === 'ArrowLeft') {
-        setCurrentQ(prev => Math.max(0, prev - 1));
+        goToQuestion(Math.max(0, currentQ - 1));
         e.preventDefault();
       }
       if (e.key === 'ArrowRight') {
-        setCurrentQ(prev => Math.min(exam.questions.length - 1, prev + 1));
+        goToQuestion(Math.min(exam.questions.length - 1, currentQ + 1));
         e.preventDefault();
       }
 
@@ -507,6 +551,20 @@ export default function ExamTake() {
       </div>
     </div>
   );
+
+  // 自动保存定时器
+  useEffect(() => {
+    if (!exam || submitted) return;
+    const interval = (exam.autoSaveInterval || 60) * 1000;
+    saveTimerRef.current = setInterval(() => saveCurrentAnswer(), interval);
+    return () => { if (saveTimerRef.current) clearInterval(saveTimerRef.current); };
+  }, [exam, submitted, saveCurrentAnswer]);
+
+  // 切换题目时先保存当前题
+  const goToQuestion = async (index: number) => {
+    await saveCurrentAnswer();
+    setCurrentQ(index);
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--paper)' }}><p>加载中…</p></div>;
   if (!exam) return null;
@@ -636,13 +694,11 @@ export default function ExamTake() {
       }
       case 'SHORT_ANSWER':
         return (
-          <textarea
+          <RichAnswerEditor
             value={answers[question.pqId] || ''}
-            onChange={e => handleAnswer(question.pqId, e.target.value)}
+            onChange={(html) => handleAnswer(question.pqId, html)}
+            maxChars={2000}
             placeholder="请输入你的答案…"
-            rows={8}
-            className="w-full p-4 rounded-lg resize-none"
-            style={{ border: '1px solid var(--ink-200)', background: '#faf8f5' }}
           />
         );
       case 'CASE_STUDY':
@@ -653,17 +709,15 @@ export default function ExamTake() {
                 <p className="text-sm font-medium mb-2" style={{ color: 'var(--ink-600)' }}>
                   ({i + 1}) {sq.content}
                 </p>
-                <textarea
+                <RichAnswerEditor
                   value={(answers[question.pqId] || [])[i] || ''}
-                  onChange={e => {
+                  onChange={(html) => {
                     const arr = answers[question.pqId] || [];
-                    arr[i] = e.target.value;
+                    arr[i] = html;
                     handleAnswer(question.pqId, [...arr]);
                   }}
+                  maxChars={2000}
                   placeholder="请输入答案…"
-                  rows={4}
-                  className="w-full p-3 rounded-lg resize-none"
-                  style={{ border: '1px solid var(--ink-200)', background: '#faf8f5' }}
                 />
               </div>
             ))}
@@ -731,52 +785,22 @@ export default function ExamTake() {
         </div>
       ))}
 
-      {/* Top bar — 紧凑信息头 (Part 10) */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 24px', background: '#fff', borderBottom: '1px solid #e5e7eb',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#111', whiteSpace: 'nowrap' }}>{exam.title}</span>
-          <div style={{ display: 'flex', gap: 6, fontSize: 12, color: '#666', flexWrap: 'wrap' }}>
-            {questionTypeSummary.map(qt => (
-              <span key={qt.type} style={{ padding: '1px 7px', background: '#f3f4f6', borderRadius: 4, whiteSpace: 'nowrap' }}>
-                {qt.label}×{qt.count}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-          {markedCount > 0 && <span style={{ fontSize: 12, color: '#e87a30' }}>⭐ {markedCount}</span>}
-          <span style={{ fontSize: 13, color: '#666', whiteSpace: 'nowrap' }}>
-            {answeredCount}/{totalQuestions} ({totalQuestions > 0 ? Math.round(answeredCount / totalQuestions * 100) : 0}%)
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 100, height: 5, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{
-                width: `${totalSeconds > 0 ? (1 - timeLeft / totalSeconds) * 100 : 0}%`,
-                height: '100%', borderRadius: 3,
-                background: timeLeft <= 60 ? '#ef4444' : timeLeft <= 300 ? '#f59e0b' : '#22c55e',
-                transition: 'width 1s linear',
-              }} />
-            </div>
-            <span className={`font-mono font-bold ${timeLeft < 60 ? 'animate-pulse-fast' : timeLeft < 300 ? 'animate-pulse' : ''}`}
-              style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums', color: timeLeft <= 60 ? '#ef4444' : timeLeft <= 300 ? '#f59e0b' : '#111' }}>
-              {formatTime(timeLeft)}
-            </span>
-          </div>
-          <button onClick={() => setShowSubmitModal(true)} disabled={submitting}
-            style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#e87a30', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {submitting ? '提交中…' : '交卷'}
-          </button>
-        </div>
-      </div>
-      {/* 全宽答题进度条 */}
-      <div style={{ width: '100%', height: 3, background: '#f3f4f6' }}>
-        <div style={{
+      {/* ExamInfoBar — 深色顶部信息条 */}
+      <ExamInfoBar
+        examTitle={exam.title}
+        isOpenBook={exam.isOpenBook}
+        openBookRules={exam.openBookRules}
+        studentDisplayName={exam.studentInfo?.displayName || '考生'}
+        studentNumber={exam.studentInfo?.studentNumber || null}
+        avatar={exam.studentInfo?.avatar || null}
+        timeLeft={timeLeft}
+        onShowSubmitModal={() => setShowSubmitModal(true)}
+      />
+      {/* 答题进度条 */}
+      <div className="w-full h-1 bg-gray-100">
+        <div className="h-full transition-all duration-300" style={{
           width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%`,
-          height: '100%', background: 'linear-gradient(90deg, #22c55e, #16a34a)', transition: 'width 0.3s ease',
+          background: 'linear-gradient(90deg, #22c55e, #16a34a)',
         }} />
       </div>
 
@@ -805,7 +829,7 @@ export default function ExamTake() {
                       else if (isMarked) { bg = '#fef9c3'; bd = '#eab308'; fg = '#ca8a04'; }
                       else if (isAnswered) { bg = '#dcfce7'; bd = '#22c55e'; fg = '#16a34a'; }
                       return (
-                        <button key={q.pqId} onClick={() => setCurrentQ(qIndex)}
+                        <button key={q.pqId} onClick={() => goToQuestion(qIndex)}
                           style={{
                             width: 30, height: 30, padding: 0, border: `1px solid ${bd}`,
                             borderRadius: 4, background: bg, cursor: 'pointer',
@@ -831,7 +855,11 @@ export default function ExamTake() {
         </div>
 
         {/* Question area */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-1 px-1">
+            <div />
+            <SaveIndicator status={saveStatus} lastSaved={lastSavedRef.current || undefined} />
+          </div>
           <div className="rounded-xl p-8" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
@@ -871,13 +899,13 @@ export default function ExamTake() {
 
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8 pt-6" style={{ borderTop: '1px solid var(--ink-100)' }}>
-              <button onClick={() => setCurrentQ(Math.max(0, currentQ - 1))}
+              <button onClick={() => goToQuestion(Math.max(0, currentQ - 1))}
                 disabled={currentQ === 0}
                 className="btn text-sm px-5 py-2" style={{ border: '1px solid var(--ink-200)', opacity: currentQ === 0 ? 0.4 : 1 }}>
                 ← 上一题
               </button>
               {currentQ < totalQuestions - 1 ? (
-                <button onClick={() => setCurrentQ(currentQ + 1)}
+                <button onClick={() => goToQuestion(currentQ + 1)}
                   className="btn btn-fox text-sm px-5 py-2">
                   下一题 →
                 </button>

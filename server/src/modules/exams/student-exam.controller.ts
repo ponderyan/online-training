@@ -49,6 +49,16 @@ export class StudentExamController {
     return this.service.submitExam(id, this.getStudentId(req), data.answers, data.tabSwitchLog);
   }
 
+  @Post(':id/save-answer')
+  @RequirePermission(Permissions.EXAM_VIEW)
+  saveSingleAnswer(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { questionId: number; paperQuestionId: number; answer: any },
+    @Req() req: any,
+  ) {
+    return this.service.saveSingleAnswer(id, this.getStudentId(req), data);
+  }
+
   @Post(':id/heartbeat')
   @RequirePermission(Permissions.EXAM_VIEW)
   heartbeat(
