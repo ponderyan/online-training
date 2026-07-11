@@ -279,6 +279,17 @@ export class ExamsService {
       if (exam.timeMode === 'FIXED') throw new BadRequestException('统一开考模式不允许暂停续答');
       await this.prisma.examSession.update({ where: { id: session.id }, data: { status: 'ACTIVE' } });
       questionsData = this.prepareExamQuestions(exam, session);
+    } else if (session.status === 'ASSIGNED') {
+      const now = new Date();
+      const initialTime = (exam.durationMinutes || 60) * 60;
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: { status: 'ACTIVE', startedAt: now, remainingTime: initialTime },
+      });
+      session.status = 'ACTIVE';
+      session.startedAt = now;
+      session.remainingTime = initialTime;
+      questionsData = this.prepareExamQuestions(exam, session);
     } else {
       throw new BadRequestException('考试状态异常，无法开始');
     }

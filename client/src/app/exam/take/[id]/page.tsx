@@ -7,7 +7,7 @@ import SubmitConfirmModal from '../components/SubmitConfirmModal';
 import AlertModal from '../components/AlertModal';
 import ExamInfoBar from '../../components/ExamInfoBar';
 import SaveIndicator from '../../components/SaveIndicator';
-import RichAnswerEditor from '../../components/RichAnswerEditor';
+import QuestionContent from '../../components/QuestionContent';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -121,7 +121,10 @@ export default function ExamTake() {
         document.documentElement.requestFullscreen().catch(err => console.warn('全屏请求失败:', err));
       }
       setLoading(false);
-    }).catch(() => router.push('/exam'));
+    }).catch((err: any) => {
+      setAlertModal({ type: 'TIME_REMINDER', message: `无法进入考试：${err.message || '未知错误'}` });
+      setLoading(false);
+    });
   }, [params.id, router]);
 
   // 选项随机排序（确定性种子，同一考生每次相同）
@@ -197,31 +200,6 @@ export default function ExamTake() {
       setSaveStatus('error');
     }
   }, [exam, currentQ, answers, submitted]);
-
-  const toggleMark = useCallback(async (pqId: number) => {
-    const q = exam?.questions.find(qx => qx.pqId === pqId);
-    if (!q || !exam) return;
-    const token = localStorage.getItem('token');
-    const isCurrentlyMarked = markedQuestions.has(q.questionId);
-
-    // 乐观更新
-    setMarkedQuestions(prev => {
-      const next = new Set(prev);
-      if (isCurrentlyMarked) next.delete(q.questionId);
-      else next.add(q.questionId);
-      return next;
-    });
-
-    // 发请求
-    const endpoint = isCurrentlyMarked
-      ? `/api/student/exams/${exam.examId}/unmark`
-      : `/api/student/exams/${exam.examId}/mark`;
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ questionId: q.questionId }),
-    });
-  }, [exam, markedQuestions]);
 
   const handleSubmit = async () => {
     if (submitting || submitted) return;
@@ -334,33 +312,31 @@ export default function ExamTake() {
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
   }, [loading, submitted, params.id]);
 
-  // 离开页面确认提示（FIXED 模式自动交卷）
+  // 离开页面确认提示 + localStorage 兜底（不自动交卷）
   useEffect(() => {
     if (loading || submitted) return;
-    const isFIXED = exam?.timeMode === 'FIXED';
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isFIXED) {
-        const token = localStorage.getItem('token');
-        fetch(`/api/student/exams/${params.id}/submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            answers: Object.entries(answers).map(([pqId, answer]) => ({
-              paperQuestionId: parseInt(pqId),
-              questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
-              answer,
-            })),
-            tabSwitchLog: [...tabSwitchLogRef.current, { time: new Date().toISOString(), duration: 0, type: 'PAGE_CLOSE' as const }],
-          }),
-          keepalive: true,
-        });
+      // 只做 localStorage 兜底保存
+      if (exam) {
+        const curQ = exam.questions[currentQ];
+        if (curQ) {
+          const answer = answers[curQ.pqId];
+          if (answer !== undefined && answer !== null) {
+            try {
+              const saved = localStorage.getItem(`exam_${exam.examId}_answers`);
+              const all = saved ? JSON.parse(saved) : {};
+              all[curQ.pqId] = answer;
+              localStorage.setItem(`exam_${exam.examId}_answers`, JSON.stringify(all));
+            } catch {}
+          }
+        }
       }
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [loading, submitted, exam?.timeMode, answers]);
+  }, [loading, submitted, exam, currentQ, answers]);
 
   // 全屏退出监测 + 重新进入
   useEffect(() => {
@@ -586,146 +562,27 @@ export default function ExamTake() {
 
   // 渲染题目
   const renderQuestion = (question: QuestionData) => {
-    switch (question.type) {
-      case 'SINGLE_CHOICE':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
-            {question.options?.map(opt => {
-              const isSelected = answers[question.pqId] === opt.label;
-              return (
-                <button key={opt.id} onClick={() => handleAnswer(question.pqId, opt.label)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                    padding: '12px 16px', border: `2px solid ${isSelected ? '#e87a30' : '#e5e7eb'}`,
-                    borderRadius: 10, background: isSelected ? '#fff7ed' : '#fff',
-                    cursor: 'pointer', textAlign: 'left', fontSize: 15, lineHeight: 1.5,
-                    transition: 'all 0.15s ease', boxSizing: 'border-box',
-                  }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#d1d5db'; }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}>
-                  <span style={{
-                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 600, fontSize: 12,
-                    background: isSelected ? '#e87a30' : '#f3f4f6', color: isSelected ? '#fff' : '#666',
-                  }}>{opt.label}</span>
-                  <span style={{ flex: 1, fontSize: 14 }}>{opt.content}</span>
-                  {isSelected && <span style={{ color: '#e87a30', fontSize: 16 }}>✓</span>}
-                </button>
-              );
-            })}
-          </div>
-        );
-      case 'MULTIPLE_CHOICE': {
-        const selected: string[] = answers[question.pqId] || [];
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
-            {question.options?.map(opt => {
-              const isSelected = selected.includes(opt.label);
-              return (
-                <button key={opt.id} onClick={() => {
-                  const newSel = isSelected ? selected.filter(s => s !== opt.label) : [...selected, opt.label];
-                  handleAnswer(question.pqId, newSel);
-                }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                    padding: '12px 16px', border: `2px solid ${isSelected ? '#e87a30' : '#e5e7eb'}`,
-                    borderRadius: 10, background: isSelected ? '#fff7ed' : '#fff',
-                    cursor: 'pointer', textAlign: 'left', fontSize: 15, lineHeight: 1.5,
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#d1d5db'; }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}>
-                  <span style={{
-                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 600, fontSize: 12,
-                    background: isSelected ? '#e87a30' : '#f3f4f6', color: isSelected ? '#fff' : '#666',
-                  }}>{opt.label}</span>
-                  <span style={{ flex: 1, fontSize: 14 }}>{opt.content}</span>
-                  {isSelected && <span style={{ color: '#e87a30', fontSize: 16 }}>✓</span>}
-                </button>
-              );
-            })}
-          </div>
-        );
-      }
-      case 'TRUE_FALSE':
-        return (
-          <div className="flex gap-4">
-            {['对', '错'].map(val => (
-              <button key={val}
-                onClick={() => handleAnswer(question.pqId, val)}
-                className="flex-1 py-8 rounded-xl text-lg font-medium transition-all"
-                style={{
-                  background: answers[question.pqId] === val ? '#fef3e7' : '#faf8f5',
-                  border: `2px solid ${answers[question.pqId] === val ? 'var(--fox)' : 'var(--ink-100)'}`,
-                  color: answers[question.pqId] === val ? 'var(--fox)' : 'var(--ink-500)',
-                }}>
-                {val}
-              </button>
-            ))}
-          </div>
-        );
-      case 'FILL_BLANK': {
-        const blanks: string[] = answers[question.pqId] || [];
-        const parts = question.content.split(/\{\{_\}\}/);
-        return (
-          <div className="leading-8">
-            {parts.map((part, i) => (
-              <span key={i}>
-                {part}
-                {i < parts.length - 1 && (
-                  <input type="text"
-                    value={blanks[i] || ''}
-                    onChange={e => {
-                      const newBlanks = [...blanks];
-                      newBlanks[i] = e.target.value;
-                      handleAnswer(question.pqId, newBlanks);
-                    }}
-                    className="inline-block mx-1 px-2 border-b-2 text-center"
-                    style={{ borderColor: 'var(--fox)', width: 120, background: 'transparent', outline: 'none' }}
-                  />
-                )}
-              </span>
-            ))}
-          </div>
-        );
-      }
-      case 'SHORT_ANSWER':
-        return (
-          <RichAnswerEditor
-            value={answers[question.pqId] || ''}
-            onChange={(html) => handleAnswer(question.pqId, html)}
-            maxChars={2000}
-            placeholder="请输入你的答案…"
-          />
-        );
-      case 'CASE_STUDY':
-        return (
-          <div className="space-y-4">
-            {question.subQuestions?.map((sq, i) => (
-              <div key={sq.id}>
-                <p className="text-sm font-medium mb-2" style={{ color: 'var(--ink-600)' }}>
-                  ({i + 1}) {sq.content}
-                </p>
-                <RichAnswerEditor
-                  value={(answers[question.pqId] || [])[i] || ''}
-                  onChange={(html) => {
-                    const arr = answers[question.pqId] || [];
-                    arr[i] = html;
-                    handleAnswer(question.pqId, [...arr]);
-                  }}
-                  maxChars={2000}
-                  placeholder="请输入答案…"
-                />
-              </div>
-            ))}
-          </div>
-        );
-      default:
-        return <p>不支持的题型</p>;
-    }
+    return (
+      <QuestionContent
+        question={question}
+        currentAnswer={answers[question.pqId]}
+        onAnswer={handleAnswer}
+        isMarked={markedQuestions.has(question.questionId)}
+        onToggleMark={(qId) => {
+          const token = localStorage.getItem('token');
+          const isCurrentlyMarked = markedQuestions.has(qId);
+          setMarkedQuestions(prev => {
+            const next = new Set(prev);
+            isCurrentlyMarked ? next.delete(qId) : next.add(qId);
+            return next;
+          });
+          fetch(`/api/student/exams/${exam!.examId}/${isCurrentlyMarked ? 'unmark' : 'mark'}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+            body: JSON.stringify({ questionId: qId }),
+          }).catch(() => {});
+        }}
+      />
+    );
   };
 
   return (
@@ -860,41 +717,15 @@ export default function ExamTake() {
             <div />
             <SaveIndicator status={saveStatus} lastSaved={lastSavedRef.current || undefined} />
           </div>
-          <div className="rounded-xl p-8" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-                  第 {currentQ + 1} / {totalQuestions} 题 · {q.score}分
-                </span>
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
-                  {TYPE_NAMES[q.type] || q.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => toggleMark(q.pqId)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors"
-                  style={{
-                    background: markedQuestions.has(q.questionId) ? '#fefce8' : 'transparent',
-                    color: markedQuestions.has(q.questionId) ? '#ca8a04' : 'var(--ink-300)',
-                    border: `1px solid ${markedQuestions.has(q.questionId) ? '#fde68a' : 'var(--ink-100)'}`,
-                  }}>
-                  {markedQuestions.has(q.questionId) ? '⭐ 已标记' : '☆ 标记'}
-                </button>
-                {/* 自动跳转开关 */}
-                <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: 'var(--ink-300)' }}
-                  title="答完选择题/判断题后自动跳转下一题">
-                  <input type="checkbox" checked={autoAdvance}
-                    onChange={() => {
-                      const next = !autoAdvance;
-                      setAutoAdvance(next);
-                      localStorage.setItem('exam-auto-advance', String(next));
-                    }}
-                    className="accent-[#e87a30] scale-75" />
-                  自动
-                </label>
-              </div>
+          <div className="rounded-xl p-8 bg-white border border-gray-100">
+            <div className="flex items-center justify-end mb-4">
+              <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-400" title="答完选择题/判断题后自动跳转下一题">
+                <input type="checkbox" checked={autoAdvance}
+                  onChange={() => { const next = !autoAdvance; setAutoAdvance(next); localStorage.setItem('exam-auto-advance', String(next)); }}
+                  className="accent-[#e87a30] scale-75" />
+                自动跳转
+              </label>
             </div>
-            <p className="text-sm mb-6 leading-7" style={{ color: 'var(--ink-700)' }}>{q.content}</p>
             {renderQuestion(q)}
 
             {/* Navigation buttons */}
