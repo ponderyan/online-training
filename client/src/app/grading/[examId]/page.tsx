@@ -11,6 +11,11 @@ export default function GradingDetail() {
   const examId = parseInt(params.examId as string);
   const [exam, setExam] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
+  const [myAssignments, setMyAssignments] = useState<any[]>([]);
+  const [assignedSessionIds, setAssignedSessionIds] = useState<Set<number>>(new Set());
+  const [assignedQuestionIds, setAssignedQuestionIds] = useState<Set<number>>(new Set());
+  const [viewFilter, setViewFilter] = useState<'mine' | 'all'>('mine');
+  const [userRole, setUserRole] = useState<string>('');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [answers, setAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +30,7 @@ export default function GradingDetail() {
   const [showReviews, setShowReviews] = useState(false);
   const [reviewReason, setReviewReason] = useState('');
   const [reviewModal, setReviewModal] = useState<{ answerId: number; sessionId: number; score: number } | null>(null);
+  const [reGrade, setReGrade] = useState<{ answerId: number; paperQuestionId: number; maxScore: number; currentScore: number; currentNote: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'grading' | 'appeals' | 'progress'>('grading');
 
   // Progress data
@@ -44,7 +50,36 @@ export default function GradingDetail() {
     ]).then(([e, s]) => {
       setExam(e);
       setStudents(s?.filter((st: any) => st.status === 'SUBMITTED') || []);
+    }).catch((e: any) => {
+      console.error('加载考试数据失败:', e);
+      alert('加载考试数据失败：' + (e.message || '未知错误'));
     }).finally(() => setLoading(false));
+  }, [examId]);
+
+  // 获取当前用户角色 + 分派信息
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role || '');
+    const userId = user.id;
+    const isOfficer = user.role === 'ORG_ADMIN' || user.role === 'SUPER_ADMIN';
+
+    if (!isOfficer && examId) {
+      fetch(`/api/grading-assignments/${examId}?graderId=${userId}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      ).then(r => {
+        if (!r.ok) throw new Error(`获取分派失败 (${r.status})`);
+        return r.json();
+      }).then(data => {
+        const items = data.assignments || (Array.isArray(data) ? data : []);
+        setMyAssignments(items);
+        setAssignedSessionIds(new Set(items.filter((a: any) => a.sessionId !== null).map((a: any) => a.sessionId)));
+        setAssignedQuestionIds(new Set(items.filter((a: any) => a.paperQuestionId !== null).map((a: any) => a.paperQuestionId)));
+      }).catch(e => {
+        console.error('获取分派信息失败:', e);
+      });
+    } else {
+      setViewFilter('all');
+    }
   }, [examId]);
 
   useEffect(() => {
@@ -60,7 +95,7 @@ export default function GradingDetail() {
       ]);
       setProgress(p);
       setStatusSummary(ss);
-    } catch {}
+    } catch (e: any) { console.error('加载进度失败:', e); alert('加载进度失败：' + (e.message || '未知错误')); }
   };
 
   const loadAppeals = async () => {
@@ -69,7 +104,7 @@ export default function GradingDetail() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (res.ok) setAppeals(await res.json());
-    } catch {}
+    } catch (e: any) { console.error('加载申诉失败:', e); alert('加载申诉失败：' + (e.message || '未知错误')); }
   };
 
   const handleReviewAppeal = async (appealId: number, status: string) => {
@@ -95,12 +130,26 @@ export default function GradingDetail() {
   };
 
   const gradeAnswer = async (answerId: number, score: number, note?: string) => {
+    // 前端校验：非管理员不能评分未分派的题
+    const isOfficer = userRole === 'ORG_ADMIN' || userRole === 'SUPER_ADMIN';
+    if (!isOfficer) {
+      const answer = answers.find((a: any) => a.answerId === answerId);
+      if (answer && !assignedQuestionIds.has(answer.paperQuestionId)) {
+        alert('你未被分派评分此题');
+        return;
+      }
+    }
     const token = localStorage.getItem('token');
-    await fetch(`/api/grading/${examId}/${selectedStudent}/${answerId}`, {
+    const res = await fetch(`/api/grading/${examId}/${selectedStudent}/${answerId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ score, graderNote: note || '' }),
     });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      alert(errorData.error || '评分提交失败');
+      return;
+    }
     loadStudentAnswers(selectedStudent);
   };
 
@@ -113,7 +162,8 @@ export default function GradingDetail() {
       });
       const data = await res.json();
       if (data.error) { alert('发布失败：' + data.error); return; }
-      const passCount = students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passScore || 60)).length;
+      const passScore = exam?.passingScore ?? 60;
+      const passCount = students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= passScore).length;
       const failCount = students.length - passCount;
       alert(`✅ 发布成功！共 ${passCount} 名学员获得证书，${failCount} 名未达及格线`);
       setShowPublishConfirm(false);
@@ -141,7 +191,7 @@ export default function GradingDetail() {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/grading-reviews/${examId}`, { headers: { Authorization: `Bearer ${token}` } });
       setReviews(await res.json() || []);
-    } catch {}
+    } catch (e: any) { console.error('加载复核记录失败:', e); alert('加载复核记录失败：' + (e.message || '未知错误')); }
   };
 
   const handleRequestReview = async () => {
@@ -202,6 +252,9 @@ export default function GradingDetail() {
     FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
   };
 
+  const filteredStudents = viewFilter === 'mine' && assignedSessionIds.size > 0
+    ? students.filter((s: any) => assignedSessionIds.has(s.id))
+    : students;
   const cs = students.find(s => s.student?.id === selectedStudent);
   const allPub = students.length > 0 && students.every((s: any) => s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'CONFIRMED');
   const allConf = students.length > 0 && students.every((s: any) => s.scoringStatus === 'CONFIRMED');
@@ -216,14 +269,31 @@ export default function GradingDetail() {
             <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: blind ? 'var(--fox)' : 'var(--ink-300)' }}>
               <input type="checkbox" checked={blind} onChange={e => setBlind(e.target.checked)} className="accent-[var(--fox)]" /> 🎭 盲批
             </label>
+            {/* 视图切换开关 */}
+            {userRole !== 'SUPER_ADMIN' && userRole !== 'ORG_ADMIN' && (
+              <div className="flex gap-1 ml-3" style={{ border: '1px solid var(--ink-200)', borderRadius: '8px', padding: '2px' }}>
+                <button onClick={() => setViewFilter('mine')}
+                  className="text-xs px-3 py-1 rounded-md transition-all cursor-pointer"
+                  style={{ background: viewFilter === 'mine' ? 'var(--fox)' : 'transparent', color: viewFilter === 'mine' ? 'white' : 'var(--ink-400)' }}>
+                  仅我的分派
+                </button>
+                <button onClick={() => setViewFilter('all')}
+                  className="text-xs px-3 py-1 rounded-md transition-all cursor-pointer"
+                  style={{ background: viewFilter === 'all' ? 'var(--fox)' : 'transparent', color: viewFilter === 'all' ? 'white' : 'var(--ink-400)' }}>
+                  全部
+                </button>
+              </div>
+            )}
           </div>
           <p className="page-subtitle">
-            共 {students.length} 人已提交 · 已批改 {students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length} / 待批改 {students.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === 'GRADING').length}
+            {viewFilter === 'mine'
+              ? `分派给我 ${filteredStudents.length} 人 · 已批改 ${filteredStudents.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length}`
+              : `共 ${students.length} 人已提交 · 已批改 ${students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length} / 待批改 ${students.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === 'GRADING').length}`}
             {allConf ? ' · 🔒 已确认' : allPub ? ' · ✅ 已全部发布' : ` · ${students.filter((s: any) => s.scoringStatus === 'PUBLISHED').length} 已发布`}
           </p>
         </div>
         <div className="flex gap-2">
-          {allPub && !allConf && <button onClick={handleConfirm} disabled={confirming} className="btn btn-fox btn-sm">{confirming ? "确认中…" : "🔒 确认成绩"}</button>}
+          {allPub && !allConf && (userRole === 'EXAM_OFFICER' || userRole === 'ORG_ADMIN' || userRole === 'SUPER_ADMIN') && <button onClick={handleConfirm} disabled={confirming} className="btn btn-fox btn-sm">{confirming ? "确认中…" : "🔒 确认成绩"}</button>}
         </div>
       </div>
 
@@ -289,6 +359,16 @@ export default function GradingDetail() {
                     <div className="h-2 rounded-full" style={{ background: 'var(--paper-dark)' }}>
                       <div className="h-full rounded-full" style={{ width: `${g.assigned > 0 ? g.submitted / g.assigned * 100 : 0}%`, background: g.remaining === 0 ? 'var(--sage)' : 'var(--fox)' }} />
                     </div>
+                    {g.details && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {g.details.map((d: any, idx: number) => (
+                          <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded-full"
+                            style={{ background: d.submitted >= d.total ? 'rgba(46,125,50,0.1)' : 'rgba(222,115,30,0.1)', color: d.submitted >= d.total ? 'var(--sage)' : 'var(--gold)' }}>
+                            {d.label}: {d.submitted}/{d.total}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -387,19 +467,26 @@ export default function GradingDetail() {
             <div className="rounded-xl overflow-hidden" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
               <div className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>已提交学员</div>
               <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
-                {students.map((s: any, idx: number) => {
+                {filteredStudents.map((s: any, idx: number) => {
                   const si = scoringStatusLabel(s.scoringStatus, s.pendingCount || 0);
                   return (
                     <div key={s.id} onClick={() => loadStudentAnswers(s.student?.id)}
                       className="px-4 py-3 cursor-pointer transition-colors text-sm"
                       style={{ background: selectedStudent === s.student?.id ? '#fef3e7' : 'white', color: 'var(--ink-600)' }}>
-                      <div className="font-medium">{getStudentLabel(s, idx)}</div>
+                      <div className="flex items-center gap-1">
+                        <div className="font-medium">{getStudentLabel(s, idx)}</div>
+                        {assignedSessionIds.has(s.id) && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.1)', color: 'var(--sage)' }}>已分派</span>
+                        )}
+                      </div>
                       <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>得分：{s.finalScore ?? s.totalScore ?? '-'}</div>
                       <div className="text-[10px] mt-0.5 font-medium" style={{ color: si.color }}>{si.text}</div>
                     </div>
                   );
                 })}
-                {students.length === 0 && <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无已提交学员</div>}
+                {filteredStudents.length === 0 && <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
+                  {viewFilter === 'mine' ? '暂无分派给你的学员' : '暂无已提交学员'}
+                </div>}
               </div>
             </div>
           </div>
@@ -421,7 +508,12 @@ export default function GradingDetail() {
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{typeNames[a.type] || a.type} · {a.maxScore}分</span>
                         {graded && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>已评分：{a.score}/{a.maxScore}</span>}
-                      {graded && !need && <button onClick={() => setReviewModal({ answerId: a.answerId, sessionId: 0, score: a.score })} className="text-xs ml-2 px-2 py-0.5 rounded" style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>标记复核</button>}
+                      {graded && !need && <>
+                        <button onClick={() => setReviewModal({ answerId: a.answerId, sessionId: a.sessionId || 0, score: a.score })} className="text-xs ml-2 px-2 py-0.5 rounded" style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>标记复核</button>
+                        <button onClick={() => {
+                          setReGrade({ answerId: a.answerId, paperQuestionId: a.paperQuestionId, maxScore: a.maxScore, currentScore: a.score, currentNote: a.graderNote || '' });
+                        }} className="text-xs ml-1 px-2 py-0.5 rounded" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>改分</button>
+                      </>}
                         {need && <span className="text-xs font-medium" style={{ color: '#d97706' }}>待评分</span>}
                       </div>
                       <p className="text-sm mb-3" style={{ color: 'var(--ink-600)' }}>{a.content}</p>
@@ -443,10 +535,12 @@ export default function GradingDetail() {
                 <div className="rounded-xl p-5 flex items-center gap-3" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
                   <button onClick={() => setAdjustOpen(!adjustOpen)} className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)' }}>⚖️ 成绩调整</button>
                   <button onClick={() => { setShowReviews(!showReviews); if (!showReviews) loadReviews(); }} className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)' }}>🔍 复核 ({reviews.filter((r: any) => r.status === 'PENDING').length})</button>
-                  {allConf ? (
-                    <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '🔄 重新发布'}</button>
-                  ) : (
-                    <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '📢 发布成绩'}</button>
+                  {(userRole === 'EXAM_OFFICER' || userRole === 'ORG_ADMIN' || userRole === 'SUPER_ADMIN') && (
+                    allConf ? (
+                      <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '🔄 重新发布'}</button>
+                    ) : (
+                      <button onClick={() => setShowPublishConfirm(true)} disabled={publishing} className="btn btn-fox text-sm px-4 py-2" style={{ opacity: publishing ? 0.6 : 1 }}>{publishing ? '发布中…' : '📢 发布成绩'}</button>
+                    )
                   )}
                 </div>
 
@@ -479,13 +573,13 @@ export default function GradingDetail() {
                             <div className="p-3 rounded-lg grid grid-cols-2 gap-2" style={{ background: 'var(--fox-glow)' }}>
                               <div className="text-center">
                                 <div className="text-lg font-bold" style={{ color: 'var(--sage)' }}>
-                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passScore || 60)).length}
+                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passingScore ?? 60)).length}
                                 </div>
                                 <div className="text-xs" style={{ color: 'var(--ink-400)' }}>获证书</div>
                               </div>
                               <div className="text-center">
                                 <div className="text-lg font-bold" style={{ color: 'var(--verm)' }}>
-                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) < (exam?.passScore || 60)).length}
+                                  {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) < (exam?.passingScore ?? 60)).length}
                                 </div>
                                 <div className="text-xs" style={{ color: 'var(--ink-400)' }}>未达及格线</div>
                               </div>
@@ -555,6 +649,36 @@ export default function GradingDetail() {
             <div className="modal-footer">
               <button onClick={() => setReviewModal(null)} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={handleRequestReview} disabled={!reviewReason} className="btn btn-fox btn-sm">提交复核</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reGrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setReGrade(null)}>
+          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold text-base mb-4">改分</h3>
+            <div className="space-y-3">
+              <p className="text-xs" style={{ color: 'var(--ink-400)' }}>当前得分：{reGrade.currentScore}/{reGrade.maxScore}</p>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>新分数（/{reGrade.maxScore}）</label>
+                <input type="number" id="reGradeScore" className="input w-full" min={0} max={reGrade.maxScore} defaultValue={reGrade.currentScore} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评语</label>
+                <input type="text" id="reGradeNote" className="input w-full" placeholder="改分原因" defaultValue={reGrade.currentNote} />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setReGrade(null)} className="btn btn-ghost btn-sm flex-1">取消</button>
+                <button onClick={async () => {
+                  const scoreInput = document.getElementById('reGradeScore') as HTMLInputElement;
+                  const noteInput = document.getElementById('reGradeNote') as HTMLInputElement;
+                  const newScore = parseFloat(scoreInput?.value || '');
+                  if (isNaN(newScore)) { alert('请输入有效分数'); return; }
+                  await gradeAnswer(reGrade.answerId, newScore, noteInput?.value || '');
+                  setReGrade(null);
+                }} className="btn btn-fox btn-sm flex-1">确认改分</button>
+              </div>
             </div>
           </div>
         </div>

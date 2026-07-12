@@ -65,6 +65,16 @@ export class PermissionsController {
     return this.service.removeUserRole(assignmentId);
   }
 
+  /** 搜索用户（用于「添加成员到角色」） */
+  @Get('users/search')
+  @RequirePermission(P.ROLE_VIEW)
+  searchUsers(@Query('q') q?: string, @Query('excludeRoleId') excludeRoleId?: string) {
+    return this.service.searchUsers(
+      (q || '').trim(),
+      excludeRoleId ? parseInt(excludeRoleId) : undefined,
+    );
+  }
+
   // ═══ 权限映射 ═══
 
   @Get('categories')

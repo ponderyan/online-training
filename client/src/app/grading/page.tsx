@@ -24,21 +24,35 @@ export default function Grading() {
     try {
       const data = await api.exams.list({ pageSize: '100' } as any);
       let filtered = (data.items || []).filter((e: any) => e.status !== 'DRAFT' && e.status !== 'CANCELLED');
-      
+
       // Status filter
       if (statusFilter) {
         filtered = filtered.filter((e: any) => e.status === statusFilter);
       }
-      
+
       // Sort by pending count descending (most pending first)
       filtered.sort((a: any, b: any) => {
         const aPending = (a._count?.sessions || 0) - (a.submittedCount || 0);
         const bPending = (b._count?.sessions || 0) - (b.submittedCount || 0);
         return bPending - aPending;
       });
-      
+
       setExams(keyword ? filtered.filter((e: any) => e.title?.includes(keyword)) : filtered);
-    } catch {}
+    } catch {
+      // 无 EXAM_CREATE 权限（如讲师），从分派记录加载
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/grading-assignments/my/assignments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const assigns = await res.json();
+        const examIds = [...new Set((Array.isArray(assigns) ? assigns : []).map((a: any) => a.examId))];
+        const exams = await Promise.all(examIds.map((id: number) =>
+          fetch(`/api/exams/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+        ));
+        setExams(exams.filter((e: any) => !e.error && e.status !== 'DRAFT' && e.status !== 'CANCELLED'));
+      } catch {}
+    }
     setLoading(false);
   };
   useEffect(() => { load(); }, [statusFilter]);
@@ -92,7 +106,7 @@ export default function Grading() {
       ) : (
         <div className="space-y-3">
           {exams.map(exam => {
-            const total = exam._count?.sessions || 0;
+            const total = exam._count?.sessions || exam.sessions?.length || 0;
             const submitted = exam.submittedCount || 0;
             const pending = total - submitted;
             const progress = total > 0 ? Math.round(submitted / total * 100) : 0;

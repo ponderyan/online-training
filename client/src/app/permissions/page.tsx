@@ -122,6 +122,13 @@ export default function PermissionsPage() {
   const [memberPage, setMemberPage] = useState(1);
   const [memberLoading, setMemberLoading] = useState(false);
 
+  // Add-member modal states
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [addMemberQ, setAddMemberQ] = useState('');
+  const [addMemberResults, setAddMemberResults] = useState<any[]>([]);
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
+  const [addMemberSavingId, setAddMemberSavingId] = useState<number | null>(null);
+
   // Role modal states
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editRoleData, setEditRoleData] = useState<any>(null);
@@ -186,14 +193,36 @@ export default function PermissionsPage() {
     ));
   };
 
+  // 关键角色：修改权限时需二次确认
+  const CRITICAL_ROLES = ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'];
+  const isCriticalRole = !!selectedRole && CRITICAL_ROLES.includes(selectedRole.code);
+
   const saveRolePerms = async () => {
     if (!selectedRoleId) return;
+    if (isCriticalRole) {
+      const ok = window.confirm('此角色拥有广泛权限，修改可能影响系统安全，请确认。');
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       const row = matrix.find(r => r.roleId === selectedRoleId);
       if (row) await api.permissions.updateRolePerms(selectedRoleId, row.permissions);
+      alert('✅ 保存成功');
     } catch (e: any) { alert('保存失败：' + e.message); }
     setSaving(false);
+  };
+
+  const [resetting, setResetting] = useState(false);
+  const resetToDefault = async () => {
+    const ok = window.confirm('↩️ 将所有角色权限恢复为系统默认值（permissions.constants.ts），此操作不可撤销，确认？');
+    if (!ok) return;
+    setResetting(true);
+    try {
+      await api.permissions.seed();
+      await load();
+      alert('✅ 已重置为默认权限配置');
+    } catch (e: any) { alert('重置失败：' + e.message); }
+    setResetting(false);
   };
 
   const loadRoleUsers = async (rid: number, p: number, search?: string) => {
@@ -225,6 +254,31 @@ export default function PermissionsPage() {
       loadRoleUsers(selectedRoleId!, memberPage, memberSearch);
       load();
     } catch {}
+  };
+
+  const searchAddMember = async (q: string) => {
+    setAddMemberQ(q);
+    if (!q.trim()) { setAddMemberResults([]); return; }
+    setAddMemberLoading(true);
+    try {
+      const res = await api.permissions.searchUsers(q, selectedRoleId || undefined);
+      setAddMemberResults(res || []);
+    } catch { setAddMemberResults([]); }
+    setAddMemberLoading(false);
+  };
+
+  const addMember = async (userId: number) => {
+    if (!selectedRoleId) return;
+    setAddMemberSavingId(userId);
+    try {
+      await api.permissions.addRoleUser(selectedRoleId, userId);
+      // 刷新成员列表 + 角色用户计数
+      await loadRoleUsers(selectedRoleId, memberPage, memberSearch);
+      await load();
+      // 从搜索结果里标记已添加
+      setAddMemberResults(prev => prev.map(u => u.id === userId ? { ...u, hasRole: true } : u));
+    } catch (e: any) { alert('添加失败：' + e.message); }
+    setAddMemberSavingId(null);
   };
 
   const handleSaveRole = async () => {
@@ -349,6 +403,10 @@ export default function PermissionsPage() {
                       仅显示已启用
                     </label>
                     <div className="flex-1" />
+                    <button onClick={resetToDefault} disabled={resetting || saving}
+                      className="btn btn-ghost btn-xs" title="恢复到 permissions.constants.ts 默认值">
+                      {resetting ? '重置中…' : '↩️ 重置默认'}
+                    </button>
                     <button onClick={saveRolePerms} disabled={saving}
                       className="btn btn-fox btn-xs">
                       {saving ? '保存中…' : '💾 保存权限'}
@@ -423,6 +481,9 @@ export default function PermissionsPage() {
                     <button onClick={() => loadRoleUsers(selectedRoleId!, 1, memberSearch)}
                       className="btn btn-ghost btn-xs">搜索</button>
                     <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {roleUsersTotal} 人</span>
+                    <div className="flex-1" />
+                    <button onClick={() => { setShowAddMember(true); setAddMemberQ(''); setAddMemberResults([]); }}
+                      className="btn btn-fox btn-xs">➕ 添加成员</button>
                   </div>
                   {memberLoading ? (
                     <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</div>
@@ -517,6 +578,51 @@ export default function PermissionsPage() {
             <div className="modal-footer">
               <button onClick={() => { setShowRoleModal(false); setEditRoleData(null); }} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={handleSaveRole} className="btn btn-fox btn-sm">保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Member Modal */}
+      {showAddMember && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddMember(false); }}>
+          <div className="modal-card max-w-[480px] animate-fadeSlide">
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-base">➕ 添加成员到「{selectedRole?.name || selectedRole?.code}」</h3>
+              <button onClick={() => setShowAddMember(false)}
+                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+            <div className="modal-body space-y-3">
+              <input value={addMemberQ} onChange={e => searchAddMember(e.target.value)}
+                autoFocus placeholder="🔍 输入用户名或姓名搜索…" className="input" />
+              {addMemberLoading && (
+                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>搜索中…</div>
+              )}
+              {!addMemberLoading && addMemberQ.trim() && addMemberResults.length === 0 && (
+                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>未找到匹配用户</div>
+              )}
+              <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
+                {addMemberResults.map(u => (
+                  <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>
+                        {u.displayName} <span className="text-xs font-normal" style={{ color: 'var(--ink-300)' }}>({u.username})</span>
+                      </div>
+                      <div className="text-[11px]" style={{ color: 'var(--ink-300)' }}>{u.orgName}</div>
+                    </div>
+                    {u.hasRole ? (
+                      <span className="text-[11px] px-2 py-1 rounded" style={{ color: '#2e7d32', background: '#2e7d3218' }}>✓ 已是该角色</span>
+                    ) : (
+                      <button onClick={() => addMember(u.id)} disabled={addMemberSavingId === u.id}
+                        className="btn btn-fox btn-xs">{addMemberSavingId === u.id ? '添加中…' : '添加'}</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowAddMember(false)} className="btn btn-ghost btn-sm">完成</button>
             </div>
           </div>
         </div>

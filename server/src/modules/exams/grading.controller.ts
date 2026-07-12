@@ -1,23 +1,19 @@
-import { Controller, Get, Post, Put, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, ParseIntPipe, Req } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CertificatesService } from '../certificates/certificates.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
-import { Permissions } from '../../common/permissions.constants.js';
-
-/** 主观题题型（需要人工评分 / AI辅助评分） */
-const SUBJECTIVE_TYPES = new Set(['SHORT_ANSWER', 'CASE_STUDY']);
-/** 客观题题型（系统自动判分） */
-const OBJECTIVE_TYPES = new Set(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK']);
+import { Permissions, ROLE_PERMISSIONS } from '../../common/permissions.constants.js';
+import { SUBJECTIVE_TYPES, recalculateSessionScore } from '../../common/grading.utils.js';
 
 @Controller('api/grading')
 export class GradingController {
   constructor(private prisma: PrismaService, private certService: CertificatesService, private notificationService: NotificationsService) {}
 
-  /** 获取某场考试的所有待阅卷学员（含主观题待评分的答案） */
+  /** 获取某场考试的所有待阅卷学员（按分派隔离） */
   @Get(':examId')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  async getGradingList(@Param('examId', ParseIntPipe) examId: number) {
+  async getGradingList(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
@@ -36,8 +32,37 @@ export class GradingController {
         .map(pq => pq.id) || [],
     );
 
+    // 分派隔离：非考务员（EXAM_OFFICER/SUPER_ADMIN）只能看自己分派的学员
+    const userRoles: string[] = req.user?.roles || [];
+    const userId = req.user?.sub || req.user?.id;
+    const isOfficer = userRoles.some(r => {
+      const perms = ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS];
+      return perms?.includes(Permissions.GRADING_PUBLISH);
+    });
+
+    const sessionWhere: any = { examId, status: 'SUBMITTED' };
+
+    if (!isOfficer) {
+      // 查自己被分派了哪些学员
+      const myAssignments = await this.prisma.gradingAssignment.findMany({
+        where: { examId, graderId: userId },
+      });
+
+      const assignedSessionIds = myAssignments
+        .filter(a => a.sessionId !== null)
+        .map(a => a.sessionId);
+
+      if (assignedSessionIds.length > 0) {
+        sessionWhere.id = { in: assignedSessionIds };
+      } else if (myAssignments.length === 0) {
+        // 没有被分派任何东西
+        return [];
+      }
+      // else: 只有按题型分派（sessionId=null），不按学员过滤
+    }
+
     const sessions = await this.prisma.examSession.findMany({
-      where: { examId, status: 'SUBMITTED' },
+      where: sessionWhere,
       include: {
         student: { select: { id: true, displayName: true, username: true } },
         answers: {
@@ -68,6 +93,7 @@ export class GradingController {
   async getStudentAnswers(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: any,
   ) {
     const [session, paper] = await Promise.all([
       this.prisma.examSession.findUnique({
@@ -93,6 +119,30 @@ export class GradingController {
     ]);
     if (!session) return { error: '考试记录不存在' };
     if (session.scoringStatus === 'CONFIRMED') return { error: '成绩已锁存，如需调整请先解锁' };
+
+    // 权限校验：非考务员只能查看自己被分派的学员答卷
+    const userRoles: string[] = req.user?.roles || [];
+    const userId = req.user?.sub || req.user?.id;
+    const isOfficer = userRoles.some(r => {
+      const perms = ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS];
+      return perms?.includes(Permissions.GRADING_PUBLISH);
+    });
+
+    if (!isOfficer) {
+      const assignment = await this.prisma.gradingAssignment.findFirst({
+        where: {
+          examId,
+          graderId: userId,
+          OR: [
+            { sessionId: session.id },           // 这位学员的具体分派（含指定题目）
+            { sessionId: null, paperQuestionId: null },  // 全学员全主观题
+          ],
+        },
+      });
+      if (!assignment) {
+        return { error: '你未被分派查看该学员的答卷' };
+      }
+    }
 
     const pqList: any[] = paper?.questions || [];
 
@@ -133,65 +183,53 @@ export class GradingController {
   async gradeAnswer(
     @Param('answerId', ParseIntPipe) answerId: number,
     @Body() data: { score: number; graderNote?: string },
+    @Req() req: any,
   ) {
     const answer = await this.prisma.examAnswer.findUnique({ where: { id: answerId } });
     if (!answer) return { error: '答案不存在' };
+
+    // 权限校验：非考务员需要检查是否有分派
+    const userRoles: string[] = req.user?.roles || [];
+    const userId = req.user?.sub || req.user?.id;
+    const isOfficer = userRoles.some(r => {
+      const perms = ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS];
+      return perms?.includes(Permissions.GRADING_PUBLISH);
+    });
+
+    if (!isOfficer) {
+      // 查出该答案的 examId 和 paperQuestionId
+      const session = await this.prisma.examSession.findUnique({
+        where: { id: answer.sessionId },
+        select: { examId: true },
+      });
+
+      const assignment = await this.prisma.gradingAssignment.findFirst({
+        where: {
+          examId: session!.examId,
+          graderId: userId,
+          OR: [
+            { sessionId: answer.sessionId, paperQuestionId: answer.paperQuestionId },
+            { sessionId: answer.sessionId, paperQuestionId: null },
+            { sessionId: null, paperQuestionId: answer.paperQuestionId },
+            { sessionId: null, paperQuestionId: null },
+          ],
+        },
+      });
+
+      if (!assignment) {
+        return { error: '你未被分派评分此答案' };
+      }
+    }
 
     await this.prisma.examAnswer.update({
       where: { id: answerId },
       data: { score: data.score, graderNote: data.graderNote || null },
     });
 
-    // 计算主观题总分（通过题型准确识别）
-    const allAnswers = await this.prisma.examAnswer.findMany({
-      where: { sessionId: answer.sessionId },
-    });
-    const paperQuestions = await this.prisma.paperQuestion.findMany({
-      where: { id: { in: allAnswers.map(a => a.paperQuestionId) } },
-      include: { question: { select: { type: true } } },
-    });
-    const pqTypeMap = new Map(paperQuestions.map(pq => [pq.id, pq.question.type]));
+    // 使用共享方法重算 ExamSession 成绩字段
+    const result = await recalculateSessionScore(this.prisma, answer.sessionId);
 
-    const subjectiveScore = allAnswers
-      .filter(a => {
-        const qType = pqTypeMap.get(a.paperQuestionId);
-        return a.score !== null && qType && SUBJECTIVE_TYPES.has(qType);
-      })
-      .reduce((sum, a) => sum + (a.score || 0), 0);
-
-    const totalScore = allAnswers
-      .filter(a => a.score !== null)
-      .reduce((sum, a) => sum + (a.score || 0), 0);
-
-    // 判断是否还有未评的主观题
-    const remainingSubjective = allAnswers
-      .filter(a => {
-        const qType = pqTypeMap.get(a.paperQuestionId);
-        return a.score === null && qType && SUBJECTIVE_TYPES.has(qType);
-      })
-      .length;
-
-    // 获取试卷总分和 passingScore
-    const session = await this.prisma.examSession.findUnique({
-      where: { id: answer.sessionId },
-      include: { exam: { include: { paper: true } } },
-    });
-
-    const paperTotal = session?.exam?.paper?.totalScore || 100;
-    const passingScore = session?.exam?.passingScore ?? Math.floor(paperTotal * 0.6);
-
-    await this.prisma.examSession.update({
-      where: { id: answer.sessionId },
-      data: {
-        subjectiveScore,
-        totalScore,
-        finalScore: totalScore,
-        isPassed: totalScore >= passingScore,
-        scoringStatus: remainingSubjective === 0 ? 'GRADED' : 'GRADING',
-      },
-    });
-
-    return { success: true, subjectiveScore, totalScore, isPassed: totalScore >= passingScore };
+    return { success: true, ...result };
   }
 
   /** 成绩发布 */

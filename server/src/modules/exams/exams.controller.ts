@@ -30,7 +30,7 @@ export class ExamsController {
   }
 
   @Get(':id')
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
   findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
   }
@@ -75,7 +75,7 @@ export class ExamsController {
   }
 
   @Get(':id/students')
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
   getStudents(@Param('id', ParseIntPipe) id: number) {
     return this.service.getStudents(id);
   }
@@ -87,5 +87,17 @@ export class ExamsController {
     @Body() data: { studentIds: number[] },
   ) {
     return this.service.addStudents(id, data.studentIds);
+  }
+
+  @Get(':id/grading-progress')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  getGradingProgress(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getGradingProgress(id);
+  }
+
+  @Get(':id/sessions/status-summary')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  getSessionStatusSummary(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getSessionStatusSummary(id);
   }
 }

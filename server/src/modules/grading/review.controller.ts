@@ -2,6 +2,7 @@ import { Controller, Get, Post, Param, Body, ParseIntPipe, Query, Req } from '@n
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { recalculateSessionScore } from '../../common/grading.utils.js';
 
 @Controller('api/grading-reviews')
 export class ReviewController {
@@ -47,6 +48,8 @@ export class ReviewController {
         where: { id: review.answerId },
         data: { score: data.reviewedScore },
       });
+      // 重算 ExamSession 成绩字段（和 gradeAnswer 共用逻辑）
+      await recalculateSessionScore(this.prisma, review.sessionId);
     }
     return this.prisma.gradingReview.update({
       where: { id: reviewId },

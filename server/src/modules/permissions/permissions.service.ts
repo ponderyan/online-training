@@ -121,6 +121,34 @@ export class PermissionsService {
     });
   }
 
+  /** 搜索可分配的用户（用于「添加成员到角色」） */
+  async searchUsers(q: string, excludeRoleId?: number) {
+    const where: any = {
+      OR: [
+        { username: { contains: q } },
+        { displayName: { contains: q } },
+      ],
+      isActive: true,
+    };
+    const users = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true, username: true, displayName: true,
+        org: { select: { name: true } },
+        roleAssignments: excludeRoleId
+          ? { where: { roleId: excludeRoleId }, select: { roleId: true } }
+          : false,
+      },
+      take: 20,
+      orderBy: { displayName: 'asc' },
+    });
+    return users.map(u => ({
+      id: u.id, username: u.username, displayName: u.displayName,
+      orgName: u.org?.name || '—',
+      hasRole: excludeRoleId ? (u.roleAssignments as any[])?.length > 0 : false,
+    }));
+  }
+
   /** 获取所有角色-权限映射 */
   async getAll() {
     const roles = await this.prisma.role.findMany({ orderBy: { sortOrder: 'asc' } });

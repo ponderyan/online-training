@@ -76,7 +76,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     title: '系统管理',
     items: [
-      { path: '/admin/organizations', label: '机构管理', icon: '🏢', perm: 'org:view' },
+      { path: '/admin/organizations', label: '组织管理', icon: '🏢', perm: 'org:view' },
       { path: '/settings', label: '系统设置', icon: '⚙️', perm: 'system:config' },
       { path: '/admin/settings/branding', label: '品牌设置', icon: '🎨', perm: 'system:config' },
       { path: '/admin/system-config', label: '配置中心', icon: '⚙️', perm: 'systemConfig:view' },
@@ -111,16 +111,17 @@ const STUDENT_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/exam', label: '我的考试', icon: '📋' },
       { path: '/exam/results', label: '考试成绩', icon: '📊' },
+      { path: '/video', label: '视频课程', icon: '🎬' },
     ],
   },
   {
     title: '我的档案',
     items: [
-      { path: '/my-learning', label: '我的学习', icon: '📚' },
       { path: '/learning-report', label: '学习报告', icon: '📊' },
       { path: '/learning-hours', label: '我的学时', icon: '🕐' },
       { path: '/my-certificates', label: '我的证书', icon: '🎓' },
       { path: '/my/profile', label: '个人中心', icon: '👤' },
+      { path: '/notifications', label: '消息通知', icon: '🔔' },
     ],
   },
 ];

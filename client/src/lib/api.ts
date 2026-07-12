@@ -370,8 +370,17 @@ export const api = {
       const qs = `?page=${page}&pageSize=20${search ? '&search=' + encodeURIComponent(search) : ''}`;
       return request<any>(`/permissions/roles/${roleId}/users${qs}`);
     },
+    addRoleUser: (roleId: number, userId: number) =>
+      request<any>(`/permissions/roles/${roleId}/users`, { method: 'POST', body: JSON.stringify({ userId }) }),
     removeRoleUser: (roleId: number, assignmentId: number) =>
       request<any>(`/permissions/roles/${roleId}/users/${assignmentId}`, { method: 'DELETE' }),
+    searchUsers: (q: string, excludeRoleId?: number) => {
+      const qp: Record<string, string> = { q };
+      if (excludeRoleId) qp.excludeRoleId = excludeRoleId.toString();
+      return request<any[]>(`/permissions/users/search?` + new URLSearchParams(qp).toString());
+    },
+    /** 重置所有角色权限为 permissions.constants.ts 默认值 */
+    seed: () => request<any>('/permissions/seed', { method: 'POST' }),
   },
 
 
@@ -755,9 +764,14 @@ export const api = {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
       return request<any[]>(`/organizations${qs}`);
     },
+    getTree: () => request<any[]>('/organizations/tree'),
     get: (id: number) => request<any>(`/organizations/${id}`),
+    getDataScope: (id: number) => request<any>(`/organizations/${id}/data-scope`),
+    getOrgUsers: (id: number) => request<any>(`/organizations/${id}/users`),
     create: (data: any) => request<any>('/organizations', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/organizations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    move: (id: number, newParentId: number | null) =>
+      request<any>(`/organizations/${id}/move`, { method: 'PUT', body: JSON.stringify({ newParentId }) }),
     remove: (id: number) => request<any>(`/organizations/${id}`, { method: 'DELETE' }),
   },
 

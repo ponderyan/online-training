@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { SUBJECTIVE_TYPES } from '../../common/grading.utils.js';
 
 @Injectable()
 export class ExamsService {
@@ -679,9 +680,25 @@ export class ExamsService {
 
     const examData = answers[0]?.session?.exam;
     const passingRef = examData?.passingScore ?? Math.floor((examData?.paper?.totalScore || 0) * 0.6);
+
+    // 判断是否有主观题，决定 scoringStatus 和初始分数
+    const hasSubjective = paperQuestions.some((pq: any) => SUBJECTIVE_TYPES.has(pq.question.type));
+    const updateData: any = {
+      totalScore,
+      isPassed: totalScore >= passingRef,
+      subjectiveScore: 0,
+    };
+    if (hasSubjective) {
+      // 含主观题 → 等人工评分，finalScore 初始为 0 避免误导
+      updateData.finalScore = 0;
+    } else {
+      // 纯客观题 → 直接 GRADED，finalScore = totalScore
+      updateData.finalScore = totalScore;
+      updateData.scoringStatus = 'GRADED';
+    }
     await this.prisma.examSession.update({
       where: { id: sessionId },
-      data: { totalScore, finalScore: totalScore, isPassed: totalScore >= passingRef },
+      data: updateData,
     });
   }
 
@@ -816,6 +833,7 @@ export class ExamsService {
   }
 
   async getGradingProgress(examId: number) {
+    // 1. Session 级统计
     const sessions = await this.prisma.examSession.findMany({
       where: { examId, status: 'SUBMITTED' },
       select: { id: true, scoringStatus: true },
@@ -826,27 +844,77 @@ export class ExamsService {
     ).length;
     const remaining = total - graded;
     const percentage = total > 0 ? Math.round(graded / total * 100) : 0;
+    const sessionIds = sessions.map(s => s.id);
 
-    // Per grader stats
+    // 2. 查出该场考试的主观题 PQ
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: {
+        paper: {
+          include: {
+            questions: {
+              include: { question: { select: { type: true } } },
+            },
+          },
+        },
+      },
+    });
+    const subjectivePQIds = exam?.paper?.questions
+      ?.filter(pq => SUBJECTIVE_TYPES.has(pq.question.type))
+      .map(pq => pq.id) || [];
+
+    // 3. 查所有已评分的主观题 ExamAnswer（用于 perGrader 统计）
+    const gradedSubjectiveAnswers = subjectivePQIds.length > 0 && sessionIds.length > 0
+      ? await this.prisma.examAnswer.findMany({
+          where: {
+            sessionId: { in: sessionIds },
+            paperQuestionId: { in: subjectivePQIds },
+            score: { not: null },
+          },
+          select: { paperQuestionId: true },
+        })
+      : [];
+
+    // 4. 查 GradingAssignment + 按 grader 分组
     const gradingAssignments = await this.prisma.gradingAssignment.findMany({
       where: { examId },
       include: { grader: { select: { id: true, displayName: true } } },
     });
-    const graderMap = new Map<number, { graderId: number; graderName: string; assigned: number; submitted: number; remaining: number }>();
-    for (const ga of gradingAssignments) {
-      if (!graderMap.has(ga.graderId)) {
-        graderMap.set(ga.graderId, { graderId: ga.graderId, graderName: ga.grader.displayName || '未知', assigned: 0, submitted: 0, remaining: 0 });
-      }
-      graderMap.get(ga.graderId)!.assigned++;
-      if (ga.status === 'SUBMITTED' || ga.status === 'COMPLETED') {
-        graderMap.get(ga.graderId)!.submitted++;
-      }
-    }
-    for (const g of graderMap.values()) {
-      g.remaining = g.assigned - g.submitted;
+
+    if (gradingAssignments.length === 0) {
+      return { total, graded, remaining, percentage, perGrader: [] };
     }
 
-    return { total, graded, remaining, percentage, perGrader: [...graderMap.values()] };
+    // 按 graderId 聚合分派信息
+    const graderPQSet = new Map<number, { graderId: number; graderName: string; pqIds: Set<number | null> }>();
+    for (const ga of gradingAssignments) {
+      if (!graderPQSet.has(ga.graderId)) {
+        graderPQSet.set(ga.graderId, { graderId: ga.graderId, graderName: ga.grader.displayName || '未知', pqIds: new Set() });
+      }
+      graderPQSet.get(ga.graderId)!.pqIds.add(ga.paperQuestionId);
+    }
+
+    const perGrader = [...graderPQSet.values()].map(g => {
+      // 该阅卷员需评的主观题数 × 学员数 = assigned 总量
+      const assigned = g.pqIds.has(null)
+        ? total * subjectivePQIds.length
+        : total * [...g.pqIds].filter(id => id !== null).length;
+
+      // 该阅卷员实际已评的答案数
+      const submitted = g.pqIds.has(null)
+        ? gradedSubjectiveAnswers.length
+        : gradedSubjectiveAnswers.filter(a => g.pqIds.has(a.paperQuestionId)).length;
+
+      return {
+        graderId: g.graderId,
+        graderName: g.graderName,
+        assigned: Math.max(assigned, submitted), // 避免负值
+        submitted,
+        remaining: Math.max(assigned - submitted, 0),
+      };
+    });
+
+    return { total, graded, remaining, percentage, perGrader };
   }
 
   async getSessionStatusSummary(examId: number) {

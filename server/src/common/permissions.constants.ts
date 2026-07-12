@@ -8,7 +8,7 @@ export type Permission = string;
 // 角色枚举
 export enum Role {
   SUPER_ADMIN = 'SUPER_ADMIN',   // 超级管理员（你）
-  ORG_ADMIN = 'ORG_ADMIN',       // 机构管理员
+  ORG_ADMIN = 'ORG_ADMIN',       // 组织管理员
   LECTURER = 'LECTURER',         // 讲师/出题人
   PROCTOR = 'PROCTOR',           // 监考员
   STUDENT = 'STUDENT',           // 学员
@@ -128,7 +128,7 @@ export const Permissions = {
   SCHEDULE_EDIT: 'schedule:edit',
   SCHEDULE_DELETE: 'schedule:delete',
 
-  // ── 机构管理（新） ──
+  // ── 组织管理（新） ──
   ORG_VIEW: 'org:view',
   ORG_CREATE: 'org:create',
   ORG_EDIT: 'org:edit',
@@ -271,23 +271,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 
   [Role.LECTURER]: [
-    Permissions.QUESTION_CREATE,
-    Permissions.PROGRAM_VIEW,
     Permissions.TRANSCRIPT_VIEW,
-
-    Permissions.QUESTION_EDIT,
-    Permissions.QUESTION_AUDIT,
-    Permissions.PAPER_VIEW,
-    Permissions.PAPER_DOWNLOAD,
-    Permissions.PAPER_ANSWER_SHEET,
     Permissions.REPORT_VIEW,
     Permissions.GRADING_MANUAL,
-    Permissions.PROCTOR_VIEW,
     Permissions.EXAM_RESULT_VIEW,
-    Permissions.MATERIAL_UPLOAD,
-    Permissions.MATERIAL_REVIEW,
-    Permissions.MATERIAL_GENERATE,
-    Permissions.CERT_VIEW,
     Permissions.COURSE_VIEW,
     Permissions.NOTIFICATION_VIEW,
     Permissions.KNOWLEDGE_VIEW,
@@ -509,10 +496,10 @@ export const PERM_CATEGORIES: PermissionCategory[] = [
       { key: Permissions.SYSTEM_LOGS, label: '系统日志' },
       { key: Permissions.SYSTEM_TENANT, label: '租户管理' },
       { key: Permissions.SYSTEM_DICTIONARY, label: '数据字典' },
-      { key: Permissions.ORG_VIEW, label: '查看机构' },
-      { key: Permissions.ORG_CREATE, label: '创建机构' },
-      { key: Permissions.ORG_EDIT, label: '编辑机构' },
-      { key: Permissions.ORG_DELETE, label: '删除机构' },
+      { key: Permissions.ORG_VIEW, label: '查看组织' },
+      { key: Permissions.ORG_CREATE, label: '创建组织' },
+      { key: Permissions.ORG_EDIT, label: '编辑组织' },
+      { key: Permissions.ORG_DELETE, label: '删除组织' },
       { key: Permissions.AI_CONFIG_VIEW, label: '查看 AI 配置' },
       { key: Permissions.AI_CONFIG_MANAGE, label: '管理 AI 配置' },
       { key: Permissions.NOTICE_SEND, label: '发送通知' },

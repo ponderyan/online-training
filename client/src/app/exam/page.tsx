@@ -112,7 +112,8 @@ export default function ExamList() {
             <>
               {sortedActive.map(exam => (
                 <div key={exam.id} style={{
-                  background: 'white', borderRadius: '12px', border: '2px solid #e87a30',
+                  background: 'white', borderRadius: '12px',
+                  border: exam.accessType === 'UNIFIED' ? '1px solid #e87a30' : '2px solid #e87a30',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
@@ -122,13 +123,16 @@ export default function ExamList() {
                     </div>
                     <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                      {exam.paperName} · ⏱ {formatRemainingTime(exam.remainingTime)}
+                      {exam.paperName}
+                      {exam.accessType === 'UNIFIED'
+                        ? ` · 📅 ${new Date(exam.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}-${new Date(exam.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+                        : ` · ⏱ ${formatRemainingTime(exam.remainingTime)}`}
                     </p>
                   </div>
                   <Link href={`/exam/take/${exam.id}`} style={{
                     padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
                     fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
-                  }}>继续答题 →</Link>
+                  }}>{exam.accessType === 'UNIFIED' ? '返回考场 →' : '继续答题 →'}</Link>
                 </div>
               ))}
               {sortedPending.map(exam => (
