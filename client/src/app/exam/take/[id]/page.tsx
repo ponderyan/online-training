@@ -429,10 +429,12 @@ export default function ExamTake() {
         }
       }
 
-      // 判断题 1=对, 2=错
+      // 判断题 1=正确, 2=错误
       if (question.type === 'TRUE_FALSE') {
-        if (e.key === '1') { handleAnswer(question.pqId, '对'); e.preventDefault(); }
-        if (e.key === '2') { handleAnswer(question.pqId, '错'); e.preventDefault(); }
+        if (question.options && question.options.length >= 2) {
+          if (e.key === '1') { handleAnswer(question.pqId, question.options[0].label); e.preventDefault(); }
+          if (e.key === '2') { handleAnswer(question.pqId, question.options[1].label); e.preventDefault(); }
+        }
       }
 
       // Ctrl+Enter 交卷
@@ -518,12 +520,12 @@ export default function ExamTake() {
   };
 
   if (networkError) return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--paper)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
       <div className="text-center max-w-md">
         <div className="text-4xl mb-4">⚠️</div>
-        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--ink-700)' }}>网络连接异常</h2>
-        <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>检测到网络不稳定，但你的答题数据已保存，请不要关闭页面</p>
-        <p className="text-xs" style={{ color: 'var(--ink-300)' }}>正在尝试重新连接…</p>
+        <h2 className="text-lg font-bold mb-2 text-[var(--ink-700)]">网络连接异常</h2>
+        <p className="text-sm mb-4 text-[var(--ink-400)]">检测到网络不稳定，但你的答题数据已保存，请不要关闭页面</p>
+        <p className="text-xs text-[var(--ink-300)]">正在尝试重新连接…</p>
       </div>
     </div>
   );
@@ -542,7 +544,7 @@ export default function ExamTake() {
     setCurrentQ(index);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--paper)' }}><p>加载中…</p></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p>加载中…</p></div>;
   if (!exam) return null;
 
   const q = exam.questions[currentQ];
@@ -561,10 +563,11 @@ export default function ExamTake() {
   })();
 
   // 渲染题目
-  const renderQuestion = (question: QuestionData) => {
+  const renderQuestion = (question: QuestionData, index: number) => {
     return (
       <QuestionContent
         question={question}
+        questionNumber={index + 1}
         currentAnswer={answers[question.pqId]}
         onAnswer={handleAnswer}
         isMarked={markedQuestions.has(question.questionId)}
@@ -586,7 +589,7 @@ export default function ExamTake() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+    <div className="h-screen flex flex-col bg-[var(--paper)] overflow-hidden">
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
@@ -599,29 +602,26 @@ export default function ExamTake() {
         <div key={msg.id}
           className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
           style={{ animation: 'slideDown 0.3s ease-out' }}>
-          <div className="rounded-xl p-4 shadow-lg backdrop-blur-md" style={{
-            background: msg.messageType === 'WARN' ? 'rgba(254, 202, 202, 0.95)' :
-                         msg.messageType === 'AUTO_REMINDER' ? 'rgba(254, 243, 199, 0.95)' :
-                         'rgba(219, 234, 254, 0.95)',
-            border: `1px solid ${
-              msg.messageType === 'WARN' ? '#fca5a5' :
-              msg.messageType === 'AUTO_REMINDER' ? '#fcd34d' :
-              '#93c5fd'
-            }`,
-          }}>
+          <div className={`rounded-xl p-4 shadow-lg backdrop-blur-md ${
+            msg.messageType === 'WARN'
+              ? 'bg-[rgba(217,54,74,0.12)] border border-[rgba(217,54,74,0.25)]'
+              : msg.messageType === 'AUTO_REMINDER'
+              ? 'bg-[rgba(201,160,58,0.12)] border border-[rgba(201,160,58,0.25)]'
+              : 'bg-[rgba(0,137,123,0.10)] border border-[rgba(0,137,123,0.2)]'
+          }`}>
             <div className="flex items-start gap-3">
               <span className="text-lg flex-shrink-0 mt-0.5">
                 {msg.messageType === 'WARN' ? '⚠️' :
                  msg.messageType === 'AUTO_REMINDER' ? '⏰' : 'ℹ️'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>
+                <p className="text-sm font-medium text-[var(--ink-700)]">
                   {msg.messageType === 'WARN' ? '监考员警告' :
                    msg.messageType === 'AUTO_REMINDER' ? '⏰ 时间提醒' :
                    '监考员消息'}
                 </p>
-                <p className="text-sm mt-1" style={{ color: 'var(--ink-600)' }}>{msg.content}</p>
-                <p className="text-[10px] mt-1" style={{ color: 'var(--ink-400)' }}>
+                <p className="text-sm mt-1 text-[var(--ink-600)]">{msg.content}</p>
+                <p className="text-[10px] mt-1 text-[var(--ink-400)]">
                   {msg.senderName} · {new Date(msg.sentAt).toLocaleTimeString('zh-CN')}
                 </p>
               </div>
@@ -633,8 +633,7 @@ export default function ExamTake() {
                 dismissedMessagesRef.current.add(msg.id);
                 setProctorMessages(prev => prev.filter(m => m.id !== msg.id));
               }}
-                className="text-xs px-3 py-1.5 rounded-lg cursor-pointer border-none font-medium"
-                style={{ background: 'rgba(255,255,255,0.8)', color: 'var(--ink-500)' }}>
+                className="text-xs px-3 py-1.5 rounded-lg cursor-pointer border-none font-medium bg-white/80 text-[var(--ink-500)]">
                 我知道了
               </button>
             </div>
@@ -654,47 +653,57 @@ export default function ExamTake() {
         onShowSubmitModal={() => setShowSubmitModal(true)}
       />
       {/* 答题进度条 */}
-      <div className="w-full h-1 bg-gray-100">
-        <div className="h-full transition-all duration-300" style={{
-          width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%`,
-          background: 'linear-gradient(90deg, #22c55e, #16a34a)',
-        }} />
+      <div className="w-full h-1.5 bg-[var(--paper-dark)]">
+        <div
+          className="h-full transition-all duration-300 rounded-r bg-gradient-to-r from-[var(--fox)] to-[var(--fox-light)]"
+          style={{ width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%` }}
+        />
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex max-w-6xl mx-auto w-full px-6 py-6 gap-6">
-        {/* 答题卡 — 按题型分组 (Part 11) */}
-        <div style={{ width: 230, flexShrink: 0, overflowY: 'auto' }}>
-          <div className="sticky top-24">
-            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: '#333' }}>答题卡</p>
+      <div className="flex-1 flex max-w-[1100px] mx-auto w-full px-6 py-5 gap-5 overflow-hidden">
+        {/* 答题卡 — 按题型分组 */}
+        <div className="w-[230px] flex-shrink-0 overflow-y-auto">
+          <div>
+            <div className="flex items-center justify-between mb-3.5">
+              <p className="text-sm font-semibold font-serif text-[var(--ink-700)]">答题卡</p>
+              <span className="text-[11px] text-[var(--ink-400)] tabular-nums">
+                <span className="text-[var(--fox)] font-semibold">{answeredCount}</span>/{totalQuestions}
+              </span>
+            </div>
             {questionTypeSummary.map(section => {
               const sectionQuestions = exam.questions.filter((q: any) => q.type === section.type);
               return (
-                <div key={section.type} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 500, color: '#999', marginBottom: 6, borderBottom: '1px solid #eee', paddingBottom: 3 }}>
-                    {section.label}（{section.count}）
+                <div key={section.type} className="mb-4.5">
+                  <div className="flex items-center justify-between text-[11px] font-medium text-[var(--ink-400)] mb-2 pb-1.5 border-b border-[var(--ink-100)]">
+                    <span>{section.label}</span>
+                    <span className="text-[var(--ink-300)]">{section.count}题</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+                  <div className="grid grid-cols-5 gap-1.5">
                     {sectionQuestions.map((q: any) => {
                       const qIndex = exam.questions.indexOf(q);
                       const isAnswered = answers[q.pqId] !== undefined && answers[q.pqId] !== '' &&
                         !(Array.isArray(answers[q.pqId]) && answers[q.pqId].length === 0);
                       const isMarked = markedQuestions.has(q.questionId);
                       const isCurrent = qIndex === currentQ;
-                      let bg = '#fff', bd = '#e5e7eb', fg = '#666';
-                      if (isCurrent) { bg = '#fff7ed'; bd = '#e87a30'; fg = '#e87a30'; }
-                      else if (isMarked) { bg = '#fef9c3'; bd = '#eab308'; fg = '#ca8a04'; }
-                      else if (isAnswered) { bg = '#dcfce7'; bd = '#22c55e'; fg = '#16a34a'; }
                       return (
                         <button key={q.pqId} onClick={() => goToQuestion(qIndex)}
-                          style={{
-                            width: 30, height: 30, padding: 0, border: `1px solid ${bd}`,
-                            borderRadius: 4, background: bg, cursor: 'pointer',
-                            fontSize: 11, fontWeight: 500, color: fg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}
+                          className={`w-8 h-8 rounded-md text-[12px] font-semibold flex items-center justify-center cursor-pointer border-[1.5px] transition-all relative ${
+                            qIndex === currentQ
+                              ? 'bg-[var(--fox)] border-[var(--fox)] text-white shadow-[0_2px_8px_var(--fox-glow-strong)] scale-110'
+                              : isMarked && isAnswered
+                                ? 'bg-[var(--sage-glow)] border-[var(--gold)] text-[var(--sage)]'
+                                : isMarked
+                                  ? 'bg-[var(--gold-glow)] border-[var(--gold)] text-[var(--gold-dark)]'
+                                  : isAnswered
+                                    ? 'bg-[var(--sage-glow)] border-[var(--sage)] text-[var(--sage)]'
+                                    : 'bg-[var(--paper-bright)] border-[var(--ink-100)] text-[var(--ink-400)] hover:border-[var(--fox)] hover:text-[var(--fox)]'
+                          }`}
                           title={`第${qIndex + 1}题${isAnswered ? '（已答）' : '（未答）'}${isMarked ? ' ⭐' : ''}`}>
                           {qIndex + 1}
+                          {isMarked && !isCurrent && (
+                            <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+                          )}
                         </button>
                       );
                     })}
@@ -702,48 +711,53 @@ export default function ExamTake() {
                 </div>
               );
             })}
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #eee', display: 'flex', gap: 8, fontSize: 10, color: '#999', flexWrap: 'wrap' }}>
-              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#dcfce7', borderRadius: 2, marginRight: 2, border: '1px solid #22c55e' }}/> 已答</span>
-              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fff', borderRadius: 2, marginRight: 2, border: '1px solid #e5e7eb' }}/> 未答</span>
-              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fff7ed', borderRadius: 2, marginRight: 2, border: '1px solid #e87a30' }}/> 当前</span>
-              <span><span style={{ display: 'inline-block', width: 9, height: 9, background: '#fef9c3', borderRadius: 2, marginRight: 2, border: '1px solid #eab308' }}/> 标记</span>
+            <div className="mt-3.5 pt-3 border-t border-[var(--ink-100)] flex flex-wrap gap-2 gap-x-3 text-[10px] text-[var(--ink-400)]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--fox)] border-[var(--fox)]" /> 当前
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--sage-glow)] border-[var(--sage)]" /> 已答
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--gold-glow)] border-[var(--gold)]" /> 标记
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--paper-bright)] border-[var(--ink-100)]" /> 未答
+              </span>
             </div>
           </div>
         </div>
 
         {/* Question area */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-1 px-1">
-            <div />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer text-[var(--ink-400)]" title="答完选择题/判断题后自动跳转下一题">
+              <input type="checkbox" checked={autoAdvance}
+                onChange={() => { const next = !autoAdvance; setAutoAdvance(next); localStorage.setItem('exam-auto-advance', String(next)); }}
+                className="accent-[var(--fox)] w-3.5 h-3.5" />
+              自动跳转
+            </label>
             <SaveIndicator status={saveStatus} lastSaved={lastSavedRef.current || undefined} />
           </div>
-          <div className="rounded-xl p-8 bg-white border border-gray-100">
-            <div className="flex items-center justify-end mb-4">
-              <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-400" title="答完选择题/判断题后自动跳转下一题">
-                <input type="checkbox" checked={autoAdvance}
-                  onChange={() => { const next = !autoAdvance; setAutoAdvance(next); localStorage.setItem('exam-auto-advance', String(next)); }}
-                  className="accent-[#e87a30] scale-75" />
-                自动跳转
-              </label>
-            </div>
-            {renderQuestion(q)}
+          <div className="flex-1 overflow-y-auto rounded-xl px-10 py-8 bg-[var(--paper-bright)] border border-[var(--ink-100)] shadow-sm">
+            {renderQuestion(q, currentQ)}
 
             {/* Navigation buttons */}
-            <div className="flex justify-between mt-8 pt-6" style={{ borderTop: '1px solid var(--ink-100)' }}>
+            <div className="flex justify-between mt-8 pt-6 border-t border-[var(--ink-100)]">
               <button onClick={() => goToQuestion(Math.max(0, currentQ - 1))}
                 disabled={currentQ === 0}
-                className="btn text-sm px-5 py-2" style={{ border: '1px solid var(--ink-200)', opacity: currentQ === 0 ? 0.4 : 1 }}>
+                className="px-5 py-2.5 text-sm font-medium rounded-lg border-[1.5px] border-[var(--ink-100)] bg-[var(--paper-bright)] text-[var(--ink-500)] hover:border-[var(--ink-300)] hover:text-[var(--ink-700)] disabled:opacity-35 disabled:cursor-not-allowed transition-all">
                 ← 上一题
               </button>
               {currentQ < totalQuestions - 1 ? (
                 <button onClick={() => goToQuestion(currentQ + 1)}
-                  className="btn btn-fox text-sm px-5 py-2">
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg bg-[var(--fox)] text-white hover:bg-[var(--fox-dark)] hover:shadow-[0_2px_8px_var(--fox-glow)] transition-all">
                   下一题 →
                 </button>
               ) : (
                 <button onClick={() => setShowSubmitModal(true)}
                   disabled={submitting}
-                  className="btn text-sm px-5 py-2" style={{ background: 'var(--fox)', color: 'white' }}>
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg bg-[var(--verm)] text-white hover:bg-[#b82d3f] hover:shadow-[0_2px_8px_var(--verm-glow)] transition-all">
                   {submitting ? '提交中…' : '交 卷'}
                 </button>
               )}
@@ -754,8 +768,7 @@ export default function ExamTake() {
 
       {/* Keyboard shortcut hint bar */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10">
-        <div className="px-4 py-2 rounded-full text-[10px] backdrop-blur-md select-none"
-          style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.6)' }}>
+        <div className="px-4 py-2 rounded-full text-[10px] backdrop-blur-md select-none bg-[rgba(26,23,18,0.65)] text-white/60">
           ← → 切换题目 · A~D 快速选择 · Ctrl+Enter 交卷
         </div>
       </div>
@@ -786,21 +799,15 @@ export default function ExamTake() {
         autoCloseMs={3000}
       />
       {fullscreenOverlay && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          zIndex: 9999, backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '40px 48px', textAlign: 'center', maxWidth: 400 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600 }}>全屏模式已退出</h2>
-            <p style={{ color: '#666', margin: '0 0 24px', lineHeight: 1.5 }}>考试需要全屏模式下进行。<br/>操作已记录，请重新进入全屏。</p>
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[rgba(26,23,18,0.88)] backdrop-blur-sm">
+          <div className="bg-[var(--paper-bright)] rounded-2xl p-10 text-center max-w-sm shadow-lg border border-[var(--ink-100)]">
+            <div className="text-5xl mb-4">🔒</div>
+            <h2 className="m-0 mb-2 text-xl font-semibold font-serif text-[var(--ink-800)]">全屏模式已退出</h2>
+            <p className="text-[var(--ink-500)] m-0 mb-6 leading-relaxed text-sm">考试需要全屏模式下进行。<br/>操作已记录，请重新进入全屏。</p>
             <button onClick={() => {
               document.documentElement.requestFullscreen().then(() => setFullscreenOverlay(false)).catch(() => alert('全屏被阻止，请按 F11 或浏览器全屏按钮'));
-            }} style={{
-              padding: '12px 32px', fontSize: 16, fontWeight: 500,
-              background: '#e87a30', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
-            }}>
+            }}
+              className="px-8 py-3 text-base font-medium text-white border-none rounded-lg cursor-pointer bg-[var(--fox)] hover:bg-[var(--fox-dark)] hover:shadow-[0_4px_16px_var(--fox-glow-strong)] transition-all">
               点击重新进入全屏
             </button>
           </div>

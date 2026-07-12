@@ -379,7 +379,7 @@ export default function StudentsPage() {
                         }}>
                         <input type="checkbox" checked={selectedRolesStu.includes(r.code)}
                           onChange={e => { e.target.checked ? setSelectedRolesStu([...selectedRolesStu, r.code]) : setSelectedRolesStu(selectedRolesStu.filter(c => c !== r.code)); }}
-                          className="cursor-pointer accent-[#e87a30]" />
+                          className="cursor-pointer accent-[var(--fox)]" />
                         {r.name}
                       </label>
                     ))}

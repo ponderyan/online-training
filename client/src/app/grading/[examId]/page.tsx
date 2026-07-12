@@ -214,7 +214,7 @@ export default function GradingDetail() {
             <button onClick={() => router.push('/grading')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>← 返回</button>
             <h1 className="page-title">📊 阅卷 · {exam?.title || ''}</h1>
             <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: blind ? 'var(--fox)' : 'var(--ink-300)' }}>
-              <input type="checkbox" checked={blind} onChange={e => setBlind(e.target.checked)} className="accent-[#e87a30]" /> 🎭 盲批
+              <input type="checkbox" checked={blind} onChange={e => setBlind(e.target.checked)} className="accent-[var(--fox)]" /> 🎭 盲批
             </label>
           </div>
           <p className="page-subtitle">

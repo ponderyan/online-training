@@ -111,10 +111,10 @@ export default function AdminMessagesPage() {
 
             <div className="max-h-64 overflow-y-auto space-y-1">
               {candidates.map((u: any) => (
-                <label key={u.id} className="flex items-center gap-2 p-2 rounded cursor-pointer text-xs hover:bg-gray-50"
+                <label key={u.id} className="flex items-center gap-2 p-2 rounded cursor-pointer text-xs hover:bg-[var(--fox-glow)]"
                   style={{ background: selectedIds.includes(u.id) ? 'var(--fox-glow)' : 'transparent' }}>
                   <input type="checkbox" checked={selectedIds.includes(u.id)}
-                    onChange={() => toggleSelect(u.id)} className="accent-[#e87a30] w-3.5 h-3.5" />
+                    onChange={() => toggleSelect(u.id)} className="accent-[var(--fox)] w-3.5 h-3.5" />
                   <span className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0"
                     style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
                     {u.displayName?.[0] || '?'}

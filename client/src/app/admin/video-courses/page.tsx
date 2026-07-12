@@ -467,7 +467,7 @@ export default function VideoCoursesPage() {
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer" style={{ marginTop: 32 }}>
                     <input type="checkbox" checked={form.isContinuingEducation}
-                      onChange={e => setForm({ ...form, isContinuingEducation: e.target.checked })} className="w-4 h-4 accent-[#e87a30]" />
+                      onChange={e => setForm({ ...form, isContinuingEducation: e.target.checked })} className="w-4 h-4 accent-[var(--fox)]" />
                     <span className="text-sm">计入继续教育学时</span>
                   </label>
                 </div>

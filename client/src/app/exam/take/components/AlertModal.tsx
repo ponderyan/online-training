@@ -40,39 +40,35 @@ export default function AlertModal({
 
   return (
     <div ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.4)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(26,23,18,0.5)] backdrop-blur-sm"
       onClick={(e) => { if (e.target === overlayRef.current && !isCritical) onClose(); }}>
-      <div className="rounded-2xl w-full max-w-sm p-6 text-center" style={{ background: 'white', animation: 'fadeIn 0.2s ease-out' }}>
-        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{
-          background: isCritical ? '#fef2f2' : isReminder ? '#fef3c7' : '#fef3e7',
-        }}>
+      <div className="rounded-2xl w-full max-w-sm p-7 text-center bg-[var(--paper-bright)] border border-[var(--ink-100)] shadow-lg animate-[fadeIn_0.2s_ease]">
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
+          isCritical ? 'bg-[var(--verm-glow)]' : isReminder ? 'bg-[var(--gold-glow)]' : 'bg-[var(--fox-glow)]'
+        }`}>
           <span className="text-2xl">{isCritical ? '🔒' : isReminder ? '⏰' : '⚠️'}</span>
         </div>
 
-        <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--ink-700)' }}>
+        <h3 className="text-lg font-semibold mb-3 text-[var(--ink-700)] font-serif">
           {isCritical ? '考试已结束' : isReminder ? '时间提醒' : '切屏警告'}
         </h3>
-        <p className="text-sm mb-6 leading-6" style={{ color: 'var(--ink-500)' }}>{message}</p>
+        <p className="text-sm mb-6 leading-6 text-[var(--ink-500)]">{message}</p>
 
         {isCritical && onConfirm && (
           <button onClick={onConfirm}
-            className="w-full py-2.5 rounded-lg text-sm font-medium text-white"
-            style={{ background: 'var(--fox)' }}>
+            className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-[var(--fox)] hover:bg-[var(--fox-dark)] transition-all">
             确定
           </button>
         )}
         {isWarn && (
           <button onClick={onClose}
-            className="w-full py-2.5 rounded-lg text-sm font-medium"
-            style={{ background: '#fef3e7', color: 'var(--fox)' }}>
+            className="w-full py-2.5 rounded-lg text-sm font-medium bg-[var(--fox-glow)] text-[var(--fox)] hover:bg-[var(--fox-glow-strong)] transition-all">
             知道了
           </button>
         )}
         {isReminder && (
           <button onClick={onClose}
-            className="w-full py-2.5 rounded-lg text-sm font-medium text-white"
-            style={{ background: 'var(--fox)' }}>
+            className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-[var(--fox)] hover:bg-[var(--fox-dark)] transition-all">
             继续答题
           </button>
         )}

@@ -162,6 +162,8 @@ INSERT IGNORE INTO `paper_questions` (`paper_id`, `question_id`, `sort_order`, `
   (100, 1023, 23, 4, 'TRUE_FALSE'), (100, 1024, 24, 4, 'TRUE_FALSE'),
   (100, 1025, 25, 4, 'TRUE_FALSE');
 
+-- 注意：因 paper_questions 表有 UNIQUE(paper_id, question_id) 约束，
+-- 此文件可安全重复执行（INSERT IGNORE 静默跳过已存在的关联）
 -- ── 5. 创建认证考试（配置认证模式参数）──
 INSERT IGNORE INTO `exams` (`id`, `title`, `paper_id`, `start_time`, `end_time`, `duration_minutes`, `access_type`, `max_attempts`, `is_open_book`, `late_entry_minutes`, `early_exit_minutes`, `shuffle_questions`, `shuffle_options`, `status`, `passing_score`, `max_retake_attempts`, `retake_window_days`, `created_by`, `created_at`, `updated_at`)
 VALUES (100, 'ITSS 服务标准认证（模拟）', 100, '2026-07-11 00:00:00.000', '2026-12-31 23:59:59.000', 60, 'UNIFIED', 3, 0, 10, 0, 1, 1, 'PUBLISHED', 75, 2, 30, 1, NOW(), NOW());

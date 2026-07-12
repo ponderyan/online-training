@@ -169,10 +169,9 @@ export default function Sidebar({ user }: { user: any }) {
     .filter(g => g.items.length > 0);
 
   return (
-    <aside className="w-[240px] flex-shrink-0 flex flex-col h-screen sticky top-0"
-      style={{ background: 'linear-gradient(180deg, #1a1712 0%, #231f1a 100%)' }}>
+    <aside className="w-[240px] flex-shrink-0 flex flex-col h-screen sticky top-0 bg-gradient-to-b from-[var(--ink-900)] to-[var(--ink-800)]">
       {/* Logo */}
-      <div className="px-5 py-6 border-b" style={{ borderColor: 'rgba(196,188,176,0.08)' }}>
+      <div className="px-5 py-6 border-b border-[rgba(196,188,176,0.08)]">
         <div className="flex items-center gap-3">
           <FoxLogo size={36} />
           <div className="font-serif font-bold leading-tight tracking-wider text-white">
@@ -186,8 +185,7 @@ export default function Sidebar({ user }: { user: any }) {
         {visibleGroups.map(group => (
           <div key={group.title}>
             {!isStudent && (
-              <div className="px-4 py-2 text-[10px] uppercase tracking-wider font-semibold"
-                style={{ color: 'var(--ink-400)' }}>
+              <div className="px-4 py-2 text-[10px] uppercase tracking-wider font-semibold text-[var(--ink-400)]">
                 {group.title}
               </div>
             )}
@@ -204,27 +202,15 @@ export default function Sidebar({ user }: { user: any }) {
               return (
                 <div key={item.path + item.label}
                   onClick={() => router.push(item.path)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all"
-                  style={{
-                    background: isActive ? 'rgba(232, 122, 48, 0.1)' : 'transparent',
-                    color: isActive ? '#f5a061' : '#8b8174',
-                  }}
-                  onMouseEnter={e => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(196,188,176,0.05)';
-                      e.currentTarget.style.color = '#c4bcb0';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#8b8174';
-                    }
-                  }}>
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all ${
+                    isActive
+                      ? 'bg-[var(--fox-glow)] text-[var(--fox-light)]'
+                      : 'text-[var(--ink-300)] hover:bg-[rgba(196,188,176,0.05)] hover:text-[var(--ink-100)]'
+                  }`}>
                   <span className="text-base flex-shrink-0">{item.icon}</span>
                   <span className="flex-1 truncate">{item.label}</span>
                   {isActive && (
-                    <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: '#e87a30' }} />
+                    <span className="w-1 h-4 rounded-full flex-shrink-0 bg-[var(--fox)]" />
                   )}
                 </div>
               );
@@ -234,15 +220,14 @@ export default function Sidebar({ user }: { user: any }) {
       </nav>
 
       {/* User info + logout */}
-      <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(196,188,176,0.08)' }}>
+      <div className="px-5 py-4 border-t border-[rgba(196,188,176,0.08)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-            style={{ background: 'rgba(232, 122, 48, 0.15)', color: '#f5a061' }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[var(--fox-glow-strong)] text-[var(--fox-light)]">
             {user?.displayName?.[0] || '🦊'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-[#c4bcb0] truncate">{user?.displayName || ''}</div>
-            <div className="text-[11px]" style={{ color: '#f5a061' }}>
+            <div className="text-sm font-medium text-[var(--ink-100)] truncate">{user?.displayName || ''}</div>
+            <div className="text-[11px] text-[var(--fox-light)]">
               {user?.roles?.includes('STUDENT') ? '学员'
                 : user?.roles?.includes('SUPER_ADMIN') ? '超级管理员'
                 : user?.roles?.includes('ORG_ADMIN') ? '机构管理员'
@@ -254,7 +239,7 @@ export default function Sidebar({ user }: { user: any }) {
             </div>
           </div>
           <button onClick={handleLogout}
-            className="text-[11px] text-[#8b8174] hover:text-[#e87a30] transition-colors bg-transparent border-none cursor-pointer flex-shrink-0 px-1">
+            className="text-[11px] text-[var(--ink-300)] hover:text-[var(--fox)] transition-colors bg-transparent border-none cursor-pointer flex-shrink-0 px-1">
             退出
           </button>
         </div>

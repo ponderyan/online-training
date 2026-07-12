@@ -345,7 +345,7 @@ export default function PermissionsPage() {
                       placeholder="🔍 搜索权限…" className="input text-xs" style={{ width: 200, height: 32 }} />
                     <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: 'var(--ink-400)' }}>
                       <input type="checkbox" checked={showEnabledOnly} onChange={e => setShowEnabledOnly(e.target.checked)}
-                        className="accent-[#e87a30] w-3 h-3" />
+                        className="accent-[var(--fox)] w-3 h-3" />
                       仅显示已启用
                     </label>
                     <div className="flex-1" />
@@ -400,7 +400,7 @@ export default function PermissionsPage() {
                                       }}>
                                       <input type="checkbox" checked={!!granted}
                                         onChange={() => togglePerm(child.permission)}
-                                        className="cursor-pointer accent-[#e87a30] w-3 h-3" />
+                                        className="cursor-pointer accent-[var(--fox)] w-3 h-3" />
                                       {child.name}
                                     </label>
                                   );

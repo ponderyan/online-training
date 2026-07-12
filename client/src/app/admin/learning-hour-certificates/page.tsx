@@ -132,7 +132,7 @@ export default function LearningHourCertificates() {
           <table className="list-table">
             <thead>
               <tr>
-                <th style={{ width: 40 }}><input type="checkbox" checked={selectedIds.size === items.length} onChange={selectAll} className="accent-[#e87a30]" /></th>
+                <th style={{ width: 40 }}><input type="checkbox" checked={selectedIds.size === items.length} onChange={selectAll} className="accent-[var(--fox)]" /></th>
                 <th>编号</th>
                 <th>学员</th>
                 <th>培训班</th>
@@ -147,7 +147,7 @@ export default function LearningHourCertificates() {
                 const st = STATUS_MAP[item.approvalStatus] || { text: item.approvalStatus, color: '#6b7280' };
                 return (
                   <tr key={item.id}>
-                    <td><input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="accent-[#e87a30]" /></td>
+                    <td><input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="accent-[var(--fox)]" /></td>
                     <td className="font-mono text-xs">{item.certificateNo || '—'}</td>
                     <td>
                       <div className="text-sm font-medium">{item.studentName || '—'}</div>

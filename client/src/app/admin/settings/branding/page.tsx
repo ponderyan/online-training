@@ -86,7 +86,7 @@ export default function BrandingPage() {
             <input value={form.icpBeian} onChange={e => setForm({ ...form, icpBeian: e.target.value })} className="input w-full" placeholder="京ICP备XXXXXXXX号" />
           </div>
           <div className="flex items-center gap-2 pt-2">
-            <input type="checkbox" id="pubReg" checked={form.publicRegistration} onChange={e => setForm({ ...form, publicRegistration: e.target.checked })} className="accent-[#e87a30]" />
+            <input type="checkbox" id="pubReg" checked={form.publicRegistration} onChange={e => setForm({ ...form, publicRegistration: e.target.checked })} className="accent-[var(--fox)]" />
             <label htmlFor="pubReg" className="text-sm">允许公开注册</label>
           </div>
 

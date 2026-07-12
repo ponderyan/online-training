@@ -432,7 +432,7 @@ export default function PaperDetailPage() {
             {!replaceTarget && (
               <label className="flex items-center gap-2 px-4 pt-2 pb-1 text-xs" style={{ color: 'var(--ink-400)' }}>
                 <input type="checkbox" checked={addToPractice} onChange={e => setAddToPractice(e.target.checked)}
-                  className="checkbox checkbox-sm accent-[#e87a30]" />
+                  className="checkbox checkbox-sm accent-[var(--fox)]" />
                 选中题目自动加入练习模式（学员在练习中可见）
               </label>
             )}

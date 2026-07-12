@@ -144,7 +144,7 @@ export default function EditExam() {
                       border: `1px solid ${timeMode === t.value ? 'var(--fox)' : 'var(--ink-100)'}`,
                     }}>
                     <input type="radio" name="timeMode" checked={timeMode === t.value} onChange={() => setTimeMode(t.value)}
-                      className="mt-0.5 accent-[#e87a30]" />
+                      className="mt-0.5 accent-[var(--fox)]" />
                     <div>
                       <div className="text-sm font-medium">{t.label}</div>
                       <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{t.desc}</div>
@@ -186,7 +186,7 @@ export default function EditExam() {
                       border: `1px solid ${paperMode === t.value ? 'var(--fox)' : 'var(--ink-100)'}`,
                     }}>
                     <input type="radio" name="paperMode" checked={paperMode === t.value} onChange={() => setPaperMode(t.value)}
-                      className="mt-0.5 accent-[#e87a30]" />
+                      className="mt-0.5 accent-[var(--fox)]" />
                     <div>
                       <div className="text-sm font-medium">{t.label}</div>
                       <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{t.desc}</div>
@@ -197,12 +197,12 @@ export default function EditExam() {
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={shuffleQuestions} onChange={e => setShuffleQuestions(e.target.checked)}
-                    className="accent-[#e87a30]" />
+                    className="accent-[var(--fox)]" />
                   <span className="text-xs" style={{ color: 'var(--ink-500)' }}>题序乱序</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={shuffleOptions} onChange={e => setShuffleOptions(e.target.checked)}
-                    className="accent-[#e87a30]" />
+                    className="accent-[var(--fox)]" />
                   <span className="text-xs" style={{ color: 'var(--ink-500)' }}>选项乱序</span>
                 </label>
               </div>
@@ -229,7 +229,7 @@ export default function EditExam() {
               </div>
               <label className="flex items-center gap-2 mt-3 cursor-pointer">
                 <input type="checkbox" checked={copyProtection} onChange={e => setCopyProtection(e.target.checked)}
-                  className="accent-[#e87a30]" />
+                  className="accent-[var(--fox)]" />
                 <span className="text-xs" style={{ color: 'var(--ink-500)' }}>禁止复制粘贴</span>
               </label>
             </div>

@@ -91,7 +91,7 @@ export default function CertificateApplications() {
                   {statusFilter === 'PENDING' && (
                     <td><input type="checkbox" checked={selectedIds.includes(a.id)}
                       onChange={e => { if (e.target.checked) setSelectedIds([...selectedIds, a.id]); else setSelectedIds(selectedIds.filter(id => id !== a.id)); }}
-                      className="accent-[#e87a30]" /></td>
+                      className="accent-[var(--fox)]" /></td>
                   )}
                   <td className="font-medium">{a.student?.displayName || '—'}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{a.examSession?.exam?.title || '—'}</td>

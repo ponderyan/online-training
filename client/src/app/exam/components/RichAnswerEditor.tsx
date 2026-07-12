@@ -19,7 +19,8 @@ export default function RichAnswerEditor({
 
   useEffect(() => {
     // Dynamic import Quill (only on client)
-    import('quill').then(({ default: Quill }) => {
+    import('quill').then(async ({ default: Quill }) => {
+      await import('quill/dist/quill.snow.css');
       if (!editorRef.current || quillRef.current) return;
 
       const toolbar = [
@@ -75,9 +76,38 @@ export default function RichAnswerEditor({
 
   return (
     <div>
-      <div ref={editorRef} className="bg-white rounded-lg" style={{ minHeight: '160px', border: '1px solid #e5e7eb' }} />
+      <style>{`
+        .ql-toolbar.ql-snow {
+          border: 1.5px solid var(--ink-100) !important;
+          border-bottom: none !important;
+          border-radius: 8px 8px 0 0;
+          background: var(--paper);
+          padding: 6px 8px;
+        }
+        .ql-container.ql-snow {
+          border: 1.5px solid var(--ink-100) !important;
+          border-top: none !important;
+          border-radius: 0 0 8px 8px;
+          font-family: 'Noto Sans SC', sans-serif;
+          font-size: 14px;
+        }
+        .ql-toolbar.ql-snow .ql-picker-item,
+        .ql-toolbar.ql-snow button {
+          color: var(--ink-500);
+        }
+        .ql-toolbar.ql-snow .ql-picker-item.ql-selected,
+        .ql-toolbar.ql-snow button.ql-active {
+          color: var(--fox);
+        }
+        .ql-toolbar.ql-snow button:hover {
+          color: var(--fox);
+        }
+      `}</style>
+      <div ref={editorRef}
+        className="rounded-lg bg-[var(--paper-bright)] border-[1.5px] border-[var(--ink-100)] focus-within:border-[var(--fox)] transition-colors"
+        style={{ minHeight: '160px' }} />
       <div className="flex justify-between mt-1">
-        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+        <span className="text-xs text-[var(--ink-300)]">
           {charCount}/{maxChars} 字
         </span>
       </div>

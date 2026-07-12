@@ -279,9 +279,9 @@ export default function DashboardTab({ programId }: { programId: string }) {
                       <td className="py-2 text-center">
                         <span className={`text-xs px-2 py-0.5 rounded ${
                           row.certStatus === '已发放'
-                            ? 'bg-green-50 text-green-700'
+                            ? 'bg-[var(--sage-glow)] text-[var(--sage)]'
                             : row.certStatus !== '—'
-                            ? 'bg-yellow-50 text-yellow-700'
+                            ? 'bg-[var(--gold-glow)] text-[var(--gold-dark)]'
                             : ''
                         }`} style={{
                           background: row.certStatus === '已发放' ? '#00897b18' : row.certStatus !== '—' ? '#f9a82518' : 'transparent',

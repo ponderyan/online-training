@@ -220,7 +220,7 @@ export default function AccountsPage() {
             </thead>
             <tbody>
               {filtered.map((u: any) => (
-                <tr key={u.id} onDoubleClick={() => openSide(u)} className="cursor-pointer hover:bg-gray-50" style={{ cursor: 'pointer' }}>
+                <tr key={u.id} onDoubleClick={() => openSide(u)} className="cursor-pointer hover:bg-[var(--fox-glow)]" style={{ cursor: 'pointer' }}>
                   <td style={{ color: 'var(--ink-400)' }}>{u.username}</td>
                   <td className="font-medium">{u.displayName}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{u.phone || '—'}</td>
@@ -551,7 +551,7 @@ export default function AccountsPage() {
                                 }}>
                                 <input type="checkbox" checked={selectedRoles.includes(r.code)}
                                   onChange={e => { e.target.checked ? setSelectedRoles([...selectedRoles, r.code]) : setSelectedRoles(selectedRoles.filter(c => c !== r.code)); }}
-                                  className="cursor-pointer accent-[#e87a30]" />
+                                  className="cursor-pointer accent-[var(--fox)]" />
                                 {r.color && <span className="w-2 h-2 rounded-full inline-block" style={{ background: r.color }} />}
                                 {r.name}
                               </label>
@@ -571,7 +571,7 @@ export default function AccountsPage() {
                                 }}>
                                 <input type="checkbox" checked={selectedRoles.includes(r.code)}
                                   onChange={e => { e.target.checked ? setSelectedRoles([...selectedRoles, r.code]) : setSelectedRoles(selectedRoles.filter(c => c !== r.code)); }}
-                                  className="cursor-pointer accent-[#e87a30]" />
+                                  className="cursor-pointer accent-[var(--fox)]" />
                                 {r.color && <span className="w-2 h-2 rounded-full inline-block" style={{ background: r.color }} />}
                                 {r.name}
                               </label>

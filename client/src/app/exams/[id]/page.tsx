@@ -170,7 +170,7 @@ export default function ExamDetail() {
                 {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && ' · 自动刷新中'}
               </span>
             )}
-            <button onClick={loadStudents} className="px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+            <button onClick={loadStudents} className="px-2 py-1 rounded hover:bg-[var(--fox-glow)] transition-colors"
               style={{ border: '1px solid var(--ink-200)' }}>
               🔄 刷新
             </button>

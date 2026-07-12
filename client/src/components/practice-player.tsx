@@ -89,7 +89,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
   if (loading) {
     return (
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在出题… 🦊</div>
+        <div className="text-center py-16 text-[var(--ink-300)]">小狐狸正在出题… 🦊</div>
       </AppLayout>
     );
   }
@@ -101,7 +101,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
       <AppLayout>
         <div className="max-w-3xl mx-auto text-center py-16">
           <h2 className="text-xl font-bold mb-4">🎉 练习完成</h2>
-          <p>共 <strong>{questions.length}</strong> 题 · 正确 <strong style={{ color: 'var(--cyan)' }}>{correctCount}</strong> · 错误 <strong style={{ color: 'var(--verm)' }}>{wrongCount}</strong></p>
+          <p>共 <strong>{questions.length}</strong> 题 · 正确 <strong className="text-[var(--cyan)]">{correctCount}</strong> · 错误 <strong className="text-[var(--verm)]">{wrongCount}</strong></p>
           <button onClick={() => { setCurrentIdx(0); setDone(false); setResults({}); setAnswers({}); init(); }}
             className="btn btn-fox mt-6">再练一次</button>
         </div>
@@ -112,7 +112,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
   if (questions.length === 0) {
     return (
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>暂无练习题目</div>
+        <div className="text-center py-16 text-[var(--ink-300)]">暂无练习题目</div>
       </AppLayout>
     );
   }
@@ -125,16 +125,14 @@ export default function PracticePlayer({ title, loadQuestions }: {
           {/* Progress + mode toggle */}
           <div className="flex items-center gap-3 mb-3">
             <span className="text-sm font-medium">{title}</span>
-            <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
-              <div className="h-full rounded-full transition-all" style={{
-                width: `${((Object.keys(results).length) / questions.length) * 100}%`,
-                background: 'var(--fox)',
-              }} />
+            <div className="flex-1 h-1.5 rounded-full bg-[var(--ink-100)]">
+              <div className="h-full rounded-full transition-all bg-[var(--fox)]"
+                style={{ width: `${((Object.keys(results).length) / questions.length) * 100}%` }} />
             </div>
-            <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{currentIdx + 1}/{questions.length}</span>
+            <span className="text-xs text-[var(--ink-300)]">{currentIdx + 1}/{questions.length}</span>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs" style={{ color: 'var(--ink-400)' }}>模式：</span>
+            <span className="text-xs text-[var(--ink-400)]">模式：</span>
             <button onClick={() => setMode('practice')}
               className={`text-xs px-2.5 py-1 rounded-full border transition-all ${mode === 'practice' ? 'bg-[var(--fox)] text-white border-[var(--fox)]' : 'bg-white text-[var(--ink-500)] border-[var(--ink-200)]'}`}>
               做题模式
@@ -151,11 +149,11 @@ export default function PracticePlayer({ title, loadQuestions }: {
             <div className="flex items-center gap-2 mb-4">
               <span className="tag tag-fox text-xs">{TYPE_LABELS[current.type] || current.type}</span>
               {current.difficulty && (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--ink-100)] text-[var(--ink-400)]">
                   {DIFF_LABELS[current.difficulty] || current.difficulty}
                 </span>
               )}
-              <span className="text-xs flex-1" style={{ color: 'var(--ink-300)' }}>
+              <span className="text-xs flex-1 text-[var(--ink-300)]">
                 {current.subject?.name || ''}{current.chapter?.name ? ` · ${current.chapter.name}` : ''}
               </span>
               <button onClick={() => handleToggleFavorite(current.id)}
@@ -165,7 +163,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
               </button>
             </div>
 
-            <div className="text-sm leading-relaxed mb-5" style={{ color: 'var(--ink-800)' }}>
+            <div className="text-sm leading-relaxed mb-5 text-[var(--ink-800)]">
               {current.content}
             </div>
 
@@ -175,18 +173,19 @@ export default function PracticePlayer({ title, loadQuestions }: {
               const showResult = mode === 'browse' || submitted;
               return (
                 <label key={o.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition-all ${showResult ? '' : 'cursor-pointer'}`}
-                  style={{
-                    background: isSelected && mode === 'practice' ? 'var(--fox-glow)' : 'var(--paper)',
-                    border: `1px solid ${showResult && o.isCorrect ? 'var(--cyan)' : isSelected ? 'var(--fox)' : 'transparent'}`,
-                  }}
+                  className={`
+                    flex items-center gap-3 p-3 rounded-lg mb-2 transition-all
+                    ${showResult ? '' : 'cursor-pointer'}
+                    ${isSelected && mode === 'practice' ? 'bg-[var(--fox-glow)] border border-[var(--fox)]' : 'bg-[var(--paper)] border border-transparent'}
+                    ${showResult && o.isCorrect ? 'bg-[var(--cyan-glow)] border border-[var(--cyan)] ring-1 ring-[var(--cyan)]' : ''}
+                  `}
                   onClick={() => mode === 'practice' && !submitted && handleSelect(current.id, o.label)}>
                   <input type="radio" name={`q-${current.id}`} checked={isSelected}
                     onChange={() => mode === 'practice' && !submitted && handleSelect(current.id, o.label)}
-                    disabled={showResult} className="accent-[#e87a30]" />
+                    disabled={showResult} className="accent-[var(--fox)]" />
                   <span className="text-sm"><b>{o.label}.</b> {o.content}</span>
-                  {showResult && o.isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--cyan)' }}>✓ 正确答案</span>}
-                  {showResult && isSelected && !o.isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--verm)' }}>✗</span>}
+                  {showResult && o.isCorrect && <span className="ml-auto text-xs font-bold text-[var(--cyan)]">✓ 正确答案</span>}
+                  {showResult && isSelected && !o.isCorrect && <span className="ml-auto text-xs font-bold text-[var(--verm)]">✗</span>}
                 </label>
               );
             })}
@@ -198,21 +197,22 @@ export default function PracticePlayer({ title, loadQuestions }: {
               const showResult = mode === 'browse' || submitted;
               return (
                 <label key={o.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg mb-2 ${showResult ? '' : 'cursor-pointer'} transition-all ${showResult && o.isCorrect ? 'ring-2 ring-[var(--cyan)]' : ''}`}
-                  style={{
-                    background: checked && mode === 'practice' ? 'var(--fox-glow)' : 'var(--paper)',
-                    border: `1px solid ${showResult && o.isCorrect ? 'var(--cyan)' : checked ? 'var(--fox)' : 'transparent'}`,
-                  }}>
+                  className={`
+                    flex items-center gap-3 p-3 rounded-lg mb-2 transition-all
+                    ${showResult ? '' : 'cursor-pointer'}
+                    ${checked && mode === 'practice' ? 'bg-[var(--fox-glow)] border border-[var(--fox)]' : 'bg-[var(--paper)] border border-transparent'}
+                    ${showResult && o.isCorrect ? 'bg-[var(--cyan-glow)] border border-[var(--cyan)] ring-1 ring-[var(--cyan)]' : ''}
+                  `}>
                   <input type="checkbox" checked={checked}
                     onChange={() => {
                       if (showResult || mode !== 'practice') return;
                       const newSel = checked ? selected.filter((s: string) => s !== o.label) : [...selected, o.label];
                       setAnswers(prev => ({ ...prev, [current.id]: newSel }));
                     }}
-                    disabled={showResult} className="accent-[#e87a30]" />
+                    disabled={showResult} className="accent-[var(--fox)]" />
                   <span className="text-sm"><b>{o.label}.</b> {o.content}</span>
-                  {showResult && o.isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--cyan)' }}>✓</span>}
-                  {showResult && checked && !o.isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--verm)' }}>✗</span>}
+                  {showResult && o.isCorrect && <span className="ml-auto text-xs font-bold text-[var(--cyan)]">✓</span>}
+                  {showResult && checked && !o.isCorrect && <span className="ml-auto text-xs font-bold text-[var(--verm)]">✗</span>}
                 </label>
               );
             })}
@@ -244,17 +244,17 @@ export default function PracticePlayer({ title, loadQuestions }: {
 
             {/* Browse mode - show answer */}
             {mode === 'browse' && (
-              <div className="mt-4 p-4 rounded-lg text-sm bg-blue-50 border border-blue-200">
-                <p className="font-bold mb-1 text-blue-700">📖 背题模式</p>
+              <div className="mt-4 p-4 rounded-lg text-sm bg-[var(--fox-glow)] border border-[var(--ink-100)]">
+                <p className="font-bold mb-1 text-[var(--fox-dark)]">📖 背题模式</p>
                 {current.options?.map((o: any) => o.isCorrect && (
-                  <p key={o.id} className="text-sm" style={{ color: 'var(--ink-600)' }}>
-                    正确答案：<strong style={{ color: 'var(--cyan)' }}>{o.label}. {o.content}</strong>
+                  <p key={o.id} className="text-sm text-[var(--ink-600)]">
+                    正确答案：<strong className="text-[var(--cyan)]">{o.label}. {o.content}</strong>
                   </p>
                 ))}
                 {current.analysis && (
-                  <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: 'var(--ink-100)' }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>解析：</p>
-                    <p className="text-xs" style={{ color: 'var(--ink-600)' }}>{current.analysis}</p>
+                  <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
+                    <p className="text-xs font-medium mb-1 text-[var(--ink-500)]">解析：</p>
+                    <p className="text-xs text-[var(--ink-600)]">{current.analysis}</p>
                   </div>
                 )}
               </div>
@@ -262,29 +262,29 @@ export default function PracticePlayer({ title, loadQuestions }: {
 
             {/* Result feedback */}
             {submitted && result && (
-              <div className={`mt-4 p-4 rounded-lg text-sm ${result.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                <p className={`font-bold mb-2 ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+              <div className={`mt-4 p-4 rounded-lg text-sm ${result.isCorrect ? 'bg-[var(--sage-glow)] border border-[var(--sage)]' : 'bg-[var(--verm-glow)] border border-[var(--verm)]'}`}>
+                <p className={`font-bold mb-2 ${result.isCorrect ? 'text-[var(--sage)]' : 'text-red-700'}`}>
                   {result.isCorrect ? '✅ 回答正确！' : '❌ 回答错误'}
                 </p>
                 {!result.isCorrect && (
-                  <p className="mb-1" style={{ color: 'var(--ink-600)' }}>
-                    正确答案：<strong style={{ color: 'var(--cyan)' }}>{result.correctAnswer}</strong>
+                  <p className="mb-1 text-[var(--ink-600)]">
+                    正确答案：<strong className="text-[var(--cyan)]">{result.correctAnswer}</strong>
                   </p>
                 )}
                 {result.analysis && (
-                  <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: 'var(--ink-100)' }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>解析：</p>
-                    <p className="text-xs" style={{ color: 'var(--ink-600)' }}>{result.analysis}</p>
+                  <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
+                    <p className="text-xs font-medium mb-1 text-[var(--ink-500)]">解析：</p>
+                    <p className="text-xs text-[var(--ink-600)]">{result.analysis}</p>
                   </div>
                 )}
               </div>
             )}
 
             {/* Navigation */}
-            <div className="flex justify-between mt-6 pt-4" style={{ borderTop: '1px solid var(--ink-100)' }}>
+            <div className="flex justify-between mt-6 pt-4 border-t border-[var(--ink-100)]">
               <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}
                 disabled={currentIdx === 0}
-                className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--ink-200)', opacity: currentIdx === 0 ? 0.4 : 1 }}>
+                className="btn text-sm px-4 py-2 border border-[var(--ink-200)] disabled:opacity-40">
                 ← 上一题
               </button>
               {submitted || mode === 'browse' ? (
@@ -292,12 +292,10 @@ export default function PracticePlayer({ title, loadQuestions }: {
                   {currentIdx < questions.length - 1 ? '下一题 →' : '查看结果'}
                 </button>
               ) : (
-                !isAutoType && current.type !== 'MULTIPLE_CHOICE' && (
-                  <button onClick={() => { if (currentIdx < questions.length - 1) setCurrentIdx(prev => prev + 1); else setDone(true); }}
-                    className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>
-                    跳过本题 →
-                  </button>
-                )
+                <button onClick={() => { if (currentIdx < questions.length - 1) setCurrentIdx(prev => prev + 1); else setDone(true); }}
+                  className="text-xs bg-transparent border-none cursor-pointer text-[var(--ink-300)]">
+                  跳过本题 →
+                </button>
               )}
             </div>
           </div>
@@ -305,31 +303,32 @@ export default function PracticePlayer({ title, loadQuestions }: {
 
         {/* Right — Answer card */}
         <aside className="w-[180px] flex-shrink-0 hidden lg:block">
-          <div className="sticky top-24 bg-white rounded-xl border p-4" style={{ borderColor: 'var(--ink-100)' }}>
-            <div className="text-xs font-medium mb-3" style={{ color: 'var(--ink-500)' }}>答题卡</div>
+          <div className="sticky top-24 bg-white rounded-xl border border-[var(--ink-100)] p-4">
+            <div className="text-xs font-medium mb-3 text-[var(--ink-500)]">答题卡</div>
             <div className="grid grid-cols-6 gap-1.5 mb-2">
               {questions.map((q: any, i: number) => {
                 const isCurrent = i === currentIdx;
                 const isShown = results[q.id] !== undefined;
                 const isCorrect = results[q.id]?.isCorrect;
-                let bg = '#f0eee9', txtColor = '#888';
-                if (isCurrent) { bg = '#e87a30'; txtColor = '#fff'; }
-                else if (isShown && isCorrect) { bg = '#a5d6a7'; txtColor = '#fff'; }
-                else if (isShown && !isCorrect) { bg = '#ef9a9a'; txtColor = '#fff'; }
                 return (
                   <button key={q.id} onClick={() => setCurrentIdx(i)}
-                    className="w-6 h-6 rounded text-[11px] font-medium border-none cursor-pointer"
-                    style={{ background: bg, color: txtColor }}>
+                    className={`
+                      w-6 h-6 rounded text-[11px] font-medium border-none cursor-pointer
+                      ${isCurrent ? 'bg-[var(--fox)] text-white' : ''}
+                      ${!isCurrent && isShown && isCorrect ? 'bg-[var(--cyan)] text-white' : ''}
+                      ${!isCurrent && isShown && !isCorrect ? 'bg-[var(--verm)] text-white' : ''}
+                      ${!isCurrent && !isShown ? 'bg-[var(--paper)] text-[var(--ink-300)]' : ''}
+                    `}>
                     {i + 1}
                   </button>
                 );
               })}
             </div>
-            <div className="text-[10px] space-y-0.5" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[10px] space-y-0.5 text-[var(--ink-400)]">
               <div>✓ 正确：{Object.values(results).filter(r => r?.isCorrect).length}</div>
               <div>✗ 错误：{Object.values(results).filter(r => r && !r.isCorrect).length}</div>
               <div>— 未答：{questions.length - Object.keys(results).length}</div>
-              <div className="mt-2 pt-1 border-t" style={{ borderColor: 'var(--ink-100)' }}>共 {questions.length} 题</div>
+              <div className="mt-2 pt-1 border-t border-[var(--ink-100)]">共 {questions.length} 题</div>
             </div>
           </div>
         </aside>
