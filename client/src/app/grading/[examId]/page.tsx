@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function GradingDetail() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const examId = parseInt(params.examId as string);
   const [exam, setExam] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);

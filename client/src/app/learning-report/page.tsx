@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import Loading from '@/components/Loading';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, PieChart, Pie, Cell,
@@ -112,16 +115,6 @@ function truncate(str: string, len: number): string {
   return str.length > len ? str.slice(0, len) + '...' : str;
 }
 
-// ── 空状态组件 ──
-function EmptySection({ icon, message }: { icon: string; message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12" style={{ color: 'var(--ink-300)' }}>
-      <div className="text-3xl mb-3">{icon}</div>
-      <p className="text-xs">{message}</p>
-    </div>
-  );
-}
-
 // ── 各等级进度条颜色 ──
 function masteryBarColor(level: string): string {
   return LEVEL_COLORS[level] || '#8b8174';
@@ -207,11 +200,7 @@ export default function LearningReportPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center py-32">
-          <div style={{ color: 'var(--ink-300)', fontSize: '1rem' }}>
-            小狐狸正在加载学习报告… 🦊
-          </div>
-        </div>
+        <Loading text="小狐狸正在加载学习报告…" />
       </AppLayout>
     );
   }
@@ -220,11 +209,7 @@ export default function LearningReportPage() {
   if (error) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center py-32">
-          <div className="text-lg mb-3" style={{ color: 'var(--verm)' }}>⚠️</div>
-          <p className="text-sm mb-4" style={{ color: 'var(--ink-500)' }}>{error}</p>
-          <button onClick={loadReport} className="btn btn-fox btn-sm">重新加载</button>
-        </div>
+        <div className="card"><ErrorCard message={error} onRetry={loadReport} /></div>
       </AppLayout>
     );
   }
@@ -508,7 +493,7 @@ export default function LearningReportPage() {
         <div className="card p-5">
           <h2 className="section-title">知识点掌握度</h2>
           {kpData.length === 0 ? (
-            <EmptySection icon="🧠" message="暂无知识点数据" />
+            <EmptyState icon="🧠" title="暂无知识点数据" size="small" />
           ) : (
             <div className="overflow-y-auto" style={{ maxHeight: 400 }}>
               <ResponsiveContainer width="100%" height={Math.max(kpData.length * 44, 120)}>
@@ -568,7 +553,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">学时分布</h2>
             {pieData.length === 0 ? (
-              <EmptySection icon="🕐" message="暂无学时数据" />
+              <EmptyState icon="🕐" title="暂无学时数据" size="small" />
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={220}>
@@ -606,7 +591,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">薄弱环节</h2>
             {topWeak.length === 0 ? (
-              <EmptySection icon="👍" message="暂无明显薄弱环节" />
+              <EmptyState icon="👍" title="暂无明显薄弱环节，继续保持" size="small" />
             ) : (
               <div className="space-y-4">
                 {topWeak.map((kp, idx) => (
@@ -689,7 +674,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">近7天学习明细</h2>
             {last7Days.length === 0 ? (
-              <EmptySection icon="📅" message="暂无学习记录" />
+              <EmptyState icon="📅" title="暂无学习记录" size="small" />
             ) : (
               <>
                 <div className="overflow-x-auto">

@@ -3,25 +3,35 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
-import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
 
 export default function ExamResultsPage() {
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
+    setLoading(true);
+    setError(null);
     fetch('/api/student/exams', {
       headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(data => {
+    }).then(r => {
+      if (!r.ok) throw new Error('加载失败');
+      return r.json();
+    }).then(data => {
       const submitted = (Array.isArray(data) ? data : []).filter((e: any) =>
         e.scoringStatus === 'PUBLISHED' || e.scoringStatus === 'ADJUSTED'
       );
       setExams(submitted.sort((a: any, b: any) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime()));
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [router]);
+    }).catch(e => setError(e.message || '加载考试成绩失败')).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   return (
     <AppLayout>
@@ -31,12 +41,11 @@ export default function ExamResultsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={5} cols={7} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={load} /></div>
       ) : exams.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-4xl mb-4">📊</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无已公布的考试成绩</p>
-        </div>
+        <div className="card"><EmptyState icon="📊" title="还没有已公布的考试成绩" description="参加考试并公布成绩后，结果会出现在这里" /></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">

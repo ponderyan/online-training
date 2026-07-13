@@ -3,11 +3,17 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 export default function LearningHoursPage() {
+  const toast = useToast();
   const [records, setRecords] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 学时证明
   const [certificates, setCertificates] = useState<any[]>([]);
@@ -18,6 +24,7 @@ export default function LearningHoursPage() {
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
+    setError(null);
     Promise.all([
       api.learningHours.list(),
       api.learningHours.stats(),
@@ -26,7 +33,7 @@ export default function LearningHoursPage() {
       setRecords(recordsData.items || []);
       setStats(statsData);
       setCertificates(certs || []);
-    }).catch(() => {})
+    }).catch(e => setError(e.message || '加载学时数据失败'))
     .finally(() => setLoading(false));
   }, []);
 
@@ -62,8 +69,9 @@ export default function LearningHoursPage() {
       setPreview(null);
       const certs = await api.learningHourCertificates.my().catch(() => []);
       setCertificates(certs || []);
+      toast.success('学时证明申请已提交');
     } catch (e: any) {
-      alert('申请失败：' + e.message);
+      toast.error('申请失败：' + e.message);
     }
     setApplying(false);
   };
@@ -101,7 +109,9 @@ export default function LearningHoursPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <SkeletonCardGrid count={4} />
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => window.location.reload()} /></div>
       ) : (
         <>
           {stats && (
@@ -187,7 +197,7 @@ export default function LearningHoursPage() {
                                 const a = document.createElement('a'); a.href = url;
                                 a.download = `learning-hour-certificate-${c.id}.pdf`;
                                 a.click(); URL.revokeObjectURL(url);
-                              }).catch(() => alert('下载失败'));
+                              }).catch(() => toast.error('下载失败'));
                             }}
                               className="text-xs bg-transparent border-none cursor-pointer"
                               style={{ color: 'var(--fox)' }}>📥 下载</button>
@@ -204,7 +214,7 @@ export default function LearningHoursPage() {
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学习记录</div>
             {records.length === 0 ? (
-              <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无学习记录</div>
+              <EmptyState icon="🕐" title="暂无学习记录" description="观看视频或申报学时后，记录会出现在这里" size="small" />
             ) : (
               <table className="list-table">
                 <thead>

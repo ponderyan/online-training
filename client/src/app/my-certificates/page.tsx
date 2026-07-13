@@ -3,12 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
-import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 export default function MyCertificatesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [certificates, setCertificates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -17,9 +22,12 @@ export default function MyCertificatesPage() {
     if (u.id) {
       fetch(`/api/certificates/my?studentId=${u.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).then(r => r.json()).then(data => {
+      }).then(r => {
+        if (!r.ok) throw new Error('加载失败');
+        return r.json();
+      }).then(data => {
         setCertificates(Array.isArray(data) ? data : []);
-      }).catch(() => {}).finally(() => setLoading(false));
+      }).catch(e => setError(e.message || '加载证书列表失败')).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
@@ -40,7 +48,7 @@ export default function MyCertificatesPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      alert('下载失败：' + e.message);
+      toast.error('下载失败：' + e.message);
     }
   };
 
@@ -53,16 +61,14 @@ export default function MyCertificatesPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+          <SkeletonCardGrid count={3} />
+        ) : error ? (
+          <div className="card"><ErrorCard message={error} onRetry={() => window.location.reload()} /></div>
         ) : certificates.length === 0 ? (
-          <div className="card p-12 text-center">
-            <div className="text-5xl mb-4">🏅</div>
-            <p style={{ color: 'var(--ink-400)' }}>还没有获得证书</p>
-            <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
-              参加考试并通过后，证书会自动出现在这里
-            </p>
-            <button onClick={() => router.push('/exam')}
-              className="btn btn-fox btn-sm mt-5">去看看考试</button>
+          <div className="card">
+            <EmptyState icon="🏅" title="还没有获得证书" description="参加考试并通过后，证书会自动出现在这里">
+              <button onClick={() => router.push('/exam')} className="btn btn-fox btn-sm">去看看考试</button>
+            </EmptyState>
           </div>
         ) : (
           <div className="space-y-4">

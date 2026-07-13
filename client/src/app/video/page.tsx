@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
 
 const mediaURL = (path: string) =>
   process.env.NODE_ENV === 'production' ? path : `http://localhost:3001${path}`;
@@ -22,23 +25,25 @@ export default function VideoListPage() {
   const [videos, setVideos] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'PUBLIC' | 'SPECIALIZED'>('ALL');
   const [keyword, setKeyword] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.videoCourses.getStudentVisible();
-        setVideos(data.videos || []);
-        setStats(data.stats || null);
-      } catch (e: any) {
-        if (e.message?.includes('401')) { router.push('/login'); return; }
-        setError(e.message || '加载视频失败');
-      }
-      setLoading(false);
-    })();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.videoCourses.getStudentVisible();
+      setVideos(data.videos || []);
+      setStats(data.stats || null);
+    } catch (e: any) {
+      if (e.message?.includes('401')) { router.push('/login'); return; }
+      setError(e.message || '加载视频失败');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
     let list = videos;
@@ -55,10 +60,10 @@ export default function VideoListPage() {
   }, [videos, filter, keyword]);
 
   if (loading) {
-    return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载视频课程… 🦊</div></AppLayout>;
+    return <AppLayout><div className="max-w-6xl mx-auto"><SkeletonCardGrid count={6} /></div></AppLayout>;
   }
   if (error) {
-    return <AppLayout><div className="text-center py-16" style={{ color: 'var(--verm)' }}>{error}</div></AppLayout>;
+    return <AppLayout><div className="max-w-6xl mx-auto"><div className="card"><ErrorCard message={error} onRetry={load} /></div></div></AppLayout>;
   }
 
   return (
@@ -109,10 +114,12 @@ export default function VideoListPage() {
 
         {/* 视频卡片网格 */}
         {filtered.length === 0 ? (
-          <div className="card p-12 text-center">
-            <p className="text-5xl mb-4">🎬</p>
-            <p style={{ color: 'var(--ink-400)' }}>{keyword || filter !== 'ALL' ? '没有匹配的视频课程' : '暂无可学习的视频课程'}</p>
-            <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>报名培训班后可解锁更多专项课程</p>
+          <div className="card">
+            <EmptyState
+              icon="🎬"
+              title={keyword || filter !== 'ALL' ? '没有匹配的视频课程' : '暂无可学习的视频课程'}
+              description={keyword || filter !== 'ALL' ? '试试调整搜索条件或筛选' : '报名培训班后可解锁更多专项课程'}
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

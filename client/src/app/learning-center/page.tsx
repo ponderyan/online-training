@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
 
 const TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
 
@@ -11,15 +14,19 @@ export default function LearningCenterPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await api.videoCourses.getStudentVisible();
       setData(result);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载视频课程失败');
+    }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -128,11 +135,12 @@ export default function LearningCenterPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <SkeletonCardGrid count={6} />
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : visibleVideos.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-4xl mb-4">📺</p>
-          <p style={{ color: 'var(--ink-300)' }}>{search ? '没有匹配的视频' : '暂无视频课程'}</p>
+        <div className="card">
+          <EmptyState icon="📺" title={search ? '没有匹配的视频' : '暂无视频课程'} description={search ? '试试调整搜索条件' : '报名培训班后可解锁更多课程'} />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
