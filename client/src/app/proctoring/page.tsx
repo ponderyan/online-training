@@ -4,15 +4,21 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 export default function ProctoringHome() {
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [lastRefresh, setLastRefresh] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  // 用于区分「首次加载」和「轮询」：首次失败显示错误卡片，轮询失败不中断已展示数据
+  const firstLoadRef = useRef(true);
 
   const load = useCallback(async () => {
     try {
@@ -20,11 +26,17 @@ export default function ProctoringHome() {
       const filtered = (data.items || []).filter((e: any) => e.status !== 'DRAFT');
       setExams(filtered);
       setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
-    } catch {}
+      if (firstLoadRef.current) { setError(null); }
+    } catch (e: any) {
+      if (firstLoadRef.current) {
+        setError(e.message || '加载监考列表失败');
+      }
+      // 轮询失败时静默，保留已有数据，下次轮询自动重试
+    }
   }, []);
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load().finally(() => { setLoading(false); firstLoadRef.current = false; });
     intervalRef.current = setInterval(load, 30000);
     return () => clearInterval(intervalRef.current);
   }, [load]);
@@ -124,17 +136,16 @@ export default function ProctoringHome() {
 
       {/* Exam list */}
       {loading ? (
-        <div className="text-center py-16">
-          <div className="text-4xl mb-4 animate-pulse">🎥</div>
-          <p style={{ color: 'var(--ink-300)' }}>小狐狸正在加载…</p>
-        </div>
+        <div className="card"><div className="card-body"><SkeletonList count={5} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => { firstLoadRef.current = true; setLoading(true); load().finally(() => { setLoading(false); firstLoadRef.current = false; }); }} /></div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-5xl mb-4">{keyword || statusFilter ? '🔍' : '🎥'}</p>
-          <p style={{ color: 'var(--ink-400)' }}>{keyword || statusFilter ? '没有找到匹配的考试' : '暂无可监考的考试'}</p>
-          <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
-            {keyword || statusFilter ? '试试调整搜索条件' : '创建并发布考试后，这里会显示监考入口'}
-          </p>
+        <div className="card">
+          {keyword || statusFilter ? (
+            <EmptyState icon="🔍" title="没有找到匹配的考试" description="试试调整搜索条件或状态筛选" />
+          ) : (
+            <EmptyState icon="🎥" title="暂无可监考的考试" description="创建并发布考试后，这里会显示监考入口" />
+          )}
         </div>
       ) : (
         <div className="space-y-3">

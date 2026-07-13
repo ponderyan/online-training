@@ -3,6 +3,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
 
 const ENTITY_TYPES = ['', 'User', 'Exam', 'Certificate', 'Paper', 'Question',
   'TrainingProgram', 'ExamSession', 'ScoreAppeal',
@@ -24,6 +27,7 @@ export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [filters, setFilters] = useState({
@@ -35,6 +39,7 @@ export default function AuditLogsPage() {
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
       if (filters.entityType) params.entityType = filters.entityType;
@@ -47,7 +52,9 @@ export default function AuditLogsPage() {
       const data = await api.auditLogs.list(params);
       setLogs(data.data || []);
       setTotal(data.total || 0);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载审计日志失败');
+    }
     setLoading(false);
   };
 
@@ -110,12 +117,11 @@ export default function AuditLogsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={8} cols={6} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : logs.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-4xl mb-4">📋</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无审计日志</p>
-        </div>
+        <div className="card"><EmptyState icon="📋" title="暂无审计日志" description="所有操作变更记录都会在这里留痕" /></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <table className="list-table">

@@ -4,6 +4,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import Loading from '@/components/Loading';
+import { SkeletonTable } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 const STATUS_NAMES: Record<string, string> = {
   ACTIVE: '有效', PENDING: '待审批', APPROVED: '有效',
@@ -19,6 +24,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
 
 function CertificatesContent() {
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const filterExamSessionId = searchParams.get('examSessionId');
 
@@ -27,11 +33,13 @@ function CertificatesContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
   const load = async (p: number = page) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: String(p), limit: '20' });
       if (keyword) params.set('keyword', keyword);
@@ -44,7 +52,9 @@ function CertificatesContent() {
       setTotal(res.total || 0);
       setPage(res.page || 1);
       setTotalPages(res.totalPages || 1);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载证书列表失败');
+    }
     setLoading(false);
   };
 
@@ -58,14 +68,16 @@ function CertificatesContent() {
     const reason = prompt('请输入撤销原因：');
     if (!reason) return;
     try {
-      await fetch(`/api/certificates/${id}/revoke`, {
+      const res = await fetch(`/api/certificates/${id}/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ reason }),
       });
+      if (!res.ok) throw new Error('操作失败');
+      toast.success('证书已撤销');
       load();
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
     }
   };
 
@@ -84,7 +96,7 @@ function CertificatesContent() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      alert('下载失败：' + e.message);
+      toast.error('下载失败：' + e.message);
     }
   };
 
@@ -123,12 +135,12 @@ function CertificatesContent() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={6} cols={8} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : certificates.length === 0 ? (
-        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
-          <div className="text-4xl mb-4">🏅</div>
-          <p>暂无证书</p>
-          <p className="text-xs mt-2">发布成绩后，可在此发证并下载 PDF</p>
+        <div className="card">
+          <EmptyState icon="🏅" title="暂无证书" description="发布成绩后，可在此发证并下载 PDF" />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -215,7 +227,7 @@ export default function CertificatesPage() {
   return (
     <Suspense fallback={
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <Loading />
       </AppLayout>
     }>
       <CertificatesContent />

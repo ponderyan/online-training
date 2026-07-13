@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 const STATUS_OPTIONS = [
   { value: '', label: '全部' },
@@ -16,11 +19,13 @@ export default function Grading() {
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await api.exams.list({ pageSize: '100' } as any);
       let filtered = (data.items || []).filter((e: any) => e.status !== 'DRAFT' && e.status !== 'CANCELLED');
@@ -51,7 +56,9 @@ export default function Grading() {
           fetch(`/api/exams/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
         ));
         setExams(exams.filter((e: any) => !e.error && e.status !== 'DRAFT' && e.status !== 'CANCELLED'));
-      } catch {}
+      } catch (e: any) {
+        setError(e.message || '加载阅卷列表失败');
+      }
     }
     setLoading(false);
   };
@@ -100,9 +107,11 @@ export default function Grading() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonList count={5} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : exams.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>📊 暂无待阅卷考试</div>
+        <div className="card"><EmptyState icon="📊" title="暂无待阅卷考试" description="考试结束后，待阅卷场次会出现在这里" /></div>
       ) : (
         <div className="space-y-3">
           {exams.map(exam => {

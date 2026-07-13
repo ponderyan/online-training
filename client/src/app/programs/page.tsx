@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 const STATUS_NAMES: Record<string, string> = {
   PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
@@ -38,11 +41,13 @@ export default function ProgramsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
   const load = async (p?: number) => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p || page), pageSize: String(PAGE_SIZE) };
       if (keyword) params.keyword = keyword;
@@ -52,7 +57,9 @@ export default function ProgramsPage() {
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
       if (p) setPage(p);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载培训班列表失败');
+    }
     setLoading(false);
   };
   useEffect(() => { load(1); }, []);
@@ -101,12 +108,14 @@ export default function ProgramsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonList count={5} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : programs.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>
-          <p className="text-4xl mb-4">📋</p>
-          <p>暂无培训班</p>
-          <button onClick={() => router.push('/programs/new')} className="btn btn-fox btn-sm mt-4">创建第一个培训班</button>
+        <div className="card">
+          <EmptyState icon="📋" title="暂无培训班" description="创建第一个培训班，开始招生和排课">
+            <button onClick={() => router.push('/programs/new')} className="btn btn-fox btn-sm">创建第一个培训班</button>
+          </EmptyState>
         </div>
       ) : (
         <>

@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { can } from '@/lib/auth';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 const STATUS_OPTS = [
   { value: '', label: '全部状态' },
@@ -31,11 +34,13 @@ export default function ExamList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
   const load = async (p = 1) => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
       if (keyword) params.keyword = keyword;
@@ -45,7 +50,9 @@ export default function ExamList() {
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载考试列表失败');
+    }
     setLoading(false);
   };
 
@@ -74,12 +81,14 @@ export default function ExamList() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonList count={5} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : exams.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-4xl mb-4">📋</p>
-          <p style={{ color: 'var(--ink-300)' }}>还没有考试场次</p>
-          <button onClick={() => router.push('/exams/create')} className="btn btn-fox btn-sm mt-4">创建第一场考试</button>
+        <div className="card">
+          <EmptyState icon="📋" title="还没有考试场次" description="创建第一场考试，开始管理在线考试">
+            <button onClick={() => router.push('/exams/create')} className="btn btn-fox btn-sm">创建第一场考试</button>
+          </EmptyState>
         </div>
       ) : (
         <>

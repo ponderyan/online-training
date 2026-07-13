@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '启用', INACTIVE: '停用' };
 const STATUS_COLORS: Record<string, string> = { ACTIVE: '#00897b', INACTIVE: '#8b8174' };
@@ -12,17 +16,20 @@ const TYPE_COLORS: Record<string, string> = { STANDARD: '#00897b', CUSTOM: '#156
 
 export default function CoursesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [courses, setCourses] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
 
   const load = async (p: number = page) => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
       if (keyword) params.keyword = keyword;
@@ -33,7 +40,9 @@ export default function CoursesPage() {
       setTotal(data.total || 0);
       setPage((data as any).page || 1);
       setTotalPages((data as any).totalPages || 1);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载课程列表失败');
+    }
     setLoading(false);
   };
 
@@ -49,7 +58,7 @@ export default function CoursesPage() {
     } else {
       if (!confirm('恢复启用该课程？')) return;
     }
-    try { await api.courses.toggleStatus(c.id); load(); } catch (e: any) { alert(e.message || '操作失败'); }
+    try { await api.courses.toggleStatus(c.id); load(); } catch (e: any) { toast.error(e.message || '操作失败'); }
   };
 
   return (
@@ -81,12 +90,14 @@ export default function CoursesPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={6} cols={6} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : courses.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>
-          <p className="text-4xl mb-4">📚</p>
-          <p>暂无课程</p>
-          <button onClick={() => router.push('/courses/new')} className="btn btn-fox btn-sm mt-4">创建第一门课程</button>
+        <div className="card">
+          <EmptyState icon="📚" title="暂无课程" description="创建第一门课程，供培训班引用">
+            <button onClick={() => router.push('/courses/new')} className="btn btn-fox btn-sm">创建第一门课程</button>
+          </EmptyState>
         </div>
       ) : (
         <div className="card overflow-hidden">

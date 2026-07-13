@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import FoxLogo from '@/components/fox-logo';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 interface ExamItem {
   id: number;
@@ -60,16 +63,26 @@ export default function ExamList() {
   const router = useRouter();
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
+    setLoading(true);
+    setError(null);
     fetch('/api/student/exams', {
       headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(data => {
+    }).then(r => {
+      if (!r.ok) throw new Error('加载失败');
+      return r.json();
+    }).then(data => {
       setExams(Array.isArray(data) ? data : []);
+    }).catch(e => {
+      setError(e.message || '加载考试列表失败');
     }).finally(() => setLoading(false));
-  }, [router]);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const activeExams = exams.filter(e => e.sessionStatus === 'ACTIVE');
   const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE');
@@ -80,9 +93,19 @@ export default function ExamList() {
   const sortedHistory = [...historyExams].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--paper)' }}>
-      <div className="text-4xl mb-4 animate-pulse">🦊</div>
-      <p style={{ color: 'var(--ink-300)' }}>小狐狸正在加载…</p>
+    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+      <div style={styles.container}>
+        <div className="card" style={{ marginBottom: 40 }}><div className="card-body"><SkeletonList count={3} /></div></div>
+        <div className="card"><div className="card-body"><SkeletonList count={4} /></div></div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+      <div style={styles.container}>
+        <div className="card"><ErrorCard message={error} onRetry={load} /></div>
+      </div>
     </div>
   );
 
@@ -107,7 +130,7 @@ export default function ExamList() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📝 当前考试</h2>
           {!hasCurrent ? (
-            <p style={styles.emptyText}>暂无当前考试</p>
+            <EmptyState icon="📝" title="暂无当前考试" description="有新的考试时会在这里提醒你" />
           ) : (
             <>
               {sortedActive.map(exam => (
@@ -162,7 +185,7 @@ export default function ExamList() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📋 历史记录</h2>
           {sortedHistory.length === 0 ? (
-            <p style={styles.emptyText}>暂无历史记录</p>
+            <EmptyState icon="📋" title="还没有参加过考试" description="完成考试后，历史记录会出现在这里" />
           ) : (
             sortedHistory.map(exam => {
               const isPublished = exam.scoringStatus === 'PUBLISHED' || exam.scoringStatus === 'ADJUSTED';

@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonBar } from '@/components/Skeleton';
 
 export default function PracticePage() {
   const router = useRouter();
@@ -11,10 +14,19 @@ export default function PracticePage() {
   const [stats, setStats] = useState<any>(null);
   const [expandedSubject, setExpandedSubject] = useState<number | null>(null);
   const [chapters, setChapters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.subjects.list().then(setSubjects).catch(() => {});
-    api.practice.stats().then(setStats).catch(() => {});
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      api.subjects.list().catch(() => []),
+      api.practice.stats().catch(() => null),
+    ]).then(([s, st]) => {
+      setSubjects(s);
+      setStats(st);
+    }).catch(e => setError(e.message || '加载失败')).finally(() => setLoading(false));
   }, []);
 
   const loadChapters = async (subjectId: number) => {
@@ -36,7 +48,17 @@ export default function PracticePage() {
         <p className="page-subtitle mb-6">不计分 · 不限次 · 即时看解析</p>
 
         {/* 统计数据 — 四格方块 */}
-        {stats && (
+        {loading ? (
+          <div className="grid grid-cols-4 gap-3 mb-6">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-xl p-3.5 shadow-sm">
+                <SkeletonBar width="50%" height={26} />
+                <div style={{ height: 6 }} />
+                <SkeletonBar width="40%" height={11} />
+              </div>
+            ))}
+          </div>
+        ) : stats && (
           <div className="grid grid-cols-4 gap-3 mb-6">
             <div className="bg-white rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--ink-700)]">{stats.total}</div>
@@ -66,7 +88,20 @@ export default function PracticePage() {
 
             {/* 科目折叠列表 */}
             <div className="space-y-1 mb-4">
-              {subjects.map((s: any) => (
+              {loading ? (
+                <div className="space-y-2 py-2">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="p-3 rounded-lg bg-[var(--paper)]">
+                      <SkeletonBar width="60%" height={13} />
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                <ErrorCard message="科目加载失败" size="small" onRetry={() => window.location.reload()} />
+              ) : subjects.length === 0 ? (
+                <EmptyState icon="📚" title="暂无科目" description="请联系管理员配置科目" size="small" />
+              ) : (
+                subjects.map((s: any) => (
                 <div key={s.id}>
                   <div
                     onClick={() => loadChapters(s.id)}
@@ -95,7 +130,8 @@ export default function PracticePage() {
                     </div>
                   )}
                 </div>
-              ))}
+              ))
+              )}
             </div>
 
             <button onClick={() => subjects.length > 0 ? loadChapters(subjects[0].id) : router.push('/practice/random')}

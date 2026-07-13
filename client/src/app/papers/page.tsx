@@ -4,20 +4,27 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 export default function PapersPage() {
   const router = useRouter();
+  const toast = useToast();
   const [papers, setPapers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAnswer, setShowAnswer] = useState<any>(null);
   const [keyword, setKeyword] = useState('');
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
 
   const load = async (p: number = page) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await api.papers.list(p);
       let items = data.items || [];
@@ -27,7 +34,9 @@ export default function PapersPage() {
       setPage(data.page);
       setTotalPages(data.totalPages);
       setPaginationInfo(data);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载试卷列表失败');
+    }
     setLoading(false);
   };
 
@@ -45,8 +54,13 @@ export default function PapersPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('确认删除此试卷？')) return;
-    await api.papers.delete(id);
-    load();
+    try {
+      await api.papers.delete(id);
+      toast.success('试卷已删除');
+      load();
+    } catch (e: any) {
+      toast.error('删除失败：' + e.message);
+    }
   };
 
   const openAnswer = async (p: any) => {
@@ -73,9 +87,9 @@ export default function PapersPage() {
     try {
       const res = await fetch(`/api/papers/${paperId}/upload-word`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error('上传失败');
-      alert('Word 上传成功，PDF 已生成');
+      toast.success('Word 上传成功，PDF 已生成');
     } catch (e: any) {
-      alert('上传失败：' + e.message);
+      toast.error('上传失败：' + e.message);
     }
   };
 
@@ -103,11 +117,14 @@ export default function PapersPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <SkeletonCardGrid count={6} />
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : papers.length === 0 ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
-          <p className="mb-3">小狐狸还没找到试卷呢 🦊</p>
-          <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">让小狐狸组一份</button>
+        <div className="card">
+          <EmptyState icon="🦊" title="还没有试卷" description="让小狐狸帮你组一份试卷">
+            <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">让小狐狸组一份</button>
+          </EmptyState>
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
