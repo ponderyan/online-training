@@ -6,6 +6,7 @@ import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import Loading from '@/components/Loading';
 import { api } from '@/lib/api';
+import CircularProgress from '@/components/charts/CircularProgress';
 
 export default function GradingDetail() {
   const params = useParams();
@@ -326,7 +327,7 @@ export default function GradingDetail() {
               { value: `${progress.percentage}%`, label: '完成率', color: progress.percentage === 100 ? 'var(--sage)' : 'var(--fox)' },
             ].map((s, i) => (
               <div key={i} className="card p-4 text-center">
-                <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-2xl font-bold num" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
               </div>
             )) : [
@@ -335,55 +336,142 @@ export default function GradingDetail() {
               { value: students.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === 'GRADING').length, label: '待判', color: 'var(--fox)' },
             ].map((s, i) => (
               <div key={i} className="card p-4 text-center">
-                <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-2xl font-bold num" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
               </div>
             ))}
           </div>
-          <div className="card p-4">
-            <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-400)' }}>整体进度</div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-3 rounded-full" style={{ background: 'var(--paper-dark)' }}>
-                <div className="h-full rounded-full transition-all" style={{ width: `${progress?.percentage || Math.round(students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length / Math.max(students.length, 1) * 100)}%`, background: progress?.percentage === 100 || (students.length > 0 && students.every(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING')) ? 'var(--sage)' : 'var(--fox)' }} />
+
+          {/* 整体进度 — 圆环图 */}
+          <div className="card p-5">
+            <div className="text-xs font-medium mb-3" style={{ color: 'var(--ink-400)' }}>整体进度</div>
+            <div className="flex items-center gap-6">
+              <CircularProgress
+                percentage={progress?.percentage ?? Math.round(students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length / Math.max(students.length, 1) * 100)}
+                size={130}
+              />
+              <div className="flex-1 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--ink-400)' }}>已批改</span>
+                  <span className="num font-medium" style={{ color: 'var(--sage)' }}>
+                    {progress?.graded ?? students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--ink-400)' }}>待批改</span>
+                  <span className="num font-medium" style={{ color: 'var(--fox)' }}>
+                    {progress?.remaining ?? students.filter(s => s.scoringStatus === 'PENDING' || s.scoringStatus === 'GRADING').length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--ink-400)' }}>总提交</span>
+                  <span className="num font-medium" style={{ color: 'var(--ink-600)' }}>
+                    {progress?.total ?? students.length}
+                  </span>
+                </div>
               </div>
-              <span className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>{progress?.percentage || Math.round(students.filter(s => s.scoringStatus !== 'PENDING' && s.scoringStatus !== 'GRADING').length / Math.max(students.length, 1) * 100)}%</span>
             </div>
           </div>
+
+          {/* 各阅卷员进度 — 条纹动画 */}
           {progress?.perGrader?.length > 0 && (
             <div className="card p-4">
               <div className="text-xs font-medium mb-3" style={{ color: 'var(--ink-400)' }}>各阅卷员进度</div>
               <div className="space-y-3">
-                {progress.perGrader.map((g: any) => (
-                  <div key={g.graderId}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span style={{ color: 'var(--ink-600)' }}>{g.graderName}</span>
-                      <span style={{ color: 'var(--ink-400)' }}>{g.submitted}/{g.assigned} ({g.assigned > 0 ? Math.round(g.submitted / g.assigned * 100) : 0}%)</span>
-                    </div>
-                    <div className="h-2 rounded-full" style={{ background: 'var(--paper-dark)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${g.assigned > 0 ? g.submitted / g.assigned * 100 : 0}%`, background: g.remaining === 0 ? 'var(--sage)' : 'var(--fox)' }} />
-                    </div>
-                    {g.details && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {g.details.map((d: any, idx: number) => (
-                          <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded-full"
-                            style={{ background: d.submitted >= d.total ? 'rgba(46,125,50,0.1)' : 'rgba(222,115,30,0.1)', color: d.submitted >= d.total ? 'var(--sage)' : 'var(--gold)' }}>
-                            {d.label}: {d.submitted}/{d.total}
-                          </span>
-                        ))}
+                {progress.perGrader.map((g: any) => {
+                  const gpct = g.assigned > 0 ? Math.round(g.submitted / g.assigned * 100) : 0;
+                  const gDone = g.remaining === 0;
+                  return (
+                    <div key={g.graderId}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-600)' }}>
+                          {gDone && <span style={{ color: 'var(--sage)' }}>✓</span>}
+                          {g.graderName}
+                        </span>
+                        <span className="num" style={{ color: 'var(--ink-400)' }}>{g.submitted}/{g.assigned} ({gpct}%)</span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--paper-dark)' }}>
+                        <div
+                          className={`h-full rounded-full transition-all ${gDone ? 'progress-done' : 'progress-striped'}`}
+                          style={{ width: `${gpct}%`, background: gDone ? 'var(--sage)' : 'var(--fox)' }}
+                        />
+                      </div>
+                      {g.details && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {g.details.map((d: any, idx: number) => (
+                            <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded-full"
+                              style={{ background: d.submitted >= d.total ? 'rgba(46,125,50,0.1)' : 'rgba(222,115,30,0.1)', color: d.submitted >= d.total ? 'var(--sage)' : 'var(--gold)' }}>
+                              {d.label}: {d.submitted}/{d.total}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
+
+          {/* 成绩分布直方图 — 前端从 students 计算 */}
+          {(() => {
+            const maxScore = exam?.totalScore || 100;
+            const scored = students
+              .map(s => s.finalScore ?? s.totalScore)
+              .filter((v: any) => typeof v === 'number' && v !== null);
+            if (scored.length === 0) return null;
+            // 按百分比分桶（兼容不同满分）
+            const buckets = [
+              { range: '0-59', min: 0, max: 59, count: 0 },
+              { range: '60-69', min: 60, max: 69, count: 0 },
+              { range: '70-79', min: 70, max: 79, count: 0 },
+              { range: '80-89', min: 80, max: 89, count: 0 },
+              { range: '90-100', min: 90, max: 100, count: 0 },
+            ];
+            scored.forEach((raw: number) => {
+              const pct = Math.round((raw / maxScore) * 100);
+              const b = buckets.find(bk => pct >= bk.min && pct <= bk.max) || buckets[0];
+              b.count++;
+            });
+            const maxCount = Math.max(...buckets.map(b => b.count), 1);
+            const colorFor = (range: string) =>
+              range === '0-59' ? 'var(--verm)' :
+              range === '60-69' ? 'var(--gold)' :
+              range === '70-79' ? 'var(--fox)' :
+              range === '80-89' ? 'var(--cyan)' : 'var(--sage)';
+            return (
+              <div className="card p-5">
+                <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>成绩分布</h3>
+                <div className="space-y-3">
+                  {buckets.map(b => {
+                    const w = (b.count / maxCount) * 100;
+                    return (
+                      <div key={b.range}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span style={{ color: b.range === '0-59' ? 'var(--verm)' : 'var(--ink-500)' }}>{b.range} 分</span>
+                          <span className="num" style={{ color: 'var(--ink-400)' }}>{b.count} 人</span>
+                        </div>
+                        <div className="h-6 rounded-lg overflow-hidden" style={{ background: 'var(--paper-dark)' }}>
+                          <div className="hist-bar h-full rounded-lg flex items-center justify-end px-2 text-[10px] text-white font-medium"
+                            style={{ width: `${Math.max(w, b.count > 0 ? 4 : 0)}%`, background: colorFor(b.range), minWidth: b.count > 0 ? 'auto' : 0 }}>
+                            {b.count > 0 && `${b.count}人`}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {statusSummary && (
             <div className="card p-4">
               <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-400)' }}>状态分布</div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(statusSummary).filter(([, v]) => (v as number) > 0).map(([k, v]) => (
                   <span key={k} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--paper-dark)', color: 'var(--ink-500)' }}>
-                    {k}: <strong>{String(v)}</strong>
+                    {k}: <strong className="num">{String(v)}</strong>
                   </span>
                 ))}
               </div>

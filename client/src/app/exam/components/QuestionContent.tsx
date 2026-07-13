@@ -2,6 +2,16 @@
 
 import RichAnswerEditor from './RichAnswerEditor';
 
+/** 题型 → 图标 + 中文标签 */
+const TYPE_META: Record<string, { icon: string; label: string }> = {
+  SINGLE_CHOICE: { icon: '⭕', label: '单选题' },
+  MULTIPLE_CHOICE: { icon: '☑️', label: '多选题' },
+  TRUE_FALSE: { icon: '✓✕', label: '判断题' },
+  FILL_BLANK: { icon: '＿＿', label: '填空题' },
+  SHORT_ANSWER: { icon: '📝', label: '简答题' },
+  CASE_STUDY: { icon: '📄', label: '案例题' },
+};
+
 interface QuestionData {
   pqId: number;
   questionId: number;
@@ -68,13 +78,9 @@ export default function QuestionContent({ question, currentAnswer, onAnswer, isM
           <span className="text-sm text-[var(--ink-500)]">
             第 {questionNumber} 题 · <span className="font-semibold text-[var(--ink-700)]">{question.score}分</span>
           </span>
-          <span className="text-xs px-2.5 py-1 rounded font-medium bg-[var(--fox-glow)] text-[var(--fox-dark)]">
-            {question.type === 'SINGLE_CHOICE' ? '单选题' :
-             question.type === 'MULTIPLE_CHOICE' ? '多选题' :
-             question.type === 'TRUE_FALSE' ? '判断题' :
-             question.type === 'FILL_BLANK' ? '填空题' :
-             question.type === 'SHORT_ANSWER' ? '简答题' :
-             question.type === 'CASE_STUDY' ? '案例题' : question.type}
+          <span className="text-xs px-2.5 py-1 rounded font-medium bg-[var(--fox-glow)] text-[var(--fox-dark)] flex items-center gap-1">
+            <span className="text-[11px]">{(TYPE_META[question.type] || { icon: '❓' }).icon}</span>
+            {(TYPE_META[question.type] || { label: question.type }).label}
           </span>
         </div>
         <button onClick={() => onToggleMark(question.questionId)}

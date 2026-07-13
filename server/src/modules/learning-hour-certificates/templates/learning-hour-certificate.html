@@ -4,64 +4,81 @@
 <meta charset="UTF-8">
 <style>
   @page { margin: 15mm 12mm; }
+  * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
     background: #fff;
-    color: #3a3028;
+    color: #2c261e;
   }
   .certificate {
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: 32px 40px 28px;
-    box-sizing: border-box;
+    padding: 30px 40px 26px;
     position: relative;
+    background: radial-gradient(ellipse at top, #fbf6ec 0%, #ffffff 70%);
+    border: 3px solid #b08a4f;
+  }
+  .certificate::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 8px; right: 8px; bottom: 8px;
+    border: 1px solid #d4b483;
+    pointer-events: none;
   }
 
   .header {
     text-align: center;
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #d4a574;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #d4b483;
   }
   .logo {
     font-size: 14px;
     color: #e87a30;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     margin-bottom: 6px;
+    font-weight: 600;
   }
   .title {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: bold;
-    color: #3a3028;
-    letter-spacing: 12px;
+    color: #2c261e;
+    letter-spacing: 14px;
+    text-indent: 14px;
+  }
+  .subtitle {
+    font-size: 11px;
+    color: #8b8174;
+    letter-spacing: 5px;
+    margin-top: 4px;
   }
 
   .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px 24px;
-    margin: 20px 0;
+    margin: 18px 0;
     font-size: 13px;
     line-height: 2;
   }
   .info-grid .label {
-    color: #8a8078;
+    color: #8b8174;
   }
   .info-grid .value {
-    color: #3a3028;
+    color: #2c261e;
   }
   .info-grid .name-value {
     font-size: 18px;
     font-weight: bold;
-    color: #3a3028;
+    color: #2c261e;
     letter-spacing: 2px;
   }
   .date-row {
     grid-column: 1 / -1;
     font-size: 12px;
-    color: #a09890;
+    color: #a89d8e;
     padding-top: 4px;
     border-top: 1px dashed #e0d8d0;
   }
@@ -69,21 +86,21 @@
   .hours-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 16px 0;
+    margin: 14px 0;
     font-size: 13px;
   }
   .hours-table th {
     background: #f5f0eb;
-    color: #5a5048;
+    color: #5a5348;
     padding: 8px 16px;
     text-align: left;
-    border-bottom: 2px solid #d4a574;
+    border-bottom: 2px solid #d4b483;
     font-weight: 600;
   }
   .hours-table td {
     padding: 8px 16px;
     border-bottom: 1px solid #e8d5c0;
-    color: #5a5048;
+    color: #5a5348;
   }
   .hours-table .hours-cell {
     text-align: right;
@@ -92,24 +109,29 @@
   }
   .hours-table .total-row td {
     border-bottom: none;
-    border-top: 2px solid #d4a574;
+    border-top: 2px solid #d4b483;
     font-weight: bold;
-    color: #3a3028;
+    color: #2c261e;
     padding-top: 10px;
   }
   .hours-table .total-row .hours-cell {
     font-size: 15px;
-    color: #e87a30;
+    color: #c9601e;
   }
 
   .meta {
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: #8a8078;
-    margin: 20px 0;
-    padding-top: 14px;
+    color: #736a5c;
+    margin: 18px 0;
+    padding-top: 12px;
     border-top: 1px solid #e0d8d0;
+  }
+  .meta .no {
+    font-family: "Courier New", monospace;
+    color: #403931;
+    font-weight: 600;
   }
 
   .footer {
@@ -117,26 +139,27 @@
     justify-content: flex-end;
     align-items: center;
     gap: 24px;
-    margin-top: 16px;
-    padding-top: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
     border-top: 1px dashed #e0d8d0;
   }
   .seal-area img {
-    width: 90px;
-    height: 90px;
+    width: 86px;
+    height: 86px;
     border-radius: 50%;
   }
   .qr-area img {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
   }
 
   .verify {
     font-size: 11px;
-    color: #a09890;
+    color: #a89d8e;
     text-align: center;
-    margin-top: 12px;
+    margin-top: 10px;
     line-height: 1.6;
+    letter-spacing: 1px;
   }
 </style>
 </head>
@@ -144,7 +167,8 @@
 <div class="certificate">
   <div class="header">
     <div class="logo">🦊 FoxLearn 狐学</div>
-    <div class="title">学 时 证 明</div>
+    <div class="title">学时证明</div>
+    <div class="subtitle">CERTIFICATE OF TRAINING HOURS</div>
   </div>
 
   <div class="info-grid">
@@ -169,7 +193,7 @@
   </table>
 
   <div class="meta">
-    <span>证书编号：{{certificateNo}}</span>
+    <span>证书编号：<span class="no">{{certificateNo}}</span></span>
     <span>发证日期：{{issueDate}}</span>
   </div>
 

@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <style>
   @page { margin: 0; }
+  * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,115 +17,175 @@
   .certificate {
     width: 800px;
     height: 560px;
-    background: #fff;
-    border: 2px solid #d4a574;
-    padding: 48px 56px;
-    box-sizing: border-box;
+    background:
+      radial-gradient(ellipse at top, #fbf6ec 0%, #ffffff 70%);
+    border: 3px solid #b08a4f;
+    padding: 44px 60px;
     position: relative;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.10);
   }
+  /* 内层双线装饰边框 */
   .certificate::before {
     content: '';
     position: absolute;
-    top: 12px; left: 12px; right: 12px; bottom: 12px;
-    border: 1px solid #e8d5c0;
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+    border: 1px solid #d4b483;
+    border-radius: 2px;
     pointer-events: none;
   }
+  /* 四角小花纹 */
+  .corner {
+    position: absolute;
+    width: 26px; height: 26px;
+    border: 2px solid #c9601e;
+    opacity: 0.55;
+  }
+  .corner.tl { top: 18px; left: 18px; border-right: none; border-bottom: none; }
+  .corner.tr { top: 18px; right: 18px; border-left: none; border-bottom: none; }
+  .corner.bl { bottom: 18px; left: 18px; border-right: none; border-top: none; }
+  .corner.br { bottom: 18px; right: 18px; border-left: none; border-top: none; }
+
   .header {
     text-align: center;
-    margin-bottom: 36px;
+    margin-bottom: 28px;
   }
   .logo {
-    font-size: 18px;
+    font-size: 17px;
     color: #e87a30;
-    letter-spacing: 4px;
-    margin-bottom: 8px;
+    letter-spacing: 5px;
+    margin-bottom: 6px;
+    font-weight: 600;
   }
   .title {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: bold;
-    color: #3a3028;
-    letter-spacing: 12px;
+    color: #2c261e;
+    letter-spacing: 16px;
+    text-indent: 16px; /* 视觉居中补偿 letter-spacing */
   }
+  .subtitle {
+    font-size: 12px;
+    color: #8b8174;
+    letter-spacing: 6px;
+    margin-top: 6px;
+  }
+
   .body-text {
     text-align: center;
-    font-size: 15px;
-    color: #5a5048;
-    line-height: 2.2;
-    margin: 36px 0;
+    font-size: 16px;
+    color: #5a5348;
+    line-height: 2.4;
+    margin: 30px 0;
   }
   .name {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: bold;
-    color: #3a3028;
-    letter-spacing: 4px;
+    color: #2c261e;
+    letter-spacing: 6px;
+    padding: 0 16px;
+    border-bottom: 1.5px solid #d4b483;
+    display: inline-block;
+    line-height: 1.6;
   }
   .course {
-    font-size: 16px;
+    font-size: 17px;
     color: #e87a30;
     font-weight: 600;
   }
+  .conclusion {
+    font-size: 15px;
+    color: #736a5c;
+    letter-spacing: 1px;
+  }
+
   .footer {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    margin-top: 36px;
-    padding-top: 16px;
-    border-top: 1px dashed #d4a574;
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px dashed #d4b483;
   }
   .meta {
     font-size: 12px;
-    color: #8a8078;
+    color: #736a5c;
+    line-height: 1.9;
+  }
+  .meta .no {
+    font-family: "Courier New", monospace;
+    color: #403931;
+    font-weight: 600;
+  }
+  .meta .code {
+    color: #c9601e;
+    font-weight: 600;
+    letter-spacing: 1px;
   }
   .qr-section {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
   .qr-section .qr-code {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
   }
   .qr-section .qr-text {
     font-size: 11px;
-    color: #8a8078;
-    line-height: 1.6;
+    color: #8b8174;
+    line-height: 1.7;
+    max-width: 110px;
+  }
+  .qr-section .qr-text strong {
+    color: #c9601e;
   }
   .verify {
-    font-size: 12px;
-    color: #a09890;
+    font-size: 11px;
+    color: #a89d8e;
     text-align: center;
-    margin-top: 8px;
+    margin-top: 10px;
+    letter-spacing: 1px;
   }
 </style>
 </head>
 <body>
 <div class="certificate">
+  <span class="corner tl"></span>
+  <span class="corner tr"></span>
+  <span class="corner bl"></span>
+  <span class="corner br"></span>
+
   <div class="header">
-    <div class="logo">🦊 FoxLearn</div>
-    <div class="title">证 书</div>
+    <div class="logo">🦊 FoxLearn 狐学</div>
+    <div class="title">结业证书</div>
+    <div class="subtitle">CERTIFICATE OF COMPLETION</div>
   </div>
+
   <div class="body-text">
     兹证明<br>
     <span class="name">{{studentName}}</span><br>
-    参加 <span class="course">{{courseName}}</span><br>
-    成绩合格，特发此证
+    参加培训课程 <span class="course">{{courseName}}</span><br>
+    经考核成绩合格，准予结业，特发此证。
   </div>
+
   <div class="footer">
     <div class="meta">
-      <div>证书编号：{{certificateNo}}</div>
-      <div>发证日期：{{issueDate}}</div>
-      <div style="margin-top:4px;">验证码：<strong>{{verificationCode}}</strong></div>
+      <div>证书编号：<span class="no">{{certificateNo}}</span></div>
+      <div>颁发日期：{{issueDate}}</div>
+      <div>防伪验证码：<span class="code">{{verificationCode}}</span></div>
     </div>
     <div class="qr-section">
       <div class="qr-code">
-        <img src="{{qrDataUrl}}" width="100" height="100" alt="QR Code" />
+        <img src="{{qrDataUrl}}" width="96" height="96" alt="QR Code" />
       </div>
       <div class="qr-text">
-        <div>扫码验证证书真伪</div>
+        扫码查验真伪<br>
+        <strong>FoxLearn</strong> 证书验证
       </div>
     </div>
   </div>
+
+  <div class="verify">本证书最终解释权归 FoxLearn 狐学所有 · 扫描二维码可在线验证</div>
 </div>
 </body>
 </html>

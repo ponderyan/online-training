@@ -51,6 +51,7 @@ const QUICK_ROLES = [
 export default function LoginPage() {
   const router = useRouter();
   const settings = useSiteSettings();
+  const [showQuickLogin, setShowQuickLogin] = useState(false);
 
   // ── 已登录用户回退到登录页时自动跳回 dashboard ──
   useEffect(() => {
@@ -305,25 +306,34 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* 快捷登录（开发演示用） */}
+          {/* 快捷登录（开发演示用，可收起） */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-5 p-4 bg-[var(--paper)] border border-dashed border-[var(--ink-100)] rounded-lg">
-              <div className="flex items-center gap-1.5 mb-2.5 text-[11px] font-medium text-[var(--ink-400)] tracking-wide">
+            <div className="mt-5 bg-[var(--paper)] border border-dashed border-[var(--ink-100)] rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowQuickLogin(v => !v)}
+                className="w-full flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-medium text-[var(--ink-400)] tracking-wide bg-transparent border-none cursor-pointer hover:text-[var(--ink-600)] transition-colors"
+              >
                 <BoltIcon className="w-3 h-3" />
                 快捷登录（开发演示用）
-              </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {QUICK_ROLES.map(r => (
-                  <button
-                    key={r.username}
-                    type="button"
-                    onClick={() => { setUsername(r.username); setPassword(r.password); }}
-                    className="py-1.5 px-1 text-[11px] text-center rounded-md border border-[var(--ink-100)] bg-[var(--paper-bright)] text-[var(--ink-500)] hover:border-[var(--fox)] hover:text-[var(--fox)] hover:bg-[var(--fox-glow)] transition-all"
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
+                <span className="ml-auto">{showQuickLogin ? '▾' : '▸'}</span>
+              </button>
+              {showQuickLogin && (
+                <div className="px-4 pb-4">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {QUICK_ROLES.map(r => (
+                      <button
+                        key={r.username}
+                        type="button"
+                        onClick={() => { setUsername(r.username); setPassword(r.password); }}
+                        className="py-1.5 px-1 text-[11px] text-center rounded-md border border-[var(--ink-100)] bg-[var(--paper-bright)] text-[var(--ink-500)] hover:border-[var(--fox)] hover:text-[var(--fox)] hover:bg-[var(--fox-glow)] transition-all"
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

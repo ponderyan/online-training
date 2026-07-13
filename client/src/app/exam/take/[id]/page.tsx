@@ -643,7 +643,7 @@ export default function ExamTake() {
         </div>
       ))}
 
-      {/* ExamInfoBar — 深色顶部信息条 */}
+      {/* ExamInfoBar — 深色顶部信息条（含计时进度条 + 题目信息） */}
       <ExamInfoBar
         examTitle={exam.title}
         isOpenBook={exam.isOpenBook}
@@ -652,6 +652,12 @@ export default function ExamTake() {
         studentNumber={exam.studentInfo?.studentNumber || null}
         avatar={exam.studentInfo?.avatar || null}
         timeLeft={timeLeft}
+        totalDuration={totalSeconds}
+        currentQuestion={currentQ + 1}
+        totalQuestions={totalQuestions}
+        currentQuestionType={q?.type}
+        currentQuestionScore={q?.score}
+        timeMode={exam.timeMode}
         onShowSubmitModal={() => setShowSubmitModal(true)}
       />
       {/* 答题进度条 */}
@@ -713,19 +719,36 @@ export default function ExamTake() {
                 </div>
               );
             })}
-            <div className="mt-3.5 pt-3 border-t border-[var(--ink-100)] flex flex-wrap gap-2 gap-x-3 text-[10px] text-[var(--ink-400)]">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--fox)] border-[var(--fox)]" /> 当前
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--sage-glow)] border-[var(--sage)]" /> 已答
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--gold-glow)] border-[var(--gold)]" /> 标记
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--paper-bright)] border-[var(--ink-100)]" /> 未答
-              </span>
+            <div className="mt-3.5 pt-3 border-t border-[var(--ink-100)]">
+              {/* 答题进度统计 */}
+              <div className="grid grid-cols-3 gap-1.5 mb-3 text-center">
+                <div className="py-1.5 rounded-md bg-[var(--sage-glow)]">
+                  <p className="text-sm font-bold font-serif text-[var(--sage)] tabular-nums leading-none">{answeredCount}</p>
+                  <p className="text-[9px] text-[var(--ink-400)] mt-0.5">已答</p>
+                </div>
+                <div className="py-1.5 rounded-md bg-[var(--paper-dark)]">
+                  <p className="text-sm font-bold font-serif text-[var(--ink-500)] tabular-nums leading-none">{totalQuestions - answeredCount}</p>
+                  <p className="text-[9px] text-[var(--ink-400)] mt-0.5">未答</p>
+                </div>
+                <div className="py-1.5 rounded-md bg-[var(--gold-glow)]">
+                  <p className="text-sm font-bold font-serif text-[var(--gold-dark)] tabular-nums leading-none">{markedCount}</p>
+                  <p className="text-[9px] text-[var(--ink-400)] mt-0.5">标记</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 gap-x-3 text-[10px] text-[var(--ink-400)]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--fox)] border-[var(--fox)]" /> 当前
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--sage-glow)] border-[var(--sage)]" /> 已答
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--gold-glow)] border-[var(--gold)]" /> 标记
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm border-[1.5px] bg-[var(--paper-bright)] border-[var(--ink-100)]" /> 未答
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -742,7 +765,10 @@ export default function ExamTake() {
             <SaveIndicator status={saveStatus} lastSaved={lastSavedRef.current || undefined} />
           </div>
           <div className="flex-1 overflow-y-auto rounded-xl px-10 py-8 bg-[var(--paper-bright)] border border-[var(--ink-100)] shadow-sm">
+            {/* key 变化触发重新挂载 → 淡入动画 */}
+            <div key={currentQ} className="animate-fadeInScale">
             {renderQuestion(q, currentQ)}
+            </div>
 
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t border-[var(--ink-100)]">

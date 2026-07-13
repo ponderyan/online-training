@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
+import CountUp from '@/components/CountUp';
 
 // ═══════════════════════════════════════════
 // Types
@@ -95,9 +96,15 @@ function KpiCard({
     flat: '—',
   };
 
+  // 解析数值与小数位，供 CountUp 使用
+  const numValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0;
+  const decimals = typeof value === 'string' && value.includes('.')
+    ? (value.split('.')[1]?.length || 0)
+    : 0;
+
   return (
     <div
-      className="card p-5 rounded-xl transition-shadow"
+      className="card p-5 rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
       style={{
         background: 'var(--paper)',
         border: '1px solid var(--ink-100)',
@@ -107,9 +114,12 @@ function KpiCard({
         {title}
       </div>
       <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-bold" style={{ color: 'var(--ink-700)' }}>
-          {value}
-        </span>
+        <CountUp
+          value={numValue}
+          decimals={decimals}
+          className="text-4xl font-bold"
+          style={{ color: 'var(--ink-700)', fontFamily: 'var(--font-serif)' }}
+        />
         {unit && (
           <span className="text-sm" style={{ color: 'var(--ink-400)' }}>
             {unit}

@@ -9,6 +9,7 @@ import ErrorCard from '@/components/ErrorCard';
 import Loading from '@/components/Loading';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import CertificatePreviewModal, { PreviewTarget } from '@/components/CertificatePreviewModal';
 
 const STATUS_NAMES: Record<string, string> = {
   ACTIVE: '有效', PENDING: '待审批', APPROVED: '有效',
@@ -36,6 +37,22 @@ function CertificatesContent() {
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [preview, setPreview] = useState<PreviewTarget | null>(null);
+
+  const openPreview = (cert: any) => {
+    setPreview({
+      type: 'completion',
+      pdfUrl: `/api/certificates/${cert.id}/pdf`,
+      title: cert.courseName,
+      completion: {
+        studentName: cert.studentName,
+        courseName: cert.courseName,
+        certificateNo: cert.certificateNo,
+        issueDate: cert.issueDate,
+        verificationCode: cert.verificationCode || '',
+      },
+    });
+  };
 
   const load = async (p: number = page) => {
     setLoading(true);
@@ -184,6 +201,8 @@ function CertificatesContent() {
                     <td>{renderStatus(cert)}</td>
                     <td>
                       <div className="flex gap-1">
+                        <button onClick={() => openPreview(cert)}
+                          className="btn btn-ghost btn-xs">👁 预览</button>
                         <button onClick={() => downloadPdf(cert.id)}
                           className="btn btn-ghost btn-xs">📄 PDF</button>
                         {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
@@ -219,6 +238,8 @@ function CertificatesContent() {
             className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>下一页 ›</button>
         </div>
       )}
+
+      <CertificatePreviewModal target={preview} onClose={() => setPreview(null)} />
     </AppLayout>
   );
 }

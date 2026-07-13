@@ -1,6 +1,39 @@
 @import "tailwindcss";
 @source "../";
 
+/**
+ * ════════════════════════════════════════════════════════
+ * FoxLearn 品牌视觉规范（Brand Guidelines）
+ * ════════════════════════════════════════════════════════
+ *
+ * 主色：    --fox       #e87a30  狐狸橙（品牌主色 / 主操作 / 高亮）
+ * 辅色：    --sage      #2e7d32  鼠尾草绿（成功 / 完成 / 通过）
+ *           --gold      #c9a03a  金色（警告 / 待办 / 证书）
+ *           --verm      #d9364a  朱红（错误 / 删除 / 撤销）
+ *           --cyan      #00897b  青色（信息 / 次要强调）
+ *
+ * 中性色（墨色 ink，暖灰基调）：
+ *           --ink-900   #1a1712  最深（标题 / 深色背景）
+ *           --ink-700   #2c261e  标题
+ *           --ink-500   #5a5348  正文
+ *           --ink-400   #736a5c  辅助文字
+ *           --ink-300   #8b8174  次要文字
+ *           --ink-100   #c4bcb0  边框 / 分隔线
+ *
+ * 背景色（纸张 paper，暖白基调）：
+ *           --paper          #efe9dc  页面背景
+ *           --paper-bright   #faf6ef  卡片背景
+ *           --paper-dark     #e4dccd  区域 / 凹陷背景
+ *
+ * 圆角：    卡片 12px（--radius-card）/ 按钮 8px（--radius-fox）/ 标签 999px
+ * 字体：    正文系统无衬线（--font-sans）/ 标题 serif（--font-serif）
+ *           数字用等宽（.num / tabular-nums）保证分数、计时器对齐
+ *
+ * 光晕（glow，低透明度同色，用于 hover/聚焦）：
+ *           --fox-glow / --sage-glow / --gold-glow / --verm-glow / --cyan-glow
+ * ════════════════════════════════════════════════════════
+ */
+
 /* ══════════════════════════════════════
    @theme — 设计系统 token → Tailwind 工具类
    启用后 text-fox / bg-paper / border-ink-100 等原生类可用
@@ -389,3 +422,196 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
 @media (max-width: 1200px) {
   .grid-cols-\[1fr_380px\] { grid-template-columns: 1fr !important; }
 }
+
+/* ══════════════════════════════════════
+   证书预览模板（屏幕预览，与后端 PDF 模板视觉一致）
+   ══════════════════════════════════════ */
+.cert-paper {
+  position: relative;
+  width: 800px;
+  max-width: 100%;
+  background: radial-gradient(ellipse at top, #fbf6ec 0%, #ffffff 70%);
+  border: 3px solid var(--gold-dark);
+  padding: 44px 60px;
+  font-family: var(--font-serif);
+  color: var(--ink-700);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);
+}
+.cert-paper::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 10px; right: 10px; bottom: 10px;
+  border: 1px solid var(--gold-light);
+  border-radius: 2px;
+  pointer-events: none;
+}
+/* 四角小花纹 */
+.cert-corner {
+  position: absolute;
+  width: 26px; height: 26px;
+  border: 2px solid var(--fox-dark);
+  opacity: 0.55;
+}
+.cert-corner-tl { top: 18px; left: 18px; border-right: none; border-bottom: none; }
+.cert-corner-tr { top: 18px; right: 18px; border-left: none; border-bottom: none; }
+.cert-corner-bl { bottom: 18px; left: 18px; border-right: none; border-top: none; }
+.cert-corner-br { bottom: 18px; right: 18px; border-left: none; border-top: none; }
+
+.cert-header { text-align: center; margin-bottom: 28px; }
+.cert-logo { font-size: 17px; color: var(--fox); letter-spacing: 5px; margin-bottom: 6px; font-weight: 600; }
+.cert-title { font-size: 34px; font-weight: bold; color: var(--ink-800); letter-spacing: 16px; text-indent: 16px; }
+.cert-subtitle { font-size: 12px; color: var(--ink-300); letter-spacing: 6px; margin-top: 6px; }
+
+.cert-body { text-align: center; font-size: 16px; color: var(--ink-500); line-height: 2.4; margin: 30px 0; }
+.cert-name {
+  font-size: 30px; font-weight: bold; color: var(--ink-800); letter-spacing: 6px;
+  padding: 0 16px; border-bottom: 1.5px solid var(--gold-light);
+  display: inline-block; line-height: 1.6; margin: 6px 0;
+}
+.cert-course { font-size: 17px; color: var(--fox); font-weight: 600; }
+.cert-conclusion { font-size: 15px; color: var(--ink-400); letter-spacing: 1px; margin-top: 4px; }
+
+.cert-footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-top: 30px; padding-top: 18px; border-top: 1px dashed var(--gold-light);
+}
+.cert-meta { font-size: 12px; color: var(--ink-500); line-height: 1.9; }
+.cert-no { font-family: "Courier New", monospace; color: var(--ink-700); font-weight: 600; }
+.cert-code { color: var(--fox-dark); font-weight: 600; letter-spacing: 1px; }
+.cert-qr-block { display: flex; align-items: center; gap: 10px; }
+.cert-qr-placeholder {
+  width: 96px; height: 96px; border: 1px dashed var(--ink-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--ink-300); background: var(--paper-light);
+  border-radius: 4px;
+}
+.cert-qr-text { font-size: 11px; color: var(--ink-400); line-height: 1.7; max-width: 110px; }
+.cert-qr-text strong { color: var(--fox-dark); }
+.cert-verify-line { font-size: 11px; color: var(--ink-200); text-align: center; margin-top: 10px; letter-spacing: 1px; }
+
+/* ── 学时证明特有 ── */
+.cert-hours { width: 720px; padding: 30px 40px 26px; }
+.cert-hours-header { margin-bottom: 22px; padding-bottom: 16px; border-bottom: 2px solid var(--gold-light); }
+.cert-hours-header .cert-title { font-size: 28px; letter-spacing: 14px; text-indent: 14px; }
+.cert-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px;
+  margin: 18px 0; font-size: 13px; line-height: 2;
+}
+.cert-label { color: var(--ink-300); }
+.cert-value { color: var(--ink-700); }
+.cert-name-value { font-size: 18px; font-weight: bold; color: var(--ink-800); letter-spacing: 2px; }
+.cert-date-row { grid-column: 1 / -1; font-size: 12px; color: var(--ink-200); padding-top: 4px; border-top: 1px dashed var(--paper-dark); }
+.cert-hours-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+.cert-hours-table th { background: var(--paper); color: var(--ink-500); padding: 8px 16px; text-align: left; border-bottom: 2px solid var(--gold-light); font-weight: 600; }
+.cert-hours-table td { padding: 8px 16px; border-bottom: 1px solid var(--gold-glow); color: var(--ink-500); }
+.cert-hours-cell { text-align: right; font-weight: 600; color: var(--fox); }
+.cert-total-row td { border-bottom: none; border-top: 2px solid var(--gold-light); font-weight: bold; color: var(--ink-800); padding-top: 10px; }
+.cert-total-row .cert-hours-cell { font-size: 15px; color: var(--fox-dark); }
+.cert-hours-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-500); margin: 18px 0; padding-top: 12px; border-top: 1px solid var(--paper-dark); }
+.cert-hours-footer { display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--paper-dark); }
+.cert-seal-placeholder {
+  width: 86px; height: 86px; border-radius: 50%; border: 1px dashed var(--verm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--verm); opacity: 0.6;
+}
+
+/* ══════════════════════════════════════
+   证书预览 Modal
+   ══════════════════════════════════════ */
+.cert-preview-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(26, 23, 18, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column; align-items: center;
+  overflow-y: auto; padding: 40px 20px;
+}
+.cert-preview-stage { flex-shrink: 0; }
+.cert-preview-stage .cert-paper { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
+.cert-preview-actions {
+  position: sticky; bottom: 0; margin-top: 24px;
+  display: flex; gap: 10px; justify-content: center;
+  padding: 16px; background: rgba(255,255,255,0.9);
+  border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+/* ══════════════════════════════════════
+   打印：只输出证书本身
+   ══════════════════════════════════════ */
+.print-only { display: none; }
+
+@media print {
+  @page { margin: 12mm; }
+  /* 隐藏整个应用 shell，仅保留证书 */
+  body * { visibility: hidden; }
+  .cert-preview-overlay, .cert-preview-overlay * { visibility: visible; }
+  .cert-preview-overlay {
+    position: absolute; inset: 0; background: #fff !important;
+    backdrop-filter: none; padding: 0; display: block; overflow: visible;
+  }
+  .cert-preview-actions, .screen-only { display: none !important; }
+  .cert-paper { box-shadow: none !important; margin: 0 auto; border-color: var(--gold-dark) !important; }
+  .print-only { display: revert; }
+}
+
+/* ══════════════════════════════════════
+   数据可视化 / 进度条 / 数字辅助类
+   ══════════════════════════════════════ */
+
+/* 等宽数字：分数、计时器、统计数字对齐 */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 计数器动画数字 */
+.count-up {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 条纹滚动进度条（未完成态） */
+.progress-striped {
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.18) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 24px 24px;
+  animation: progress-stripes 1s linear infinite;
+}
+@keyframes progress-stripes {
+  from { background-position: 0 0; }
+  to { background-position: 24px 0; }
+}
+
+/* 完成态进度条（纯色 + 不再滚动） */
+.progress-done {
+  background-image: none;
+  animation: none;
+}
+
+/* 圆环进度图容器 */
+.circular-progress { display: inline-block; position: relative; }
+.circular-progress svg { transform: rotate(-90deg); display: block; }
+.circular-progress .cp-track { fill: none; stroke: var(--paper-dark); }
+.circular-progress .cp-fill {
+  fill: none; stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.circular-progress .cp-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* 直方图柱子 hover 高亮 */
+.hist-bar {
+  transition: filter 0.15s ease, transform 0.15s ease;
+  cursor: default;
+}
+.hist-bar:hover { filter: brightness(1.08); transform: scaleY(1.04); transform-origin: bottom; }
