@@ -186,6 +186,140 @@ export class OrganizationsService {
     return this.prisma.organization.delete({ where: { id } });
   }
 
+  /**
+   * 批量导入组织
+   * - parentName 匹配已有组织名称确定 parentId；为空或未匹配则创建为根组织
+   * - 自动计算 level / path / sortOrder
+   * - 返回导入结果（成功数、跳过数、错误明细）
+   */
+  async importOrganizations(rows: { name: string; parentName?: string; sortOrder?: number }[]) {
+    let imported = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    // 预加载所有组织名称 → id 映射（含本次新建的，便于后续行引用）
+    const nameToId = new Map<string, number>();
+    const existing = await this.prisma.organization.findMany({ select: { id: true, name: true } });
+    for (const o of existing) nameToId.set(o.name, o.id);
+
+    // 已用编码集合（避免导入时重复 code）—— 导入场景下 code 由 name 拼音/序号生成
+    const usedCodes = new Set<string>(
+      (await this.prisma.organization.findMany({ select: { code: true } })).map(o => o.code),
+    );
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const lineNo = i + 2; // Excel 第1行是表头，数据从第2行开始
+      const name = (row.name || '').trim();
+      if (!name) {
+        errors.push(`第${lineNo}行：组织名称不能为空`);
+        skipped++;
+        continue;
+      }
+      if (nameToId.has(name)) {
+        errors.push(`第${lineNo}行：组织名称「${name}」已存在，跳过`);
+        skipped++;
+        continue;
+      }
+
+      // 解析父级
+      let parentId: number | null = null;
+      let level = 1;
+      let parentPath: string | null = null;
+      const parentName = (row.parentName || '').trim();
+      if (parentName) {
+        const pid = nameToId.get(parentName);
+        if (!pid) {
+          errors.push(`第${lineNo}行：上级组织「${parentName}」未找到，已作为根组织创建`);
+          // 不阻断，降级为根组织
+        } else {
+          parentId = pid;
+          const parent = await this.prisma.organization.findUnique({ where: { id: pid } });
+          if (parent) {
+            level = parent.level + 1;
+            parentPath = parent.path;
+          }
+        }
+      }
+
+      // 生成唯一 code（ORG-时间戳-序号，避免冲突）
+      let code = `ORG-${Date.now().toString(36).toUpperCase()}-${imported + 1}`;
+      while (usedCodes.has(code)) {
+        code = `ORG-${Date.now().toString(36).toUpperCase()}-${imported + 1}-${Math.floor(Math.random() * 1000)}`;
+      }
+      usedCodes.add(code);
+
+      // sortOrder：用户指定优先，否则取同级现有数量
+      const sortOrder = row.sortOrder ?? await this.prisma.organization.count({
+        where: { parentId },
+      });
+
+      try {
+        const created = await this.prisma.organization.create({
+          data: { name, code, parentId, level, sortOrder },
+        });
+        const fullPath = `${parentPath || '/'}${created.id}/`.replace('//', '/');
+        await this.prisma.organization.update({ where: { id: created.id }, data: { path: fullPath } });
+        nameToId.set(name, created.id);
+        imported++;
+      } catch (e: any) {
+        errors.push(`第${lineNo}行：创建失败（${e.message || '未知错误'}）`);
+        skipped++;
+      }
+    }
+
+    return { success: true, imported, skipped, errors };
+  }
+
+  /**
+   * 迁移学员：将该组织下所有学员用户的 orgId 更新为目标组织
+   * - 学时记录 / 考试记录通过 studentId 关联 User，User.orgId 变更后自动归属新组织
+   * - moveHours / moveExams 选项保留兼容（数据本身随用户迁移，此处仅做计数返回）
+   * - 防止迁移到自身或子孙组织
+   */
+  async migrateStudents(id: number, targetOrgId: number, options?: { moveHours?: boolean; moveExams?: boolean }) {
+    const org = await this.findOne(id);
+    if (id === targetOrgId) throw new BadRequestException('不能迁移到自身组织');
+    const target = await this.findOne(targetOrgId);
+    // 防止迁移到自己的子孙下
+    if (target.path && org.path && target.path.startsWith(org.path)) {
+      throw new BadRequestException('不能迁移到下属组织');
+    }
+
+    // 该组织下的学员用户（含子孙组织下的学员也一并迁移）
+    let orgIds = [id];
+    if (org.path) {
+      const descendants = await this.prisma.organization.findMany({
+        where: { path: { startsWith: org.path }, NOT: { id } },
+        select: { id: true },
+      });
+      orgIds = orgIds.concat(descendants.map(d => d.id));
+    }
+
+    const students = await this.prisma.user.findMany({
+      where: { orgId: { in: orgIds }, roleAssignments: { some: { role: { code: 'STUDENT' } } } },
+      select: { id: true },
+    });
+    const studentIds = students.map(s => s.id);
+
+    if (studentIds.length === 0) {
+      return { migrated: 0, message: '该组织下无学员' };
+    }
+
+    // 更新学员的 orgId
+    const result = await this.prisma.user.updateMany({
+      where: { id: { in: studentIds } },
+      data: { orgId: targetOrgId },
+    });
+
+    return {
+      migrated: result.count,
+      targetOrgName: target.name,
+      moveHours: options?.moveHours ?? false,
+      moveExams: options?.moveExams ?? false,
+    };
+  }
+
   /** 数据范围预览：该组织 + 所有子孙下的可见数据量 */
   async getDataScope(id: number) {
     const org = await this.findOne(id);

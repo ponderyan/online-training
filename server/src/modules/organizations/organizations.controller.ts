@@ -38,6 +38,12 @@ export class OrganizationsController {
     return this.service.create(data);
   }
 
+  @Post('import')
+  @RequirePermission(P.ORG_CREATE)
+  importOrganizations(@Body() data: { rows: { name: string; parentName?: string; sortOrder?: number }[] }) {
+    return this.service.importOrganizations(data.rows || []);
+  }
+
   @Put(':id')
   @RequirePermission(P.ORG_EDIT)
   update(@Param('id', ParseIntPipe) id: number, @Body() data: {
@@ -56,4 +62,13 @@ export class OrganizationsController {
   @Delete(':id')
   @RequirePermission(P.ORG_DELETE)
   remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+
+  @Post(':id/migrate-students')
+  @RequirePermission(P.ORG_EDIT)
+  migrateStudents(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean },
+  ) {
+    return this.service.migrateStudents(id, data.targetOrgId, { moveHours: data.moveHours, moveExams: data.moveExams });
+  }
 }

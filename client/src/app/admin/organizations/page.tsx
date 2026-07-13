@@ -40,6 +40,20 @@ interface OrgUsers {
 
 const LEVEL_LABELS: Record<number, string> = { 1: 'Level 1', 2: 'Level 2', 3: 'Level 3', 4: 'Level 4' };
 
+// ── 搜索高亮：匹配关键词部分加淡狐狸色背景 ──
+function highlightText(text: string, keyword: string) {
+  if (!keyword) return text;
+  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.substring(0, idx)}
+      <span style={{ background: 'rgba(232,125,48,0.15)', borderRadius: '2px', padding: '0 1px' }}>{text.substring(idx, idx + keyword.length)}</span>
+      {text.substring(idx + keyword.length)}
+    </>
+  );
+}
+
 export default function OrganizationsPage() {
   const toast = useToast();
   const [tree, setTree] = useState<OrgNode[]>([]);
@@ -61,6 +75,19 @@ export default function OrganizationsPage() {
 
   // 拖拽
   const [dragId, setDragId] = useState<number | null>(null);
+
+  // 批量导入
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importRows, setImportRows] = useState<{ name: string; parentName?: string; sortOrder?: number }[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+
+  // 迁移学员
+  const [showMigrateModal, setShowMigrateModal] = useState(false);
+  const [migrateSource, setMigrateSource] = useState<OrgNode | null>(null);
+  const [migrateTargetId, setMigrateTargetId] = useState<number | null>(null);
+  const [migrateOptions, setMigrateOptions] = useState({ moveHours: true, moveExams: false });
+  const [migrating, setMigrating] = useState(false);
 
   const load = async () => {
     try {
@@ -96,20 +123,45 @@ export default function OrganizationsPage() {
     });
   };
 
-  // 搜索过滤：保留匹配节点及其祖先链
-  const filteredTree = useMemo(() => {
-    if (!search.trim()) return tree;
+  // 搜索过滤：保留匹配节点及其祖先链，并收集需展开的节点
+  const { filteredTree, matchIds } = useMemo(() => {
+    if (!search.trim()) return { filteredTree: tree, matchIds: new Set<number>() };
     const q = search.trim().toLowerCase();
+    const matches = new Set<number>();
     const filterNode = (node: OrgNode): OrgNode | null => {
       const selfMatch = node.name.toLowerCase().includes(q) || node.code.toLowerCase().includes(q);
       const kids = node.children.map(filterNode).filter(Boolean) as OrgNode[];
       if (selfMatch || kids.length > 0) {
+        if (selfMatch) matches.add(node.id);
         return { ...node, children: kids };
       }
       return null;
     };
-    return tree.map(filterNode).filter(Boolean) as OrgNode[];
+    const result = tree.map(filterNode).filter(Boolean) as OrgNode[];
+    return { filteredTree: result, matchIds: matches };
   }, [tree, search]);
+
+  // 搜索时自动展开匹配节点所在的子树（含祖先链）
+  useEffect(() => {
+    if (!search.trim() || matchIds.size === 0) return;
+    setExpanded(prev => {
+      const next = new Set(prev);
+      // 展开所有包含匹配节点的路径上的祖先
+      const expandAncestors = (nodes: OrgNode[]): boolean => {
+        let hasMatchInSubtree = false;
+        for (const n of nodes) {
+          const childHasMatch = expandAncestors(n.children);
+          if (matchIds.has(n.id) || childHasMatch) {
+            hasMatchInSubtree = true;
+            if (n.children.length > 0) next.add(n.id); // 展开有匹配的祖先
+          }
+        }
+        return hasMatchInSubtree;
+      };
+      expandAncestors(tree);
+      return next;
+    });
+  }, [matchIds, tree, search]);
 
   // ── 新建/编辑组织 ──
   const openCreate = (parent: OrgNode | null) => {
@@ -183,6 +235,94 @@ export default function OrganizationsPage() {
     setDragId(null);
   };
 
+  // ── 批量导入 ──
+  const downloadTemplate = () => {
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['组织名称', '上级组织名称', '排序号'],
+        ['示例部门', '', '1'],
+        ['示例子部门', '示例部门', '1'],
+      ]);
+      ws['!cols'] = [{ wch: 24 }, { wch: 20 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '组织导入');
+      XLSX.writeFile(wb, '组织导入模板.xlsx');
+    });
+  };
+
+  const handleImportFile = (file: File) => {
+    import('xlsx').then(XLSX => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          // 跳过表头，从第2行开始
+          const rows = json.slice(1)
+            .filter(r => r[0] != null && String(r[0]).trim())
+            .map(r => ({
+              name: String(r[0] || '').trim(),
+              parentName: r[1] != null ? String(r[1]).trim() : undefined,
+              sortOrder: r[2] != null && r[2] !== '' ? Number(r[2]) : undefined,
+            }));
+          setImportRows(rows);
+          setImportResult(null);
+        } catch {
+          toast.error('Excel 解析失败，请检查文件格式');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleImport = async () => {
+    if (importRows.length === 0) { toast.warning('没有可导入的数据'); return; }
+    setImporting(true);
+    try {
+      const res = await api.organizations.importOrganizations(importRows);
+      setImportResult({ imported: res.imported, skipped: res.skipped, errors: res.errors });
+      if (res.imported > 0) {
+        toast.success(`导入成功 ${res.imported} 个组织`);
+        await load();
+      } else {
+        toast.warning('未导入任何组织');
+      }
+    } catch (e: any) {
+      toast.error('导入失败：' + e.message);
+    }
+    setImporting(false);
+  };
+
+  // ── 迁移学员 ──
+  const openMigrateModal = (org: OrgNode) => {
+    setMigrateSource(org);
+    setMigrateTargetId(null);
+    setMigrateOptions({ moveHours: true, moveExams: false });
+    setShowMigrateModal(true);
+  };
+
+  const handleMigrate = async () => {
+    if (!migrateSource || !migrateTargetId) { toast.warning('请选择目标组织'); return; }
+    if (migrateSource.id === migrateTargetId) { toast.warning('不能迁移到自身组织'); return; }
+    if (!confirm(`确认将「${migrateSource.name}」及其下属组织的学员迁移到目标组织？`)) return;
+    setMigrating(true);
+    try {
+      const res = await api.organizations.migrateStudents(migrateSource.id, {
+        targetOrgId: migrateTargetId,
+        moveHours: migrateOptions.moveHours,
+        moveExams: migrateOptions.moveExams,
+      });
+      toast.success(`已迁移 ${res.migrated} 名学员到「${res.targetOrgName}」`);
+      setShowMigrateModal(false);
+      await load();
+    } catch (e: any) {
+      toast.error('迁移失败：' + e.message);
+    }
+    setMigrating(false);
+  };
+
   if (loading) {
     return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载组织树… 🦊</div></AppLayout>;
   }
@@ -194,14 +334,24 @@ export default function OrganizationsPage() {
           <h1 className="page-title">🏢 组织管理</h1>
           <p className="page-subtitle">多层级组织架构 · 拖拽可调整层级</p>
         </div>
-        <button onClick={() => openCreate(null)} className="btn btn-fox btn-sm">➕ 新建根组织</button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowImportModal(true)} className="btn btn-outline btn-sm">📥 导入</button>
+          <button onClick={() => openCreate(null)} className="btn btn-fox btn-sm">➕ 新建根组织</button>
+        </div>
       </div>
 
       <div className="flex gap-6" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* 左：组织树 */}
         <div className="w-[360px] flex-shrink-0 flex flex-col">
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 搜索组织名称/编码…" className="input text-xs mb-3" style={{ height: 32 }} />
+          <div className="relative mb-3">
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="🔍 搜索组织名称/编码…" className="input text-xs" style={{ height: 32, paddingRight: search ? 28 : undefined }} />
+            {search && (
+              <button onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-sm leading-none"
+                style={{ color: 'var(--ink-300)' }} title="清除搜索">✕</button>
+            )}
+          </div>
           <div className="card flex-1 overflow-y-auto p-2"
             onDragOver={e => { e.preventDefault(); }}
             onDrop={e => { e.preventDefault(); onDrop(null); }}>
@@ -216,6 +366,7 @@ export default function OrganizationsPage() {
                   onSelect={setSelectedId} onToggle={toggleExpand}
                   onCreate={openCreate} onEdit={openEdit} onDelete={handleDelete}
                   dragId={dragId} setDragId={setDragId} onDrop={onDrop}
+                  searchKeyword={search.trim()}
                 />
               ))
             )}
@@ -246,6 +397,7 @@ export default function OrganizationsPage() {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <button onClick={() => openCreate(selectedNode)} className="btn btn-ghost btn-xs">+ 子组织</button>
+                    <button onClick={() => openMigrateModal(selectedNode)} className="btn btn-ghost btn-xs">🔄 迁移学员</button>
                     <button onClick={() => openEdit(selectedNode)} className="btn btn-ghost btn-xs">编辑</button>
                     <button onClick={() => handleDelete(selectedNode)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>删除</button>
                   </div>
@@ -356,12 +508,128 @@ export default function OrganizationsPage() {
           </div>
         </div>
       )}
+
+      {/* 批量导入组织 Modal */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowImportModal(false); setImportRows([]); setImportResult(null); } }}>
+          <div className="modal-card max-w-[560px] animate-fadeSlide">
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-base">📥 批量导入组织</h3>
+              <button onClick={() => { setShowImportModal(false); setImportRows([]); setImportResult(null); }}
+                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+            <div className="modal-body space-y-4">
+              <button onClick={downloadTemplate} className="btn btn-outline btn-sm">📥 下载导入模板</button>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>选择文件（支持 .xlsx / .xls，最大 2MB）</label>
+                <input type="file" accept=".xlsx,.xls" className="input" style={{ padding: 6 }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 2 * 1024 * 1024) { toast.warning('文件不能超过 2MB'); return; } handleImportFile(f); } }} />
+              </div>
+              <div className="text-xs space-y-1 p-3 rounded-lg" style={{ background: 'var(--paper)', color: 'var(--ink-400)' }}>
+                <div className="font-medium" style={{ color: 'var(--ink-500)' }}>导入说明：</div>
+                <div>· 第一列：组织名称（必填）</div>
+                <div>· 第二列：上级组织名称（可选，留空=根组织）</div>
+                <div>· 第三列：排序号（可选）</div>
+              </div>
+              {/* 预览 */}
+              {importRows.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>预览（前 5 行，共 {importRows.length} 行）</div>
+                  <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--ink-100)' }}>
+                    <table className="list-table">
+                      <thead><tr><th>组织名称</th><th>上级组织</th><th>排序</th></tr></thead>
+                      <tbody>
+                        {importRows.slice(0, 5).map((r, i) => (
+                          <tr key={i}><td>{r.name}</td><td className="text-xs">{r.parentName || '—'}</td><td>{r.sortOrder ?? '—'}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {/* 导入结果 */}
+              {importResult && (
+                <div className="p-3 rounded-lg" style={{ background: importResult.imported > 0 ? 'var(--sage-glow)' : 'var(--verm-glow)' }}>
+                  <div className="text-sm font-medium mb-1" style={{ color: importResult.imported > 0 ? 'var(--sage)' : 'var(--verm)' }}>
+                    导入 {importResult.imported} 个，跳过 {importResult.skipped} 个
+                  </div>
+                  {importResult.errors.length > 0 && (
+                    <div className="text-xs space-y-0.5" style={{ color: 'var(--ink-500)' }}>
+                      {importResult.errors.map((err, i) => <div key={i}>· {err}</div>)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => { setShowImportModal(false); setImportRows([]); setImportResult(null); }} className="btn btn-ghost btn-sm">取消</button>
+              <button onClick={handleImport} disabled={importing || importRows.length === 0} className="btn btn-fox btn-sm">
+                {importing ? '导入中…' : `导入 ${importRows.length} 行`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 迁移学员 Modal */}
+      {showMigrateModal && migrateSource && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowMigrateModal(false); }}>
+          <div className="modal-card max-w-[520px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-base">🔄 迁移学员</h3>
+              <button onClick={() => setShowMigrateModal(false)}
+                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+            <div className="modal-body space-y-4">
+              <div className="p-3 rounded-lg" style={{ background: 'var(--paper)' }}>
+                <div className="text-xs" style={{ color: 'var(--ink-400)' }}>从</div>
+                <div className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{migrateSource.name}</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+                  当前学员数：{orgUsers?.total ?? '加载中…'} 人（含下属组织）
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>迁移到</label>
+                <div className="rounded-lg p-2 max-h-[240px] overflow-y-auto" style={{ border: '1px solid var(--ink-100)', background: 'var(--paper-bright)' }}>
+                  {tree.map(node => (
+                    <MigrateOrgPicker key={node.id} node={node} depth={0}
+                      selectedId={migrateTargetId} onSelect={setMigrateTargetId}
+                      excludeId={migrateSource.id}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>迁移选项</div>
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-600)' }}>
+                  <input type="checkbox" checked={migrateOptions.moveHours}
+                    onChange={e => setMigrateOptions({ ...migrateOptions, moveHours: e.target.checked })}
+                    className="accent-[var(--fox)]" />
+                  ☑ 学时记录随学员迁移（通过学员关联自动归属）
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-600)' }}>
+                  <input type="checkbox" checked={migrateOptions.moveExams}
+                    onChange={e => setMigrateOptions({ ...migrateOptions, moveExams: e.target.checked })}
+                    className="accent-[var(--fox)]" />
+                  考试记录随学员迁移（通过学员关联自动归属）
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowMigrateModal(false)} className="btn btn-ghost btn-sm">取消</button>
+              <button onClick={handleMigrate} disabled={migrating || !migrateTargetId} className="btn btn-fox btn-sm">
+                {migrating ? '迁移中…' : '确认迁移'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
 
 // ── 递归树节点组件 ──
-function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, onCreate, onEdit, onDelete, dragId, setDragId, onDrop }: {
+function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, onCreate, onEdit, onDelete, dragId, setDragId, onDrop, searchKeyword }: {
   node: OrgNode; depth: number;
   selectedId: number | null;
   expanded: Set<number>;
@@ -373,6 +641,7 @@ function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, on
   dragId: number | null;
   setDragId: (id: number | null) => void;
   onDrop: (target: OrgNode | null) => void;
+  searchKeyword?: string;
 }) {
   const hasChildren = node.children.length > 0;
   const isExpanded = expanded.has(node.id);
@@ -402,7 +671,7 @@ function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, on
           {isExpanded ? '▼' : '▶'}
         </button>
         <span className="text-sm font-medium truncate flex-1" style={{ color: isSelected ? 'var(--fox-dark)' : 'var(--ink-600)' }}>
-          {node.name}
+          {highlightText(node.name, searchKeyword || '')}
         </span>
         <span className="tag text-[9px] flex-shrink-0" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
           {LEVEL_LABELS[node.level] || `L${node.level}`}
@@ -429,6 +698,7 @@ function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, on
               onSelect={onSelect} onToggle={onToggle}
               onCreate={onCreate} onEdit={onEdit} onDelete={onDelete}
               dragId={dragId} setDragId={setDragId} onDrop={onDrop}
+              searchKeyword={searchKeyword}
             />
           ))}
         </div>
@@ -459,4 +729,30 @@ function findNode(nodes: OrgNode[], id: number | null): OrgNode | null {
     if (found) return found;
   }
   return null;
+}
+
+// ── 迁移弹窗：组织选择器（排除源组织及其子孙，防止环） ──
+function MigrateOrgPicker({ node, depth, selectedId, onSelect, excludeId }: {
+  node: OrgNode; depth: number;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+  excludeId: number;
+}) {
+  // 排除源组织本身（子孙通过 path 已被排除，这里简单按 id 排除自身）
+  if (node.id === excludeId) return null;
+  const isSelected = selectedId === node.id;
+  return (
+    <div>
+      <div onClick={() => onSelect(node.id)}
+        className="flex items-center gap-1.5 px-2 py-1.5 rounded cursor-pointer transition-colors"
+        style={{ marginLeft: depth * 16, background: isSelected ? 'var(--fox-pale)' : 'transparent' }}>
+        <span className="text-xs" style={{ color: isSelected ? 'var(--fox-dark)' : 'var(--ink-600)' }}>{node.name}</span>
+        {isSelected && <span className="text-[10px]" style={{ color: 'var(--fox)' }}>✓</span>}
+      </div>
+      {node.children.map(child => (
+        <MigrateOrgPicker key={child.id} node={child} depth={depth + 1}
+          selectedId={selectedId} onSelect={onSelect} excludeId={excludeId} />
+      ))}
+    </div>
+  );
 }

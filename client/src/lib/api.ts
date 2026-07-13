@@ -773,6 +773,12 @@ export const api = {
     move: (id: number, newParentId: number | null) =>
       request<any>(`/organizations/${id}/move`, { method: 'PUT', body: JSON.stringify({ newParentId }) }),
     remove: (id: number) => request<any>(`/organizations/${id}`, { method: 'DELETE' }),
+    importOrganizations: (rows: { name: string; parentName?: string; sortOrder?: number }[]) =>
+      request<{ success: boolean; imported: number; skipped: number; errors: string[] }>(`/organizations/import`, {
+        method: 'POST', body: JSON.stringify({ rows }),
+      }),
+    migrateStudents: (id: number, data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean }) =>
+      request<any>(`/organizations/${id}/migrate-students`, { method: 'POST', body: JSON.stringify(data) }),
   },
 
   // ── 用户个人资料 ──
