@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const EXPORT_MODULES = [
   { value: 'students', label: '学员列表' },
@@ -11,6 +12,7 @@ const EXPORT_MODULES = [
 ];
 
 export default function DataArchivePage() {
+  const toast = useToast();
   const [exporting, setExporting] = useState(false);
   const [exportLogs, setExportLogs] = useState<any[]>([]);
   const [activeExportTab, setActiveExportTab] = useState<'export' | 'logs'>('export');
@@ -33,7 +35,7 @@ export default function DataArchivePage() {
       const res = await fetch(`/api/data/export/${module}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) { alert('导出失败'); return; }
+      if (!res.ok) { toast.error('导出失败'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -41,7 +43,7 @@ export default function DataArchivePage() {
       a.download = `${module}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('导出失败'); }
+    } catch { toast.error('导出失败'); }
     setExporting(false);
   };
 

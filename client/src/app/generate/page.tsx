@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = {
@@ -15,6 +16,7 @@ const DIFF_COLORS = ['#00897b', '#c9a03a', '#8a6e4f', '#d9364a'];
 
 function GeneratePageContent() {
   const router = useRouter();
+  const toast = useToast();
   const [user, setUser] = useState<any>({ id: 1 });
   const [subjects, setSubjects] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -129,7 +131,7 @@ function GeneratePageContent() {
       });
       const tpls = await api.templates.list();
       setTemplates(tpls);
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSavingTemplate(false);
   };
 
@@ -138,7 +140,7 @@ function GeneratePageContent() {
     try {
       await api.templates.delete(id);
       setTemplates(prev => prev.filter(t => t.id !== id));
-    } catch (e: any) { alert('删除失败：' + e.message); }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   useEffect(() => {

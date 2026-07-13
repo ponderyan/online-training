@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function KnowledgePage() {
+  const toast = useToast();
   const [documents, setDocuments] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export default function KnowledgePage() {
   const handleDelete = async (source: string) => {
     if (!confirm(`确定删除「${source}」的所有知识块吗？`)) return;
     try { await api.knowledge.deleteDocument(source); load(); }
-    catch (e: any) { alert('删除失败：' + e.message); }
+    catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   return (
@@ -37,7 +39,7 @@ export default function KnowledgePage() {
           <h1 className="page-title">📚 知识库管理</h1>
           <p className="page-subtitle">管理教材知识文档 · 共 {total} 个文档</p>
         </div>
-        <button onClick={() => alert('知识文档上传功能开发中')} className="btn btn-fox btn-sm">➕ 上传文档</button>
+        <button onClick={() => toast.info('知识文档上传功能开发中')} className="btn btn-fox btn-sm">➕ 上传文档</button>
       </div>
 
       <div className="flex gap-3 mb-5">

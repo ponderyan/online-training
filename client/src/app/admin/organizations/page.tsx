@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 // ── 组织树节点（与后端 OrgNode 对齐） ──
 interface OrgNode {
@@ -40,6 +41,7 @@ interface OrgUsers {
 const LEVEL_LABELS: Record<number, string> = { 1: 'Level 1', 2: 'Level 2', 3: 'Level 3', 4: 'Level 4' };
 
 export default function OrganizationsPage() {
+  const toast = useToast();
   const [tree, setTree] = useState<OrgNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -127,7 +129,7 @@ export default function OrganizationsPage() {
   };
 
   const handleSaveOrg = async () => {
-    if (!orgForm.name || (!editOrg && !orgForm.code)) { alert('名称和编码不能为空'); return; }
+    if (!orgForm.name || (!editOrg && !orgForm.code)) { toast.warning('名称和编码不能为空'); return; }
     setSaving(true);
     try {
       if (editOrg) {
@@ -142,7 +144,7 @@ export default function OrganizationsPage() {
       }
       setShowOrgModal(false); setEditOrg(null); setModalParent(null);
       await load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
@@ -153,7 +155,7 @@ export default function OrganizationsPage() {
       if (selectedId === org.id) setSelectedId(null);
       await load();
     } catch (e: any) {
-      alert(e.message || '删除失败');
+      toast.error(e.message || '删除失败');
     }
   };
 
@@ -166,7 +168,7 @@ export default function OrganizationsPage() {
     if (!moving) { setDragId(null); return; }
     // 不能移到自己的子孙下
     if (target && moving.path && target.path && target.path.startsWith(moving.path)) {
-      alert('不能将组织移动到其下属组织下');
+      toast.warning('不能将组织移动到其下属组织下');
       setDragId(null);
       return;
     }
@@ -176,7 +178,7 @@ export default function OrganizationsPage() {
       await api.organizations.move(dragId, targetId);
       await load();
     } catch (e: any) {
-      alert(e.message || '移动失败');
+      toast.error(e.message || '移动失败');
     }
     setDragId(null);
   };

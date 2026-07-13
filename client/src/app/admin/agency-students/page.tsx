@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function AgencyStudentsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [user, setUser] = useState<any>(null);
   const [agencies, setAgencies] = useState<any[]>([]);
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
@@ -96,7 +98,7 @@ export default function AgencyStudentsPage() {
 
   const handleSubmitHours = async () => {
     const hours = parseFloat(submitForm.hours);
-    if (!hours || hours <= 0 || !submitTarget) { alert('请输入有效的学时数'); return; }
+    if (!hours || hours <= 0 || !submitTarget) { toast.warning('请输入有效的学时数'); return; }
     setSubmitting(true);
     try {
       let evidenceUrl: string | undefined;
@@ -115,7 +117,7 @@ export default function AgencyStudentsPage() {
       });
       setShowSubmitModal(false);
       setSubmitTarget(null);
-    } catch (e: any) { alert('提交失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { toast.error('提交失败：' + (e.message || '未知错误')); }
     setSubmitting(false);
   };
 
@@ -257,7 +259,7 @@ export default function AgencyStudentsPage() {
                                   if (!confirm('确认移除此成员？')) return;
                                   api.enrollmentAgencies.removeMember(selectedAgencyId!, m.id).then(() => {
                                     api.enrollmentAgencies.listMembers(selectedAgencyId!).then(setMembers);
-                                  }).catch((e: any) => alert('操作失败：' + e.message));
+                                  }).catch((e: any) => toast.error('操作失败：' + e.message));
                                 }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>移除</button>
                               </td>
                             </tr>
@@ -368,14 +370,14 @@ export default function AgencyStudentsPage() {
             <div className="modal-footer">
               <button onClick={() => setShowMemberModal(false)} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={async () => {
-                if (!memberForm.displayName || !memberForm.username) { alert('姓名和用户名为必填'); return; }
+                if (!memberForm.displayName || !memberForm.username) { toast.warning('姓名和用户名为必填'); return; }
                 setMemberSaving(true);
                 try {
                   await api.enrollmentAgencies.createMember(selectedAgencyId!, memberForm);
                   setShowMemberModal(false);
                   const d = await api.enrollmentAgencies.listMembers(selectedAgencyId!);
                   setMembers(d || []);
-                } catch (e: any) { alert('创建失败：' + (e.message || '未知错误')); }
+                } catch (e: any) { toast.error('创建失败：' + (e.message || '未知错误')); }
                 setMemberSaving(false);
               }} disabled={memberSaving} className="btn btn-fox btn-sm">
                 {memberSaving ? '创建中…' : '创建'}

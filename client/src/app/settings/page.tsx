@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function SettingsPage() {
+  const toast = useToast();
   const [dictionaries, setDictionaries] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('dict');
   const [bankPolicy, setBankPolicy] = useState<{ allow_org_own_bank: boolean; org_bank_visibility: string } | null>(null);
@@ -50,7 +52,7 @@ export default function SettingsPage() {
     localStorage.setItem('sys_coolingDays', String(coolingDays));
     localStorage.setItem('sys_defaultPrefix', defaultPrefix);
     localStorage.setItem('sys_diffLabels', JSON.stringify(diffLabels));
-    alert('系统参数已保存');
+    toast.success('系统参数已保存');
   };
 
   const addDictionary = async () => {
@@ -239,9 +241,9 @@ export default function SettingsPage() {
                       allow_org_own_bank: bankPolicy.allow_org_own_bank,
                       org_bank_visibility: bankPolicy.org_bank_visibility,
                     });
-                    alert('题库策略已更新');
+                    toast.success('题库策略已更新');
                   } catch (e: any) {
-                    alert('保存失败：' + (e.message || '未知错误'));
+                    toast.error('保存失败：' + (e.message || '未知错误'));
                   }
                   setBankPolicySaving(false);
                 }} className="btn btn-ink btn-sm">
@@ -257,6 +259,7 @@ export default function SettingsPage() {
 }
 
 function DictItem({ dict, onUpdate, onDelete }: { dict: any; onUpdate: () => void; onDelete: () => void }) {
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(dict.name);
   const [saving, setSaving] = useState(false);
@@ -269,7 +272,7 @@ function DictItem({ dict, onUpdate, onDelete }: { dict: any; onUpdate: () => voi
       setEditing(false);
       onUpdate();
     } catch (e: any) {
-      alert('保存失败：' + (e.message || '未知错误'));
+      toast.error('保存失败：' + (e.message || '未知错误'));
     }
     setSaving(false);
   };

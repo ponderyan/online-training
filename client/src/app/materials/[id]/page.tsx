@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 import ChapterStructureTab from './chapter-structure-tab';
 import QuestionPlanTab from './question-plan-tab';
@@ -30,6 +31,7 @@ export default function MaterialDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const materialId = Number(params.id);
+  const toast = useToast();
 
   const [material, setMaterial] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ export default function MaterialDetailPage() {
         setCurrentIndex(currentIndex + 1);
       }
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
     }
   };
 
@@ -131,7 +133,7 @@ export default function MaterialDetailPage() {
       await api.materials.batchReview(materialId, { action: 'approve' });
       load();
     } catch (e: any) {
-      alert('导入失败：' + e.message);
+      toast.error('导入失败：' + e.message);
     }
     setImporting(false);
   };
@@ -174,7 +176,7 @@ export default function MaterialDetailPage() {
       setSelectedIds(new Set());
       load();
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
     }
   };
 
@@ -660,9 +662,9 @@ export default function MaterialDetailPage() {
                 });
                 if (!res.ok) { const err = await res.text(); throw new Error(err); }
                 const data = await res.json();
-                alert(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);
+                toast.success(`AI 出题完成！生成了 ${data.total} 道试题（共 ${data.chapters} 个章节），请逐题审核。`);
                 load();
-              } catch (e: any) { alert('出题失败：' + e.message); }
+              } catch (e: any) { toast.error('出题失败：' + e.message); }
               setGenerating(false);
             }} disabled={generating}
               className="btn btn-outline btn-sm">

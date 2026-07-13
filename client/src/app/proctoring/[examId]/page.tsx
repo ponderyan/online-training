@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const STATUS_FILTERS = [
@@ -17,6 +18,7 @@ export default function ProctoringDetail() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.examId as string);
+  const toast = useToast();
   const [user, setUser] = useState<any>(null);
   const [overview, setOverview] = useState<any>(null);
   const [sessions, setSessions] = useState<any[]>([]);
@@ -94,7 +96,7 @@ export default function ProctoringDetail() {
       });
       setWarnModal(null); setWarnMessage('');
       openDetail(warnModal.sessionId);
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
 
@@ -108,7 +110,7 @@ export default function ProctoringDetail() {
       });
       setForceSubmitModal(null); setForceSubmitReason(''); setConfirmText('');
       loadSessions(); loadOverview();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
 
@@ -122,7 +124,7 @@ export default function ProctoringDetail() {
         operatorName: user?.displayName || '管理员',
       });
       openDetail(sessionId);
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
 

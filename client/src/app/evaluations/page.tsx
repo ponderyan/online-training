@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function EvaluationsPage() {
+  const toast = useToast();
   const [programs, setPrograms] = useState<any[]>([]);
   const [instructors, setInstructors] = useState<any[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export default function EvaluationsPage() {
       await api.evaluations.delete(evalId);
       if (selectedProgramId) loadEvaluations(selectedProgramId);
       else if (selectedInstructorId) loadInstructorEvaluations(selectedInstructorId);
-    } catch (e: any) { alert('删除失败：' + e.message); }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   const renderStars = (rating: number) => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 interface KnowledgePoint {
@@ -25,6 +26,7 @@ const emptyForm = () => ({
 });
 
 export default function KnowledgePointsPage() {
+  const toast = useToast();
   const [tree, setTree] = useState<KnowledgePoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -93,14 +95,14 @@ export default function KnowledgePointsPage() {
 
   const handleSaveEdit = async () => {
     if (!selectedNode) return;
-    if (!editForm.name) { alert('知识点名称不能为空'); return; }
+    if (!editForm.name) { toast.warning('知识点名称不能为空'); return; }
     setSaving(true);
     try {
       await api.knowledgePoints.update(selectedNode.id, editForm);
       setSelectedNode(null);
       load();
     } catch (e: any) {
-      alert('保存失败：' + e.message);
+      toast.error('保存失败：' + e.message);
     }
     setSaving(false);
   };
@@ -112,7 +114,7 @@ export default function KnowledgePointsPage() {
       load();
       if (selectedNode?.id === node.id) setSelectedNode(null);
     } catch (e: any) {
-      alert('删除失败：' + e.message);
+      toast.error('删除失败：' + e.message);
     }
   };
 
@@ -129,8 +131,8 @@ export default function KnowledgePointsPage() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.name) { alert('知识点名称不能为空'); return; }
-    if (subjectId === 0) { alert('请先选择科目'); return; }
+    if (!createForm.name) { toast.warning('知识点名称不能为空'); return; }
+    if (subjectId === 0) { toast.warning('请先选择科目'); return; }
     setCreating(true);
     try {
       const data: any = { ...createForm, subjectId };
@@ -146,7 +148,7 @@ export default function KnowledgePointsPage() {
       }
       load();
     } catch (e: any) {
-      alert('创建失败：' + e.message);
+      toast.error('创建失败：' + e.message);
     }
     setCreating(false);
   };

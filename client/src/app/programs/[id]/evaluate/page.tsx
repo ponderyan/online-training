@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function EvaluatePage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [program, setProgram] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
@@ -56,10 +58,10 @@ export default function EvaluatePage() {
       : form.instructorRating;
 
     if (form.contentRating === 0 || effectiveInstructorRating === 0 || form.overallRating === 0) {
-      alert('请完成所有必填评分'); return;
+      toast.warning('请完成所有必填评分'); return;
     }
     if (instructors.length > 0 && !hasAllInstructorRatings) {
-      alert('请为每位讲师评分'); return;
+      toast.warning('请为每位讲师评分'); return;
     }
     setSubmitting(true);
     try {
@@ -75,7 +77,7 @@ export default function EvaluatePage() {
         } : {}),
       });
       setSubmitted(true);
-    } catch (e: any) { alert('提交失败：' + e.message); }
+    } catch (e: any) { toast.error('提交失败：' + e.message); }
     setSubmitting(false);
   };
 

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 
 export default function AdminMessagesPage() {
+  const toast = useToast();
   const [tab, setTab] = useState<'send' | 'sent'>('send');
 
   // Send form
@@ -45,7 +47,7 @@ export default function AdminMessagesPage() {
   };
 
   const handleSend = async () => {
-    if (!title || !message || selectedIds.length === 0) { alert('请填写标题、内容并选择收件人'); return; }
+    if (!title || !message || selectedIds.length === 0) { toast.warning('请填写标题、内容并选择收件人'); return; }
     setSending(true);
     try {
       const res = await fetch('/api/notifications/send', {
@@ -54,10 +56,10 @@ export default function AdminMessagesPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`✅ 已发送给 ${data.sentCount} 位用户`);
+        toast.success(`已发送给 ${data.sentCount} 位用户`);
         setTitle(''); setMessage(''); setSelectedIds([]);
-      } else { alert('发送失败：' + (data.error || '未知错误')); }
-    } catch { alert('发送失败'); }
+      } else { toast.error('发送失败：' + (data.error || '未知错误')); }
+    } catch { toast.error('发送失败'); }
     setSending(false);
   };
 

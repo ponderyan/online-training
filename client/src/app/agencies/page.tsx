@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function AgenciesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [agencies, setAgencies] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,20 +32,20 @@ export default function AgenciesPage() {
   useEffect(() => { load(); }, []);
 
   const handleSave = async () => {
-    if (!form.name) { alert('名称不能为空'); return; }
+    if (!form.name) { toast.warning('名称不能为空'); return; }
     setSaving(true);
     try {
       if (editItem) await api.agencies.update(editItem.id, form);
       else await api.agencies.create(form);
       setShowModal(false); setEditItem(null); load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('确认删除？')) return;
     try { await api.agencies.delete(id); load(); }
-    catch (e: any) { alert('删除失败：' + e.message); }
+    catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   return (

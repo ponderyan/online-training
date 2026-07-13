@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function AssignPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const examId = parseInt(params.examId as string);
 
   const [exam, setExam] = useState<any>(null);
@@ -48,15 +50,15 @@ export default function AssignPage() {
       setAssignSummary(aData?.summary || null);
 
       setUsers(uRes.items || []);
-    } catch (e: any) { console.error('加载数据失败:', e); alert('加载数据失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { console.error('加载数据失败:', e); toast.error('加载数据失败：' + (e.message || '未知错误')); }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
   const handleAssign = async () => {
-    if (!graderId) { alert('请选择阅卷员'); return; }
+    if (!graderId) { toast.warning('请选择阅卷员'); return; }
     if (selectedStudentIds.length === 0 && selectedQuestionIds.length === 0) {
-      alert('请至少选择学员或题型'); return;
+      toast.warning('请至少选择学员或题型'); return;
     }
     try {
       const token = localStorage.getItem('token');
@@ -71,14 +73,14 @@ export default function AssignPage() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        alert(errorData.error || '分配失败，请稍后重试');
+        toast.error(errorData.error || '分配失败，请稍后重试');
         return;
       }
       setGraderId('');
       setSelectedStudentIds([]);
       setSelectedQuestionIds([]);
       load();
-    } catch (e: any) { alert('分配失败：' + e.message); }
+    } catch (e: any) { toast.error('分配失败：' + e.message); }
   };
 
   const handleClearGrader = async (graderId: number) => {
@@ -91,7 +93,7 @@ export default function AssignPage() {
         body: JSON.stringify({ graderId }),
       });
       load();
-    } catch (e: any) { alert('清除失败：' + e.message); }
+    } catch (e: any) { toast.error('清除失败：' + e.message); }
   };
 
   const handleRemove = async (assignmentId: number) => {
@@ -102,7 +104,7 @@ export default function AssignPage() {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       load();
-    } catch (e: any) { alert('删除失败：' + e.message); }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;

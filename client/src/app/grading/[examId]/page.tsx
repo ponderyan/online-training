@@ -54,7 +54,7 @@ export default function GradingDetail() {
       setStudents(s?.filter((st: any) => st.status === 'SUBMITTED') || []);
     }).catch((e: any) => {
       console.error('加载考试数据失败:', e);
-      alert('加载考试数据失败：' + (e.message || '未知错误'));
+      toast.error('加载考试数据失败：' + (e.message || '未知错误'));
     }).finally(() => setLoading(false));
   }, [examId]);
 
@@ -97,7 +97,7 @@ export default function GradingDetail() {
       ]);
       setProgress(p);
       setStatusSummary(ss);
-    } catch (e: any) { console.error('加载进度失败:', e); alert('加载进度失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { console.error('加载进度失败:', e); toast.error('加载进度失败：' + (e.message || '未知错误')); }
   };
 
   const loadAppeals = async () => {
@@ -106,7 +106,7 @@ export default function GradingDetail() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (res.ok) setAppeals(await res.json());
-    } catch (e: any) { console.error('加载申诉失败:', e); alert('加载申诉失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { console.error('加载申诉失败:', e); toast.error('加载申诉失败：' + (e.message || '未知错误')); }
   };
 
   const handleReviewAppeal = async (appealId: number, status: string) => {
@@ -117,8 +117,8 @@ export default function GradingDetail() {
         body: JSON.stringify({ status, newScore: status === 'APPROVED' ? parseFloat(appealNewScore) : null, reviewNote: appealReviewNote }),
       });
       if (res.ok) { setAppealReviewing(null); setAppealNewScore(''); setAppealReviewNote(''); loadAppeals(); }
-      else { const d = await res.json(); alert(d.message || '操作失败'); }
-    } catch (e: any) { alert(e.message); }
+      else { const d = await res.json(); toast.error(d.message || '操作失败'); }
+    } catch (e: any) { toast.error(e.message); }
   };
 
   const loadStudentAnswers = async (studentId: number) => {
@@ -136,8 +136,8 @@ export default function GradingDetail() {
     const isOfficer = userRole === 'ORG_ADMIN' || userRole === 'SUPER_ADMIN';
     if (!isOfficer) {
       const answer = answers.find((a: any) => a.answerId === answerId);
-      if (answer && !assignedQuestionIds.has(answer.paperQuestionId)) {
-        alert('你未被分派评分此题');
+        if (answer && !assignedQuestionIds.has(answer.paperQuestionId)) {
+        toast.warning('你未被分派评分此题');
         return;
       }
     }
@@ -149,7 +149,7 @@ export default function GradingDetail() {
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      alert(errorData.error || '评分提交失败');
+      toast.error(errorData.error || '评分提交失败');
       return;
     }
     loadStudentAnswers(selectedStudent);
@@ -163,15 +163,15 @@ export default function GradingDetail() {
         method: 'POST', headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.error) { alert('发布失败：' + data.error); return; }
+      if (data.error) { toast.error('发布失败：' + data.error); return; }
       const passScore = exam?.passingScore ?? 60;
       const passCount = students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= passScore).length;
       const failCount = students.length - passCount;
-      alert(`✅ 发布成功！共 ${passCount} 名学员获得证书，${failCount} 名未达及格线`);
+      toast.success(`发布成功！共 ${passCount} 名学员获得证书，${failCount} 名未达及格线`);
       setShowPublishConfirm(false);
       const d = await api.exams.students(examId);
       setStudents(d?.filter((st: any) => st.status === 'SUBMITTED') || []);
-    } catch (e: any) { alert('发布失败：' + e.message); }
+    } catch (e: any) { toast.error('发布失败：' + e.message); }
     setPublishing(false);
   };
 
@@ -181,10 +181,10 @@ export default function GradingDetail() {
     try {
       const token = localStorage.getItem('token');
       await fetch(`/api/grading/${examId}/confirm`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      alert('✅ 成绩已确认锁存');
+      toast.success('成绩已确认锁存');
       const d = await api.exams.students(examId);
       setStudents(d?.filter((st: any) => st.status === 'SUBMITTED') || []);
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
     setConfirming(false);
   };
 
@@ -193,7 +193,7 @@ export default function GradingDetail() {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/grading-reviews/${examId}`, { headers: { Authorization: `Bearer ${token}` } });
       setReviews(await res.json() || []);
-    } catch (e: any) { console.error('加载复核记录失败:', e); alert('加载复核记录失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { console.error('加载复核记录失败:', e); toast.error('加载复核记录失败：' + (e.message || '未知错误')); }
   };
 
   const handleRequestReview = async () => {
@@ -206,7 +206,7 @@ export default function GradingDetail() {
         body: JSON.stringify({ answerId: reviewModal.answerId, sessionId: reviewModal.sessionId, reason: reviewReason, originalScore: reviewModal.score }),
       });
       setReviewModal(null); setReviewReason(''); loadReviews();
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   const handleResolveReview = async (reviewId: number, action: string, reviewedScore?: number) => {
@@ -218,7 +218,7 @@ export default function GradingDetail() {
         body: JSON.stringify({ action, reviewedScore }),
       });
       loadReviews();
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   const handleAdjust = async () => {
@@ -230,7 +230,7 @@ export default function GradingDetail() {
       body: JSON.stringify({ adjustedScore: parseInt(adjustScore), reason: adjustReason, operatorId: user.id || 1, operatorName: user.displayName || '管理员' }),
     });
     const data = await res.json();
-    if (data.error) { alert(data.error); return; }
+    if (data.error) { toast.error(data.error); return; }
     setAdjustOpen(false);
     loadStudentAnswers(selectedStudent);
   };
@@ -676,7 +676,7 @@ export default function GradingDetail() {
                   const scoreInput = document.getElementById('reGradeScore') as HTMLInputElement;
                   const noteInput = document.getElementById('reGradeNote') as HTMLInputElement;
                   const newScore = parseFloat(scoreInput?.value || '');
-                  if (isNaN(newScore)) { alert('请输入有效分数'); return; }
+                  if (isNaN(newScore)) { toast.warning('请输入有效分数'); return; }
                   await gradeAnswer(reGrade.answerId, newScore, noteInput?.value || '');
                   setReGrade(null);
                 }} className="btn btn-fox btn-sm flex-1">确认改分</button>

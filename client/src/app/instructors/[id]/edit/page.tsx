@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function EditInstructorPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,7 +30,7 @@ export default function EditInstructorPage() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!form.realName) { alert('请输入姓名'); return; }
+    if (!form.realName) { toast.warning('请输入姓名'); return; }
     setSaving(true);
     try {
       await api.instructors.update(Number(params.id), {
@@ -36,7 +38,7 @@ export default function EditInstructorPage() {
         contractExpire: form.contractExpire || undefined,
       });
       router.push('/instructors');
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 

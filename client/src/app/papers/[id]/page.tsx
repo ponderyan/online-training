@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = {
@@ -23,6 +24,7 @@ export default function PaperDetailPage() {
   const router = useRouter();
   const params = useParams();
   const paperId = Number(params.id);
+  const toast = useToast();
 
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -73,12 +75,12 @@ export default function PaperDetailPage() {
     const qLen = paper.questions?.length || 0;
     // 验证：至少1题
     if (qLen === 0) {
-      alert('试卷没有试题，请至少添加一道题后再定稿。');
+      toast.warning('试卷没有试题，请至少添加一道题后再定稿。');
       return;
     }
     // 验证：总分必须匹配
     if (actualTotal !== paper.totalScore) {
-      alert(`总分不匹配：当前试题总分 ${actualTotal}分 ≠ 试卷设定总分 ${paper.totalScore}分，请调整试题后再定稿。`);
+      toast.warning(`总分不匹配：当前试题总分 ${actualTotal}分 ≠ 试卷设定总分 ${paper.totalScore}分，请调整试题后再定稿。`);
       return;
     }
     await api.papers.finalize(paper.id);
@@ -119,7 +121,7 @@ export default function PaperDetailPage() {
     const currentQIds = new Set(paper.questions?.map((pq: any) => pq.questionId) || []);
     const available = (data.items || []).filter((q: any) => !currentQIds.has(q.id));
     if (available.length === 0) {
-      alert('没有可替换的试题（该题型下所有试题已在试卷中）');
+      toast.warning('没有可替换的试题（该题型下所有试题已在试卷中）');
       return;
     }
     setAvailableQuestions(available);

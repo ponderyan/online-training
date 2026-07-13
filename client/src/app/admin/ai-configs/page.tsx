@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const PROVIDER_NAMES: Record<string, string> = {
   DeepSeek: 'DeepSeek', GLM: '智谱 GLM', OpenAI: 'OpenAI',
@@ -10,6 +11,7 @@ const PROVIDER_NAMES: Record<string, string> = {
 };
 
 export default function AiConfigsPage() {
+  const toast = useToast();
   const [configs, setConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,7 +53,7 @@ export default function AiConfigsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.apiKey) { alert('请填写名称和 API Key'); return; }
+    if (!form.name || !form.apiKey) { toast.warning('请填写名称和 API Key'); return; }
     setSaving(true);
     try {
       const data = {
@@ -71,13 +73,13 @@ export default function AiConfigsPage() {
       }
       setModalOpen(false);
       load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定删除该配置吗？')) return;
-    try { await api.aiConfigs.delete(id); load(); } catch (e: any) { alert('删除失败：' + e.message); }
+    try { await api.aiConfigs.delete(id); load(); } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   const handleTest = async () => {

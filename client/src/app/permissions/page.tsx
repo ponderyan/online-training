@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const PERM_TREE: { key: string; icon: string; children: { permission: string; name: string }[] }[] = [
@@ -103,6 +104,7 @@ const PERM_TREE: { key: string; icon: string; children: { permission: string; na
 const PRESET_COLORS = ['#ef4444', '#e87a30', '#1565c0', '#f59e0b', '#2e7d32', '#7b1fa2', '#0ea5e9', '#ec4899'];
 
 export default function PermissionsPage() {
+  const toast = useToast();
   const [roles, setRoles] = useState<any[]>([]);
   const [matrix, setMatrix] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,8 +209,8 @@ export default function PermissionsPage() {
     try {
       const row = matrix.find(r => r.roleId === selectedRoleId);
       if (row) await api.permissions.updateRolePerms(selectedRoleId, row.permissions);
-      alert('✅ 保存成功');
-    } catch (e: any) { alert('保存失败：' + e.message); }
+      toast.success('保存成功');
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
@@ -220,8 +222,8 @@ export default function PermissionsPage() {
     try {
       await api.permissions.seed();
       await load();
-      alert('✅ 已重置为默认权限配置');
-    } catch (e: any) { alert('重置失败：' + e.message); }
+      toast.success('已重置为默认权限配置');
+    } catch (e: any) { toast.error('重置失败：' + e.message); }
     setResetting(false);
   };
 
@@ -277,12 +279,12 @@ export default function PermissionsPage() {
       await load();
       // 从搜索结果里标记已添加
       setAddMemberResults(prev => prev.map(u => u.id === userId ? { ...u, hasRole: true } : u));
-    } catch (e: any) { alert('添加失败：' + e.message); }
+    } catch (e: any) { toast.error('添加失败：' + e.message); }
     setAddMemberSavingId(null);
   };
 
   const handleSaveRole = async () => {
-    if (!roleForm.name || (!editRoleData && !roleForm.code)) { alert('请填写必要信息'); return; }
+    if (!roleForm.name || (!editRoleData && !roleForm.code)) { toast.warning('请填写必要信息'); return; }
     try {
       if (editRoleData) {
         await fetch(`/api/permissions/roles/${editRoleData.id}`, {
@@ -296,7 +298,7 @@ export default function PermissionsPage() {
         });
       }
       setShowRoleModal(false); setEditRoleData(null); load();
-    } catch (e: any) { alert('保存失败'); }
+    } catch (e: any) { toast.error('保存失败'); }
   };
 
   const deleteRole = async (id: number) => {
@@ -309,7 +311,7 @@ export default function PermissionsPage() {
       await fetch(`/api/permissions/roles/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
       if (selectedRoleId === id) setSelectedRoleId(null);
       load();
-    } catch (e: any) { alert('删除失败'); }
+    } catch (e: any) { toast.error('删除失败'); }
   };
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;

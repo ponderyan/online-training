@@ -8,6 +8,7 @@ import AlertModal from '../components/AlertModal';
 import ExamInfoBar from '../../components/ExamInfoBar';
 import SaveIndicator from '../../components/SaveIndicator';
 import QuestionContent from '../../components/QuestionContent';
+import { useToast } from '@/components/Toast';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -51,6 +52,7 @@ interface ExamData {
 export default function ExamTake() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [exam, setExam] = useState<ExamData | null>(null);
   const [answers, setAnswers] = useState<Record<number, any>>({});
   const [currentQ, setCurrentQ] = useState(0);
@@ -805,7 +807,7 @@ export default function ExamTake() {
             <h2 className="m-0 mb-2 text-xl font-semibold font-serif text-[var(--ink-800)]">全屏模式已退出</h2>
             <p className="text-[var(--ink-500)] m-0 mb-6 leading-relaxed text-sm">考试需要全屏模式下进行。<br/>操作已记录，请重新进入全屏。</p>
             <button onClick={() => {
-              document.documentElement.requestFullscreen().then(() => setFullscreenOverlay(false)).catch(() => alert('全屏被阻止，请按 F11 或浏览器全屏按钮'));
+              document.documentElement.requestFullscreen().then(() => setFullscreenOverlay(false)).catch(() => toast.error('全屏被阻止，请按 F11 或浏览器全屏按钮'));
             }}
               className="px-8 py-3 text-base font-medium text-white border-none rounded-lg cursor-pointer bg-[var(--fox)] hover:bg-[var(--fox-dark)] hover:shadow-[0_4px_16px_var(--fox-glow-strong)] transition-all">
               点击重新进入全屏

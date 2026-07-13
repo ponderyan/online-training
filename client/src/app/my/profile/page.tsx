@@ -3,9 +3,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 
 export default function ProfilePage() {
   const router = useRouter();
+  const toast = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -50,8 +52,8 @@ export default function ProfilePage() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('头像文件不能超过 5MB'); return; }
-    if (!['image/jpeg', 'image/png'].includes(file.type)) { alert('仅支持 JPG/PNG 格式'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.warning('头像文件不能超过 5MB'); return; }
+    if (!['image/jpeg', 'image/png'].includes(file.type)) { toast.warning('仅支持 JPG/PNG 格式'); return; }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -67,7 +69,7 @@ export default function ProfilePage() {
         const avatarUrl = data.filePath?.startsWith('http') ? data.filePath : '/uploads/attachments/' + (data.filePath || '');
         setProfile((p: any) => ({ ...p, avatar: avatarUrl }));
       }
-    } catch { alert('上传失败'); }
+    } catch { toast.error('上传失败'); }
     setUploading(false);
   };
 
@@ -77,7 +79,7 @@ export default function ProfilePage() {
       await fetch('/api/user/profile', { method: 'PUT', headers, body: JSON.stringify(form) });
       setEditing(false);
       load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 

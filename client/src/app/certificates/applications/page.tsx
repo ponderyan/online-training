@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const STATUS_LABEL: Record<string, { text: string; color: string }> = {
@@ -13,6 +14,7 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
 
 export default function CertificateApplications() {
   const router = useRouter();
+  const toast = useToast();
   const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('PENDING');
@@ -31,20 +33,20 @@ export default function CertificateApplications() {
   const handleApprove = async (id: number) => {
     if (!confirm('确认批准此申请？')) return;
     try { await api.certificateApplications.approve(id, user.id || 1); load(); }
-    catch (e: any) { alert('操作失败：' + e.message); }
+    catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   const handleBatchApprove = async () => {
     if (selectedIds.length === 0) return;
     if (!confirm(`确认批量批准 ${selectedIds.length} 个申请？`)) return;
     try { await api.certificateApplications.batchApprove(selectedIds, user.id || 1); setSelectedIds([]); load(); }
-    catch (e: any) { alert('操作失败：' + e.message); }
+    catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   const handleReject = async () => {
     if (!rejectReason || !rejectId) return;
     try { await api.certificateApplications.reject(rejectId, rejectReason, user.id || 1); setRejectId(null); setRejectReason(''); load(); }
-    catch (e: any) { alert('操作失败：' + e.message); }
+    catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   return (

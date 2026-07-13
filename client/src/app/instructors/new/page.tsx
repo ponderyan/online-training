@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function NewInstructorPage() {
   const router = useRouter();
+  const toast = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [form, setForm] = useState({
     userId: '', realName: '', title: '', phone: '', email: '', avatar: '',
@@ -23,9 +25,9 @@ export default function NewInstructorPage() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!form.userId) { alert('请选择关联用户'); return; }
-    if (!form.realName) { alert('请输入姓名'); return; }
-    if (form.type === 'EXTERNAL' && !form.idCard) { alert('外聘讲师必须填写身份证号'); return; }
+    if (!form.userId) { toast.warning('请选择关联用户'); return; }
+    if (!form.realName) { toast.warning('请输入姓名'); return; }
+    if (form.type === 'EXTERNAL' && !form.idCard) { toast.warning('外聘讲师必须填写身份证号'); return; }
     setSaving(true);
     try {
       await api.instructors.create({
@@ -34,7 +36,7 @@ export default function NewInstructorPage() {
         contractExpire: form.contractExpire || undefined,
       });
       router.push('/instructors');
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 

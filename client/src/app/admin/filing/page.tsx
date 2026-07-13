@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const STATUS_NAMES: Record<string, string> = {
   PENDING: '待审核', APPROVED: '已通过', REJECTED: '已驳回',
@@ -14,6 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function FilingPage() {
   const router = useRouter();
+  const toast = useToast();
   const [filings, setFilings] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function FilingPage() {
     try {
       await api.filing.review(selected.id, { status: action, reviewComment: comment || undefined });
       setModalOpen(false); setSelected(null); load();
-    } catch { alert('操作失败'); }
+    } catch { toast.error('操作失败'); }
     setSubmitting(false);
   };
 

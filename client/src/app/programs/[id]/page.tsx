@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 import HoursTab from './hours-tab';
 import DashboardTab from './dashboard-tab';
@@ -33,6 +34,7 @@ const LEVEL_NAMES: Record<string, string> = {
 export default function ProgramDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [program, setProgram] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('students');
@@ -82,7 +84,7 @@ export default function ProgramDetailPage() {
       await api.trainingPrograms.updateStatus(Number(params.id), statusModal.target, statusReason || undefined);
       setStatusModal(null);
       load();
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
     setStatusChanging(false);
   };
 
@@ -215,7 +217,7 @@ export default function ProgramDetailPage() {
 
   const handleScheduleSave = async () => {
     if (!scheduleForm.courseId || !scheduleForm.startTime || !scheduleForm.endTime) {
-      alert('请填写课程、开始时间和结束时间'); return;
+      toast.warning('请填写课程、开始时间和结束时间'); return;
     }
     setScheduleLoading(true);
     try {
@@ -235,14 +237,14 @@ export default function ProgramDetailPage() {
       }
       setShowScheduleModal(false);
       loadSchedules();
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
     setScheduleLoading(false);
   };
 
   const handleScheduleDelete = async (id: number) => {
     if (!confirm('确定删除该排课记录吗？')) return;
     try { await api.schedules.delete(id); loadSchedules(); }
-    catch (e: any) { alert('删除失败：' + e.message); }
+    catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
@@ -539,7 +541,7 @@ export default function ProgramDetailPage() {
                                   reason: '管理员编辑',
                                 });
                                 loadAttendance();
-                              } catch (e: any) { alert('保存失败：' + e.message); }
+                              } catch (e: any) { toast.error('保存失败：' + e.message); }
                               setAttendanceSaving(null);
                             }} disabled={saving} className="btn btn-outline btn-xs text-xs">
                               {saving ? '保存中…' : '保存'}
@@ -572,7 +574,7 @@ export default function ProgramDetailPage() {
                 a.download = `签到表_${program.name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
                 a.click();
                 URL.revokeObjectURL(url);
-              } catch (e: any) { alert('生成失败：' + e.message); }
+              } catch (e: any) { toast.error('生成失败：' + e.message); }
               setSigninGenerating(false);
             }} disabled={signinGenerating} className="btn btn-fox btn-sm">
               {signinGenerating ? '生成中…' : '📄 生成签到表'}
@@ -607,7 +609,7 @@ export default function ProgramDetailPage() {
                         <button onClick={async () => {
                           if (!confirm('确定删除该文件？')) return;
                           try { await api.trainingPrograms.deleteEvidence(Number(params.id), e.id); loadEvidences(); }
-                          catch (e: any) { alert('删除失败：' + e.message); }
+                          catch (e: any) { toast.error('删除失败：' + e.message); }
                         }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
                       </td>
                     </tr>
@@ -642,7 +644,7 @@ export default function ProgramDetailPage() {
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={async () => {
-                      if (!uploadFile) { alert('请选择文件'); return; }
+                      if (!uploadFile) { toast.warning('请选择文件'); return; }
                       setUploading(true);
                       try {
                         const fd = new FormData();
@@ -654,7 +656,7 @@ export default function ProgramDetailPage() {
                         setUploadFile(null);
                         setUploadNotes('');
                         loadEvidences();
-                      } catch (e: any) { alert('上传失败：' + e.message); }
+                      } catch (e: any) { toast.error('上传失败：' + e.message); }
                       setUploading(false);
                     }} disabled={uploading} className="btn btn-fox btn-sm">{uploading ? '上传中…' : '上传'}</button>
                     <button onClick={() => setUploadModal(false)} className="btn btn-outline btn-sm">取消</button>
@@ -686,7 +688,7 @@ export default function ProgramDetailPage() {
               <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>尚未提交备案</p>
               <button onClick={async () => {
                 const evs = await api.trainingPrograms.getEvidences(Number(params.id)).catch(() => []);
-                if (!evs || evs.length === 0) { alert('请先上传签到表扫描件后再提交备案'); return; }
+                if (!evs || evs.length === 0) { toast.warning('请先上传签到表扫描件后再提交备案'); return; }
                 setFilingForm({ agencyName: '', agencyContact: '', agencyPhone: '' });
                 setFilingModal(true);
               }} className="btn btn-fox">提交备案</button>
@@ -748,7 +750,7 @@ export default function ProgramDetailPage() {
                   <div className="flex gap-3 pt-2">
                     <button onClick={async () => {
                       if (!filingForm.agencyName || !filingForm.agencyContact || !filingForm.agencyPhone) {
-                        alert('请填写完整信息'); return;
+                        toast.warning('请填写完整信息'); return;
                       }
                       setFilingSubmitting(true);
                       try {
@@ -756,7 +758,7 @@ export default function ProgramDetailPage() {
                         setFilingModal(false);
                         loadFiling();
                         load();
-                      } catch (e: any) { alert('提交失败：' + e.message); }
+                      } catch (e: any) { toast.error('提交失败：' + e.message); }
                       setFilingSubmitting(false);
                     }} disabled={filingSubmitting} className="btn btn-fox btn-sm">{filingSubmitting ? '提交中…' : '提交'}</button>
                     <button onClick={() => setFilingModal(false)} className="btn btn-outline btn-sm">取消</button>

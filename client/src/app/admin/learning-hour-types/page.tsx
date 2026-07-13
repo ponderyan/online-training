@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 interface LearningHourType {
   id: number;
@@ -21,6 +22,7 @@ const defaultForm = {
 };
 
 export default function LearningHourTypesPage() {
+  const toast = useToast();
   const [types, setTypes] = useState<LearningHourType[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +60,7 @@ export default function LearningHourTypesPage() {
 
   const handleSave = async () => {
     if (!form.name || !form.code) {
-      alert('请填写名称和编码');
+      toast.warning('请填写名称和编码');
       return;
     }
     setSaving(true);
@@ -77,7 +79,7 @@ export default function LearningHourTypesPage() {
       setModalOpen(false);
       load();
     } catch (e: any) {
-      alert('保存失败：' + e.message);
+      toast.error('保存失败：' + e.message);
     }
     setSaving(false);
   };
@@ -88,7 +90,7 @@ export default function LearningHourTypesPage() {
       await api.learningHourTypes.delete(id);
       load();
     } catch (e: any) {
-      alert('删除失败：' + e.message);
+      toast.error('删除失败：' + e.message);
     }
   };
 

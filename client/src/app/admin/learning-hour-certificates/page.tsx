@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
   PENDING: { text: '待审批', color: '#e87a30' },
@@ -13,6 +14,7 @@ const STATUS_MAP: Record<string, { text: string; color: string }> = {
 };
 
 export default function LearningHourCertificates() {
+  const toast = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function LearningHourCertificates() {
       setSelectedIds(new Set());
       load();
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
     }
     setProcessing(false);
   };
@@ -90,7 +92,7 @@ export default function LearningHourCertificates() {
       setRevokeReason('');
       load();
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
     }
     setProcessing(false);
   };

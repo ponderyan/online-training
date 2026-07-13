@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -28,6 +29,7 @@ function relativeTime(date: string | Date): string {
 
 export default function AccountsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -119,7 +121,7 @@ export default function AccountsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.username || !form.displayName) { alert('用户名和姓名不能为空'); return; }
+    if (!form.username || !form.displayName) { toast.warning('用户名和姓名不能为空'); return; }
     setSaving(true);
     try {
       const payload: any = {
@@ -145,7 +147,7 @@ export default function AccountsPage() {
         await api.students.create(payload);
       }
       setShowModal(false); setEditUser(null); load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
@@ -153,8 +155,8 @@ export default function AccountsPage() {
     if (!confirm('确认重置此用户的密码？')) return;
     try {
       const data = await api.students.resetPassword(id);
-      alert(`密码已重置为：${data.password}\n请记录并告知用户。`);
-    } catch (e: any) { alert('重置失败：' + e.message); }
+      toast.success(`密码已重置为：${data.password}\n请记录并告知用户。`);
+    } catch (e: any) { toast.error('重置失败：' + e.message); }
   };
 
   const handleToggleActive = async (u: any) => {
