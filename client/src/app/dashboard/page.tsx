@@ -99,11 +99,24 @@ function StudentDashboard({ user, studentExams, studentStats, loading }: any) {
     return `${h}时${m}分后`;
   };
 
+  const hour = now.getHours();
+  const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+
   return (
     <>
       <div className="mb-8">
-        <h1 className="page-title">🎓 我的学习</h1>
-        <p className="page-subtitle">{user?.displayName}，欢迎回来 🐾</p>
+        <h1 className="page-title">{greeting}，{user?.displayName || '同学'} 🦊</h1>
+        <p className="page-subtitle">跟着小狐狸，高效学习，精准考试 🐾</p>
+      </div>
+
+      {/* 快速入口 */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
+        <QuickAction icon="📝" label="去考试" href="/exam" primary router={router} />
+        <QuickAction icon="📖" label="去学习" href="/learning-center" router={router} />
+        <QuickAction icon="📊" label="看成绩" href="/exam/results" router={router} />
+        <QuickAction icon="🏆" label="证书" href="/my-certificates" router={router} />
+        <QuickAction icon="🦊" label="AI 助教" href="/ai/assistant" router={router} />
+        <QuickAction icon="📈" label="学习报告" href="/learning-report" router={router} />
       </div>
 
       {studentStats && (
@@ -173,6 +186,21 @@ function StudentDashboard({ user, studentExams, studentStats, loading }: any) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 待办事项 */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold mb-3 text-[var(--ink-700)]">📋 待办事项</h3>
+        {activeExams.length > 0 ? (
+          <TodoItem dot="verm" text={`你有 ${activeExams.length} 场考试正在进行，请尽快完成`} href="/exam" urgent router={router} />
+        ) : nextExam ? (
+          <TodoItem dot="fox" text={`「${nextExam.title}」${formatCount(new Date(nextExam.startTime))}，请提前准备`} href="/exam" router={router} />
+        ) : (
+          <TodoItem dot="cyan" text="暂无紧急待办，可以开始学习新课程" href="/learning-center" router={router} />
+        )}
+        {recentDone.length > 0 && (
+          <TodoItem dot="cyan" text={`学习报告已更新，最近完成 ${recentDone[0].title}`} href="/learning-report" router={router} />
+        )}
       </div>
     </>
   );

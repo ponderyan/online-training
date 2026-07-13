@@ -196,8 +196,11 @@ export default function LearningCenterPage() {
                   ) : pct > 0 ? (
                     <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中 {pct}%</span>
                   ) : (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#00897b18', color: '#00897b' }}>开始学习</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#00897b18', color: '#00897b' }}>未开始</span>
                   )}
+                  <span className="block mt-2 text-xs font-medium" style={{ color: 'var(--fox)' }}>
+                    {completed ? '复习查看 →' : pct > 0 ? '继续学习 →' : '开始学习 →'}
+                  </span>
                 </div>
               </div>
             );

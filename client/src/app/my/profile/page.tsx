@@ -18,6 +18,7 @@ export default function ProfilePage() {
     displayName: '', phone: '', email: '', organization: '',
     title: '', gender: '', remark: '',
   });
+  const [activeTab, setActiveTab] = useState<'basic' | 'education' | 'contact' | 'security'>('basic');
 
   // Password change
   const [oldPwd, setOldPwd] = useState('');
@@ -25,7 +26,6 @@ export default function ProfilePage() {
   const [confirmPwd, setConfirmPwd] = useState('');
   const [pwdMsg, setPwdMsg] = useState('');
   const [saving, setSaving] = useState(false);
-  const [showPwd, setShowPwd] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -105,16 +105,69 @@ export default function ProfilePage() {
   const firstRole = (profile.roles || [profile.role || 'STUDENT'])[0];
   const isStudent = firstRole === 'STUDENT';
 
-  // 个人信息字段定义（展示+编辑共用）
-  const infoFields = [
+  // 字段定义按 Tab 分组（展示+编辑共用）
+  const basicFields = [
     { key: 'displayName', label: '姓名', type: 'text' },
+    { key: 'gender', label: '性别', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: '男' }, { v: 'F', l: '女' }] },
+    { key: 'title', label: '职务/职称', type: 'text' },
+    { key: 'remark', label: '个人简介', type: 'textarea', full: true },
+  ];
+  const contactFields = [
     { key: 'phone', label: '手机号', type: 'text' },
     { key: 'email', label: '邮箱', type: 'text' },
     { key: 'organization', label: '单位', type: 'text' },
-    { key: 'title', label: '职务/职称', type: 'text' },
-    { key: 'gender', label: '性别', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: '男' }, { v: 'F', l: '女' }] },
-    { key: 'remark', label: '个人简介', type: 'textarea', full: true },
   ];
+  // 学历信息（来自 profile，只读展示；如可编辑则进入 form）
+  const educationFields = [
+    { label: '学历', value: profile.education },
+    { label: '毕业院校', value: profile.educationSchool },
+    { label: '专业', value: profile.major },
+    { label: '毕业时间', value: profile.graduationDate },
+    { label: '职称', value: profile.professionalTitle },
+    { label: '职称级别', value: profile.professionalLevel },
+  ];
+
+  const tabs = [
+    { key: 'basic' as const, label: '📋 基本信息' },
+    { key: 'education' as const, label: '🎓 学历信息' },
+    { key: 'contact' as const, label: '📞 联系信息' },
+    { key: 'security' as const, label: '🔒 账号安全' },
+  ];
+
+  function renderField(f: { key: string; label: string; type: string; options?: any[]; full?: boolean }) {
+    const value = (form as any)[f.key] || '';
+    const displayValue = f.type === 'select'
+      ? (f.options || []).find((o: any) => o.v === value)?.l || value
+      : value;
+    return (
+      <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
+        {editing ? (
+          <div className="py-3">
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>{f.label}</label>
+            {f.type === 'select' ? (
+              <select value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                className="input text-sm w-full">
+                {(f.options || []).map((o: any) => <option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            ) : f.type === 'textarea' ? (
+              <textarea value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                className="input text-sm w-full" rows={3} />
+            ) : (
+              <input value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                className="input text-sm w-full" />
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center py-3.5 border-b" style={{ borderColor: 'var(--ink-50)' }}>
+            <span className="text-xs w-24 flex-shrink-0" style={{ color: 'var(--ink-400)' }}>{f.label}</span>
+            <span className="text-sm" style={{ color: displayValue ? 'var(--ink-700)' : 'var(--ink-200)' }}>
+              {displayValue || '未设置'}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <AppLayout>
@@ -147,7 +200,12 @@ export default function ProfilePage() {
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <h1 className="text-xl font-bold" style={{ color: 'var(--ink-800)' }}>{profile.displayName || '未设置姓名'}</h1>
-                  <p className="text-xs" style={{ color: 'var(--ink-400)' }}>@{profile.username}</p>
+                  <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                    @{profile.username}
+                    {profile.studentNumber && (
+                      <span className="ml-2">· 学号 <strong style={{ color: 'var(--ink-500)' }}>{profile.studentNumber}</strong></span>
+                    )}
+                  </p>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <span className="text-[10px] px-2.5 py-1 rounded-full font-medium"
                       style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
@@ -162,11 +220,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <button onClick={() => { setEditing(!editing); setShowPwd(false); }}
+                  <button onClick={() => { setEditing(!editing); }}
                     className={`btn btn-xs ${editing ? 'btn-ghost' : 'btn-fox'}`}>
                     {editing ? '✕ 取消' : '✏️ 编辑'}
                   </button>
-                  <button onClick={() => { setShowPwd(!showPwd); setEditing(false); }}
+                  <button onClick={() => setActiveTab('security')}
                     className="btn btn-outline btn-xs">
                     🔒 密码
                   </button>
@@ -176,77 +234,94 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ═══ 个人信息（始终可见，编辑模式变输入框）═══ */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📋 个人信息</h2>
-            {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>编辑模式</span>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
-            {infoFields.map((f) => {
-              const value = (form as any)[f.key] || '';
-              const displayValue = f.type === 'select'
-                ? (f.options || []).find((o: any) => o.v === value)?.l || value
-                : value;
-              return (
-                <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
-                  {editing ? (
-                    <div className="py-3">
-                      <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>{f.label}</label>
-                      {f.type === 'select' ? (
-                        <select value={value} onChange={e => setForm({...form, [f.key]: e.target.value})}
-                          className="input text-sm w-full">
-                          {(f.options || []).map((o: any) => <option key={o.v} value={o.v}>{o.l}</option>)}
-                        </select>
-                      ) : f.type === 'textarea' ? (
-                        <textarea value={value} onChange={e => setForm({...form, [f.key]: e.target.value})}
-                          className="input text-sm w-full" rows={3} />
-                      ) : (
-                        <input value={value} onChange={e => setForm({...form, [f.key]: e.target.value})}
-                          className="input text-sm w-full" />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center py-3.5 border-b" style={{ borderColor: 'var(--ink-50)' }}>
-                      <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--ink-400)' }}>{f.label}</span>
-                      <span className="text-sm" style={{ color: displayValue ? 'var(--ink-700)' : 'var(--ink-200)' }}>
-                        {displayValue || '未设置'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 编辑模式：保存按钮 */}
-          {editing && (
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-              <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
-              <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
-                {saving ? '保存中…' : '💾 保存'}
-              </button>
-            </div>
-          )}
+        {/* ═══ Tab 切换 ═══ */}
+        <div className="flex gap-1 p-0.5 rounded-lg flex-wrap" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
+              style={{
+                background: activeTab === tab.key ? 'var(--paper-bright)' : 'transparent',
+                color: activeTab === tab.key ? 'var(--fox)' : 'var(--ink-400)',
+                boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* ═══ 安全设置 ═══ */}
-        <div className="card p-6">
-          <div
-            className="flex items-center justify-between cursor-pointer select-none"
-            onClick={() => setShowPwd(!showPwd)}>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>🔒 安全设置</h2>
-            <span className="text-xs transition-transform" style={{
-              color: 'var(--ink-300)',
-              transform: showPwd ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}>▼</span>
+        {/* ═══ 基本信息 Tab ═══ */}
+        {activeTab === 'basic' && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📋 基本信息</h2>
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>编辑模式</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+              {basicFields.map(f => renderField(f))}
+            </div>
+            {editing && (
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
+                <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
+                  {saving ? '保存中…' : '💾 保存'}
+                </button>
+              </div>
+            )}
           </div>
+        )}
 
-          {showPwd && (
-            <div className="mt-5 space-y-4 border-t pt-5" style={{ borderColor: 'var(--ink-50)' }}>
+        {/* ═══ 学历信息 Tab ═══ */}
+        {activeTab === 'education' && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>🎓 学历信息</h2>
+              <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>如需修改请联系管理员</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+              {educationFields.map(f => (
+                <div key={f.label} className="flex items-center py-3.5 border-b" style={{ borderColor: 'var(--ink-50)' }}>
+                  <span className="text-xs w-24 flex-shrink-0" style={{ color: 'var(--ink-400)' }}>{f.label}</span>
+                  <span className="text-sm" style={{ color: f.value ? 'var(--ink-700)' : 'var(--ink-200)' }}>
+                    {f.value || '未设置'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ 联系信息 Tab ═══ */}
+        {activeTab === 'contact' && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📞 联系信息</h2>
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>编辑模式</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+              {contactFields.map(f => renderField(f))}
+            </div>
+            {editing && (
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
+                <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
+                  {saving ? '保存中…' : '💾 保存'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ 账号安全 Tab ═══ */}
+        {activeTab === 'security' && (
+          <div className="card p-6">
+            <h2 className="text-sm font-bold mb-5" style={{ color: 'var(--ink-700)' }}>🔒 账号安全</h2>
+
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-1">
+                <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>当前密码</label>
                   <input type="password" value={oldPwd} onChange={e => setOldPwd(e.target.value)}
                     className="input text-sm w-full" placeholder="输入当前密码" />
@@ -293,21 +368,21 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {!showPwd && (
-            <div className="mt-3 grid grid-cols-2 gap-3 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <div>
-                <span className="block" style={{ color: 'var(--ink-300)' }}>上次登录</span>
-                {profile.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString('zh-CN') : '—'}
-              </div>
-              <div>
-                <span className="block" style={{ color: 'var(--ink-300)' }}>登录次数</span>
-                {profile.loginCount ?? 0} 次
-              </div>
-            </div>
-          )}
-        </div>
+        {/* ═══ 固定底部保存按钮（编辑模式下显示）═══ */}
+        {editing && (activeTab === 'basic' || activeTab === 'contact') && (
+          <div
+            className="sticky bottom-0 flex justify-end gap-3 py-3 px-4 -mx-0 border-t"
+            style={{ borderColor: 'var(--ink-100)', background: 'var(--paper-bright)' }}
+          >
+            <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
+            <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
+              {saving ? '保存中…' : '💾 保存'}
+            </button>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -269,6 +269,85 @@ export default function LearningReportPage() {
           <p className="page-subtitle">学习数据全景 · 考试趋势 · 掌握分析</p>
         </div>
 
+        {/* ════════ 1.5 学习画像摘要 ════════ */}
+        {data && (() => {
+          // 从 practiceTrend 汇总练习数量与平均正确率
+          const practiceCount = practiceTrend.reduce(
+            (sum, d) => sum + (d.totalQuestions || 0), 0,
+          );
+          const totalCorrect = practiceTrend.reduce(
+            (sum, d) => sum + (d.correctCount || 0), 0,
+          );
+          const avgAccuracy = practiceCount > 0
+            ? Math.round((totalCorrect / practiceCount) * 100)
+            : (summary?.passRate ?? 0);
+          const weakName = weakAreas[0]?.kpName || '无';
+          return (
+            <div
+              className="card p-5"
+              style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🦊</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                    学习画像摘要
+                  </span>
+                </div>
+                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                  最近30天 · {data.recent30DayActive} 天活跃
+                </span>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">📅</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>累计学习天数</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
+                    {streak?.totalActiveDays ?? 0}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>天</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">✏️</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>练习数量</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
+                    {practiceCount}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>题</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">🎯</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>平均正确率</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem', color: 'var(--fox)' }}>
+                    {avgAccuracy}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>%</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">⚠️</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>薄弱环节</span>
+                  </div>
+                  <div className="text-sm font-semibold truncate" style={{ color: weakAreas[0] ? 'var(--verm)' : 'var(--ink-400)' }} title={weakName}>
+                    {weakName}
+                  </div>
+                  {weakAreas[0] && (
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                      掌握率 {weakAreas[0].rate}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ════════ 2. 摘要卡片 ════════ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 考试通过率 */}
