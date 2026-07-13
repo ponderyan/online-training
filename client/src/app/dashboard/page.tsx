@@ -100,23 +100,13 @@ function StudentDashboard({ user, studentExams, studentStats, loading }: any) {
   };
 
   const hour = now.getHours();
-  const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+  const greeting = hour < 12 ? '早上好' : hour <= 18 ? '下午好' : '晚上好';
 
   return (
     <>
       <div className="mb-8">
         <h1 className="page-title">{greeting}，{user?.displayName || '同学'} 🦊</h1>
         <p className="page-subtitle">跟着小狐狸，高效学习，精准考试 🐾</p>
-      </div>
-
-      {/* 快速入口 */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8">
-        <QuickAction icon="📝" label="去考试" href="/exam" primary router={router} />
-        <QuickAction icon="📖" label="去学习" href="/learning-center" router={router} />
-        <QuickAction icon="📊" label="看成绩" href="/exam/results" router={router} />
-        <QuickAction icon="🏆" label="证书" href="/my-certificates" router={router} />
-        <QuickAction icon="🦊" label="AI 助教" href="/ai/assistant" router={router} />
-        <QuickAction icon="📈" label="学习报告" href="/learning-report" router={router} />
       </div>
 
       {studentStats && (
@@ -136,11 +126,30 @@ function StudentDashboard({ user, studentExams, studentStats, loading }: any) {
             <div className="text-[10px] mt-0.5 text-[var(--ink-400)]">已完成</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-[var(--gold)]">{(studentStats.completed / Math.max(studentStats.total, 1) * 100).toFixed(0)}%</div>
-            <div className="text-[10px] mt-0.5 text-[var(--ink-400)]">完成率</div>
+            {studentStats.certificateCount != null ? (
+              <>
+                <div className="text-2xl font-bold text-[var(--gold)]">{studentStats.certificateCount}</div>
+                <div className="text-[10px] mt-0.5 text-[var(--ink-400)]">证书 🏆</div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-[var(--gold)]">{(studentStats.completed / Math.max(studentStats.total, 1) * 100).toFixed(0)}%</div>
+                <div className="text-[10px] mt-0.5 text-[var(--ink-400)]">完成率</div>
+              </>
+            )}
           </div>
         </div>
       )}
+
+      {/* 快速入口 */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+        <QuickAction icon="📝" label="去考试" href="/exam" primary router={router} />
+        <QuickAction icon="📖" label="去学习" href="/learning-center" router={router} />
+        <QuickAction icon="📊" label="看成绩" href="/exam/results" router={router} />
+        <QuickAction icon="🏆" label="证书" href="/my-certificates" router={router} />
+        <QuickAction icon="🦊" label="AI 助教" href="/ai/assistant" router={router} />
+        <QuickAction icon="📈" label="学习报告" href="/learning-report" router={router} />
+      </div>
 
       {activeExams.length > 0 && (
         <div className="rounded-xl p-5 mb-6 flex items-center justify-between"
@@ -602,15 +611,20 @@ export default function Dashboard() {
       );
 
     if (isStudent) {
-      fetch('/api/student/exams', {
+      const examsReq = fetch('/api/student/exams', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).then(r => r.json()).then((data: any) => {
+      }).then(r => r.json()).catch(() => []);
+      const certsReq = fetch('/api/certificates/my', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      }).then(r => (r.ok ? r.json() : [])).catch(() => []);
+      Promise.all([examsReq, certsReq]).then(([data, certs]: any) => {
         const list = Array.isArray(data) ? data : [];
         setStudentExams(list);
         const active = list.filter((e: any) => e.sessionStatus === 'ACTIVE').length;
         const pending = list.filter((e: any) => !e.submittedAt && e.sessionStatus !== 'ACTIVE' && new Date(e.startTime) > new Date()).length;
         const completed = list.filter((e: any) => e.submittedAt).length;
-        setStudentStats({ active, pending, completed, total: list.length });
+        const certList = Array.isArray(certs) ? certs : [];
+        setStudentStats({ active, pending, completed, total: list.length, certificateCount: certList.length });
       }).catch(() => {}).finally(() => setLoading(false));
     } else {
       fetch('/api/dashboard/stats', {
