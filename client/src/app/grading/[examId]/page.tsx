@@ -6,6 +6,7 @@ import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import Loading from '@/components/Loading';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import CircularProgress from '@/components/charts/CircularProgress';
 
 export default function GradingDetail() {
@@ -20,6 +21,7 @@ export default function GradingDetail() {
   const [assignedQuestionIds, setAssignedQuestionIds] = useState<Set<number>>(new Set());
   const [viewFilter, setViewFilter] = useState<'mine' | 'all'>('mine');
   const [userRole, setUserRole] = useState<string>('');
+  const [confirmModal, setConfirmModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [answers, setAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,8 +180,13 @@ export default function GradingDetail() {
   };
 
   const handleConfirm = async () => {
-    if (!confirm('确认所有成绩？锁存后需解锁才能修改。')) return;
+    setConfirmModal(true);
+  };
+
+  const doConfirm = async (reason: string) => {
+    if (!reason) return;
     setConfirming(true);
+    setConfirmModal(false);
     try {
       const token = localStorage.getItem('token');
       await fetch(`/api/grading/${examId}/confirm`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
@@ -874,6 +881,16 @@ export default function GradingDetail() {
           </div>
         </div>
       )}
+      <ReasonConfirmModal
+        open={confirmModal}
+        title="🔒 确认锁存成绩"
+        message="确认所有成绩？锁存后需解锁才能修改。"
+        required
+        presetReasons={['阅卷完成', '成绩已复核', '考试正常结束']}
+        confirmText="确认锁存"
+        onConfirm={doConfirm}
+        onCancel={() => setConfirmModal(false)}
+      />
     </AppLayout>
   );
 }

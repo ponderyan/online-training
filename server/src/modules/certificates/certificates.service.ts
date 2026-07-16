@@ -67,7 +67,7 @@ export class CertificatesService {
       where: { id: examSessionId },
     });
     if (!session) throw new NotFoundException('考试记录不存在');
-    if (session.scoringStatus !== 'PUBLISHED') {
+    if (session.scoringStatus !== 'PUBLISHED' && session.scoringStatus !== 'CONFIRMED') {
       throw new BadRequestException('成绩尚未发布，无法发证');
     }
 
@@ -227,10 +227,32 @@ export class CertificatesService {
 
   /** 获取学员的证书列表 */
   async getStudentCertificates(studentId: number) {
-    return this.prisma.certificate.findMany({
+    const certs = await this.prisma.certificate.findMany({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
     });
+    // 为每条证书生成 QR data URL（供前端预览展示真实二维码）
+    const results = await Promise.all(certs.map(async (cert) => {
+      const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
+      return { ...cert, qrDataUrl };
+    }));
+    return results;
+  }
+
+  /** 生成证书 QR 码 data URL（带 HMAC 签名防伪） */
+  async generateQrDataUrl(certificateNo: string, verificationCode: string): Promise<string> {
+    try {
+      const QRCode = await import('qrcode');
+      const { signCertificateQrData } = await import('./cert-verify-utils.js');
+      const siteUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+      const sig = signCertificateQrData(certificateNo, verificationCode);
+      return await QRCode.toDataURL(
+        `${siteUrl}/verify-certificate?no=${certificateNo}&code=${verificationCode}&sig=${sig}`,
+        { width: 120, margin: 1, color: { dark: '#3a3028', light: '#ffffff00' } }
+      );
+    } catch {
+      return '';
+    }
   }
 
   /** 生成证书 PDF */
@@ -249,20 +271,8 @@ export class CertificatesService {
       String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    // 生成 QR 码（带 HMAC 签名防伪）
-    let qrDataUrl = '';
-    try {
-      const QRCode = await import('qrcode');
-      const { signCertificateQrData } = await import('./cert-verify-utils.js');
-      const siteUrl = process.env.SITE_URL || 'https://foxlearn.cn';
-      const sig = signCertificateQrData(cert.certificateNo, cert.verificationCode);
-      qrDataUrl = await QRCode.toDataURL(
-        `${siteUrl}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}&sig=${sig}`,
-        { width: 120, margin: 1, color: { dark: '#3a3028', light: '#ffffff00' } }
-      );
-    } catch {
-      qrDataUrl = '';
-    }
+    // 生成 QR 码
+    const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
 
     html = html
       .replace(/{{studentName}}/g, escapeHtml(cert.studentName))

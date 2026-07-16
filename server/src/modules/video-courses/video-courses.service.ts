@@ -204,7 +204,7 @@ export class VideoCoursesService {
     if (existing) return;
 
     await this.prisma.learningHourRecord.create({
-      data: { studentId, source: 'VIDEO', sourceId: videoId, hours: video.hours, programId: null },
+      data: { studentId, source: 'VIDEO', sourceId: videoId, hours: video.hours, programId: null, status: 'APPROVED' },
     });
   }
 

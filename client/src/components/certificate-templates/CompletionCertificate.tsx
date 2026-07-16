@@ -12,6 +12,7 @@ export interface CompletionCertificateData {
   certificateNo: string;
   issueDate: string; // ISO 或 yyyy-mm-dd
   verificationCode: string;
+  qrDataUrl?: string; // 真实 QR data URL（后端生成），为空时显示占位
 }
 
 function formatDate(d: string): string {
@@ -53,10 +54,13 @@ export default function CompletionCertificate({ data }: { data: CompletionCertif
           <div>防伪验证码：<span className="cert-code">{(data.verificationCode || '').slice(0, 8).toUpperCase() || '—'}</span></div>
         </div>
         <div className="cert-qr-block">
-          {/* 屏幕预览不渲染真实 QR（隐私 + 无客户端 qrcode 依赖），用占位 */}
-          <div className="cert-qr-placeholder" aria-hidden>
-            <span>扫码查验</span>
-          </div>
+          {data.qrDataUrl ? (
+            <img src={data.qrDataUrl} width="96" height="96" alt="QR Code" className="cert-qr-img" />
+          ) : (
+            <div className="cert-qr-placeholder" aria-hidden>
+              <span>扫码查验</span>
+            </div>
+          )}
           <div className="cert-qr-text">
             扫码查验真伪<br />
             <strong>FoxLearn</strong> 证书验证

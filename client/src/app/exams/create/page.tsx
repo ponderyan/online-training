@@ -84,6 +84,8 @@ export default function CreateExam() {
   const [programs, setPrograms] = useState<any[]>([]);
   const [programId, setProgramId] = useState('');
   const [passingScore, setPassingScore] = useState('');
+  const [scorePublishMode, setScorePublishMode] = useState<string>('MANUAL');
+  const [publishAt, setPublishAt] = useState<string>('');
   const [propositionById, setPropositionById] = useState('');
   const [lecturers, setLecturers] = useState<any[]>([]);
 
@@ -123,6 +125,8 @@ export default function CreateExam() {
         durationMinutes, shuffleQuestions, shuffleOptions,
         programId: programId ? parseInt(programId) : undefined,
         passingScore: passingScore ? parseFloat(passingScore) : undefined,
+        scorePublishMode,
+        publishAt: publishAt || undefined,
         timeMode, paperMode,
         tabSwitchLimit, copyProtection, autoSaveInterval,
       });
@@ -307,6 +311,40 @@ export default function CreateExam() {
                     <input type="number" value={passingScore} onChange={e => setPassingScore(e.target.value)}
                       className="input" placeholder="默认60%" min={0} />
                   </div>
+
+          {/* 成绩发布模式 */}
+          <div className="col-span-2">
+            <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>成绩发布方式</label>
+            <div className="flex gap-3">
+              {[
+                { value: 'MANUAL', label: '手动发布', desc: '评分完成后，由考务员手动发布成绩' },
+                { value: 'AUTO', label: '自动发布', desc: '系统在评分完成后自动发布成绩' },
+                { value: 'SCHEDULED', label: '定时发布', desc: '在指定时间自动发布成绩' },
+              ].map(m => (
+                <label key={m.value}
+                  className="flex-1 p-3 rounded-lg cursor-pointer transition-all"
+                  style={{
+                    background: scorePublishMode === m.value ? 'var(--fox-pale)' : 'var(paper)',
+                    border: `1px solid ${scorePublishMode === m.value ? 'var(--fox)' : 'var(--ink-100)'}`,
+                  }}>
+                  <input type="radio" name="scorePublishMode" value={m.value}
+                    checked={scorePublishMode === m.value}
+                    onChange={() => { setScorePublishMode(m.value); if (m.value !== 'SCHEDULED') setPublishAt(''); }}
+                    className="accent-[var(--fox)] mr-2" />
+                  <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{m.label}</span>
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-400)' }}>{m.desc}</p>
+                </label>
+              ))}
+            </div>
+            {scorePublishMode === 'SCHEDULED' && (
+              <div className="mt-3">
+                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>发布时间 *</label>
+                <input type="datetime-local" value={publishAt}
+                  onChange={e => setPublishAt(e.target.value)}
+                  className="input" />
+              </div>
+            )}
+          </div>
                   <div>
                     <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>命题人</label>
                     <select value={propositionById} onChange={e => setPropositionById(e.target.value)} className="input select">

@@ -6,6 +6,7 @@ import AppLayout from '@/components/app-layout';
 import { AddQuestionModal, ViewQuestionModal } from '@/components/question-modals';
 import QuestionImportModal from '@/components/question-import-modal';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
@@ -34,6 +35,8 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<any | null>(null);
   const [filterType, setFilterType] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
@@ -157,13 +160,34 @@ export default function QuestionsPage() {
   const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN') || false;
 
   const toggleStatus = async (q: any) => {
-    const newStatus = q.status === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
-    await api.questions.update(q.id, { status: newStatus });
+    setToggleTarget(q);
+  };
+
+  const confirmToggle = async (reason: string) => {
+    if (!toggleTarget) return;
+    const newStatus = toggleTarget.status === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
+    await api.questions.update(toggleTarget.id, { status: newStatus });
+    setToggleTarget(null);
     load();
   };
 
-  const handleDelete = async (q: any) => {
-    // 先查引用
+  const handleDelete = async (reason: string) => {
+    if (deleteTarget === null) return;
+    const q = questions.find(qx => qx.id === deleteTarget);
+    if (!q) { setDeleteTarget(null); return; }
+
+    try {
+      await api.questions.delete(q.id);
+      toast.success('试题已删除');
+      setDeleteTarget(null);
+      load();
+    } catch (e: any) {
+      toast.error('删除失败：' + e.message);
+    }
+  };
+
+  // 点击删除按钮：先查引用，无引用才打开原因弹窗
+  const requestDelete = async (q: any) => {
     try {
       const refs = await api.questions.getReferencedPapers(q.id);
       if (refs.count > 0) {
@@ -171,17 +195,7 @@ export default function QuestionsPage() {
         return;
       }
     } catch {}
-
-    if (!confirm(`确认永久删除此题？\n\n「${q.content?.slice(0, 40)}…」\n\n此操作不可撤销！`)) return;
-    if (!confirm('⚠️ 再次确认：删除后数据不可恢复，确定要永久删除吗？')) return;
-
-    try {
-      await api.questions.delete(q.id);
-      toast.success('试题已删除');
-      load();
-    } catch (e: any) {
-      toast.error('删除失败：' + e.message);
-    }
+    setDeleteTarget(q.id);
   };
 
   const openEditModal = async (q: any) => {
@@ -426,7 +440,7 @@ export default function QuestionsPage() {
                       )}
                       <button onClick={(e) => { e.stopPropagation(); openKpModal(q); }}
                         className="btn btn-xs btn-ghost" style={{ color: 'var(--fox)' }}>🧠</button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
+                      <button onClick={(e) => { e.stopPropagation(); requestDelete(q); }}
                         className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                         disabled={isViewOnly}
                         onMouseEnter={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--verm)'; }}
@@ -603,6 +617,28 @@ export default function QuestionsPage() {
         </div>
       )}
 
+
+      {/* 删除确认弹窗 */}
+      <ReasonConfirmModal
+        open={deleteTarget !== null}
+        title="🗑 删除试题"
+        message="确认永久删除此题？此操作不可撤销。"
+        required
+        presetReasons={['创建错误', '题目内容有误', '重复创建']}
+        confirmText="确认删除"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      {/* 停用/启用确认弹窗 */}
+      <ReasonConfirmModal
+        open={toggleTarget !== null}
+        title={toggleTarget?.status === 'PUBLISHED' ? '⏸ 停用试题' : '▶️ 启用试题'}
+        message={toggleTarget?.status === 'PUBLISHED' ? '停用后，试题不再出现在试卷选题列表中，已引用的试卷不受影响。' : '启用后，试题可被再次选入试卷。'}
+        required={false}
+        confirmText="确认"
+        onConfirm={confirmToggle}
+        onCancel={() => setToggleTarget(null)}
+      />
     </AppLayout>
   );
 }

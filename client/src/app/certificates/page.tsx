@@ -8,6 +8,7 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import Loading from '@/components/Loading';
 import { SkeletonTable } from '@/components/Skeleton';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { useToast } from '@/components/Toast';
 import CertificatePreviewModal, { PreviewTarget } from '@/components/CertificatePreviewModal';
 
@@ -38,6 +39,7 @@ function CertificatesContent() {
   const [keyword, setKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [preview, setPreview] = useState<PreviewTarget | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<number | null>(null);
 
   const openPreview = (cert: any) => {
     setPreview({
@@ -81,20 +83,21 @@ function CertificatesContent() {
     return () => clearTimeout(timer);
   }, [keyword, filterStatus]);
 
-  const handleRevoke = async (id: number) => {
-    const reason = prompt('请输入撤销原因：');
-    if (!reason) return;
+  const handleRevoke = async (reason: string) => {
+    if (!revokeTarget) return;
     try {
-      const res = await fetch(`/api/certificates/${id}/revoke`, {
+      const res = await fetch(`/api/certificates/${revokeTarget}/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ reason }),
       });
       if (!res.ok) throw new Error('操作失败');
       toast.success('证书已撤销');
+      setRevokeTarget(null);
       load();
     } catch (e: any) {
       toast.error('操作失败：' + e.message);
+      setRevokeTarget(null);
     }
   };
 
@@ -206,7 +209,7 @@ function CertificatesContent() {
                         <button onClick={() => downloadPdf(cert.id)}
                           className="btn btn-ghost btn-xs">📄 PDF</button>
                         {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
-                          <button onClick={() => handleRevoke(cert.id)}
+                          <button onClick={() => setRevokeTarget(cert.id)}
                             className="btn btn-ghost btn-xs"
                             style={{ color: 'var(--verm)' }}>撤销</button>
                         )}
@@ -240,6 +243,17 @@ function CertificatesContent() {
       )}
 
       <CertificatePreviewModal target={preview} onClose={() => setPreview(null)} />
+      {/* 吊销确认弹窗 */}
+      <ReasonConfirmModal
+        open={revokeTarget !== null}
+        title="🛑 撤销证书"
+        message="此操作将作废该证书，撤销后该证书的验证链接将显示为已撤销。确定继续？"
+        required
+        presetReasons={['证书发放错误', '学员信息有误', '考试资格不符', '管理员申请撤销']}
+        confirmText="确认撤销"
+        onConfirm={handleRevoke}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </AppLayout>
   );
 }

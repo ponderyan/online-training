@@ -8,7 +8,7 @@ export class ExamsController {
   constructor(private service: ExamsService) {}
 
   @Get()
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_VIEW)
   findAll(
     @Req() req: any,
     @Query('page') page?: string,
@@ -45,6 +45,8 @@ export class ExamsController {
     programId?: number; passingScore?: number;
     timeMode?: string; paperMode?: string;
     tabSwitchLimit?: number; copyProtection?: boolean; autoSaveInterval?: number;
+    scorePublishMode?: string;
+    publishAt?: string;
   }, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
     return this.service.create({ ...data, createdBy: userId, orgId: req.user?.orgId ?? null });

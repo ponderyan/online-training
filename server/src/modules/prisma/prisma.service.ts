@@ -21,29 +21,50 @@ const MODEL_TO_ENTITY: Record<string, string> = {
   Role: 'Role', Evaluation: 'Evaluation', Notification: 'Notification',
   EnrollmentAgencyEnrollment: 'Filing', VideoCourse: 'VideoCourse',
   AttendanceRecord: 'AttendanceRecord', BusinessEvidence: 'BusinessEvidence',
+  SystemConfig: 'SystemConfig',
 };
+
+/** 关键实体列表：这些实体的 UPDATE 操作会额外捕获 Before 快照 */
+const BEFORE_TRACK_ENTITIES = new Set([
+  'Exam', 'Paper', 'Question', 'User', 'Certificate', 'ScoreAppeal',
+]);
 
 /** 审计日志写入（全局可用的独立函数，可在 PrismaClient 实例外调用） */
 async function writeAuditLog(prisma: PrismaClient, params: {
-  entityType: string; entityId: number; action: string; before?: any; after?: any;
+  entityType: string; entityId: number | null; action: string; before?: any; after?: any; changeReason?: string;
 }) {
   const ctx = requestContext.getStore();
-  if (!ctx?.userId) return;
-  if (!MODEL_TO_ENTITY[params.entityType]) return;
+  // 允许系统操作（无 userId）写入，用 0 表示系统
+  const operatorId = ctx?.userId ?? 0;
+  const operatorName = ctx?.userName ?? (operatorId === 0 ? '系统自动操作' : '');
+  // 推断操作来源：无 userId = SYSTEM，有 userId = API（后续可从 context 扩展 CRON/MANUAL 标记）
+  const eventSource = ctx?.eventSource || (operatorId === 0 ? 'SYSTEM' : 'API');
+  // P3-1：模型未映射时开发环境 warn
+  if (!MODEL_TO_ENTITY[params.entityType]) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[AuditMiddleware] Missing entity mapping for model: ${params.entityType}`);
+    }
+    return;
+  }
   try {
     await prisma.auditLog.create({
       data: {
         entityType: params.entityType,
-        entityId: params.entityId,
+        entityId: params.entityId ?? -1,
         action: params.action,
         before: params.before || undefined,
         after: params.after || undefined,
-        operatorId: ctx.userId,
-        operatorName: ctx.userName || '',
-        ip: ctx.ip || '',
+        operatorId,
+        operatorName,
+        changeReason: params.changeReason || ctx?.changeReason || undefined,
+        eventSource,
+        ip: ctx?.ip || '',
       },
     });
-  } catch {}
+  } catch (e) {
+    // P3-2：写入失败时输出 warn，不再静默吞错
+    console.warn(`[AuditMiddleware] Failed to write audit log: ${(e as Error)?.message || e}`);
+  }
 }
 
 @Injectable()
@@ -87,6 +108,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             }
           }
 
+          // P2-1：关键实体 UPDATE 前先查旧值（Before 快照）
+          let beforeSnapshot: any = undefined;
+          if (operation === 'update' && model && BEFORE_TRACK_ENTITIES.has(MODEL_TO_ENTITY[model] ?? '')) {
+            try {
+              const before = await (this as any)[model].findUnique({ where: args.where });
+              if (before) beforeSnapshot = JSON.parse(JSON.stringify(before));
+            } catch {
+              // 查不到旧值不影响主流程
+            }
+          }
+
           const result = await query(args);
           if (!WRITE_ACTIONS.has(operation)) return result;
 
@@ -94,15 +126,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           if (!entityType) return result;
 
           const action = ACTION_MAP[operation] || 'UPDATE';
-          const entityId = result?.id || args?.where?.id;
-          if (entityId !== undefined && entityId !== null) {
-            writeAuditLog(this as any, {
-              entityType,
-              entityId,
-              action,
-              after: action !== 'DELETE' ? JSON.parse(JSON.stringify(result)) : undefined,
-            });
+
+          // P0-2：实体ID分层提取
+          let entityId: number | null = null;
+          if (operation === 'update' || operation === 'delete') {
+            // 单条操作：从 where 中取单主键 id
+            entityId = args?.where?.id ?? null;
+          } else if (operation === 'create') {
+            entityId = result?.id ?? null;
+          } else if (operation === 'updateMany' || operation === 'deleteMany') {
+            // 批量操作不关联单一实体，entityId = null
+            entityId = null;
           }
+
+          writeAuditLog(this as any, {
+            entityType,
+            entityId,
+            action,
+            before: beforeSnapshot,
+            after: action !== 'DELETE' ? JSON.parse(JSON.stringify(result)) : undefined,
+          });
           return result;
         },
       },
@@ -122,7 +165,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async recordAudit(params: {
-    entityType: string; entityId: number; action: string; before?: any; after?: any;
+    entityType: string; entityId: number; action: string; before?: any; after?: any; changeReason?: string;
   }) {
     return writeAuditLog(this as any, params);
   }

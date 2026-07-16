@@ -2,6 +2,7 @@ import { Controller, Get, Put, Param, Body, Query, ParseIntPipe } from '@nestjs/
 import { ProctoringService } from './proctoring.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { requestContext } from '../../common/utils/request-context.js';
 
 @Controller('api/exams/:examId/proctoring')
 export class ProctoringController {
@@ -64,6 +65,8 @@ export class ProctoringController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() data: { reason: string; operatorName: string },
   ) {
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.forceSubmit(examId, sessionId, data.reason, data.operatorName);
   }
 
@@ -74,6 +77,8 @@ export class ProctoringController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() data: { extraSeconds: number; reason: string; operatorName: string },
   ) {
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.extendTime(examId, sessionId, data.extraSeconds, data.reason, data.operatorName);
   }
 }

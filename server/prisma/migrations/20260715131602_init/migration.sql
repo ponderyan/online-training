@@ -9,11 +9,16 @@ CREATE TABLE `organizations` (
     `is_active` BOOLEAN NOT NULL DEFAULT true,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
+    `parent_id` INTEGER NULL,
+    `level` INTEGER NOT NULL DEFAULT 1,
+    `path` VARCHAR(500) NULL,
+    `sort_order` INTEGER NOT NULL DEFAULT 0,
     `seal_url` VARCHAR(500) NULL,
     `seal_hash` VARCHAR(64) NULL,
     `use_foxlearn_seal` BOOLEAN NOT NULL DEFAULT true,
 
     UNIQUE INDEX `organizations_code_key`(`code`),
+    INDEX `organizations_parent_id_idx`(`parent_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -250,6 +255,7 @@ CREATE TABLE `questions` (
     `usage_count` INTEGER NOT NULL DEFAULT 0,
     `is_public` BOOLEAN NOT NULL DEFAULT false,
     `practice_visible` BOOLEAN NOT NULL DEFAULT false,
+    `source_note` VARCHAR(300) NULL,
     `created_by` INTEGER NULL,
     `org_id` INTEGER NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -447,6 +453,7 @@ CREATE TABLE `materials` (
     `created_by` INTEGER NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
+    `archived_at` DATETIME(3) NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -524,7 +531,8 @@ CREATE TABLE `material_questions` (
 CREATE TABLE `notifications` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `user_id` INTEGER NOT NULL,
-    `type` ENUM('EXAM_PUBLISHED', 'EXAM_CONFIRMED', 'EXAM_GRADED', 'APPEAL_SUBMITTED', 'APPEAL_RESOLVED', 'GRADING_ASSIGNED', 'LEARNING_HOUR_APPROVED', 'LEARNING_HOUR_REJECTED', 'CERT_ISSUED', 'CERT_APPROVED', 'CERT_REJECTED', 'CERT_APPLICATION', 'SYSTEM_NOTICE', 'ANNOUNCEMENT') NOT NULL,
+    `sender_id` INTEGER NULL,
+    `type` ENUM('EXAM_PUBLISHED', 'EXAM_CONFIRMED', 'EXAM_GRADED', 'EXAM_STARTING', 'APPEAL_SUBMITTED', 'APPEAL_RESOLVED', 'GRADING_ASSIGNED', 'LEARNING_HOUR_SUBMITTED', 'LEARNING_HOUR_APPROVED', 'LEARNING_HOUR_REJECTED', 'CERT_ISSUED', 'CERT_APPROVED', 'CERT_REJECTED', 'CERT_APPLICATION', 'CERT_EXPIRING', 'PROGRAM_ENROLLED', 'PROGRAM_STATUS', 'ACCOUNT_CREATED', 'SYSTEM_NOTICE', 'ANNOUNCEMENT') NOT NULL,
     `title` VARCHAR(200) NOT NULL,
     `message` TEXT NOT NULL,
     `reference_id` INTEGER NULL,
@@ -535,6 +543,22 @@ CREATE TABLE `notifications` (
 
     INDEX `notifications_user_id_is_read_idx`(`user_id`, `is_read`),
     INDEX `notifications_created_at_idx`(`created_at`),
+    INDEX `notifications_sender_id_idx`(`sender_id`),
+    INDEX `notifications_sender_id_created_at_idx`(`sender_id`, `created_at`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `notification_channels` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `notification_id` INTEGER NOT NULL,
+    `channel` VARCHAR(20) NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    `error_message` TEXT NULL,
+    `sent_at` DATETIME(3) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `notification_channels_notification_id_idx`(`notification_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -556,6 +580,11 @@ CREATE TABLE `exams` (
     `early_exit_minutes` INTEGER NULL,
     `shuffle_questions` BOOLEAN NOT NULL DEFAULT true,
     `shuffle_options` BOOLEAN NOT NULL DEFAULT true,
+    `time_mode` ENUM('FIXED', 'FLEXIBLE') NOT NULL DEFAULT 'FIXED',
+    `paper_mode` ENUM('SAME', 'RANDOM') NOT NULL DEFAULT 'SAME',
+    `tab_switch_limit` INTEGER NOT NULL DEFAULT 5,
+    `copy_protection` BOOLEAN NOT NULL DEFAULT true,
+    `auto_save_interval` INTEGER NOT NULL DEFAULT 30,
     `status` ENUM('DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'FINISHED', 'CANCELLED') NOT NULL DEFAULT 'DRAFT',
     `total_students` INTEGER NOT NULL DEFAULT 0,
     `submitted_count` INTEGER NOT NULL DEFAULT 0,
@@ -602,6 +631,19 @@ CREATE TABLE `exam_sessions` (
     `updated_at` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `exam_sessions_exam_id_student_id_key`(`exam_id`, `student_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `exam_messages` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `exam_session_id` INTEGER NOT NULL,
+    `messageType` VARCHAR(50) NOT NULL,
+    `content` TEXT NOT NULL,
+    `senderName` VARCHAR(100) NOT NULL,
+    `sent_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `read_at` DATETIME(3) NULL,
+
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -838,13 +880,14 @@ CREATE TABLE `grading_assignments` (
     `exam_id` INTEGER NOT NULL,
     `grader_id` INTEGER NOT NULL,
     `paper_question_id` INTEGER NULL,
+    `session_id` INTEGER NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     `assigned_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `completed_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
-    UNIQUE INDEX `grading_assignments_exam_id_grader_id_paper_question_id_key`(`exam_id`, `grader_id`, `paper_question_id`),
+    UNIQUE INDEX `grading_assignments_exam_id_grader_id_paper_question_id_sess_key`(`exam_id`, `grader_id`, `paper_question_id`, `session_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -1289,6 +1332,9 @@ CREATE TABLE `practice_records` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
+ALTER TABLE `organizations` ADD CONSTRAINT `organizations_parent_id_fkey` FOREIGN KEY (`parent_id`) REFERENCES `organizations`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `program_batches` ADD CONSTRAINT `program_batches_program_id_fkey` FOREIGN KEY (`program_id`) REFERENCES `training_programs`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1436,6 +1482,12 @@ ALTER TABLE `material_questions` ADD CONSTRAINT `material_questions_question_id_
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `notifications` ADD CONSTRAINT `notifications_sender_id_fkey` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `notification_channels` ADD CONSTRAINT `notification_channels_notification_id_fkey` FOREIGN KEY (`notification_id`) REFERENCES `notifications`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `exams` ADD CONSTRAINT `exams_paper_id_fkey` FOREIGN KEY (`paper_id`) REFERENCES `papers`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1452,6 +1504,9 @@ ALTER TABLE `exam_sessions` ADD CONSTRAINT `exam_sessions_exam_id_fkey` FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE `exam_sessions` ADD CONSTRAINT `exam_sessions_student_id_fkey` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `exam_messages` ADD CONSTRAINT `exam_messages_exam_session_id_fkey` FOREIGN KEY (`exam_session_id`) REFERENCES `exam_sessions`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `exam_answers` ADD CONSTRAINT `exam_answers_session_id_fkey` FOREIGN KEY (`session_id`) REFERENCES `exam_sessions`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1485,6 +1540,9 @@ ALTER TABLE `grading_assignments` ADD CONSTRAINT `grading_assignments_exam_id_fk
 
 -- AddForeignKey
 ALTER TABLE `grading_assignments` ADD CONSTRAINT `grading_assignments_grader_id_fkey` FOREIGN KEY (`grader_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `grading_assignments` ADD CONSTRAINT `grading_assignments_session_id_fkey` FOREIGN KEY (`session_id`) REFERENCES `exam_sessions`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `grading_reviews` ADD CONSTRAINT `grading_reviews_exam_id_fkey` FOREIGN KEY (`exam_id`) REFERENCES `exams`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1635,4 +1693,3 @@ ALTER TABLE `practice_records` ADD CONSTRAINT `practice_records_student_id_fkey`
 
 -- AddForeignKey
 ALTER TABLE `practice_records` ADD CONSTRAINT `practice_records_question_id_fkey` FOREIGN KEY (`question_id`) REFERENCES `questions`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-

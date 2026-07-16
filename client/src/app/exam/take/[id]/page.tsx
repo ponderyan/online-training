@@ -200,6 +200,7 @@ export default function ExamTake() {
       } catch {}
     } catch {
       setSaveStatus('error');
+      toast.error('答案保存失败，请检查网络。答案已暂存本地，恢复网络后会自动重试。');
     }
   }, [exam, currentQ, answers, submitted]);
 
@@ -213,7 +214,7 @@ export default function ExamTake() {
         questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
         answer,
       }));
-      await fetch(`/api/student/exams/${params.id}/submit`, {
+      const res = await fetch(`/api/student/exams/${params.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -221,11 +222,24 @@ export default function ExamTake() {
           tabSwitchLog: tabSwitchLogRef.current,
         }),
       });
+      if (!res.ok) {
+        // 交卷失败：提示用户并允许重试，不跳转、不清除 localStorage 答案
+        let msg = `交卷失败（HTTP ${res.status}）`;
+        try {
+          const err = await res.json();
+          if (err?.message) msg = `交卷失败：${err.message}`;
+        } catch {}
+        toast.error(msg + '，请检查网络后重试');
+        setSubmitting(false);
+        return;
+      }
       setSubmitted(true);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       localStorage.removeItem(`exam_${params.id}_answers`);
       router.push(`/exam/result/${params.id}`);
-    } catch {
+    } catch (e: any) {
+      // 网络错误：答案仍在 localStorage，可重试
+      toast.error('网络异常，交卷未成功，请检查网络后重试');
       setSubmitting(false);
     }
   };

@@ -76,20 +76,6 @@ export class SystemConfigService {
       data: { value },
     });
 
-    // 审计日志
-    if (operatorId) {
-      await this.prisma.auditLog.create({
-        data: {
-          entityType: 'SystemConfig',
-          entityId: existing.id,
-          action: 'UPDATE',
-          before: { value: existing.value },
-          after: { value },
-          operatorId,
-        },
-      });
-    }
-
     return {
       key: updated.key,
       value: updated.value,

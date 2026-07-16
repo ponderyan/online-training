@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 export default function ExamDetail() {
   const params = useParams();
@@ -12,6 +13,7 @@ export default function ExamDetail() {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [confirmAction, setConfirmAction] = useState<'delete' | 'finish' | null>(null);
   const refreshRef = useRef<any>(null);
 
   const loadExam = () => {
@@ -50,14 +52,14 @@ export default function ExamDetail() {
     await api.exams.publish(parseInt(params.id as string));
     loadAll();
   };
-  const handleFinish = async () => {
-    if (!confirm('确定结束考试？未提交学员将强制收卷。')) return;
+  const handleFinish = async (reason: string) => {
     await api.exams.finish(parseInt(params.id as string));
+    setConfirmAction(null);
     loadAll();
   };
-  const handleDelete = async () => {
-    if (!confirm('确定删除该考试场次？')) return;
+  const handleDelete = async (reason: string) => {
     await api.exams.delete(parseInt(params.id as string));
+    setConfirmAction(null);
     router.push('/exams');
   };
 
@@ -96,11 +98,11 @@ export default function ExamDetail() {
             </>
           )}
           {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && (
-            <button onClick={handleFinish} className="btn text-sm px-4 py-2"
+            <button onClick={() => setConfirmAction('finish')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--verm)', color: 'var(--verm)' }}>结束考试</button>
           )}
           {exam.status === 'DRAFT' && (
-            <button onClick={handleDelete} className="btn text-sm px-4 py-2"
+            <button onClick={() => setConfirmAction('delete')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>删除</button>
           )}
           {exam.status === 'FINISHED' && (
@@ -206,6 +208,20 @@ export default function ExamDetail() {
           )}
         </div>
       </div>
+      <ReasonConfirmModal
+        open={confirmAction !== null}
+        title={confirmAction === 'delete' ? '🗑 删除考试' : '🛑 结束考试'}
+        message={confirmAction === 'delete'
+          ? '确定删除该考试场次？此操作不可撤销。'
+          : '确定结束考试？未提交学员将被强制收卷。'}
+        required
+        presetReasons={confirmAction === 'delete'
+          ? ['创建错误', '考试安排取消', '重复创建']
+          : ['考试时间已到', '所有学员已交卷', '考试异常需终止']}
+        confirmText={confirmAction === 'delete' ? '确认删除' : '确认结束'}
+        onConfirm={confirmAction === 'delete' ? handleDelete : handleFinish}
+        onCancel={() => setConfirmAction(null)}
+      />
     </AppLayout>
   );
 }

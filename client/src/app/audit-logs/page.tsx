@@ -32,8 +32,45 @@ export default function AuditLogsPage() {
   const [pageSize, setPageSize] = useState(30);
   const [filters, setFilters] = useState({
     entityType: '', action: '', operatorId: '', operatorName: '', entityId: '', startDate: '', endDate: '',
+    changeReason: '', includeArchived: false,
   });
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // 导出 CSV（走后端接口，含当前筛选条件，UTF-8 BOM 兼容 Excel）
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.entityType) params.set('entityType', filters.entityType);
+      if (filters.action) params.set('action', filters.action);
+      if (filters.operatorName) params.set('operatorName', filters.operatorName);
+      if (filters.entityId) params.set('entityId', filters.entityId);
+      if (filters.startDate) params.set('startDate', filters.startDate);
+      if (filters.endDate) params.set('endDate', filters.endDate);
+      if (filters.changeReason) params.set('changeReason', filters.changeReason);
+      if (filters.includeArchived) params.set('includeArchived', 'true');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/audit-logs/export?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`导出失败 HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `审计日志_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { /* 静默 */ }
+    setExporting(false);
+  };
+
+  // 默认日期范围：近1年（startDate 初始化为一年前）
+  useEffect(() => {
+    if (!filters.startDate && !filters.endDate && !filters.includeArchived) {
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+      setFilters(f => ({ ...f, startDate: oneYearAgo.toISOString().split('T')[0] }));
+    }
+  }, []); // eslint-disable-line
 
   const searchKey = useMemo(() => JSON.stringify(filters), [filters]);
 
@@ -49,6 +86,8 @@ export default function AuditLogsPage() {
       if (filters.entityId) params.entityId = filters.entityId;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
+      if (filters.changeReason) params.changeReason = filters.changeReason;
+      if (filters.includeArchived) params.includeArchived = 'true';
       const data = await api.auditLogs.list(params);
       setLogs(data.data || []);
       setTotal(data.total || 0);
@@ -108,11 +147,24 @@ export default function AuditLogsPage() {
             <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>结束</label>
             <input type="date" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="input text-xs" style={{ width: 140 }} />
           </div>
+          <div>
+            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>变更原因</label>
+            <input type="text" value={filters.changeReason} onChange={e => setFilters({ ...filters, changeReason: e.target.value })}
+              className="input text-xs" style={{ width: 140 }} placeholder="搜索原因…" />
+          </div>
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer pb-1.5" title="开启后查询全部历史数据（含1年以上）">
+            <input type="checkbox" checked={filters.includeArchived}
+              onChange={e => { setFilters(f => ({ ...f, includeArchived: e.target.checked, startDate: e.target.checked ? '' : f.startDate })); setPage(1); }}
+              className="accent-[var(--fox)] w-3.5 h-3.5" />
+            <span style={{ color: 'var(--ink-500)' }}>含归档</span>
+          </label>
           <button onClick={() => { setPage(1); }} className="btn btn-fox btn-xs">搜索</button>
           <button onClick={() => {
-            setFilters({ entityType: '', action: '', operatorId: '', operatorName: '', entityId: '', startDate: '', endDate: '' });
+            setFilters({ entityType: '', action: '', operatorId: '', operatorName: '', entityId: '', startDate: '', endDate: '', changeReason: '', includeArchived: false });
             setPage(1);
           }} className="btn btn-outline btn-xs">清空</button>
+          <button onClick={handleExport} className="btn btn-outline btn-xs" disabled={exporting}
+            style={{ opacity: exporting ? 0.5 : 1 }}>{exporting ? '导出中…' : '📥 导出 CSV'}</button>
         </div>
       </div>
 
@@ -132,6 +184,8 @@ export default function AuditLogsPage() {
                 <th>实体类型</th>
                 <th>实体ID</th>
                 <th>操作</th>
+                <th>来源</th>
+                <th>变更原因</th>
                 <th>IP</th>
                 <th>变更详情</th>
               </tr>
@@ -152,6 +206,18 @@ export default function AuditLogsPage() {
                   <td><span className="tag tag-cyan text-[10px]">{log.entityType}</span></td>
                   <td className="font-mono text-xs">{log.entityId}</td>
                   <td><span className="tag text-[10px]" style={{ background: `${ACTION_COLORS[log.action] || '#888'}18`, color: ACTION_COLORS[log.action] || '#888' }}>{log.action}</span></td>
+                  <td className="text-[10px]">{
+                    log.eventSource === 'SYSTEM' ? '🤖 系统' :
+                    log.eventSource === 'MANUAL' ? '✋ 手动' :
+                    log.eventSource === 'CRON' ? '⏰ 定时' :
+                    log.eventSource === 'API' ? '🔌 接口' :
+                    '—'
+                  }</td>
+                  <td className="text-xs" style={{ color: 'var(--ink-500)', maxWidth: 160 }}>
+                    {log.changeReason ? (
+                      <span className="truncate block" style={{ maxWidth: 160 }} title={log.changeReason}>{log.changeReason}</span>
+                    ) : <span style={{ color: 'var(--ink-300)' }}>—</span>}
+                  </td>
                   <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{log.ip || '—'}</td>
                   <td>
                     {(log.before || log.after) ? (

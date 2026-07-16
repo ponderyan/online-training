@@ -202,6 +202,7 @@ model User {
   appealReviews         ScoreAppeal[]                @relation("AppealReviewer")
   evaluations           Evaluation[]
   notifications         Notification[]
+  sentNotifications     Notification[] @relation("SentNotifications")
   importLogs            ImportLog[]
   exportLogs            ExportLog[]
   programEnrollments    ProgramEnrollment[]
@@ -289,6 +290,8 @@ model AuditLog {
   after        Json? // 修改后（可选）
   operatorId   Int?     @map("operator_id")
   operatorName String?  @map("operator_name") @db.VarChar(100)
+  changeReason String?  @map("change_reason") @db.Text // 操作原因（强制/可选原因操作时由前端传入）
+  eventSource  String?  @map("event_source") @db.VarChar(20) // MANUAL / API / SYSTEM / CRON
   ip           String?  @map("ip") @db.VarChar(45)
   createdAt    DateTime @default(now()) @map("created_at")
 
@@ -913,15 +916,21 @@ enum NotificationType {
   EXAM_PUBLISHED
   EXAM_CONFIRMED
   EXAM_GRADED
+  EXAM_STARTING      // 考试即将开始提醒
   APPEAL_SUBMITTED
   APPEAL_RESOLVED
   GRADING_ASSIGNED
+  LEARNING_HOUR_SUBMITTED  // 学时已提交（等待审核）
   LEARNING_HOUR_APPROVED
   LEARNING_HOUR_REJECTED
   CERT_ISSUED
   CERT_APPROVED
   CERT_REJECTED
   CERT_APPLICATION
+  CERT_EXPIRING      // 证书到期提醒
+  PROGRAM_ENROLLED   // 培训班报名成功
+  PROGRAM_STATUS     // 培训班状态变更（开班/结业）
+  ACCOUNT_CREATED    // 账号创建通知
   SYSTEM_NOTICE
   ANNOUNCEMENT
 }
@@ -929,20 +938,42 @@ enum NotificationType {
 model Notification {
   id            Int              @id @default(autoincrement())
   userId        Int              @map("user_id")
+  senderId      Int?             @map("sender_id")    // null=系统自动发送
   type          NotificationType
   title         String           @db.VarChar(200)
   message       String           @db.Text
   referenceId   Int?             @map("reference_id")
   referenceType String?          @map("reference_type")
+  batchId       String?          @map("batch_id")    // 一次群发的批次标识，便于聚合展示
   isRead        Boolean          @default(false) @map("is_read")
   createdAt     DateTime         @default(now()) @map("created_at")
   readAt        DateTime?        @map("read_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user   User                 @relation(fields: [userId], references: [id])
+  sender User?                @relation("SentNotifications", fields: [senderId], references: [id])
+
+  channels NotificationChannel[]
 
   @@index([userId, isRead])
   @@index([createdAt])
+  @@index([senderId])
+  @@index([senderId, createdAt])
+  @@index([batchId])
   @@map("notifications")
+}
+
+model NotificationChannel {
+  id             Int      @id @default(autoincrement())
+  notificationId Int      @map("notification_id")
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        String   @db.VarChar(20)   // in_app / email / sms
+  status         String   @default("PENDING") @db.VarChar(20) // PENDING / SENT / FAILED
+  errorMessage   String?  @map("error_message") @db.Text
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([notificationId])
+  @@map("notification_channels")
 }
 
 model Exam {

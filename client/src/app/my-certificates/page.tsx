@@ -19,6 +19,7 @@ interface CertCard {
   certificateNo: string;
   issueDate: string;      // ISO
   verificationCode?: string;
+  qrDataUrl?: string;     // 真实 QR data URL
   totalHours?: number;
   status: 'active' | 'revoked' | 'pending' | 'rejected';
   statusText: string;
@@ -62,6 +63,7 @@ export default function MyCertificatesPage() {
             certificateNo: c.certificateNo,
             issueDate: c.issueDate,
             verificationCode: c.verificationCode,
+            qrDataUrl: c.qrDataUrl,
             status: c.isRevoked ? 'revoked' : 'active',
             statusText: c.isRevoked ? '已撤销' : '有效',
           });
@@ -107,6 +109,7 @@ export default function MyCertificatesPage() {
           certificateNo: card.certificateNo,
           issueDate: card.issueDate,
           verificationCode: card.verificationCode || '',
+          qrDataUrl: card.qrDataUrl,
         },
       });
     } else {

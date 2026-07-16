@@ -4,6 +4,7 @@ import { CertificatesService } from '../certificates/certificates.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions, ROLE_PERMISSIONS } from '../../common/permissions.constants.js';
+import { requestContext } from '../../common/utils/request-context.js';
 import { SUBJECTIVE_TYPES, recalculateSessionScore } from '../../common/grading.utils.js';
 
 @Controller('api/grading')
@@ -228,6 +229,13 @@ export class GradingController {
 
     // 使用共享方法重算 ExamSession 成绩字段
     const result = await recalculateSessionScore(this.prisma, answer.sessionId);
+    // AUTO 模式：检查全部评完后自动发布
+    // 查出 examId（沿用 gradeAnswer 已有的 session 查询）
+    const gSession = await this.prisma.examSession.findUnique({
+      where: { id: answer.sessionId },
+      select: { examId: true },
+    });
+    if (gSession) await this.autoPublishIfModeMatches(gSession.examId);
 
     return { success: true, ...result };
   }
@@ -384,13 +392,29 @@ export class GradingController {
   @Post(':examId/unlock')
   @RequirePermission(Permissions.GRADING_PUBLISH)
   async unlockScores(@Param('examId', ParseIntPipe) examId: number, @Body() data: { reason: string; operatorId: number; operatorName: string }) {
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     const result = await this.prisma.examSession.updateMany({
       where: { examId, scoringStatus: 'CONFIRMED' },
       data: { scoringStatus: 'PUBLISHED', confirmedAt: null },
     });
     // Record audit
-    await this.prisma.scoreAuditLog.create({
+    const unlockLog = await this.prisma.scoreAuditLog.create({
       data: { examId, studentId: 0, action: 'UNLOCK', reason: 'UNLOCK: ' + data.reason, operatorId: data.operatorId, operatorName: data.operatorName || '管理员' },
+    });
+    // 同步写入主审计日志
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'ScoreAuditLog',
+        entityId: unlockLog.id,
+        action: 'UNLOCK',
+        before: { scoringStatus: 'CONFIRMED', count: result.count },
+        after: { scoringStatus: 'PUBLISHED', count: result.count },
+        operatorId: data.operatorId,
+        operatorName: data.operatorName || '管理员',
+        changeReason: data.reason,
+        eventSource: 'MANUAL',
+      },
     });
     return { success: true, message: `已解锁 ${result.count} 份成绩` };
   }
@@ -403,6 +427,8 @@ export class GradingController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @Body() data: { adjustedScore: number; reason: string; operatorId: number; operatorName: string },
   ) {
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
       include: { exam: { include: { paper: true } } },
@@ -416,8 +442,8 @@ export class GradingController {
     const paperTotal = session?.exam?.paper?.totalScore || 100;
     const passingScore = session?.exam?.passingScore ?? Math.floor(paperTotal * 0.6);
 
-    // 写入审计日志
-    await this.prisma.scoreAuditLog.create({
+    // 写入成绩审计日志
+    const scoreAuditLog = await this.prisma.scoreAuditLog.create({
       data: {
         examId,
         studentId,
@@ -431,6 +457,21 @@ export class GradingController {
       },
     });
 
+    // 同步写入主审计日志，打通两条审计线（全链审计可从 audit_logs 直接查到成绩调整）
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'ScoreAuditLog',
+        entityId: scoreAuditLog.id,
+        action: 'SCORE_ADJUST',
+        before: { score: originalScore, status: session.scoringStatus },
+        after: { score: data.adjustedScore, status: 'ADJUSTED' },
+        operatorId: data.operatorId,
+        operatorName: data.operatorName || '管理员',
+        changeReason: data.reason,
+        eventSource: 'MANUAL',
+      },
+    });
+
     // 更新成绩 + 状态流转（PUBLISHED → ADJUSTED，需重新发布）
     await this.prisma.examSession.update({
       where: { id: session.id },
@@ -441,7 +482,54 @@ export class GradingController {
       },
     });
 
+    // 成绩变更通知
+    void this.notificationService.create(
+      studentId,
+      'EXAM_GRADED' as any,
+      `成绩已调整`,
+      `【${session?.exam?.title || ''}】成绩已从 ${originalScore} 分调整为 ${data.adjustedScore} 分。原因：${data.reason || '无'}`,
+      examId, 'exam',
+    );
+
     return { success: true, originalScore, adjustedScore: data.adjustedScore };
+  }
+
+
+  /** 如果考试模式是 AUTO，检查所有学员主观题是否已评完 */
+  private async autoPublishIfModeMatches(examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { scorePublishMode: true },
+    });
+    if (exam?.scorePublishMode !== 'AUTO') return;
+
+    // 查该考试的所有已提交学员是否还有未评的主观题
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId, status: 'SUBMITTED' },
+      select: { id: true },
+    });
+    const sessionIds = sessions.map(s => s.id);
+    if (sessionIds.length === 0) return;
+
+    const paper = await this.prisma.paper.findFirst({
+      where: { exams: { some: { id: examId } } },
+      include: { questions: { include: { question: { select: { type: true } } } } },
+    });
+    const subjectivePQIds = paper?.questions
+      ?.filter(pq => SUBJECTIVE_TYPES.has(pq.question.type))
+      .map(pq => pq.id) || [];
+    if (subjectivePQIds.length === 0) return; // 纯客观题由 autoGrade 处理
+
+    const ungraded = await this.prisma.examAnswer.count({
+      where: {
+        sessionId: { in: sessionIds },
+        paperQuestionId: { in: subjectivePQIds },
+        score: null,
+      },
+    });
+    if (ungraded === 0) {
+      await this.publishResults(examId);
+    }
   }
 
 }

@@ -659,6 +659,23 @@ export const api = {
     },
   },
 
+  // ── 全链审计（业务实体生命周期时间线）──
+  auditTrail: {
+    getTrail: (entityType: string, entityId: number) =>
+      request<{ entityType: string; entityId: number; entityName: string; events: any[] }>(`/audit-trail/${entityType}/${entityId}`),
+    search: (entityType: string, keyword?: string) => {
+      const params: Record<string, string> = { entityType };
+      if (keyword) params.keyword = keyword;
+      return request<{ entityType: string; items: any[] }>(`/audit-trail/search?${new URLSearchParams(params).toString()}`);
+    },
+  },
+
+  // ── 学员成绩变动记录（脱敏版）──
+  studentScores: {
+    changes: (examId: number) =>
+      request<{ changes: any[] }>(`/student/scores/${examId}/changes`),
+  },
+
   // ── Phase E: 成绩分析 ──
   // ── Phase G: 数据导入导出 ──
   data: {

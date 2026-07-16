@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonCardGrid } from '@/components/Skeleton';
@@ -15,6 +16,7 @@ export default function PapersPage() {
   const [papers, setPapers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,14 +54,17 @@ export default function PapersPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确认删除此试卷？')) return;
+  const handleDelete = async (reason: string) => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
     try {
       await api.papers.delete(id);
       toast.success('试卷已删除');
+      setDeleteTarget(null);
       load();
     } catch (e: any) {
       toast.error('删除失败：' + e.message);
+      setDeleteTarget(null);
     }
   };
 
@@ -164,7 +169,7 @@ export default function PapersPage() {
                   <button onClick={() => { api.papers.promote(p.id); load(); }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
                 )}
                 <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-ghost btn-xs">复制</button>
-                <button onClick={() => handleDelete(p.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
               </div>
@@ -268,6 +273,15 @@ export default function PapersPage() {
           </div>
         </div>
       )}
+      <ReasonConfirmModal
+        open={deleteTarget !== null}
+        title="🗑 删除试卷"
+        required
+        presetReasons={['创建错误', '试卷已过时', '重复创建']}
+        confirmText="确认删除"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppLayout>
   );
 }

@@ -180,7 +180,7 @@ export class LearningHoursService {
       await this.prisma.learningHourRecord.create({
         data: {
           studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null,
-          typeId: publicRequiredType?.id || null,
+          typeId: publicRequiredType?.id || null, status: 'APPROVED',
         },
       });
     } else {
@@ -188,7 +188,7 @@ export class LearningHoursService {
         await this.prisma.learningHourRecord.create({
           data: {
             studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id,
-            typeId: publicRequiredType?.id || null,
+            typeId: publicRequiredType?.id || null, status: 'APPROVED',
           },
         });
       }

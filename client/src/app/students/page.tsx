@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import ImportModal from './import-modal';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
@@ -27,6 +28,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const toast = useToast();
   const [students, setStudents] = useState<any[]>([]);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<{id:number;name:string} | null>(null);
   const [groups, setGroups] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);

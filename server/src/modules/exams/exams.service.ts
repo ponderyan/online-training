@@ -85,6 +85,8 @@ export class ExamsService {
     timeMode?: string; paperMode?: string;
     tabSwitchLimit?: number; copyProtection?: boolean; autoSaveInterval?: number;
     orgId?: number | null;
+    scorePublishMode?: string;
+    publishAt?: string;
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
     if (!paper) throw new NotFoundException('试卷不存在');
@@ -127,6 +129,8 @@ export class ExamsService {
         tabSwitchLimit: data.tabSwitchLimit ?? 5,
         copyProtection: data.copyProtection ?? true,
         autoSaveInterval: data.autoSaveInterval ?? 30,
+        scorePublishMode: data.scorePublishMode || 'MANUAL',
+        publishAt: data.publishAt ? new Date(data.publishAt) : null,
         status: 'DRAFT',
         totalStudents: students.length,
         createdBy: data.createdBy,
@@ -199,7 +203,48 @@ export class ExamsService {
       where: { examId: id, status: { in: ['ACTIVE', 'PAUSED'] } },
       data: { status: 'SUBMITTED', submittedAt: new Date() },
     });
-    return this.prisma.exam.update({ where: { id }, data: { status: 'FINISHED' } });
+    // 统一收口：强制置 FINISHED，并按 session 实际状态重算 submittedCount
+    await this.syncExamProgress(id, true);
+    return this.prisma.exam.findUnique({ where: { id } });
+  }
+
+  /**
+   * 统一收口：以 examSession 实际状态为准，重算 exam.submittedCount 并推进 exam.status。
+   *
+   * 设计原则：submittedCount / status 都是 examSession 的派生数据。
+   * 不再让各提交入口（submitExam / heartbeat / forceSubmit / finish）各自手工维护，
+   * 全部委托给本方法，以 examSession 表作为唯一真相源，避免缓存与事实脱节。
+   *
+   * @param forceFinish 强制置为 FINISHED（admin「结束考试」使用，不论是否全员交完）
+   */
+  async syncExamProgress(examId: number, forceFinish = false) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { status: true, totalStudents: true },
+    });
+    if (!exam) return;
+
+    // submittedCount 直接按 session 表重新统计，永远反映真实情况
+    const submittedCount = await this.prisma.examSession.count({
+      where: { examId, status: 'SUBMITTED' },
+    });
+
+    let nextStatus = exam.status;
+    if (forceFinish) {
+      nextStatus = 'FINISHED';
+    } else if (
+      exam.totalStudents > 0 &&
+      submittedCount >= exam.totalStudents &&
+      exam.status !== 'FINISHED'
+    ) {
+      // 全员交完自动收卷（兼容 PUBLISHED / IN_PROGRESS 两种来路）
+      nextStatus = 'FINISHED';
+    }
+
+    await this.prisma.exam.update({
+      where: { id: examId },
+      data: { submittedCount, status: nextStatus },
+    });
   }
 
   async getStudents(id: number) {
@@ -262,8 +307,8 @@ export class ExamsService {
     }));
   }
 
-  async startExam(examId: number, studentId: number) {
-    const exam = await this.findOne(examId);
+  async startExam(examId: number, studentId: number, userOrgId?: number | null, userRoles?: string[]) {
+    const exam = await this.findOne(examId, userOrgId, userRoles);
     if (exam.status !== 'PUBLISHED' && exam.status !== 'IN_PROGRESS') throw new BadRequestException('考试未开放');
 
     const session = await this.prisma.examSession.findUnique({
@@ -290,6 +335,10 @@ export class ExamsService {
       session.status = 'ACTIVE';
       session.startedAt = now;
       session.remainingTime = initialTime;
+      // 第一个学员开考 → 考试状态推进到 IN_PROGRESS
+      if (exam.status === 'PUBLISHED') {
+        await this.prisma.exam.update({ where: { id: examId }, data: { status: 'IN_PROGRESS' } });
+      }
       questionsData = this.prepareExamQuestions(exam, session);
     } else {
       throw new BadRequestException('考试状态异常，无法开始');
@@ -333,8 +382,7 @@ export class ExamsService {
       });
     }
 
-    await this.autoGrade(session.id);
-
+    // 先标记为已交卷 + 待评阅（PENDING 兜底，含主观题时保持此状态等人工）
     await this.prisma.examSession.update({
       where: { id: session.id },
       data: {
@@ -343,10 +391,13 @@ export class ExamsService {
       },
     });
 
-    await this.prisma.exam.update({
-      where: { id: examId },
-      data: { submittedCount: { increment: 1 } },
-    });
+    // autoGrade 在最后执行：纯客观题设 GRADED，AUTO 模式设 PUBLISHED，覆盖上面的 PENDING；
+    // 含主观题时 autoGrade 不碰 scoringStatus，保留 PENDING（待人工评阅）。
+    await this.autoGrade(session.id);
+
+    // 统一收口：重算 submittedCount，并在全员交完时推进到 FINISHED
+    await this.syncExamProgress(examId);
+
     return { success: true };
   }
 
@@ -398,15 +449,14 @@ export class ExamsService {
 
     // ★ 检测剩余时间归零 → 自动交卷
     if (updateData.remainingTime === 0 || session.remainingTime === 0) {
-      await this.autoGrade(session.id);
+      // 先标记交卷 + PENDING 兜底，再 autoGrade 覆盖正确的 scoringStatus（与 submitExam 一致）
       await this.prisma.examSession.update({
         where: { id: session.id },
         data: { status: 'SUBMITTED', submittedAt: new Date(), scoringStatus: 'PENDING' },
       });
-      await this.prisma.exam.update({
-        where: { id: examId },
-        data: { submittedCount: { increment: 1 } },
-      });
+      await this.autoGrade(session.id);
+      // 统一收口：重算 submittedCount 并在全员交完时推进 FINISHED
+      await this.syncExamProgress(examId);
       return {
         ok: false,
         remainingTime: 0,
@@ -512,7 +562,7 @@ export class ExamsService {
     // 学生自查看 — 检查成绩是否已发布
     const isStudentViewing = !viewerId || viewerId === studentId;
     if (isStudentViewing) {
-      const published = session.scoringStatus === 'PUBLISHED' || session.scoringStatus === 'ADJUSTED';
+      const published = session.scoringStatus === 'PUBLISHED' || session.scoringStatus === 'ADJUSTED' || session.scoringStatus === 'CONFIRMED';
       if (!published) {
         return {
           examTitle: session.exam.title,
@@ -648,7 +698,12 @@ export class ExamsService {
         }
         case 'MULTIPLE_CHOICE': {
           const correct = question.options?.filter((o: any) => o.isCorrect).map((o: any) => o.label).sort();
-          const student = (Array.isArray(ans.answer) ? ans.answer : []).sort();
+          // 学员多选答案可能是 "A,B,D" 字符串或 ["A","B","D"] 数组，统一转成数组再比较
+          let studentAnswer = ans.answer;
+          if (typeof studentAnswer === 'string') {
+            studentAnswer = studentAnswer.split(',').map((s: string) => s.trim()).filter(Boolean);
+          }
+          const student = (Array.isArray(studentAnswer) ? studentAnswer : []).sort();
           isCorrect = JSON.stringify(correct) === JSON.stringify(student);
           score = isCorrect ? pq.score : 0;
           break;
@@ -695,6 +750,11 @@ export class ExamsService {
       // 纯客观题 → 直接 GRADED，finalScore = totalScore
       updateData.finalScore = totalScore;
       updateData.scoringStatus = 'GRADED';
+      // AUTO 模式：纯客观题全部自动判分后直接发布
+      if (examData?.scorePublishMode === 'AUTO') {
+        updateData.scoringStatus = 'PUBLISHED';
+        updateData.scoringPublishedAt = new Date();
+      }
     }
     await this.prisma.examSession.update({
       where: { id: sessionId },

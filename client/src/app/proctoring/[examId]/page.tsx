@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 const STATUS_FILTERS = [
   { key: '', label: '全部' },
@@ -39,6 +40,7 @@ export default function ProctoringDetail() {
   const [forceSubmitReason, setForceSubmitReason] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [extendTarget, setExtendTarget] = useState<number | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
@@ -114,17 +116,18 @@ export default function ProctoringDetail() {
     setActionLoading(false);
   };
 
-  const handleExtendTime = async (sessionId: number) => {
-    if (!confirm('确认为该考生延长 10 分钟？')) return;
+  const handleExtendTime = async (reason: string) => {
+    if (!extendTarget) return;
     setActionLoading(true);
     try {
-      await api.exams.proctoring.extendTime(examId, sessionId, {
+      await api.exams.proctoring.extendTime(examId, extendTarget, {
         extraSeconds: 600,
-        reason: '监考员手动延长',
+        reason: reason || '监考员手动延长',
         operatorName: user?.displayName || '管理员',
       });
-      openDetail(sessionId);
-    } catch (e: any) { toast.error(e.message); }
+      setExtendTarget(null);
+      openDetail(extendTarget);
+    } catch (e: any) { toast.error(e.message); setExtendTarget(null); }
     setActionLoading(false);
   };
 
@@ -305,7 +308,7 @@ export default function ProctoringDetail() {
                       className="btn w-full text-sm py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
                       ⚠️ 发送警告
                     </button>
-                    <button onClick={() => handleExtendTime(selectedSession.sessionId)}
+                    <button onClick={() => setExtendTarget(selectedSession.sessionId)}
                       className="btn w-full text-sm py-2" style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)' }}>
                       ⏱ 延长10分钟
                     </button>
@@ -341,6 +344,18 @@ export default function ProctoringDetail() {
       )}
 
       {/* Force Submit Modal */}
+      {/* 延长考试时间 Modal */}
+      <ReasonConfirmModal
+        open={extendTarget !== null}
+        title="⏱ 延长考试时间"
+        message="确认为该考生延长 10 分钟考试时间？"
+        required
+        presetReasons={['考生网络异常', '考生设备故障', '监考员判断需要延长']}
+        confirmText="确认延长"
+        onConfirm={handleExtendTime}
+        onCancel={() => setExtendTarget(null)}
+      />
+
       {forceSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setForceSubmitModal(null)}>
           <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>

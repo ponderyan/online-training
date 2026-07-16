@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import FoxLogo from './fox-logo';
@@ -201,9 +202,8 @@ export default function Sidebar({ user }: { user: any }) {
                 )
               );
               return (
-                <div key={item.path + item.label}
-                  onClick={() => router.push(item.path)}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all ${
+                <Link key={item.path + item.label} href={item.path}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer text-sm transition-all no-underline ${
                     isActive
                       ? 'bg-[var(--fox-glow)] text-[var(--fox-light)]'
                       : 'text-[var(--ink-300)] hover:bg-[rgba(196,188,176,0.05)] hover:text-[var(--ink-100)]'
@@ -213,7 +213,7 @@ export default function Sidebar({ user }: { user: any }) {
                   {isActive && (
                     <span className="w-1 h-4 rounded-full flex-shrink-0 bg-[var(--fox)]" />
                   )}
-                </div>
+                </Link>
               );
             })}
           </div>

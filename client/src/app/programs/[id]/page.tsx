@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { api } from '@/lib/api';
 import HoursTab from './hours-tab';
 import DashboardTab from './dashboard-tab';
@@ -64,6 +65,30 @@ export default function ProgramDetailPage() {
   const [uploadNotes, setUploadNotes] = useState('');
   const [uploading, setUploading] = useState(false);
   const [signinGenerating, setSigninGenerating] = useState(false);
+  const [deleteEvidenceTarget, setDeleteEvidenceTarget] = useState<number | null>(null);
+  const [deleteScheduleTarget, setDeleteScheduleTarget] = useState<number | null>(null);
+
+  // 删除证据文件（带原因）
+  const handleEvidenceDeleteWithReason = async (reason: string) => {
+    if (deleteEvidenceTarget === null) return;
+    try {
+      await api.trainingPrograms.deleteEvidence(Number(params.id), deleteEvidenceTarget);
+      toast.success('证据文件已删除');
+      setDeleteEvidenceTarget(null);
+      loadEvidences();
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
+  };
+
+  // 删除排课（带原因）
+  const handleScheduleDeleteWithReason = async (reason: string) => {
+    if (deleteScheduleTarget === null) return;
+    try {
+      await api.schedules.delete(deleteScheduleTarget);
+      toast.success('排课已删除');
+      setDeleteScheduleTarget(null);
+      loadSchedules();
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
+  };
 
   // Phase 1c: 备案
   const [filing, setFiling] = useState<any>(null);
@@ -241,11 +266,7 @@ export default function ProgramDetailPage() {
     setScheduleLoading(false);
   };
 
-  const handleScheduleDelete = async (id: number) => {
-    if (!confirm('确定删除该排课记录吗？')) return;
-    try { await api.schedules.delete(id); loadSchedules(); }
-    catch (e: any) { toast.error('删除失败：' + e.message); }
-  };
+  // handleScheduleDelete 已由 ReasonConfirmModal + handleScheduleDeleteWithReason 替代
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
   if (!program) return null;
@@ -390,7 +411,7 @@ export default function ProgramDetailPage() {
                       <td>
                         <div className="flex gap-2">
                           <button onClick={() => openEditSchedule(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                          <button onClick={() => handleScheduleDelete(s.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
                         </div>
                       </td>
                     </tr>
@@ -606,11 +627,7 @@ export default function ProgramDetailPage() {
                       <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.notes || '—'}</td>
                       <td>
-                        <button onClick={async () => {
-                          if (!confirm('确定删除该文件？')) return;
-                          try { await api.trainingPrograms.deleteEvidence(Number(params.id), e.id); loadEvidences(); }
-                          catch (e: any) { toast.error('删除失败：' + e.message); }
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
                       </td>
                     </tr>
                   ))}
@@ -836,6 +853,27 @@ export default function ProgramDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 排课删除弹窗 */}
+      <ReasonConfirmModal
+        open={deleteScheduleTarget !== null}
+        title="🗑 删除排课记录"
+        required
+        presetReasons={['排课时间调整', '课程变更', '创建错误']}
+        confirmText="确认删除"
+        onConfirm={handleScheduleDeleteWithReason}
+        onCancel={() => setDeleteScheduleTarget(null)}
+      />
+      {/* 证据文件删除弹窗 */}
+      <ReasonConfirmModal
+        open={deleteEvidenceTarget !== null}
+        title="🗑 删除文件"
+        required
+        presetReasons={['文件上传错误', '文件已过时', '重复上传']}
+        confirmText="确认删除"
+        onConfirm={handleEvidenceDeleteWithReason}
+        onCancel={() => setDeleteEvidenceTarget(null)}
+      />
     </AppLayout>
   );
 }

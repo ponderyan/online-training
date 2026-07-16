@@ -109,12 +109,12 @@ export class CourseVideosService {
     const programs = video.course?.programs || [];
     if (programs.length === 0) {
       await this.prisma.learningHourRecord.create({
-        data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null },
+        data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null, status: 'APPROVED' },
       });
     } else {
       for (const program of programs) {
         await this.prisma.learningHourRecord.create({
-          data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id },
+          data: { studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id, status: 'APPROVED' },
         });
       }
     }

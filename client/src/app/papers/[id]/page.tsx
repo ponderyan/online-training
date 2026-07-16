@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
@@ -30,10 +31,12 @@ export default function PaperDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAnswer, setShowAnswer] = useState(false);
+  const [deletePaperTarget, setDeletePaperTarget] = useState<boolean | null>(false);
   const [showPickModal, setShowPickModal] = useState(false);
   const [availableQuestions, setAvailableQuestions] = useState<any[]>([]);
   const [pickingSection, setPickingSection] = useState('');
   const [pickingScore, setPickingScore] = useState(0);
+  const [removeQuestionTarget, setRemoveQuestionTarget] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -93,10 +96,10 @@ export default function PaperDetailPage() {
     load();
   };
 
-  const handleDelete = async () => {
+  const handlePaperDeleteWithReason = async (reason: string) => {
     if (!paper) return;
-    if (!confirm('确认删除此试卷？')) return;
     await api.papers.delete(paper.id);
+    setDeletePaperTarget(false);
     router.push('/papers');
   };
 
@@ -107,8 +110,13 @@ export default function PaperDetailPage() {
   };
 
   const handleRemoveQuestion = async (pqId: number) => {
-    if (!confirm('确认从试卷中移除该试题？')) return;
-    await fetch(`/api/papers/${paperId}/questions/${pqId}`, { method: 'DELETE' });
+    setRemoveQuestionTarget(pqId);
+  };
+
+  const confirmRemoveQuestion = async (reason: string) => {
+    if (!removeQuestionTarget) return;
+    await fetch(`/api/papers/${paperId}/questions/${removeQuestionTarget}`, { method: 'DELETE' });
+    setRemoveQuestionTarget(null);
     load();
   };
 
@@ -217,7 +225,7 @@ export default function PaperDetailPage() {
           {canPromote && (
             <button onClick={handlePromote} className="btn btn-verm btn-sm">转为正式</button>
           )}
-          <button onClick={handleDelete} className="btn btn-ghost btn-sm" style={{ color: 'var(--ink-300)' }}
+          <button onClick={() => setDeletePaperTarget(true)} className="btn btn-ghost btn-sm" style={{ color: 'var(--ink-300)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
         </div>
@@ -464,6 +472,28 @@ export default function PaperDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 删除试卷弹窗 */}
+      <ReasonConfirmModal
+        open={deletePaperTarget !== null}
+        title="🗑 删除试卷"
+        required
+        presetReasons={['创建错误', '试卷作废', '重复创建']}
+        confirmText="确认删除"
+        onConfirm={handlePaperDeleteWithReason}
+        onCancel={() => setDeletePaperTarget(null)}
+      />
+      {/* 从试卷移除试题确认 */}
+      <ReasonConfirmModal
+        open={removeQuestionTarget !== null}
+        title="📝 移除试题"
+        message="确认从试卷中移除该试题？试卷内容会被修改，但不影响已分配的考试。"
+        required
+        presetReasons={['试题不适合本试卷', '题型调整', '创建错误']}
+        confirmText="确认移除"
+        onConfirm={confirmRemoveQuestion}
+        onCancel={() => setRemoveQuestionTarget(null)}
+      />
     </AppLayout>
   );
 }
