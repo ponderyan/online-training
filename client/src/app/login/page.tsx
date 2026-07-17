@@ -55,8 +55,18 @@ export default function LoginPage() {
 
   // ── 已登录用户回退到登录页时自动跳回 dashboard ──
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) router.push('/dashboard');
+    const push = () => {
+      const token = localStorage.getItem('token');
+      if (token) router.push('/dashboard');
+    };
+    push();
+    // Safari bfcache：后退到 /login 时页面从缓存恢复，useEffect 不重跑，router.push
+    // 也可能被冻结。用 window.location.href 做硬跳转兜底。
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted && localStorage.getItem('token')) {
+        window.location.href = '/dashboard';
+      }
+    });
   }, [router]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

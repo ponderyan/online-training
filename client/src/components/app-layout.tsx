@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const u = localStorage.getItem('user');
-    if (!u) { router.push('/login'); return; }
+    if (!u) { router.replace('/login'); return; }
 
     const doRender = (userData: any) => {
       setUser(userData);
@@ -57,6 +57,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } else {
       doRender(userData);
     }
+  }, [router]);
+
+  // 监听 401 鉴权失效事件（由 lib/api.ts 的 redirectToLogin 派发）
+  useEffect(() => {
+    const handler = () => router.replace('/login');
+    window.addEventListener('auth:redirect-login', handler);
+    return () => window.removeEventListener('auth:redirect-login', handler);
   }, [router]);
 
   if (loading) return null;

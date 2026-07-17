@@ -16,12 +16,13 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-/** 跳转到登录页 */
+/** 跳转到登录页（SPA 导航，避免 window.location.href 全页刷新割裂浏览器历史栈） */
 function redirectToLogin() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  window.location.href = '/login';
+  localStorage.removeItem('userPermissions');
+  window.dispatchEvent(new CustomEvent('auth:redirect-login'));
 }
 
 async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
