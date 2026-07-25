@@ -156,7 +156,8 @@
   <span class="corner br"></span>
 
   <div class="header">
-    <div class="logo">🦊 FoxLearn 狐学</div>
+    {{logoHtml}}
+    <div class="logo">{{issuerName}}</div>
     <div class="title">结业证书</div>
     <div class="subtitle">CERTIFICATE OF COMPLETION</div>
   </div>
@@ -180,8 +181,9 @@
       </div>
       <div class="qr-text">
         扫码查验真伪<br>
-        <strong>FoxLearn</strong> 证书验证
+        <strong>{{issuerName}}</strong> 证书验证
       </div>
+      {{sealHtml}}
     </div>
   </div>
 

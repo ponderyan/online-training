@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
@@ -73,6 +74,7 @@ export default function AuditLogsPage() {
   }, []); // eslint-disable-line
 
   const searchKey = useMemo(() => JSON.stringify(filters), [filters]);
+  const debouncedSearchKey = useDebounce(searchKey, 400);
 
   const load = async () => {
     setLoading(true);
@@ -97,7 +99,7 @@ export default function AuditLogsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [page, pageSize, searchKey]);
+  useEffect(() => { load(); }, [page, pageSize, debouncedSearchKey]);
 
   const totalPages = Math.ceil(total / pageSize);
 

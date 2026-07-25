@@ -87,6 +87,12 @@ model Organization {
   sealHash       String?  @map("seal_hash") @db.VarChar(64)
   useFoxLearnSeal Boolean @default(true) @map("use_foxlearn_seal")
 
+  // ── 证书配置 ──
+  certIssuerName String?  @map("cert_issuer_name") @db.VarChar(200) // 签发单位名称
+  certLogoUrl    String?  @map("cert_logo_url") @db.VarChar(500)    // 证书 logo
+  certFooterText String?  @map("cert_footer_text") @db.VarChar(500) // 证书底部说明
+  certificates   Certificate[]
+
   @@index([parentId])
   @@map("organizations")
 }
@@ -219,6 +225,8 @@ model User {
   learningHourRecords   LearningHourRecord[]
   practiceRecords       PracticeRecord[]
   favoriteQuestions     QuestionFavorite[]
+  offlineScoreEntries   OfflineScoreEntry[]        @relation("OfflineScoreStudent")
+  offlineScoreEntered   OfflineScoreEntry[]        @relation("OfflineScoreEnterer")
 
   @@map("users")
 }
@@ -881,11 +889,21 @@ enum ExamStatus {
   IN_PROGRESS
   FINISHED
   CANCELLED
+  // ── 线下笔试专用状态 ──
+  AWAITING_GRADING      // 待阅卷
+  GRADING_IN_PROGRESS   // 成绩录入中
+  SCORE_CONFIRMED       // 成绩已确认
+  SCORE_PUBLISHED       // 成绩已发布
 }
 
 enum ExamAccessType {
   UNIFIED // 统一开考
   FLEXIBLE // 随到随考
+}
+
+enum ExamMode {
+  ONLINE  // 线上考试
+  OFFLINE // 线下笔试
 }
 
 // ═══════════════════════════════════════════
@@ -1028,6 +1046,11 @@ model Exam {
   appealDeadlineHours Int?    @default(72) @map("appeal_deadline_hours") // 申诉截止（小时），0=不允许申诉
   showAnswerAfterExam Boolean @default(false) @map("show_answer_after_exam") // 考后是否显示答案
 
+  // ── 线下笔试考试（2026-07-22）──
+  examMode   ExamMode @default(ONLINE) @map("exam_mode")   // ONLINE | OFFLINE
+  locations  Json?    @map("locations")                     // 多考场信息 JSON
+  seatLayout Json?    @map("seat_layout")                   // 座位布局配置
+
   createdBy Int      @map("created_by")
 
   // ── 机构归属（2026-07-02）──
@@ -1043,6 +1066,7 @@ model Exam {
   instructorId       Int?                @map("instructor_id")
   instructor         Instructor?         @relation(fields: [instructorId], references: [id])
   appeals            ScoreAppeal[]
+  offlineScoreEntries OfflineScoreEntry[]
 
   @@map("exams")
 }
@@ -1085,6 +1109,13 @@ model ExamSession {
 
   markedQuestions String @default("[]") @map("marked_questions")
 
+  // ── 线下笔试考试（2026-07-22）──
+  seatNumber        Int?     @map("seat_number")          // 座位号
+  absent            Boolean  @default(false) @map("absent") // 缺考标记
+  attemptNo         Int      @default(1) @map("attempt_no") // 第几次考试（1=首考，2=补考）
+  isRetake          Boolean  @default(false) @map("is_retake")
+  originalSessionId Int?     @map("original_session_id")  // 补考关联原 session
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1094,6 +1125,7 @@ model ExamSession {
   gradingAssignments      GradingAssignment[]
   scoreAppeal             ScoreAppeal?
   examMessages            ExamMessage[]
+  offlineScoreEntry       OfflineScoreEntry[]
 
   @@unique([examId, studentId])
   @@map("exam_sessions")
@@ -1187,6 +1219,12 @@ model Certificate {
   metadata         Json? // 扩展信息
   programId        Int?               @map("program_id")
   program          TrainingProgram?   @relation(fields: [programId], references: [id])
+
+  // ── 发证机构（可配置化）──
+  orgId            Int?               @map("org_id")
+  org              Organization?      @relation(fields: [orgId], references: [id])
+  issuerName       String?            @map("issuer_name") @db.VarChar(200) // 签发单位快照
+
   traces           CertificateTrace[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -2006,4 +2044,51 @@ model PracticeRecord {
   @@unique([studentId, questionId])
   @@index([studentId, isCorrect])
   @@map("practice_records")
+}
+
+// ═══════════════════════════════════════════
+// 线下笔试考试（2026-07-22）
+// ═══════════════════════════════════════════
+
+/// 线下考试成绩录入记录
+model OfflineScoreEntry {
+  id        Int @id @default(autoincrement())
+  examId    Int @map("exam_id")
+  sessionId Int @unique @map("session_id")
+  studentId Int @map("student_id")
+
+  /// 按题型细分分数 JSON: {singleChoice: 18, multiChoice: 16, ...}
+  scoreByType Json  @map("score_by_type")
+  totalScore  Float @map("total_score")
+
+  // 录入信息（考务人员）
+  enteredBy Int      @map("entered_by")
+  enteredAt DateTime @default(now()) @map("entered_at")
+
+  // 阅卷信息（分开记录，可以是不同人）
+  graderName String?   @map("grader_name") @db.VarChar(100)
+  graderId   Int?      @map("grader_id")
+  gradedAt   DateTime? @map("graded_at")
+
+  // 复核信息
+  reviewerName String?   @map("reviewer_name") @db.VarChar(100)
+  reviewerId   Int?      @map("reviewer_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewNote   String?   @map("review_note") @db.Text
+
+  // 状态: DRAFT(暂存) | CONFIRMED(确认) | LOCKED(锁定)
+  status String @default("DRAFT") @db.VarChar(20)
+  remark String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  exam     Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  session  ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student  User        @relation("OfflineScoreStudent", fields: [studentId], references: [id])
+  enterer  User        @relation("OfflineScoreEnterer", fields: [enteredBy], references: [id])
+
+  @@unique([examId, studentId])
+  @@index([examId, status])
+  @@map("offline_score_entries")
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { AddQuestionModal, ViewQuestionModal } from '@/components/question-modals';
@@ -35,6 +36,7 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [toggleTarget, setToggleTarget] = useState<any | null>(null);
   const [filterType, setFilterType] = useState('');
@@ -78,7 +80,10 @@ export default function QuestionsPage() {
     setKpModalQuestion(q);
     setKpTree([]);
     setKpSelected(new Set());
-    setKpSubjectId(0);
+    // ★ 自动选中题目所属科目并加载知识点树
+    const qSubjectId = q.subjectId || 0;
+    setKpSubjectId(qSubjectId);
+    if (qSubjectId > 0) loadKpTree(qSubjectId);
     try {
       const existing = await api.knowledgePoints.getQuestionKPs(q.id);
       setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
@@ -99,7 +104,7 @@ export default function QuestionsPage() {
     setLoading(true);
     setError(null);
     const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
-    if (keyword) params.keyword = keyword;
+    if (debouncedKeyword) params.keyword = debouncedKeyword;
     if (filterType) params.type = filterType;
     if (filterDifficulty) params.difficulty = filterDifficulty;
     if (filterSubject) params.subjectId = filterSubject;
@@ -115,7 +120,7 @@ export default function QuestionsPage() {
       setError(e.message || '加载试题列表失败');
     }
     setLoading(false);
-  }, [page, pageSize, keyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
+  }, [page, pageSize, debouncedKeyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {

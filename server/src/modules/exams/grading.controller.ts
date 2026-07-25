@@ -5,7 +5,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions, ROLE_PERMISSIONS } from '../../common/permissions.constants.js';
 import { requestContext } from '../../common/utils/request-context.js';
-import { SUBJECTIVE_TYPES, recalculateSessionScore } from '../../common/grading.utils.js';
+import { SUBJECTIVE_TYPES, recalculateSessionScore, getPassingScore } from '../../common/grading.utils.js';
 
 @Controller('api/grading')
 export class GradingController {
@@ -438,9 +438,8 @@ export class GradingController {
 
     const originalScore = session.finalScore || session.totalScore || 0;
 
-    // 从 Exam 表读取 passingScore
-    const paperTotal = session?.exam?.paper?.totalScore || 100;
-    const passingScore = session?.exam?.passingScore ?? Math.floor(paperTotal * 0.6);
+    // 从 Exam 表读取 passingScore（统一工具函数）
+    const passingScore = getPassingScore(session?.exam?.passingScore, session?.exam?.paper?.totalScore);
 
     // 写入成绩审计日志
     const scoreAuditLog = await this.prisma.scoreAuditLog.create({

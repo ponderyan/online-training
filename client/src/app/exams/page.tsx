@@ -21,10 +21,14 @@ const STATUS_OPTS = [
 const statusColors: Record<string, string> = {
   DRAFT: '#8b8174', PUBLISHED: '#00897b', IN_PROGRESS: '#e87a30',
   FINISHED: '#5a5348', CANCELLED: '#aaa',
+  AWAITING_GRADING: '#d97706', GRADING_IN_PROGRESS: '#e87a30',
+  SCORE_CONFIRMED: '#059669', SCORE_PUBLISHED: '#059669',
 };
 const statusLabels: Record<string, string> = {
   DRAFT: '草稿', PUBLISHED: '已发布', IN_PROGRESS: '进行中',
   FINISHED: '已结束', CANCELLED: '已取消',
+  AWAITING_GRADING: '待阅卷', GRADING_IN_PROGRESS: '录入中',
+  SCORE_CONFIRMED: '已确认', SCORE_PUBLISHED: '成绩已发布',
 };
 
 export default function ExamList() {
@@ -133,6 +137,11 @@ export default function ExamList() {
                     {exam.orgId && (
                       <span className="tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
                         机构
+                      </span>
+                    )}
+                    {exam.examMode === 'OFFLINE' && (
+                      <span className="tag" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px', background: 'var(--amber-glow, #fef3c7)', color: 'var(--amber, #d97706)' }}>
+                        ✍️ 线下
                       </span>
                     )}
                   </div>

@@ -9,6 +9,8 @@ import { TranscriptController } from './transcript.controller.js';
 import { ScoreAppealController } from './score-appeal.controller.js';
 import { ExamAnalysisController } from './exam-analysis.controller.js';
 import { ProctoringController } from './proctoring.controller.js';
+import { OfflineExamController } from './offline-exam.controller.js';
+import { OfflineExamService } from './offline-exam.service.js';
 import { ExamsService } from './exams.service.js';
 import { CertificatesService } from '../certificates/certificates.service.js';
 import { ScoreAppealService } from './score-appeal.service.js';
@@ -20,8 +22,8 @@ import { SystemConfigModule } from '../system-config/system-config.module.js';
 
 @Module({
   imports: [PrismaModule, SystemConfigModule, ScheduleModule.forRoot()],
-  controllers: [ExamsController, StudentExamController, StudentLearningController, GradingController, TranscriptController, ScoreAppealController, ExamAnalysisController, ProctoringController],
-  providers: [ExamsService, CertificatesService, ScoreAppealService, ExamAnalysisService, LearningReportService, ProctoringService, PublishSchedulerService],
+  controllers: [ExamsController, StudentExamController, StudentLearningController, GradingController, TranscriptController, ScoreAppealController, ExamAnalysisController, ProctoringController, OfflineExamController],
+  providers: [ExamsService, CertificatesService, ScoreAppealService, ExamAnalysisService, LearningReportService, ProctoringService, PublishSchedulerService, OfflineExamService],
   exports: [ExamsService],
 })
 export class ExamsModule {}

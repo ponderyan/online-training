@@ -215,6 +215,35 @@ export const api = {
     },
   },
 
+  // ── 线下笔试考试 ──
+  offlineExams: {
+    publish: (id: number) => request<any>(`/offline-exams/${id}/publish`, { method: 'PUT' }),
+    startGrading: (id: number) => request<any>(`/offline-exams/${id}/start-grading`, { method: 'PUT' }),
+    startScoreEntry: (id: number) => request<any>(`/offline-exams/${id}/start-score-entry`, { method: 'PUT' }),
+    confirmScores: (id: number, data?: { approvalNote?: string }) =>
+      request<any>(`/offline-exams/${id}/confirm-scores`, { method: 'PUT', body: JSON.stringify(data || {}) }),
+    publishScores: (id: number) => request<any>(`/offline-exams/${id}/publish-scores`, { method: 'PUT' }),
+    enterScore: (id: number, data: { sessionId: number; scoreByType: Record<string, number>; graderName?: string; graderId?: number; gradedAt?: string }) =>
+      request<any>(`/offline-exams/${id}/scores`, { method: 'POST', body: JSON.stringify(data) }),
+    batchImport: (id: number, entries: any[]) =>
+      request<any>(`/offline-exams/${id}/scores/batch`, { method: 'POST', body: JSON.stringify({ entries }) }),
+    getScores: (id: number) => request<any[]>(`/offline-exams/${id}/scores`),
+    getAuditLogs: (id: number) => request<any[]>(`/offline-exams/${id}/audit-logs`),
+    markAbsent: (id: number, sessionId: number, absent: boolean) =>
+      request<any>(`/offline-exams/${id}/sessions/${sessionId}/absent`, { method: 'PUT', body: JSON.stringify({ absent }) }),
+    assignSeats: (id: number, data?: { startFrom?: number }) =>
+      request<any>(`/offline-exams/${id}/assign-seats`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    getSeatTable: (id: number) => request<any>(`/offline-exams/${id}/seat-table`),
+    importTemplateUrl: (id: number) => `/api/offline-exams/${id}/import-template?token=${getToken()}`,
+    createRetake: (id: number, data: { startTime: string; endTime: string; durationMinutes?: number; locations?: any }) =>
+      request<any>(`/offline-exams/${id}/retake`, { method: 'POST', body: JSON.stringify(data) }),
+    getRetakeInfo: (id: number) => request<any>(`/offline-exams/${id}/retake-info`),
+    reviewScore: (id: number, sessionId: number, data: { reviewerName: string; reviewerId?: number; reviewNote?: string; approved: boolean }) =>
+      request<any>(`/offline-exams/${id}/scores/${sessionId}/review`, { method: 'PUT', body: JSON.stringify(data) }),
+    seatTableExcelUrl: (id: number) => `/api/offline-exams/${id}/seat-table/excel?token=${getToken()}`,
+    seatTablePdfUrl: (id: number) => `/api/offline-exams/${id}/seat-table/pdf?token=${getToken()}`,
+  },
+
   students: {
     list: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -797,6 +826,14 @@ export const api = {
       }),
     migrateStudents: (id: number, data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean }) =>
       request<any>(`/organizations/${id}/migrate-students`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCertConfig: (id: number, data: { certIssuerName?: string; certLogoUrl?: string; certFooterText?: string; sealUrl?: string; useFoxLearnSeal?: boolean }) =>
+      request<any>(`/organizations/${id}/cert-config`, { method: 'PUT', body: JSON.stringify(data) }),
+    uploadCertImage: (id: number, file: File, type: 'logo' | 'seal') => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      return request<{ url: string; fileName: string }>(`/organizations/${id}/cert-upload`, { method: 'POST', body: formData, headers: {} });
+    },
   },
 
   // ── 用户个人资料 ──
@@ -850,6 +887,16 @@ export const api = {
       update: (data: { allow_org_own_bank?: boolean; org_bank_visibility?: string }) =>
         request<{ allow_org_own_bank: boolean; org_bank_visibility: string }>(
           '/system-config/bank-policy',
+          { method: 'PUT', body: JSON.stringify(data) }
+        ),
+    },
+    certPolicy: {
+      get: () => request<{ cert_org_self_issue: boolean; cert_approval_required: boolean; cert_seal_mode: string }>(
+        '/system-config/cert-policy'
+      ),
+      update: (data: { cert_org_self_issue?: boolean; cert_approval_required?: boolean; cert_seal_mode?: string }) =>
+        request<{ cert_org_self_issue: boolean; cert_approval_required: boolean; cert_seal_mode: string }>(
+          '/system-config/cert-policy',
           { method: 'PUT', body: JSON.stringify(data) }
         ),
     },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
@@ -22,6 +23,7 @@ export default function LearningHourCertificates() {
   // Filters
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 400);
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -44,13 +46,13 @@ export default function LearningHourCertificates() {
     try {
       const params: Record<string, string> = {};
       if (statusFilter) params.status = statusFilter;
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       const r = await api.learningHourCertificates.list(params);
       setItems(r.items || []);
       setTotal(r.total || 0);
     } catch {}
     setLoading(false);
-  }, [statusFilter, search]);
+  }, [statusFilter, debouncedSearch]);
 
   useEffect(() => { load(); }, [load]);
 

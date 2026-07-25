@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -12,6 +13,7 @@ export class CertificatesService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationsService,
+    private systemConfig: SystemConfigService,
   ) {
     fs.mkdir(this.certDir, { recursive: true }).catch(() => {});
   }
@@ -61,7 +63,17 @@ export class CertificatesService {
   }
 
   /** 批量发证 */
-  async issueCertificates(examSessionId: number, studentIds: number[]) {
+  async issueCertificates(examSessionId: number, studentIds: number[], caller?: { userOrgId?: number | null; userRoles?: string[] }) {
+    // ★ 证书策略检查
+    const isSuperAdmin = caller?.userRoles?.includes('SUPER_ADMIN');
+    if (!isSuperAdmin && caller?.userOrgId) {
+      const orgSelfIssue = await this.systemConfig.getBoolean('cert_org_self_issue');
+      if (!orgSelfIssue) {
+        throw new ForbiddenException('当前系统不允许机构自行发证，请联系协会管理员');
+      }
+    }
+    const approvalRequired = await this.systemConfig.getBoolean('cert_approval_required');
+
     // 获取考试信息
     const session = await this.prisma.examSession.findUnique({
       where: { id: examSessionId },
@@ -70,9 +82,33 @@ export class CertificatesService {
     if (session.scoringStatus !== 'PUBLISHED' && session.scoringStatus !== 'CONFIRMED') {
       throw new BadRequestException('成绩尚未发布，无法发证');
     }
+    // ★ 校验学员是否通过考试，未通过不得发证
+    if (session.isPassed !== true) {
+      throw new BadRequestException('学员未通过该考试，无法发证');
+    }
 
-    const exam = await this.prisma.exam.findUnique({ where: { id: session.examId } });
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: session.examId },
+      include: { program: { select: { orgId: true } }, org: { select: { id: true, certIssuerName: true, name: true } } },
+    });
     if (!exam) throw new NotFoundException('考试不存在');
+
+    // 确定发证机构：优先 exam.orgId，其次 program.orgId
+    const certOrgId = exam.orgId || exam.program?.orgId || null;
+    let issuerName: string | null = null;
+    if (exam.org?.certIssuerName) {
+      issuerName = exam.org.certIssuerName;
+    } else if (exam.org?.name) {
+      issuerName = exam.org.name;
+    }
+    // 如果 exam 上没有 org 信息，通过 program.orgId 查
+    if (!issuerName && certOrgId && !exam.orgId) {
+      const progOrg = await this.prisma.organization.findUnique({
+        where: { id: certOrgId },
+        select: { certIssuerName: true, name: true },
+      });
+      issuerName = progOrg?.certIssuerName || progOrg?.name || null;
+    }
 
     const results: any[] = [];
 
@@ -104,6 +140,9 @@ export class CertificatesService {
           studentName: user.displayName || user.username,
           courseName: exam.title,
           verificationCode,
+          orgId: certOrgId,
+          issuerName,
+          approvalStatus: approvalRequired ? 'PENDING' : 'APPROVED',
         },
       });
 
@@ -134,8 +173,8 @@ export class CertificatesService {
   }
 
   /** 单个补发证书 */
-  async issueSingleCertificate(examSessionId: number, studentId: number) {
-    const results = await this.issueCertificates(examSessionId, [studentId]);
+  async issueSingleCertificate(examSessionId: number, studentId: number, caller?: { userOrgId?: number | null; userRoles?: string[] }) {
+    const results = await this.issueCertificates(examSessionId, [studentId], caller);
     const item = results[0];
     if (item.error) throw new BadRequestException(item.error);
     return item.certificate;
@@ -257,7 +296,10 @@ export class CertificatesService {
 
   /** 生成证书 PDF */
   async generatePdf(id: number): Promise<Buffer> {
-    const cert = await this.prisma.certificate.findUnique({ where: { id } });
+    const cert = await this.prisma.certificate.findUnique({
+      where: { id },
+      include: { org: { select: { certIssuerName: true, certLogoUrl: true, certFooterText: true, sealUrl: true, useFoxLearnSeal: true, name: true } } },
+    });
     if (!cert) throw new NotFoundException('证书不存在');
 
     // 读取模板文件
@@ -274,13 +316,27 @@ export class CertificatesService {
     // 生成 QR 码
     const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
 
+    // 动态签发单位
+    const issuerName = cert.issuerName || cert.org?.certIssuerName || cert.org?.name || 'FoxLearn 狐学';
+    const footerText = cert.org?.certFooterText || '本证书最终解释权归 ' + issuerName + ' 所有 · 扫描二维码可在线验证';
+    const logoHtml = cert.org?.certLogoUrl
+      ? '<img src="' + escapeHtml(cert.org.certLogoUrl) + '" style="height:36px;margin-bottom:4px;" alt="logo" />'
+      : '';
+    const sealHtml = (!cert.org?.useFoxLearnSeal && cert.org?.sealUrl)
+      ? '<img src="' + escapeHtml(cert.org.sealUrl) + '" style="width:80px;height:80px;opacity:0.85;" alt="seal" />'
+      : '';
+
     html = html
       .replace(/{{studentName}}/g, escapeHtml(cert.studentName))
       .replace(/{{courseName}}/g, escapeHtml(cert.courseName))
       .replace(/{{certificateNo}}/g, escapeHtml(cert.certificateNo))
       .replace(/{{issueDate}}/g, escapeHtml(cert.issueDate.toISOString().slice(0, 10)))
       .replace(/{{verificationCode}}/g, escapeHtml(cert.verificationCode.slice(0, 8).toUpperCase()))
-      .replace(/{{qrDataUrl}}/g, qrDataUrl);
+      .replace(/{{qrDataUrl}}/g, qrDataUrl)
+      .replace(/{{issuerName}}/g, escapeHtml(issuerName))
+      .replace(/{{footerText}}/g, escapeHtml(footerText))
+      .replace(/{{logoHtml}}/g, logoHtml)
+      .replace(/{{sealHtml}}/g, sealHtml);
 
     // 动态导入 puppeteer
     const puppeteer = await import('puppeteer');

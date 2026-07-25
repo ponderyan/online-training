@@ -70,9 +70,10 @@ export default function ExamDetail() {
     DRAFT: '草稿', PUBLISHED: '已发布', IN_PROGRESS: '进行中', FINISHED: '已结束', CANCELLED: '已取消',
   };
 
-  const sessionStatusLabels: Record<string, string> = {
-    ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交',
-  };
+  const isOffline = exam.examMode === 'OFFLINE';
+  const sessionStatusLabels: Record<string, string> = isOffline
+    ? { ASSIGNED: '待录入', ACTIVE: '待录入', PAUSED: '待录入', SUBMITTED: '已录入' }
+    : { ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交' };
 
   const submittedCount = students.filter(s => s.status === 'SUBMITTED').length;
   const activeCount = students.filter(s => s.status === 'ACTIVE').length;
@@ -85,7 +86,7 @@ export default function ExamDetail() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="page-title">{exam.title}</h1>
-          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生</p>
+          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生{exam.examMode === 'OFFLINE' ? ' · ✍️ 线下笔试' : ''}</p>
         </div>
         <div className="flex gap-2">
           {exam.status === 'DRAFT' && (
@@ -125,10 +126,16 @@ export default function ExamDetail() {
               </button>
             </>
           )}
-          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && (
+          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && exam.examMode !== 'OFFLINE' && (
             <button onClick={() => router.push(`/proctoring/${exam.id}`)}
               className="btn text-sm px-4 py-2" style={{ border: '1px solid #ef4444', color: '#ef4444' }}>
               🎥 监考
+            </button>
+          )}
+          {exam.examMode === 'OFFLINE' && (
+            <button onClick={() => router.push(`/exams/${exam.id}/offline-scores`)}
+              className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
+              ✍️ 成绩管理
             </button>
           )}
         </div>
@@ -194,10 +201,10 @@ export default function ExamDetail() {
               <div className="flex items-center gap-4">
                 {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
                 <span className="text-xs px-2.5 py-1 rounded-full" style={{
-                  background: s.status === 'SUBMITTED' ? '#e8f5e9' : s.status === 'ACTIVE' ? '#fff3e0' : '#f5f5f5',
-                  color: s.status === 'SUBMITTED' ? '#2e7d32' : s.status === 'ACTIVE' ? '#e65100' : '#757575',
+                  background: s.absent ? '#fef3c7' : s.status === 'SUBMITTED' ? '#e8f5e9' : s.status === 'ACTIVE' ? '#fff3e0' : '#f5f5f5',
+                  color: s.absent ? '#d97706' : s.status === 'SUBMITTED' ? '#2e7d32' : s.status === 'ACTIVE' ? '#e65100' : '#757575',
                 }}>
-                  {sessionStatusLabels[s.status] || s.status}
+                  {s.absent ? '缺考' : (sessionStatusLabels[s.status] || s.status)}
                 </span>
                 {s.suspicionLevel > 0 && <span className="text-xs">⚠️ 异常{s.suspicionLevel}</span>}
               </div>

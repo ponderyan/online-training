@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
 import { OrganizationsService } from './organizations.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
@@ -70,5 +72,37 @@ export class OrganizationsController {
     @Body() data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean },
   ) {
     return this.service.migrateStudents(id, data.targetOrgId, { moveHours: data.moveHours, moveExams: data.moveExams });
+  }
+
+  /** 证书图片上传（logo / 印章） */
+  @Post(':id/cert-upload')
+  @RequirePermission(P.ORG_EDIT)
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+    fileFilter: (_req, file, cb) => {
+      const ext = extname(file.originalname).toLowerCase();
+      if (!['.png', '.jpg', '.jpeg', '.svg', '.webp'].includes(ext)) {
+        cb(new BadRequestException('仅支持 PNG / JPG / SVG / WebP 格式'), false);
+      } else {
+        cb(null, true);
+      }
+    },
+  }))
+  async uploadCertImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { type: string },
+  ) {
+    return this.service.saveCertImage(id, file, body.type);
+  }
+
+  /** 证书配置：签发单位、logo、印章、底部文字 */
+  @Put(':id/cert-config')
+  @RequirePermission(P.ORG_EDIT)
+  updateCertConfig(@Param('id', ParseIntPipe) id: number, @Body() data: {
+    certIssuerName?: string; certLogoUrl?: string; certFooterText?: string;
+    sealUrl?: string; useFoxLearnSeal?: boolean;
+  }) {
+    return this.service.updateCertConfig(id, data);
   }
 }

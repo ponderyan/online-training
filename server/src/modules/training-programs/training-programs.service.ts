@@ -19,13 +19,18 @@ export class TrainingProgramsService {
     return `DT-TC-${year}-${String(seq).padStart(3, '0')}`;
   }
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; subjectId?: number }) {
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; subjectId?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
     if (params.keyword) where.name = { contains: params.keyword };
     if (params.status) where.status = params.status;
     if (params.subjectId) where.subjectId = params.subjectId;
+    // orgId 隔离：非 SUPER_ADMIN 只能看本机构 + 无归属的培训班
+    const isSuperAdmin = params.userRoles?.includes('SUPER_ADMIN');
+    if (!isSuperAdmin && params.userOrgId) {
+      where.orgId = { in: [params.userOrgId, null] };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.trainingProgram.findMany({
@@ -76,9 +81,10 @@ export class TrainingProgramsService {
     };
   }
 
-  async create(data: any) {
+  async create(data: any, userOrgId?: number | null) {
     data.code = await this.generateCode();
     if (!data.createdBy) data.createdBy = 1; // default to admin
+    if (userOrgId && !data.orgId) data.orgId = userOrgId;
     // 日期字段转换（前端可能传 "YYYY-MM-DD" 格式）
     if (data.startDate) data.startDate = new Date(data.startDate);
     if (data.endDate) data.endDate = new Date(data.endDate);
@@ -114,7 +120,7 @@ export class TrainingProgramsService {
     if (!program) throw new NotFoundException('不存在');
     const validTransitions: Record<string, string[]> = {
       PREPARING: ['ENROLLING', 'CANCELLED'], ENROLLING: ['IN_PROGRESS', 'CANCELLED'],
-      IN_PROGRESS: ['REVIEWING'], REVIEWING: ['CERTIFYING', 'PREPARING'],
+      IN_PROGRESS: ['REVIEWING', 'CANCELLED'], REVIEWING: ['CERTIFYING', 'PREPARING'],
       CERTIFYING: ['COMPLETED'], COMPLETED: [], CANCELLED: [],
     };
     if (!validTransitions[program.status]?.includes(status)) {

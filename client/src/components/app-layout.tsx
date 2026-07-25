@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './sidebar';
+import ErrorBoundary from './error-boundary';
 import NotificationBell from './notification-bell';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -83,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Main content */}
         <main className="main-content flex-1 overflow-y-auto min-h-0 p-6 md:p-8 xl:p-10">
           <div className="max-w-7xl mx-auto">
-            {children}
+            <ErrorBoundary>{children}</ErrorBoundary>
           </div>
         </main>
       </div>

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
-import { SUBJECTIVE_TYPES } from '../../common/grading.utils.js';
+import { SUBJECTIVE_TYPES, getPassingScore } from '../../common/grading.utils.js';
 
 @Injectable()
 export class ExamsService {
@@ -16,7 +16,7 @@ export class ExamsService {
   //  场次管理（教务端）
   // ═══════════════════════════════════════════
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; paperId?: number; programId?: number; userOrgId?: number | null; userRoles?: string[] }) {
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; paperId?: number; programId?: number; examMode?: string; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
@@ -24,6 +24,7 @@ export class ExamsService {
     if (params.status) where.status = params.status;
     if (params.paperId) where.paperId = params.paperId;
     if (params.programId) where.programId = params.programId;
+    if (params.examMode) where.examMode = params.examMode;
 
     // ★ orgId 隔离
     const uOrgId = params.userOrgId ?? null;
@@ -87,29 +88,23 @@ export class ExamsService {
     orgId?: number | null;
     scorePublishMode?: string;
     publishAt?: string;
+    examMode?: string;
+    locations?: any;
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
     if (!paper) throw new NotFoundException('试卷不存在');
 
-    // 如果有 programId，从培训班学员中选取
-    let students: { id: number }[];
+    // 如果有 programId，从培训班学员中选取；否则不自动分配（后续手动添加）
+    let students: { id: number }[] = [];
     if (data.programId) {
       const enrollments = await this.prisma.programEnrollment.findMany({
         where: { programId: data.programId },
         select: { studentId: true },
       });
       students = enrollments.map(e => ({ id: e.studentId }));
-    } else {
-      // 从 UserRoleAssignment 查询学员
-      const studentRole = await this.prisma.role.findUnique({ where: { code: 'STUDENT' } });
-      const studentAssignments = studentRole
-        ? await this.prisma.userRoleAssignment.findMany({ where: { roleId: studentRole.id }, select: { userId: true } })
-        : [];
-      students = await this.prisma.user.findMany({
-        where: { id: { in: studentAssignments.map(a => a.userId) }, isActive: true },
-        select: { id: true },
-      });
     }
+
+    const isOffline = data.examMode === 'OFFLINE';
 
     return this.prisma.exam.create({
       data: {
@@ -119,18 +114,20 @@ export class ExamsService {
         endTime: new Date(data.endTime),
         durationMinutes: data.durationMinutes,
         accessType: data.accessType as any || 'UNIFIED',
-        shuffleQuestions: data.shuffleQuestions ?? true,
-        shuffleOptions: data.shuffleOptions ?? true,
-        password: data.password || null,
+        shuffleQuestions: isOffline ? false : (data.shuffleQuestions ?? true),
+        shuffleOptions: isOffline ? false : (data.shuffleOptions ?? true),
+        password: isOffline ? null : (data.password || null),
         programId: data.programId || null,
         passingScore: data.passingScore ?? undefined,
         timeMode: (data.timeMode as any) || 'FIXED',
         paperMode: (data.paperMode as any) || 'SAME',
-        tabSwitchLimit: data.tabSwitchLimit ?? 5,
-        copyProtection: data.copyProtection ?? true,
-        autoSaveInterval: data.autoSaveInterval ?? 30,
+        tabSwitchLimit: isOffline ? 0 : (data.tabSwitchLimit ?? 5),
+        copyProtection: isOffline ? false : (data.copyProtection ?? true),
+        autoSaveInterval: isOffline ? 0 : (data.autoSaveInterval ?? 30),
         scorePublishMode: data.scorePublishMode || 'MANUAL',
         publishAt: data.publishAt ? new Date(data.publishAt) : null,
+        examMode: (data.examMode as any) || 'ONLINE',
+        locations: isOffline ? (data.locations ?? null) : null,
         status: 'DRAFT',
         totalStudents: students.length,
         createdBy: data.createdBy,
@@ -165,6 +162,10 @@ export class ExamsService {
     if (data.tabSwitchLimit !== undefined) updateData.tabSwitchLimit = data.tabSwitchLimit;
     if (data.copyProtection !== undefined) updateData.copyProtection = data.copyProtection;
     if (data.autoSaveInterval !== undefined) updateData.autoSaveInterval = data.autoSaveInterval;
+    if (data.examMode) updateData.examMode = data.examMode;
+    if (data.locations !== undefined) updateData.locations = data.locations;
+    if (data.passingScore !== undefined) updateData.passingScore = data.passingScore;
+    if (data.scorePublishMode) updateData.scorePublishMode = data.scorePublishMode;
     return this.prisma.exam.update({ where: { id }, data: updateData });
   }
 
@@ -199,10 +200,25 @@ export class ExamsService {
   async finish(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.findOne(id, userOrgId, userRoles);
     if (exam.status === 'FINISHED') throw new BadRequestException('考试已结束');
-    await this.prisma.examSession.updateMany({
+
+    // 找出需要强制交卷的会话
+    const activeSessions = await this.prisma.examSession.findMany({
       where: { examId: id, status: { in: ['ACTIVE', 'PAUSED'] } },
-      data: { status: 'SUBMITTED', submittedAt: new Date() },
+      select: { id: true },
     });
+
+    // 批量标记为已交卷
+    if (activeSessions.length > 0) {
+      await this.prisma.examSession.updateMany({
+        where: { examId: id, status: { in: ['ACTIVE', 'PAUSED'] } },
+        data: { status: 'SUBMITTED', submittedAt: new Date(), scoringStatus: 'PENDING' },
+      });
+      // ★ 逐一自动判分（与 heartbeat/forceSubmit 保持一致）
+      for (const s of activeSessions) {
+        await this.autoGrade(s.id);
+      }
+    }
+
     // 统一收口：强制置 FINISHED，并按 session 实际状态重算 submittedCount
     await this.syncExamProgress(id, true);
     return this.prisma.exam.findUnique({ where: { id } });
@@ -291,15 +307,17 @@ export class ExamsService {
       id: s.exam.id,
       title: s.exam.title,
       status: s.exam.status,
+      examMode: s.exam.examMode,
       paperName: s.exam.paper.name,
       totalScore: s.exam.paper.totalScore,
-      durationMinutes: s.exam.paper.durationMinutes,
+      durationMinutes: s.exam.durationMinutes || s.exam.paper.durationMinutes,
       startTime: s.exam.startTime,
       endTime: s.exam.endTime,
       accessType: s.exam.accessType,
       sessionStatus: s.status,
       remainingTime: s.remainingTime,
       scoringStatus: s.scoringStatus,
+      absent: s.absent,
       myScore: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.totalScore : null,
       myFinalScore: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.finalScore : null,
       isPassed: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.isPassed : null,
@@ -310,6 +328,15 @@ export class ExamsService {
   async startExam(examId: number, studentId: number, userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.findOne(examId, userOrgId, userRoles);
     if (exam.status !== 'PUBLISHED' && exam.status !== 'IN_PROGRESS') throw new BadRequestException('考试未开放');
+
+    // ★ 时间窗口校验：仅允许在 startTime ~ endTime 之间进入
+    const now = new Date();
+    if (exam.startTime && now < new Date(exam.startTime)) {
+      throw new BadRequestException('考试尚未开始，请在开考时间后进入');
+    }
+    if (exam.endTime && now > new Date(exam.endTime)) {
+      throw new BadRequestException('考试已结束，无法进入');
+    }
 
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
@@ -326,14 +353,21 @@ export class ExamsService {
       await this.prisma.examSession.update({ where: { id: session.id }, data: { status: 'ACTIVE' } });
       questionsData = this.prepareExamQuestions(exam, session);
     } else if (session.status === 'ASSIGNED') {
-      const now = new Date();
-      const initialTime = (exam.durationMinutes || 60) * 60;
+      const startTime = new Date();
+      const fullDuration = (exam.durationMinutes || 60) * 60;
+      // ★ 迟到裁剪：剩余时间 = min(考试时长, endTime - 当前时间)
+      let initialTime = fullDuration;
+      if (exam.endTime) {
+        const secondsToEnd = Math.floor((new Date(exam.endTime).getTime() - startTime.getTime()) / 1000);
+        initialTime = Math.max(0, Math.min(fullDuration, secondsToEnd));
+      }
+      if (initialTime <= 0) throw new BadRequestException('考试时间已不足，无法开始');
       await this.prisma.examSession.update({
         where: { id: session.id },
-        data: { status: 'ACTIVE', startedAt: now, remainingTime: initialTime },
+        data: { status: 'ACTIVE', startedAt: startTime, remainingTime: initialTime },
       });
       session.status = 'ACTIVE';
-      session.startedAt = now;
+      session.startedAt = startTime;
       session.remainingTime = initialTime;
       // 第一个学员开考 → 考试状态推进到 IN_PROGRESS
       if (exam.status === 'PUBLISHED') {
@@ -429,6 +463,7 @@ export class ExamsService {
   async heartbeat(examId: number, studentId: number, tabSwitchData?: any[]) {
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
+      include: { exam: { select: { endTime: true } } },
     });
     if (!session || session.status !== 'ACTIVE') {
       return {
@@ -438,17 +473,21 @@ export class ExamsService {
       };
     }
 
+    const now = new Date();
     const updateData: any = {
-      lastHeartbeatAt: new Date(),
+      lastHeartbeatAt: now,
     };
+
+    // ★ endTime 硬截止：超过考试结束时间 → 立即强制交卷
+    const endTimeReached = session.exam?.endTime && now > new Date(session.exam.endTime);
 
     // 递减剩余时间
     if (session.remainingTime !== null && session.remainingTime > 0) {
       updateData.remainingTime = Math.max(0, session.remainingTime - 30);
     }
 
-    // ★ 检测剩余时间归零 → 自动交卷
-    if (updateData.remainingTime === 0 || session.remainingTime === 0) {
+    // ★ 检测剩余时间归零 或 endTime 到达 → 自动交卷
+    if (endTimeReached || updateData.remainingTime === 0 || session.remainingTime === 0) {
       // 先标记交卷 + PENDING 兜底，再 autoGrade 覆盖正确的 scoringStatus（与 submitExam 一致）
       await this.prisma.examSession.update({
         where: { id: session.id },
@@ -734,21 +773,22 @@ export class ExamsService {
     }
 
     const examData = answers[0]?.session?.exam;
-    const passingRef = examData?.passingScore ?? Math.floor((examData?.paper?.totalScore || 0) * 0.6);
+    const passingRef = getPassingScore(examData?.passingScore, examData?.paper?.totalScore);
 
     // 判断是否有主观题，决定 scoringStatus 和初始分数
     const hasSubjective = paperQuestions.some((pq: any) => SUBJECTIVE_TYPES.has(pq.question.type));
     const updateData: any = {
       totalScore,
-      isPassed: totalScore >= passingRef,
       subjectiveScore: 0,
     };
     if (hasSubjective) {
-      // 含主观题 → 等人工评分，finalScore 初始为 0 避免误导
+      // ★ 修复：含主观题 → 不判定 isPassed（留 null），等人工评完后由 recalculateSessionScore 统一判定
       updateData.finalScore = 0;
+      updateData.isPassed = null;
     } else {
-      // 纯客观题 → 直接 GRADED，finalScore = totalScore
+      // 纯客观题 → 直接判定 isPassed + GRADED
       updateData.finalScore = totalScore;
+      updateData.isPassed = totalScore >= passingRef;
       updateData.scoringStatus = 'GRADED';
       // AUTO 模式：纯客观题全部自动判分后直接发布
       if (examData?.scorePublishMode === 'AUTO') {
@@ -1095,8 +1135,9 @@ export class ExamsService {
   async publishScores(examId: number) {
     const exam = await this.prisma.exam.findUnique({ where: { id: examId }, select: { id: true, title: true } });
     if (!exam) throw new NotFoundException('考试不存在');
+    // ★ 仅发布已判完的卷（GRADED），跳过 PENDING（待人工阅卷）避免发布未完成的成绩
     const result = await this.prisma.examSession.updateMany({
-      where: { examId, scoringStatus: { notIn: ['PUBLISHED', 'ADJUSTED'] } },
+      where: { examId, scoringStatus: 'GRADED' },
       data: { scoringStatus: 'PUBLISHED', scoringPublishedAt: new Date() },
     });
 

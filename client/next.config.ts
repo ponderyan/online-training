@@ -2,9 +2,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  turbopack: {
+    root: '/Users/ponder/projects/online-training/client',
+  },
   async redirects() {
     return [
-      // 根页 / 永远 302 到 /dashboard，/ 不进浏览器历史栈
       {
         source: '/',
         destination: '/dashboard',

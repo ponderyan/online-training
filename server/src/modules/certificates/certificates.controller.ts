@@ -74,8 +74,11 @@ export class CertificatesController {
   /** 批量发证 */
   @Post()
   @RequirePermission(Permissions.CERT_ISSUE)
-  async issue(@Body() data: { examSessionId: number; studentIds: number[] }) {
-    return this.service.issueCertificates(data.examSessionId, data.studentIds);
+  async issue(@Body() data: { examSessionId: number; studentIds: number[] }, @Req() req: any) {
+    return this.service.issueCertificates(data.examSessionId, data.studentIds, {
+      userOrgId: req.user?.orgId ?? null,
+      userRoles: req.user?.roles || [],
+    });
   }
 
   /** 证书列表（后台） */
@@ -101,8 +104,12 @@ export class CertificatesController {
   async issueSingle(
     @Param('examSessionId', ParseIntPipe) examSessionId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req?: any,
   ) {
-    return this.service.issueSingleCertificate(examSessionId, studentId);
+    return this.service.issueSingleCertificate(examSessionId, studentId, {
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles || [],
+    });
   }
 
   /** 撤销证书 */

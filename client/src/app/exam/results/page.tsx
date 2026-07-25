@@ -56,17 +56,21 @@ export default function ExamResultsPage() {
             <tbody>
               {exams.map((e: any) => (
                 <tr key={e.id}>
-                  <td className="font-medium">{e.title}</td>
+                  <td className="font-medium">{e.title}{e.examMode === 'OFFLINE' && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#fef3c7', color: '#d97706' }}>线下</span>}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.paperName || '—'}</td>
                   <td>{e.totalScore ?? '—'}</td>
                   <td><strong style={{ color: e.isPassed ? '#2e7d32' : '#ef4444' }}>{e.myFinalScore ?? e.myScore ?? '—'}</strong></td>
-                  <td>{e.isPassed ? <span style={{ color: '#2e7d32' }}>✅ 通过</span> : <span style={{ color: '#ef4444' }}>❌ 未通过</span>}</td>
+                  <td>{e.absent ? <span style={{ color: '#d97706' }}>缺考</span> : e.isPassed ? <span style={{ color: '#2e7d32' }}>✅ 通过</span> : <span style={{ color: '#ef4444' }}>❌ 未通过</span>}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{e.submittedAt ? new Date(e.submittedAt).toLocaleString('zh-CN') : '—'}</td>
                   <td>
-                    <button onClick={() => router.push(`/exam/result/${e.id}`)}
-                      className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
-                      查看详情
-                    </button>
+                    {e.examMode !== 'OFFLINE' ? (
+                      <button onClick={() => router.push(`/exam/result/${e.id}`)}
+                        className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+                        查看详情
+                      </button>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--ink-300)' }}>线下笔试</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -67,4 +67,44 @@ export class SystemConfigController {
     }
     return this.getBankPolicy();
   }
+
+  // ── 证书策略 ──
+
+  @Get('cert-policy')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
+  async getCertPolicy() {
+    const [cert_org_self_issue, cert_approval_required, cert_seal_mode] = await Promise.all([
+      this.service.getBoolean('cert_org_self_issue'),
+      this.service.getBoolean('cert_approval_required'),
+      this.service.getConfig('cert_seal_mode'),
+    ]);
+    return {
+      cert_org_self_issue,
+      cert_approval_required,
+      cert_seal_mode: cert_seal_mode || 'platform',
+    };
+  }
+
+  @Put('cert-policy')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async updateCertPolicy(@Body() data: {
+    cert_org_self_issue?: boolean;
+    cert_approval_required?: boolean;
+    cert_seal_mode?: string;
+  }) {
+    if (data.cert_org_self_issue !== undefined) {
+      await this.service.setConfig('cert_org_self_issue', String(data.cert_org_self_issue), '机构能否自行发证');
+    }
+    if (data.cert_approval_required !== undefined) {
+      await this.service.setConfig('cert_approval_required', String(data.cert_approval_required), '发证是否需要审批');
+    }
+    if (data.cert_seal_mode) {
+      const valid = ['platform', 'org', 'both'];
+      if (!valid.includes(data.cert_seal_mode)) {
+        throw new Error('无效的印章模式');
+      }
+      await this.service.setConfig('cert_seal_mode', data.cert_seal_mode, '证书印章模式');
+    }
+    return this.getCertPolicy();
+  }
 }

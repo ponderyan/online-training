@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
@@ -89,6 +89,11 @@ export default function OrganizationsPage() {
   const [migrateOptions, setMigrateOptions] = useState({ moveHours: true, moveExams: false });
   const [migrating, setMigrating] = useState(false);
 
+  // 证书配置
+  const [certConfig, setCertConfig] = useState<{ certIssuerName?: string; certLogoUrl?: string; certFooterText?: string; sealUrl?: string; useFoxLearnSeal?: boolean } | null>(null);
+  const [certSaving, setCertSaving] = useState(false);
+  const [certUploading, setCertUploading] = useState<'logo' | 'seal' | null>(null);
+
   const load = async () => {
     try {
       const data = await api.organizations.getTree();
@@ -108,9 +113,14 @@ export default function OrganizationsPage() {
 
   // 选中节点 → 加载详情
   useEffect(() => {
-    if (!selectedId) { setDataScope(null); setOrgUsers(null); return; }
+    if (!selectedId) { setDataScope(null); setOrgUsers(null); setCertConfig(null); return; }
     api.organizations.getDataScope(selectedId).then(setDataScope).catch(() => setDataScope(null));
     api.organizations.getOrgUsers(selectedId).then(setOrgUsers).catch(() => setOrgUsers(null));
+    api.organizations.get(selectedId).then((org: any) => setCertConfig({
+      certIssuerName: org.certIssuerName || '', certLogoUrl: org.certLogoUrl || '',
+      certFooterText: org.certFooterText || '', sealUrl: org.sealUrl || '',
+      useFoxLearnSeal: org.useFoxLearnSeal ?? true,
+    })).catch(() => setCertConfig(null));
   }, [selectedId]);
 
   const selectedNode = useMemo(() => findNode(tree, selectedId), [tree, selectedId]);
@@ -451,6 +461,84 @@ export default function OrganizationsPage() {
                   <div className="text-xs py-4 text-center" style={{ color: 'var(--ink-300)' }}>加载中…</div>
                 )}
               </div>
+
+              {/* 证书配置 */}
+              <div className="card p-5">
+                <h3 className="section-title">📜 证书配置</h3>
+                {certConfig ? (
+                  <div className="space-y-4 mt-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>签发单位名称</label>
+                      <input value={certConfig.certIssuerName || ''} onChange={e => setCertConfig(prev => prev ? { ...prev, certIssuerName: e.target.value } : prev)}
+                        className="input text-sm" placeholder="如：XX省数智化协会" />
+                    </div>
+
+                    {/* Logo 上传 */}
+                    <CertImageUploader
+                      label="机构 Logo"
+                      hint="建议 PNG 透明底 · 尺寸 ≥ 200×80px · ≤ 2MB"
+                      value={certConfig.certLogoUrl || ''}
+                      uploading={certUploading === 'logo'}
+                      onUpload={async (file) => {
+                        if (!selectedId) return;
+                        setCertUploading('logo');
+                        try {
+                          const res = await api.organizations.uploadCertImage(selectedId, file, 'logo');
+                          setCertConfig(prev => prev ? { ...prev, certLogoUrl: res.url } : prev);
+                          toast.success('Logo 已上传');
+                        } catch (e: any) { toast.error('上传失败：' + (e.message || '')); }
+                        setCertUploading(null);
+                      }}
+                      onClear={() => setCertConfig(prev => prev ? { ...prev, certLogoUrl: '' } : prev)}
+                      previewStyle={{ maxWidth: '160px', maxHeight: '48px' }}
+                    />
+
+                    {/* 印章上传 */}
+                    <CertImageUploader
+                      label="电子印章"
+                      hint="建议 PNG 透明底正方形 · 尺寸 ≥ 240×240px · ≤ 2MB"
+                      value={certConfig.sealUrl || ''}
+                      uploading={certUploading === 'seal'}
+                      onUpload={async (file) => {
+                        if (!selectedId) return;
+                        setCertUploading('seal');
+                        try {
+                          const res = await api.organizations.uploadCertImage(selectedId, file, 'seal');
+                          setCertConfig(prev => prev ? { ...prev, sealUrl: res.url } : prev);
+                          toast.success('印章已上传');
+                        } catch (e: any) { toast.error('上传失败：' + (e.message || '')); }
+                        setCertUploading(null);
+                      }}
+                      onClear={() => setCertConfig(prev => prev ? { ...prev, sealUrl: '' } : prev)}
+                      previewStyle={{ width: '72px', height: '72px' }}
+                      round
+                    />
+
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>底部说明文字</label>
+                      <input value={certConfig.certFooterText || ''} onChange={e => setCertConfig(prev => prev ? { ...prev, certFooterText: e.target.value } : prev)}
+                        className="input text-sm" placeholder="本证书最终解释权归..." />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" checked={certConfig.useFoxLearnSeal ?? true}
+                        onChange={e => setCertConfig(prev => prev ? { ...prev, useFoxLearnSeal: e.target.checked } : prev)}
+                        style={{ accentColor: '#e87a30' }} />
+                      <span className="text-xs" style={{ color: 'var(--ink-500)' }}>使用平台统一印章（忽略机构印章）</span>
+                    </div>
+                    <button disabled={certSaving} onClick={async () => {
+                      if (!selectedId || !certConfig) return;
+                      setCertSaving(true);
+                      try {
+                        await api.organizations.updateCertConfig(selectedId, certConfig);
+                        toast.success('证书配置已保存');
+                      } catch (e: any) { toast.error('保存失败：' + (e.message || '')); }
+                      setCertSaving(false);
+                    }} className="btn btn-fox btn-sm">{certSaving ? '保存中…' : '保存证书配置'}</button>
+                  </div>
+                ) : (
+                  <div className="text-xs py-4 text-center" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
@@ -753,6 +841,98 @@ function MigrateOrgPicker({ node, depth, selectedId, onSelect, excludeId }: {
         <MigrateOrgPicker key={child.id} node={child} depth={depth + 1}
           selectedId={selectedId} onSelect={onSelect} excludeId={excludeId} />
       ))}
+    </div>
+  );
+}
+
+
+/** 证书图片上传组件：拖拽 / 点击上传 + 预览 + 格式校验 */
+function CertImageUploader({ label, hint, value, uploading, onUpload, onClear, previewStyle, round }: {
+  label: string;
+  hint: string;
+  value: string;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+  previewStyle?: React.CSSProperties;
+  round?: boolean;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const validate = (file: File): boolean => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('格式不支持，请上传 PNG / JPG / SVG / WebP 格式的图片');
+      return false;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('文件过大，最大支持 2MB');
+      return false;
+    }
+    return true;
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && validate(file)) onUpload(file);
+  };
+
+  const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && validate(file)) onUpload(file);
+    e.target.value = '';
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>{label}</label>
+      <div className="flex items-center gap-3">
+        {/* 预览区 */}
+        {value ? (
+          <div className="relative group" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)', background: '#fafafa', ...previewStyle }}>
+            <img src={value} alt={label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <button onClick={onClear}
+              className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              style={{ background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none' }}
+              title="移除">✕</button>
+          </div>
+        ) : (
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className="flex flex-col items-center justify-center cursor-pointer transition-colors"
+            style={{
+              width: round ? '72px' : '160px',
+              height: round ? '72px' : '56px',
+              borderRadius: round ? '50%' : '8px',
+              border: `1.5px dashed ${dragOver ? 'var(--fox)' : 'var(--ink-200)'}`,
+              background: dragOver ? 'var(--fox-pale)' : 'var(--paper)',
+            }}
+          >
+            {uploading ? (
+              <span className="text-[10px]" style={{ color: 'var(--fox)' }}>上传中…</span>
+            ) : (
+              <>
+                <span className="text-sm">📁</span>
+                <span className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>拖拽或点击</span>
+              </>
+            )}
+          </div>
+        )}
+        {value && (
+          <button onClick={() => inputRef.current?.click()} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-400)' }}>
+            {uploading ? '上传中…' : '更换'}
+          </button>
+        )}
+      </div>
+      <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>{hint}</p>
+      <p className="text-[10px]" style={{ color: 'var(--ink-300)' }}>支持 PNG / JPG / SVG / WebP · 最大 2MB · 图片不会变形（等比缩放）</p>
+      <input ref={inputRef} type="file" accept=".png,.jpg,.jpeg,.svg,.webp" onChange={handleSelect} className="hidden" />
     </div>
   );
 }

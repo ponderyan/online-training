@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // 树节点类型（含子节点与计数）
 export interface OrgNode {
@@ -385,5 +387,50 @@ export class OrganizationsService {
       }
     }
     return { total: users.length, groups: Object.values(groups) };
+  }
+
+  /** 保存证书图片（logo/印章） */
+  async saveCertImage(id: number, file: Express.Multer.File, type: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id } });
+    if (!org) throw new NotFoundException('机构不存在');
+    if (!file) throw new BadRequestException('未接收到文件');
+
+    const dir = path.resolve('uploads/cert-assets');
+    await fs.mkdir(dir, { recursive: true });
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    const fileName = `org-${id}-${type}-${Date.now()}${ext}`;
+    const filePath = path.join(dir, fileName);
+    await fs.writeFile(filePath, file.buffer);
+
+    const url = `/uploads/cert-assets/${fileName}`;
+
+    // 更新对应字段
+    if (type === 'logo') {
+      await this.prisma.organization.update({ where: { id }, data: { certLogoUrl: url } });
+    } else if (type === 'seal') {
+      await this.prisma.organization.update({ where: { id }, data: { sealUrl: url } });
+    }
+
+    return { url, fileName };
+  }
+
+  /** 更新证书配置 */
+  async updateCertConfig(id: number, data: {
+    certIssuerName?: string; certLogoUrl?: string; certFooterText?: string;
+    sealUrl?: string; useFoxLearnSeal?: boolean;
+  }) {
+    const org = await this.prisma.organization.findUnique({ where: { id } });
+    if (!org) throw new NotFoundException('机构不存在');
+    return this.prisma.organization.update({
+      where: { id },
+      data: {
+        ...(data.certIssuerName !== undefined && { certIssuerName: data.certIssuerName }),
+        ...(data.certLogoUrl !== undefined && { certLogoUrl: data.certLogoUrl }),
+        ...(data.certFooterText !== undefined && { certFooterText: data.certFooterText }),
+        ...(data.sealUrl !== undefined && { sealUrl: data.sealUrl }),
+        ...(data.useFoxLearnSeal !== undefined && { useFoxLearnSeal: data.useFoxLearnSeal }),
+      },
+    });
   }
 }

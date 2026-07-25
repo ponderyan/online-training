@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjgsInVzZXJuYW1lIjoic3R1MDAxIiwib3JnSWQiOjEsInByaW1hcnlBZ2VuY3lJZCI6MSwicm9sZXMiOlsiU1RVREVOVCJdLCJpYXQiOjE3ODQ5MTIzNjksImV4cCI6MTc4NDk5ODc2OX0.0GUFXtCXtDD9OipvdoqPeWHxAMvpw0mTNYCraQNYADA"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":8,\"username\":\"stu001\",\"displayName\":\"张三\",\"orgId\":1,\"primaryAgencyId\":1,\"roles\":[\"STUDENT\"],\"role\":\"STUDENT\",\"permissions\":[\"cert:view\",\"course:view\",\"evaluation:view\",\"exam:view\",\"knowledge:view\",\"learningHour:view\",\"notification:view\",\"report:view\"]}"
+        },
+        {
+          "name": "userPermissions",
+          "value": "{\"permissions\":[\"cert:view\",\"course:view\",\"evaluation:view\",\"exam:view\",\"knowledge:view\",\"learningHour:view\",\"notification:view\",\"report:view\"],\"roles\":[\"STUDENT\"]}"
+        }
+      ]
+    }
+  ]
+}

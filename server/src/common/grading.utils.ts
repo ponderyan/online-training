@@ -7,6 +7,16 @@ export const SUBJECTIVE_TYPES = new Set(['SHORT_ANSWER', 'CASE_STUDY']);
 export const OBJECTIVE_TYPES = new Set(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK']);
 
 /**
+ * 统一获取合格分数线
+ * 语义：绝对分（非百分比）。若 exam.passingScore 未设置，默认取试卷满分的 60%。
+ * 所有需要判定 isPassed 的地方必须调用此函数，避免 fallback 逻辑散落。
+ */
+export function getPassingScore(examPassingScore: number | null | undefined, paperTotalScore: number | undefined): number {
+  if (examPassingScore != null && examPassingScore > 0) return examPassingScore;
+  return Math.floor((paperTotalScore || 100) * 0.6);
+}
+
+/**
  * 重算 ExamSession 所有成绩字段
  * 在评分/复核改分/申诉批准后调用，确保 session 级汇总字段一致
  */
@@ -47,13 +57,16 @@ export async function recalculateSessionScore(
     })
     .length;
 
-  // 获取 passingScore
+  // 获取 passingScore（统一工具函数）
   const session = await prisma.examSession.findUnique({
     where: { id: sessionId },
     include: { exam: { include: { paper: true } } },
   });
-  const paperTotal = session?.exam?.paper?.totalScore || 100;
-  const passingScore = session?.exam?.passingScore ?? Math.floor(paperTotal * 0.6);
+  const passingScore = getPassingScore(session?.exam?.passingScore, session?.exam?.paper?.totalScore);
+
+  // ★ 修复：仅当所有主观题已评完时才判定 isPassed，否则留 null
+  const allGraded = remainingSubjective === 0;
+  const isPassed = allGraded ? totalScore >= passingScore : null;
 
   // 更新 session
   await prisma.examSession.update({
@@ -61,11 +74,11 @@ export async function recalculateSessionScore(
     data: {
       subjectiveScore,
       totalScore,
-      finalScore: totalScore,
-      isPassed: totalScore >= passingScore,
-      scoringStatus: remainingSubjective === 0 ? 'GRADED' : 'GRADING',
+      finalScore: allGraded ? totalScore : undefined,
+      isPassed,
+      scoringStatus: allGraded ? 'GRADED' : 'GRADING',
     },
   });
 
-  return { subjectiveScore, totalScore, isPassed: totalScore >= passingScore };
+  return { subjectiveScore, totalScore, isPassed };
 }

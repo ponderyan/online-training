@@ -180,11 +180,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 
   [Role.ORG_ADMIN]: [
-    Permissions.SYSTEM_CONFIG,
-    Permissions.SYSTEM_CONFIG_VIEW,
-    Permissions.SYSTEM_CONFIG_MANAGE,
     Permissions.SYSTEM_LOGS,
-    Permissions.SYSTEM_DICTIONARY,
     Permissions.QUESTION_CREATE,
     Permissions.QUESTION_EDIT,
     Permissions.QUESTION_DELETE,
@@ -266,7 +262,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.AUDIT_LOG_VIEW,
 
     Permissions.KNOWLEDGE_VIEW,
-    Permissions.KNOWLEDGE_MANAGE,
     Permissions.STATS_VIEW,
   ],
 
@@ -352,7 +347,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permissions.TRANSCRIPT_VIEW,
     Permissions.NOTIFICATION_VIEW,
     Permissions.KNOWLEDGE_VIEW,
-    Permissions.KNOWLEDGE_MANAGE,
   ],
 
   [Role.AGENCY_ADMIN]: [

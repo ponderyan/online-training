@@ -7,3 +7,5 @@ server_logs/
 .superpowers/
 server/uploads/
 server/.next/
+client/playwright-report/
+client/test-results/

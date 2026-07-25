@@ -84,8 +84,10 @@ export default function ExamList() {
 
   useEffect(() => { load(); }, []);
 
+  const now = new Date();
   const activeExams = exams.filter(e => e.sessionStatus === 'ACTIVE');
-  const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE');
+  const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE' && !(e.endTime && now > new Date(e.endTime)));
+  const missedExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE' && e.endTime && now > new Date(e.endTime));
   const historyExams = exams.filter(e => e.submittedAt);
 
   const sortedActive = [...activeExams].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -109,7 +111,7 @@ export default function ExamList() {
     </div>
   );
 
-  const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0;
+  const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0 || missedExams.length > 0;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
@@ -158,11 +160,16 @@ export default function ExamList() {
                   }}>{exam.accessType === 'UNIFIED' ? '返回考场 →' : '继续答题 →'}</Link>
                 </div>
               ))}
-              {sortedPending.map(exam => (
+              {sortedPending.map(exam => {
+                const now = new Date();
+                const notStarted = exam.startTime && now < new Date(exam.startTime);
+                const ended = exam.endTime && now > new Date(exam.endTime);
+                return (
                 <div key={exam.id} style={{
                   background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  opacity: ended ? 0.6 : 1,
                 }}>
                   <div>
                     <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
@@ -171,12 +178,19 @@ export default function ExamList() {
                     </p>
                     <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{exam.paperName}</p>
                   </div>
-                  <Link href={`/exam/take/${exam.id}`} style={{
-                    padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
-                    fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
-                  }}>进入考试 →</Link>
+                  {notStarted ? (
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
+                  ) : ended ? (
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#fef2f2', color: '#ef4444', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
+                  ) : (
+                    <Link href={`/exam/take/${exam.id}`} style={{
+                      padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                      fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
+                    }}>进入考试 →</Link>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </>
           )}
         </section>

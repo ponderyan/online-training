@@ -12,6 +12,9 @@ export default function SettingsPage() {
   const [bankPolicy, setBankPolicy] = useState<{ allow_org_own_bank: boolean; org_bank_visibility: string } | null>(null);
   const [bankPolicyLoading, setBankPolicyLoading] = useState(false);
   const [bankPolicySaving, setBankPolicySaving] = useState(false);
+  const [certPolicy, setCertPolicy] = useState<{ cert_org_self_issue: boolean; cert_approval_required: boolean; cert_seal_mode: string } | null>(null);
+  const [certPolicyLoading, setCertPolicyLoading] = useState(false);
+  const [certPolicySaving, setCertPolicySaving] = useState(false);
 
   // System params form
   const [coolingDays, setCoolingDays] = useState(() => {
@@ -45,6 +48,13 @@ export default function SettingsPage() {
         .then(setBankPolicy)
         .catch(() => {})
         .finally(() => setBankPolicyLoading(false));
+    }
+    if (activeTab === 'cert') {
+      setCertPolicyLoading(true);
+      api.systemConfig.certPolicy.get()
+        .then(setCertPolicy)
+        .catch(() => {})
+        .finally(() => setCertPolicyLoading(false));
     }
   }, [activeTab]);
 
@@ -89,6 +99,7 @@ export default function SettingsPage() {
           { key: 'dict', label: '数据字典' },
           { key: 'sys', label: '系统参数' },
           { key: 'bank', label: '题库策略' },
+          { key: 'cert', label: '证书策略' },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="px-5 py-2.5 text-sm font-medium cursor-pointer border-b-2 transition-colors bg-transparent"
@@ -248,6 +259,94 @@ export default function SettingsPage() {
                   setBankPolicySaving(false);
                 }} className="btn btn-ink btn-sm">
                   {bankPolicySaving ? '保存中…' : '保存策略'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {activeTab === 'cert' && (
+        <div className="card p-6 max-w-[500px]">
+          <h3 className="section-title mb-5">证书签发策略</h3>
+
+          {certPolicyLoading || !certPolicy ? (
+            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+          ) : (
+            <>
+              {/* 机构自行发证 */}
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <div className="text-sm font-medium">允许机构自行发证</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                    关闭后，只有协会（超级管理员）可以签发证书
+                  </div>
+                </div>
+                <label className="toggle-switch" style={{ position: 'relative', cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={certPolicy.cert_org_self_issue}
+                    onChange={e => setCertPolicy(prev => prev ? { ...prev, cert_org_self_issue: e.target.checked } : prev)}
+                    style={{ accentColor: '#e87a30', width: '20px', height: '20px' }} />
+                </label>
+              </div>
+
+              {/* 发证审批 */}
+              <div className="flex items-center justify-between py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <div>
+                  <div className="text-sm font-medium">发证需要审批</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                    开启后，证书签发后状态为待审批，需协会确认
+                  </div>
+                </div>
+                <label className="toggle-switch" style={{ position: 'relative', cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={certPolicy.cert_approval_required}
+                    onChange={e => setCertPolicy(prev => prev ? { ...prev, cert_approval_required: e.target.checked } : prev)}
+                    style={{ accentColor: '#e87a30', width: '20px', height: '20px' }} />
+                </label>
+              </div>
+
+              {/* 印章模式 */}
+              <div className="py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <div className="text-sm font-medium mb-3">证书印章模式</div>
+                <div className="space-y-3">
+                  {[
+                    { value: 'platform', label: '平台统一章', desc: '所有证书使用协会（平台）印章' },
+                    { value: 'org', label: '机构各自章', desc: '各机构使用自己的电子印章' },
+                    { value: 'both', label: '双章', desc: '同时显示平台章和机构章' },
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="cert_seal_mode"
+                        value={opt.value}
+                        checked={certPolicy.cert_seal_mode === opt.value}
+                        onChange={e => setCertPolicy(prev => prev ? { ...prev, cert_seal_mode: e.target.value } : prev)}
+                        style={{ accentColor: '#e87a30', marginTop: '3px' }} />
+                      <div>
+                        <div className="text-sm">{opt.label}</div>
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>{opt.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 保存按钮 */}
+              <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <button onClick={async () => {
+                  if (!certPolicy) return;
+                  setCertPolicySaving(true);
+                  try {
+                    await api.systemConfig.certPolicy.update({
+                      cert_org_self_issue: certPolicy.cert_org_self_issue,
+                      cert_approval_required: certPolicy.cert_approval_required,
+                      cert_seal_mode: certPolicy.cert_seal_mode,
+                    });
+                    toast.success('证书策略已更新');
+                  } catch (e: any) {
+                    toast.error('保存失败：' + (e.message || '未知错误'));
+                  }
+                  setCertPolicySaving(false);
+                }} className="btn btn-ink btn-sm">
+                  {certPolicySaving ? '保存中…' : '保存策略'}
                 </button>
               </div>
             </>

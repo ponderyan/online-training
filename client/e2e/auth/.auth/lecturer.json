@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQsInVzZXJuYW1lIjoibGVjdHVyZXIwMSIsIm9yZ0lkIjoxLCJwcmltYXJ5QWdlbmN5SWQiOjEsInJvbGVzIjpbIkxFQ1RVUkVSIl0sImlhdCI6MTc4NDkxMjM2NywiZXhwIjoxNzg0OTk4NzY3fQ.EAP9g1suH0mw4W2t0YVV1eJn9HqrwpBqkC9nnZs2RKU"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":4,\"username\":\"lecturer01\",\"displayName\":\"李讲师\",\"orgId\":1,\"primaryAgencyId\":1,\"roles\":[\"LECTURER\"],\"role\":\"LECTURER\",\"permissions\":[\"course:view\",\"exam:result:view\",\"grading:manual\",\"knowledge:view\",\"notification:view\",\"report:view\",\"transcript:view\"]}"
+        },
+        {
+          "name": "userPermissions",
+          "value": "{\"permissions\":[\"course:view\",\"exam:result:view\",\"grading:manual\",\"knowledge:view\",\"notification:view\",\"report:view\",\"transcript:view\"],\"roles\":[\"LECTURER\"]}"
+        }
+      ]
+    }
+  ]
+}

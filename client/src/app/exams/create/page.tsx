@@ -54,12 +54,30 @@ const SCENARIOS = [
       shuffleOptions: true,
     },
   },
+  {
+    id: 'offline',
+    icon: '✍️',
+    title: '线下笔试',
+    desc: '纸质考试、人工监考、线下阅卷',
+    preset: {
+      timeMode: 'FIXED',
+      paperMode: 'SAME',
+      tabSwitchLimit: 0,
+      copyProtection: false,
+      autoSaveInterval: 0,
+      durationMinutes: 120,
+      shuffleQuestions: false,
+      shuffleOptions: false,
+    },
+  },
 ];
 
 export default function CreateExam() {
   const router = useRouter();
   const [step, setStep] = useState<'scenario' | 'settings'>('scenario');
   const [scenario, setScenario] = useState<string | null>(null);
+  const [examMode, setExamMode] = useState<string>('ONLINE');
+  const [locations, setLocations] = useState<any[]>([{ name: '', address: '', proctor: '', capacity: 0 }]);
 
   // 表单字段
   const [papers, setPapers] = useState<any[]>([]);
@@ -102,6 +120,7 @@ export default function CreateExam() {
     const s = SCENARIOS.find(x => x.id === id);
     if (!s) return;
     setScenario(id);
+    setExamMode(id === 'offline' ? 'OFFLINE' : 'ONLINE');
     setTimeMode(s.preset.timeMode);
     setPaperMode(s.preset.paperMode);
     setTabSwitchLimit(s.preset.tabSwitchLimit);
@@ -129,6 +148,8 @@ export default function CreateExam() {
         publishAt: publishAt || undefined,
         timeMode, paperMode,
         tabSwitchLimit, copyProtection, autoSaveInterval,
+        examMode,
+        locations: examMode === 'OFFLINE' ? locations : undefined,
       });
       router.push(`/exams/${exam.id}`);
     } catch (e: any) { setError(e.message); }
@@ -262,7 +283,7 @@ export default function CreateExam() {
                     </label>
                   ))}
                 </div>
-                <div className="flex items-center gap-4">
+                {examMode === 'ONLINE' && <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={shuffleQuestions} onChange={e => setShuffleQuestions(e.target.checked)}
                       className="accent-[var(--fox)]" />
@@ -273,11 +294,11 @@ export default function CreateExam() {
                       className="accent-[var(--fox)]" />
                     <span className="text-xs" style={{ color: 'var(--ink-500)' }}>选项乱序</span>
                   </label>
-                </div>
+                </div>}
               </div>
 
-              {/* 🛡️ 防作弊设置 */}
-              <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              {/* 🛡️ 防作弊设置（仅线上） */}
+              {examMode === 'ONLINE' && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
                 <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🛡️ 防作弊设置</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -300,7 +321,44 @@ export default function CreateExam() {
                     className="accent-[var(--fox)]" />
                   <span className="text-xs" style={{ color: 'var(--ink-500)' }}>禁止复制粘贴</span>
                 </label>
-              </div>
+              </div>}
+
+              {/* 🏫 考场信息（仅线下） */}
+              {examMode === 'OFFLINE' && (
+                <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                  <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🏫 考场信息</label>
+                  {locations.map((loc, idx) => (
+                    <div key={idx} className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>考场名称</label>
+                        <input value={loc.name} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], name: e.target.value }; setLocations(arr); }}
+                          className="input" placeholder="如：A栋301" />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>地址</label>
+                        <input value={loc.address} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], address: e.target.value }; setLocations(arr); }}
+                          className="input" placeholder="详细地址" />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>监考人</label>
+                        <input value={loc.proctor} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], proctor: e.target.value }; setLocations(arr); }}
+                          className="input" placeholder="监考人姓名" />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>容纳人数</label>
+                        <input type="number" value={loc.capacity || ''} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], capacity: Number(e.target.value) }; setLocations(arr); }}
+                          className="input" placeholder="0" min={0} />
+                      </div>
+                      {locations.length > 1 && (
+                        <button onClick={() => setLocations(locations.filter((_, i) => i !== idx))}
+                          className="col-span-2 text-xs text-right" style={{ color: 'var(--verm)' }}>删除此考场</button>
+                      )}
+                    </div>
+                  ))}
+                  <button onClick={() => setLocations([...locations, { name: '', address: '', proctor: '', capacity: 0 }])}
+                    className="btn btn-ghost btn-xs">+ 添加考场</button>
+                </div>
+              )}
 
               {/* 其他设置 */}
               <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>

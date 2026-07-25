@@ -13,29 +13,40 @@ export class DashboardService {
     // ── 全局数据（仅 SUPER_ADMIN / ORG_ADMIN）──
     let global: any = {};
     if (roles.includes('SUPER_ADMIN') || roles.includes('ORG_ADMIN')) {
+      // ★ ORG_ADMIN 数据隔离：仅看本组织及子孙组织的数据
+      const isSuperAdmin = roles.includes('SUPER_ADMIN');
+      const orgIds = isSuperAdmin ? null : await this.getOrgScope(user.orgId);
+      const orgFilter = orgIds ? { orgId: { in: orgIds } } : {};
+
       const [
         activePrograms, totalStudents, totalInstructors,
         pendingGrading, pendingAppeals, pendingCerts,
         recentPrograms, upcomingExams, monthlyStudents,
       ] = await Promise.all([
-        this.prisma.trainingProgram.count({ where: { status: 'IN_PROGRESS' } }),
-        this.getUserCountByRole('STUDENT'),
+        this.prisma.trainingProgram.count({ where: { ...orgFilter, status: 'IN_PROGRESS' } }),
+        orgIds
+          ? this.prisma.user.count({ where: { orgId: { in: orgIds }, isActive: true, roleAssignments: { some: { role: { code: 'STUDENT' } } } } })
+          : this.getUserCountByRole('STUDENT'),
         this.prisma.instructor.count({ where: { status: 'ACTIVE' } }),
         this.prisma.examSession.count({
-          where: { status: 'SUBMITTED', scoringStatus: { in: ['PENDING', 'GRADING'] } },
+          where: { status: 'SUBMITTED', scoringStatus: { in: ['PENDING', 'GRADING'] },
+            ...(orgIds ? { exam: { orgId: { in: orgIds } } } : {}) },
         }),
         this.prisma.scoreAppeal.count({ where: { status: 'PENDING' } }),
         this.prisma.certificateApplication.count({ where: { status: 'PENDING' } }),
         this.prisma.trainingProgram.findMany({
+          where: { ...orgFilter },
           orderBy: { createdAt: 'desc' }, take: 5,
           select: { id: true, name: true, code: true, status: true, startDate: true, endDate: true },
         }),
         this.prisma.exam.findMany({
-          where: { status: { in: ['PUBLISHED', 'IN_PROGRESS'] } },
+          where: { ...orgFilter, status: { in: ['PUBLISHED', 'IN_PROGRESS'] } },
           orderBy: { startTime: 'asc' }, take: 3,
           select: { id: true, title: true, startTime: true, endTime: true, status: true },
         }),
-        this.getNewUserCountByRole('STUDENT', startOfMonth),
+        orgIds
+          ? this.prisma.user.count({ where: { orgId: { in: orgIds }, createdAt: { gte: startOfMonth }, isActive: true, roleAssignments: { some: { role: { code: 'STUDENT' } } } } })
+          : this.getNewUserCountByRole('STUDENT', startOfMonth),
       ]);
       global = { activePrograms, totalStudents, totalInstructors, pendingGrading, pendingAppeals, pendingCerts, recentPrograms, upcomingExams, monthlyStudents };
     }
@@ -127,7 +138,7 @@ export class DashboardService {
     }
 
     return {
-      role: roles[0] || 'STUDENT',
+      roles,
       global,
       examOfficer,
       lecturer,
@@ -152,5 +163,17 @@ export class DashboardService {
     const ids = assignments.map(a => a.userId);
     if (ids.length === 0) return 0;
     return this.prisma.user.count({ where: { id: { in: ids }, createdAt: { gte: after }, isActive: true } });
+  }
+
+  /** 获取组织范围：本组织 + 所有子孙组织 ID */
+  private async getOrgScope(orgId: number | null): Promise<number[] | null> {
+    if (!orgId) return null;
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } });
+    if (!org?.path) return [orgId];
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: org.path } },
+      select: { id: true },
+    });
+    return descendants.map(d => d.id);
   }
 }
