@@ -15,6 +15,8 @@ const DIFF_MAP: Record<string, string> = {
   'EASY': 'EASY', 'MEDIUM_EASY': 'MEDIUM_EASY', 'MEDIUM_HARD': 'MEDIUM_HARD', 'HARD': 'HARD',
 };
 
+const MAX_IMPORT_COUNT = 300; // 单次最大导入题数
+
 const TYPE_SHEETS: Record<string, { headers: string[]; sample: string[]; colMap: string[] }> = {
   SINGLE_CHOICE: {
     headers: ['题干', '选项A', '选项B', '选项C', '选项D', '选项E', '选项F', '正确答案', '难度', '章节名称', '解析'],
@@ -199,6 +201,12 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
       if (parsed.length === 0) {
         setUploadStatus('error');
         setUploadError('未解析到有效数据，请确认文件使用了本系统下载的模板');
+        return;
+      }
+
+      if (parsed.length > MAX_IMPORT_COUNT) {
+        setUploadStatus('error');
+        setUploadError(`本次解析到 ${parsed.length} 道题目，超出单次上限（${MAX_IMPORT_COUNT} 道）。请拆分为多个文件分批导入。`);
         return;
       }
 

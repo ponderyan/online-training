@@ -330,6 +330,11 @@ export class QuestionsService {
   }
 
   async batchCreate(questions: any[], userOrgId?: number | null) {
+    const MAX_BATCH = 300;
+    if (questions.length > MAX_BATCH) {
+      throw new BadRequestException(`单次最多导入 ${MAX_BATCH} 道题目，当前 ${questions.length} 道，请分批导入`);
+    }
+
     const results: { index: number; success: boolean; id?: number; error?: string }[] = [];
 
     // 预加载：按 subjectId 缓存默认章节（用于 chapterId 缺失时兜底）
