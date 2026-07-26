@@ -849,6 +849,16 @@ export const api = {
   },
 
   // ── 机构管理 ──
+  orgCodes: {
+    getAbbreviations: () => request<any[]>('/org-codes/abbreviations'),
+    createAbbreviation: (data: any) => request<any>('/org-codes/abbreviations', { method: 'POST', body: JSON.stringify(data) }),
+    updateAbbreviation: (id: number, data: any) => request<any>(`/org-codes/abbreviations/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteAbbreviation: (id: number) => request<any>(`/org-codes/abbreviations/${id}`, { method: 'DELETE' }),
+    getRules: () => request<any>('/org-codes/rules'),
+    updateRules: (data: any) => request<any>('/org-codes/rules', { method: 'PUT', body: JSON.stringify(data) }),
+    preview: (parentId: number | null, name: string) => request<{ code: string }>(`/org-codes/preview?parentId=${parentId || ''}&name=${encodeURIComponent(name)}`).then(r => r.code),
+  },
+
   organizations: {
     list: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';

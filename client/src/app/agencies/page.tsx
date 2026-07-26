@@ -144,7 +144,7 @@ export default function AgenciesPage() {
                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>所属组织</label>
                 <select value={form.organizationId} onChange={e => setForm({...form, organizationId: e.target.value})} className="input">
                   <option value="">— 不隶属组织 —</option>
-                  {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.code} - {o.name}</option>)}
                 </select>
                 <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>选择后，该机构创建的学员将自动归属对应组织</p>
               </div>

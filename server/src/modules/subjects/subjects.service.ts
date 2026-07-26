@@ -8,7 +8,7 @@ export class SubjectsService {
   async findAll() {
     return this.prisma.subject.findMany({
       include: {
-        organization: { select: { id: true, name: true, orgType: true } },
+        organization: { select: { id: true, name: true, code: true, orgType: true } },
         _count: {
           select: {
             chapters: true,
@@ -141,7 +141,7 @@ export class SubjectsService {
       where,
       select: {
         id: true, name: true, code: true, sortOrder: true, orgId: true,
-        organization: { select: { id: true, name: true, orgType: true } },
+        organization: { select: { id: true, name: true, code: true, orgType: true } },
       },
       orderBy: { sortOrder: 'asc' },
     });

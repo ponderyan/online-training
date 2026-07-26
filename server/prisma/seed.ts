@@ -712,6 +712,48 @@ async function main() {
   }
   console.log(`✅ 消息中心配置: ${msgConfigs.length} 项`);
 
+  // ── 组织编码规则配置（Phase 2）──
+  const orgCodeConfigs = [
+    { key: 'org_code_separator', value: '-', desc: '组织编码层级分隔符', group: 'general', inputType: 'text', options: null },
+    { key: 'org_code_auto_generate', value: 'true', desc: '创建组织时自动生成编码', group: 'general', inputType: 'boolean', options: null },
+    { key: 'org_code_include_level', value: 'true', desc: '编码是否体现层级（父编码+子缩写）', group: 'general', inputType: 'boolean', options: null },
+  ];
+  for (const cfg of orgCodeConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
+      create: cfg,
+    });
+  }
+  console.log(`✅ 组织编码配置: ${orgCodeConfigs.length} 项`);
+
+  // ── 组织编码缩写词典（Phase 2）──
+  const abbreviations = [
+    { keyword: '评估部', abbr: 'PG', category: 'department', sortOrder: 1 },
+    { keyword: '创新部', abbr: 'CX', category: 'department', sortOrder: 2 },
+    { keyword: '培训部', abbr: 'PX', category: 'department', sortOrder: 3 },
+    { keyword: '技术部', abbr: 'JS', category: 'department', sortOrder: 4 },
+    { keyword: '市场部', abbr: 'SC', category: 'department', sortOrder: 5 },
+    { keyword: '运营部', abbr: 'YY', category: 'department', sortOrder: 6 },
+    { keyword: '综合部', abbr: 'ZH', category: 'department', sortOrder: 7 },
+    { keyword: '财务部', abbr: 'CW', category: 'department', sortOrder: 8 },
+    { keyword: '人事部', abbr: 'RS', category: 'department', sortOrder: 9 },
+    { keyword: '研发部', abbr: 'YF', category: 'department', sortOrder: 10 },
+    { keyword: '考务部', abbr: 'KW', category: 'department', sortOrder: 11 },
+    { keyword: '认证部', abbr: 'RZ', category: 'department', sortOrder: 12 },
+    { keyword: '信息化', abbr: 'XXH', category: 'business', sortOrder: 20 },
+    { keyword: '数智化', abbr: 'SZH', category: 'business', sortOrder: 21 },
+    { keyword: '标准化', abbr: 'BZH', category: 'business', sortOrder: 22 },
+  ];
+  for (const abbr of abbreviations) {
+    await prisma.orgAbbreviation.upsert({
+      where: { keyword: abbr.keyword },
+      update: { abbr: abbr.abbr, category: abbr.category, sortOrder: abbr.sortOrder },
+      create: abbr,
+    });
+  }
+  console.log(`✅ 组织编码缩写词典: ${abbreviations.length} 条`);
+
   // ═══════════════════════════════════════
   // 学时类型字典
   // ═══════════════════════════════════════

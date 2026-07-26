@@ -2152,3 +2152,19 @@ model ChunkKnowledgePoint {
   @@unique([chunkId, knowledgePointId])
   @@map("chunk_knowledge_points")
 }
+
+// ═══════════════════════════════════════════
+// 组织编码缩写词典（Phase 2）
+// ═══════════════════════════════════════════
+
+model OrgAbbreviation {
+  id        Int      @id @default(autoincrement())
+  keyword   String   @unique @db.VarChar(50)   // 匹配关键词，如"创新部"
+  abbr      String   @db.VarChar(20)           // 缩写，如"CX"
+  category  String?  @db.VarChar(50)           // 分类：department/business/region
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("org_abbreviation")
+}

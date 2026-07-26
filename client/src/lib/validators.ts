@@ -50,26 +50,4 @@ export function validateOrgCode(value: string): string | null {
   return null;
 }
 
-// ─── 组织编码自动建议 ───
-
-const KNOWN_ABBR: Record<string, string> = {
-  '评估部': 'PG', '创新部': 'CX', '培训部': 'PX', '技术部': 'JS',
-  '市场部': 'SC', '运营部': 'YY', '综合部': 'ZH', '财务部': 'CW',
-  '人事部': 'RS', '研发部': 'YF', '考务部': 'KW', '认证部': 'RZ',
-};
-
-/**
- * 根据父编码和名称生成建议编码
- * 例：父=ITSS，名称=创新部 → ITSS-CX
- */
-export function suggestOrgCode(parentCode: string | undefined, name: string): string {
-  if (!parentCode) return '';
-  const englishMatch = name.match(/[A-Za-z]+/g);
-  if (englishMatch && englishMatch.length > 0) {
-    return `${parentCode}-${englishMatch[0].toUpperCase()}`;
-  }
-  for (const [key, abbr] of Object.entries(KNOWN_ABBR)) {
-    if (name.includes(key)) return `${parentCode}-${abbr}`;
-  }
-  return `${parentCode}-`;
-}
+// ─── 组织编码自动建议（Phase 2: 已迁移至后端 /api/org-codes/preview）───

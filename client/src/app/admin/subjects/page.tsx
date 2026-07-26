@@ -14,7 +14,7 @@ interface SubjectItem {
   isActive: boolean;
   isSystem?: boolean;
   orgId?: number | null;
-  organization?: { id: number; name: string; orgType: string } | null;
+  organization?: { id: number; name: string; code: string; orgType: string } | null;
   ownership?: 'OWN' | 'ANCESTOR' | 'CHILD';
   manageable?: boolean;
   _count?: { chapters: number; questions: number; knowledgePoints: number };
@@ -159,7 +159,7 @@ export default function SubjectsAdminPage() {
                     <div className="flex items-center gap-1.5">
                       {s.organization ? (
                         <span className="px-1.5 py-0.5 rounded" style={{ background: 'var(--ink-50)', color: 'var(--ink-500)' }}>
-                          {s.organization.name}
+                          {s.organization.code} - {s.organization.name}
                         </span>
                       ) : <span style={{ color: 'var(--ink-300)' }}>平台级</span>}
                       {s.ownership && (

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-import { validateTel, validateEmail, validateOrgCode, suggestOrgCode } from '@/lib/validators';
+import { validateTel, validateEmail, validateOrgCode } from '@/lib/validators';
 
 // ── 组织树节点（与后端 OrgNode 对齐） ──
 interface OrgNode {
@@ -622,20 +622,23 @@ export default function OrganizationsPage() {
                   <input value={orgForm.name} onChange={e => {
                     const name = e.target.value;
                     const newForm = { ...orgForm, name };
-                    // 编码自动建议（仅新建且编码为空或等于上次建议时触发）
-                    if (!editOrg && modalParent) {
-                      const suggested = suggestOrgCode(modalParent.code, name);
-                      if (suggested && (!orgForm.code || orgForm.code === suggestOrgCode(modalParent.code, orgForm.name))) {
-                        newForm.code = suggested;
-                      }
-                    }
                     setOrgForm(newForm);
+                    // Phase 2: 后端自动生成编码预览（防抖）
+                    if (!editOrg && name.length >= 2) {
+                      clearTimeout((window as any).__orgCodeTimer);
+                      (window as any).__orgCodeTimer = setTimeout(async () => {
+                        try {
+                          const code = await api.orgCodes.preview(modalParent?.id || null, name);
+                          if (code) setOrgForm(prev => ({ ...prev, code }));
+                        } catch {}
+                      }, 400);
+                    }
                   }} className="input" placeholder="如：符合性评估部" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>组织编码 *</label>
                   <input value={orgForm.code} onChange={e => setOrgForm({ ...orgForm, code: e.target.value.toUpperCase() })} className="input" placeholder="大写字母+数字+连字符，如 CEC-ITSS" disabled={!!editOrg} maxLength={20} />
-                  {!editOrg && <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>格式：大写字母开头，如 CEC、ITSS-PG</p>}
+                  {!editOrg && <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>自动生成，可手动覆盖。格式：大写字母+数字+连字符</p>}
                 </div>
               </div>
               <div>
