@@ -1,68 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
 import { api } from '@/lib/api';
-
-const TYPE_NAMES: Record<string, string> = {
-  SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
-};
-const ALL_TYPES = Object.keys(TYPE_NAMES);
-
-const DIFF_MAP: Record<string, string> = {
-  '易': 'EASY', '较易': 'MEDIUM_EASY', '较难': 'MEDIUM_HARD', '难': 'HARD',
-  'EASY': 'EASY', 'MEDIUM_EASY': 'MEDIUM_EASY', 'MEDIUM_HARD': 'MEDIUM_HARD', 'HARD': 'HARD',
-};
-
-const MAX_IMPORT_COUNT = 300; // 单次最大导入题数
-
-const TYPE_SHEETS: Record<string, { headers: string[]; sample: string[]; colMap: string[] }> = {
-  SINGLE_CHOICE: {
-    headers: ['题干', '选项A', '选项B', '选项C', '选项D', '选项E', '选项F', '正确答案', '难度', '章节名称', '解析'],
-    sample: ['数据治理的核心目标是什么？', '提高系统性能', '保障数据安全', '降低存储成本', '提升用户体验', '', '', 'B', '易', '数据治理概述', '保障数据的安全性和可用性。'],
-    colMap: ['content', 'opt0', 'opt1', 'opt2', 'opt3', 'opt4', 'opt5', 'correct', 'difficulty', 'chapter', 'analysis'],
-  },
-  MULTIPLE_CHOICE: {
-    headers: ['题干', '选项A', '选项B', '选项C', '选项D', '选项E', '选项F', '正确答案', '难度', '章节名称', '解析'],
-    sample: ['以下哪些属于数据质量维度？', '完整性', '一致性', '准确性', '及时性', '可访问性', '安全性', 'A,B,C,D', '较易', '数据质量管理', '数据质量六大维度。'],
-    colMap: ['content', 'opt0', 'opt1', 'opt2', 'opt3', 'opt4', 'opt5', 'correct', 'difficulty', 'chapter', 'analysis'],
-  },
-  TRUE_FALSE: {
-    headers: ['题干', '正确答案', '难度', '章节名称', '解析'],
-    sample: ['数据仓库只需要存储结构化数据。', '错误', '较易', '数据仓库基础', '数据仓库可存储结构化、半结构化和非结构化数据。'],
-    colMap: ['content', 'correct', 'difficulty', 'chapter', 'analysis'],
-  },
-  FILL_BLANK: {
-    headers: ['题干', '填空答案', '难度', '章节名称', '解析'],
-    sample: ['数据治理三大核心要素是{{_}}、{{_}}和{{_}}。', '组织架构;管理制度;技术平台', '较难', '数据治理体系', '组织是基础，制度是保障，技术是手段。'],
-    colMap: ['content', 'blankAnswers', 'difficulty', 'chapter', 'analysis'],
-  },
-  SHORT_ANSWER: {
-    headers: ['题干', '参考答案', '难度', '章节名称', '解析'],
-    sample: ['请简述数据生命周期管理的主要阶段。', '规划、采集、存储、使用、共享、归档、销毁', '难', '数据生命周期', '七个阶段缺一不可。'],
-    colMap: ['content', 'analysis', 'difficulty', 'chapter', 'extraAnalysis'],
-  },
-  CASE_STUDY: {
-    headers: ['题干（案例场景）', '子问题', '子问题答案', '难度', '章节名称', '解析'],
-    sample: ['某企业数据标准不统一，导致无法有效共享。', '原因分析|解决方案', '缺乏标准|建立数据标准体系', '难', '数据治理实施', '需建立企业级数据标准体系。'],
-    colMap: ['content', 'subQuestions', 'subAnswers', 'difficulty', 'chapter', 'analysis'],
-  },
-};
-
-interface ParsedRow {
-  sheetType: string;
-  content: string;
-  options: string[];
-  correctAnswer: string;
-  difficulty: string;
-  chapterName: string;
-  analysis: string;
-  blankAnswers: string;
-  subQuestions: string;
-  subAnswers: string;
-  errors: string[];
-}
+import { TYPE_NAMES, ALL_TYPES } from './question-import-config';
+import type { ParsedRow } from './question-import-config';
+import { parseExcelFile, buildQuestionsPayload, generateTemplate } from './question-import-parser';
 
 export default function QuestionImportModal({ open, onClose, subjects }: { open: boolean; onClose: () => void; subjects: any[] }) {
   const [step, setStep] = useState<'config' | 'preview' | 'result'>('config');
@@ -91,43 +33,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
   const downloadTemplate = () => {
     if (enabledTypes.length === 0) { alert('请至少选择一种题型'); return; }
-
-    const wb = XLSX.utils.book_new();
-
-    for (const type of enabledTypes) {
-      const sheetDef = TYPE_SHEETS[type];
-      if (!sheetDef) continue;
-
-      const metaRow = [`${TYPE_NAMES[type]} · 科目：${subjectCode}（${currentSubject?.name || ''}）`];
-      const data = [metaRow, sheetDef.headers, sheetDef.sample];
-      const ws = XLSX.utils.aoa_to_sheet(data);
-
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: sheetDef.headers.length - 1 } }];
-
-      // Add difficulty dropdown
-      const diffIdx = sheetDef.colMap.indexOf('difficulty');
-      if (diffIdx !== -1) {
-        const colLetter = String.fromCharCode(65 + diffIdx);
-        ws['!dataValidations'] = {
-          difficulty: {
-            type: 'list',
-            formula1: '"易,较易,较难,难"',
-            ranges: [`${colLetter}3:${colLetter}1048576`],
-            allowBlank: true,
-          },
-        };
-      }
-
-      ws['!cols'] = sheetDef.headers.map(h => ({
-        wch: h === '题干' || h.startsWith('题干') || h === '子问题' ? 40
-          : h === '解析' || h === '参考答案' ? 30
-          : h.startsWith('选项') ? 16 : 14,
-      }));
-
-      XLSX.utils.book_append_sheet(wb, ws, TYPE_NAMES[type]);
-    }
-
-    XLSX.writeFile(wb, `试题导入-${subjectCode}.xlsx`);
+    generateTemplate(enabledTypes, subjectCode, currentSubject?.name || '');
   };
 
   const handleFile = async (file: File) => {
@@ -139,74 +45,11 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
     try {
       const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
-      const parsed: ParsedRow[] = [];
+      const { rows: parsed, error } = parseExcelFile(data);
 
-      for (const sheetName of wb.SheetNames) {
-        const typeKey = Object.entries(TYPE_NAMES).find(([, v]) => v === sheetName)?.[0];
-        if (!typeKey || !TYPE_SHEETS[typeKey]) continue;
-
-        const sheetDef = TYPE_SHEETS[typeKey];
-        const ws = wb.Sheets[sheetName];
-        const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-
-        let headerRow = -1;
-        for (let i = 0; i < json.length; i++) {
-          if (json[i]?.[0] === sheetDef.headers[0]) { headerRow = i; break; }
-        }
-        if (headerRow === -1) continue;
-
-        for (let i = headerRow + 1; i < json.length; i++) {
-          const r = json[i];
-          if (!r || String(r[0] || '').trim() === '' || String(r[0]).startsWith('#')) continue;
-
-          const row: ParsedRow = {
-            sheetType: typeKey,
-            content: '',
-            options: ['', '', '', '', '', ''],
-            correctAnswer: '',
-            difficulty: '',
-            chapterName: '',
-            analysis: '',
-            blankAnswers: '',
-            subQuestions: '',
-            subAnswers: '',
-            errors: [],
-          };
-
-          sheetDef.colMap.forEach((col, idx) => {
-            const val = String(r[idx] || '').trim();
-            if (col === 'content') row.content = val;
-            else if (col.startsWith('opt')) row.options[parseInt(col[3])] = val;
-            else if (col === 'correct') row.correctAnswer = val;
-            else if (col === 'difficulty') row.difficulty = val;
-            else if (col === 'chapter') row.chapterName = val;
-            else if (col === 'analysis') row.analysis = row.analysis || val;
-            else if (col === 'extraAnalysis') { if (val && val !== row.analysis) row.analysis = row.analysis ? row.analysis + '\n解析：' + val : val; }
-            else if (col === 'blankAnswers') row.blankAnswers = val;
-            else if (col === 'subQuestions') row.subQuestions = val;
-            else if (col === 'subAnswers') row.subAnswers = val;
-          });
-
-          if (!row.content) row.errors.push('题干不能为空');
-          if (!DIFF_MAP[row.difficulty]) row.errors.push(`无效难度：${row.difficulty}（请使用 易/较易/较难/难）`);
-          if (['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(typeKey) && !row.correctAnswer) {
-            row.errors.push('正确答案不能为空');
-          }
-
-          parsed.push(row);
-        }
-      }
-
-      if (parsed.length === 0) {
+      if (error) {
         setUploadStatus('error');
-        setUploadError('未解析到有效数据，请确认文件使用了本系统下载的模板');
-        return;
-      }
-
-      if (parsed.length > MAX_IMPORT_COUNT) {
-        setUploadStatus('error');
-        setUploadError(`本次解析到 ${parsed.length} 道题目，超出单次上限（${MAX_IMPORT_COUNT} 道）。请拆分为多个文件分批导入。`);
+        setUploadError(error);
         return;
       }
 
@@ -221,8 +64,6 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
   const doImport = async () => {
     setImporting(true);
-    const subjectMap: Record<string, number> = {};
-    subjects.forEach((s: any) => { subjectMap[s.code] = s.id; });
     const chapterMap: Record<string, number> = {};
     for (const s of subjects) {
       try {
@@ -231,49 +72,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
       } catch {}
     }
 
-    const questions = rows.filter(r => r.errors.length === 0).map(r => {
-      const type = r.sheetType;
-      const difficulty = DIFF_MAP[r.difficulty] || r.difficulty;
-
-      const opts = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE'].includes(type)
-        ? r.options.filter(o => o).map((o, i) => ({
-            label: String.fromCharCode(65 + i),
-            content: o,
-            isCorrect: type === 'SINGLE_CHOICE'
-              ? String.fromCharCode(65 + i) === r.correctAnswer
-              : r.correctAnswer.split(/[,，]/).map(x => x.trim()).includes(String.fromCharCode(65 + i)),
-          }))
-        : type === 'TRUE_FALSE'
-          ? [
-              { label: 'A', content: '正确', isCorrect: r.correctAnswer === '正确' || r.correctAnswer === 'A' },
-              { label: 'B', content: '错误', isCorrect: r.correctAnswer === '错误' || r.correctAnswer === 'B' },
-            ]
-          : undefined;
-
-      const blanks = type === 'FILL_BLANK' && r.blankAnswers
-        ? r.blankAnswers.split(/[；;]/).filter(b => b).map(a => ({ answer: a.trim() }))
-        : undefined;
-
-      const subQuestions = type === 'CASE_STUDY' && r.subQuestions
-        ? r.subQuestions.split('|').map((sq, i) => ({
-            content: sq.trim(),
-            answer: r.subAnswers?.split('|')[i]?.trim() || undefined,
-          }))
-        : undefined;
-
-      return {
-        subjectId: selectedSubject,
-        chapterId: chapterMap[r.chapterName] || undefined,
-        type,
-        content: r.content,
-        difficulty,
-        analysis: r.analysis || undefined,
-        source: 'BATCH_IMPORT',
-        options: opts,
-        blanks,
-        subQuestions,
-      };
-    });
+    const questions = buildQuestionsPayload(rows, selectedSubject, chapterMap);
 
     try {
       const res = await api.questions.batchCreate(questions);
