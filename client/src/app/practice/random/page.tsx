@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
 import PracticePlayer from '@/components/practice-player';
 import { api } from '@/lib/api';
@@ -20,7 +20,7 @@ export default function RandomPracticePage() {
   const [types, setTypes] = useState<string[]>([...ALL_TYPES]);
   const [onlyWrong, setOnlyWrong] = useState(false);
 
-  useState(() => { api.subjects.list().then(setSubjects).catch(() => {}); });
+  useEffect(() => { api.subjects.listActive().then(setSubjects).catch(() => {}); }, []);
 
   if (!started) {
     return (

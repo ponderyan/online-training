@@ -12,6 +12,7 @@ export interface OrgNode {
   level: number;
   path: string | null;
   sortOrder: number;
+  orgType: string;
   contactName: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
@@ -55,6 +56,7 @@ export class OrganizationsService {
       nodeMap.set(o.id, {
         id: o.id, name: o.name, code: o.code,
         parentId: o.parentId, level: o.level, path: o.path, sortOrder: o.sortOrder,
+        orgType: o.orgType,
         contactName: o.contactName, contactPhone: o.contactPhone, contactEmail: o.contactEmail,
         isActive: o.isActive,
         userCount: o._count.users, programCount: o._count.programs,
@@ -78,7 +80,12 @@ export class OrganizationsService {
   async create(data: {
     name: string; code: string; parentId?: number | null;
     contactName?: string; contactPhone?: string; contactEmail?: string;
+    orgType?: string;
   }) {
+    // 编码格式校验：大写字母开头，仅允许大写字母、数字、连字符，2-20位
+    if (!/^[A-Z][A-Z0-9-]{1,19}$/.test(data.code)) {
+      throw new BadRequestException('组织编码格式不正确：需大写字母开头，仅允许大写字母、数字、连字符，2-20位');
+    }
     const existing = await this.prisma.organization.findUnique({ where: { code: data.code } });
     if (existing) throw new BadRequestException('机构编码已存在');
 
@@ -104,6 +111,7 @@ export class OrganizationsService {
         contactPhone: data.contactPhone,
         contactEmail: data.contactEmail,
         parentId: data.parentId || null,
+        orgType: data.orgType || 'BRANCH',
         level,
         sortOrder,
       },
@@ -117,7 +125,7 @@ export class OrganizationsService {
     });
   }
 
-  async update(id: number, data: { name?: string; contactName?: string; contactPhone?: string; contactEmail?: string; isActive?: boolean; sortOrder?: number }) {
+  async update(id: number, data: { name?: string; contactName?: string; contactPhone?: string; contactEmail?: string; isActive?: boolean; sortOrder?: number; orgType?: string }) {
     await this.findOne(id);
     return this.prisma.organization.update({ where: { id }, data });
   }
@@ -172,7 +180,7 @@ export class OrganizationsService {
     return this.findOne(id);
   }
 
-  /** 删除组织（有下级/用户/培训班不可删） */
+  /** 删除组织（有下级/用户/培训班/题目/试卷/考试不可删） */
   async remove(id: number) {
     const org = await this.findOne(id);
     // 检查下级组织
@@ -182,8 +190,21 @@ export class OrganizationsService {
     }
     const userCount = await this.prisma.user.count({ where: { orgId: id } });
     const programCount = await this.prisma.trainingProgram.count({ where: { orgId: id } });
-    if (userCount > 0 || programCount > 0) {
-      throw new BadRequestException(`该组织下还有 ${userCount} 个用户和 ${programCount} 个培训班，无法删除`);
+    const questionCount = await this.prisma.question.count({ where: { orgId: id } });
+    const paperCount = await this.prisma.paper.count({ where: { orgId: id } });
+    const examCount = await this.prisma.exam.count({ where: { orgId: id } });
+    const agencyCount = await this.prisma.enrollmentAgency.count({ where: { organizationId: id } });
+
+    const issues: string[] = [];
+    if (userCount > 0) issues.push(`${userCount} 个用户`);
+    if (programCount > 0) issues.push(`${programCount} 个培训班`);
+    if (questionCount > 0) issues.push(`${questionCount} 道题目`);
+    if (paperCount > 0) issues.push(`${paperCount} 份试卷`);
+    if (examCount > 0) issues.push(`${examCount} 场考试`);
+    if (agencyCount > 0) issues.push(`${agencyCount} 个招生机构`);
+
+    if (issues.length > 0) {
+      throw new BadRequestException(`该组织下还有 ${issues.join('、')}，无法删除。请先迁移或清理关联数据。`);
     }
     return this.prisma.organization.delete({ where: { id } });
   }
@@ -345,10 +366,11 @@ export class OrganizationsService {
     const studentIds = studentUsers.map(s => s.id);
     const studentCount = studentIds.length;
 
-    const [examCount, programCount, certCount] = await Promise.all([
+    const [examCount, programCount, certCount, agencyCount] = await Promise.all([
       this.prisma.exam.count({ where: { orgId: { in: orgIds } } }),
       this.prisma.trainingProgram.count({ where: { orgId: { in: orgIds } } }),
       this.prisma.certificate.count({ where: { studentId: { in: studentIds } } }),
+      this.prisma.enrollmentAgency.count({ where: { organizationId: { in: orgIds } } }),
     ]);
 
     return {
@@ -358,6 +380,7 @@ export class OrganizationsService {
       studentCount,
       programCount,
       certCount,
+      agencyCount,
     };
   }
 

@@ -15,7 +15,7 @@ const EVENT_STYLE: Record<string, { color: string; bg: string; icon: string }> =
   CERT_ISSUE:   { color: '#00897b', bg: 'rgba(0,137,123,0.10)',  icon: '🎓' },
 };
 
-const ENTITY_LABELS: Record<string, string> = { EXAM: '考试', PROGRAM: '培训班' };
+const ENTITY_LABELS: Record<string, string> = { EXAM: '考试', PROGRAM: '培训班', USER: '用户', CERTIFICATE: '证书' };
 
 function can(permission: string): boolean {
   if (typeof window === 'undefined') return false;
@@ -38,7 +38,7 @@ function can(permission: string): boolean {
 
 export default function AuditTrailPage() {
   const hasPermission = can('auditLog:view');
-  const [entityType, setEntityType] = useState<'EXAM' | 'PROGRAM'>('EXAM');
+  const [entityType, setEntityType] = useState<'EXAM' | 'PROGRAM' | 'USER' | 'CERTIFICATE'>('EXAM');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
@@ -98,7 +98,7 @@ export default function AuditTrailPage() {
         <div className="card p-4">
           {/* 实体类型切换 */}
           <div className="flex gap-1 mb-3 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
-            {(['EXAM', 'PROGRAM'] as const).map(t => (
+            {(['EXAM', 'PROGRAM', 'USER', 'CERTIFICATE'] as const).map(t => (
               <button key={t} onClick={() => { setEntityType(t); setSelectedEntity(null); setTrail(null); }}
                 className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer border-none"
                 style={{ background: entityType === t ? 'var(--paper)' : 'transparent', color: entityType === t ? 'var(--fox)' : 'var(--ink-400)', boxShadow: entityType === t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>

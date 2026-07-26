@@ -47,6 +47,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: '考务管理',
     items: [
       { path: '/questions', label: '题库管理', icon: '📝', perm: 'question:create' },
+      { path: '/admin/subjects', label: '科目管理', icon: '📚', perm: 'question:create' },
       { path: '/admin/knowledge-points', label: '知识点管理', icon: '🧠', perm: 'knowledge:view' },
       { path: '/materials', label: '教材出题', icon: '📖', perm: 'material:upload' },
       { path: '/generate', label: '智能组卷', icon: '✨', perm: 'paper:generate' },
@@ -72,6 +73,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/admin/audit-trail', label: '全链审计', icon: '🔍', perm: 'auditLog:view' },
       { path: '/audit-logs', label: '审计日志', icon: '📋', perm: 'auditLog:view' },
+      { path: '/admin/audit-settings', label: '归档配置', icon: '⚙️', perm: 'auditLog:view' },
     ],
   },
   {
@@ -127,6 +129,27 @@ const STUDENT_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/** AGENCY_ADMIN 专属导航（纯机构管理员，非超管/组织管理员） */
+const AGENCY_ADMIN_NAV_GROUPS: NavGroup[] = [
+  {
+    title: '工作台',
+    items: [
+      { path: '/dashboard', label: '工作台', icon: '📋', perm: null },
+      { path: '/my/profile', label: '个人中心', icon: '👤', perm: null },
+      { path: '/notifications', label: '消息通知', icon: '🔔', perm: 'notification:view' },
+    ],
+  },
+  {
+    title: '机构管理',
+    items: [
+      { path: '/agencies', label: '我的机构', icon: '🏢', perm: 'agency:view' },
+      { path: '/admin/agency-students', label: '学员管理', icon: '👥', perm: 'agency:view:students' },
+      { path: '/agencies/radar', label: '招生雷达', icon: '📊', perm: 'agency:view' },
+      { path: '/admin/learning-hours', label: '学时管理', icon: '⏱', perm: 'learningHour:manage' },
+    ],
+  },
+];
+
 export default function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
   const settings = useSiteSettings();
@@ -166,9 +189,14 @@ export default function Sidebar({ user }: { user: any }) {
     ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER', 'LECTURER', 'PROCTOR', 'AUDITOR', 'AGENCY_ADMIN'].includes(r)
   );
 
+  // 纯 AGENCY_ADMIN（不含 SUPER_ADMIN / ORG_ADMIN）使用专属导航
+  const isPureAgencyAdmin = user?.roles?.includes('AGENCY_ADMIN')
+    && !user?.roles?.includes('SUPER_ADMIN')
+    && !user?.roles?.includes('ORG_ADMIN');
+
   const isSuperAdmin = user?.roles?.includes('SUPER_ADMIN');
   const permissions: string[] = user?.permissions || [];
-  const navGroups = isStudent ? STUDENT_NAV_GROUPS : ADMIN_NAV_GROUPS;
+  const navGroups = isStudent ? STUDENT_NAV_GROUPS : isPureAgencyAdmin ? AGENCY_ADMIN_NAV_GROUPS : ADMIN_NAV_GROUPS;
 
   const handleLogout = () => {
     localStorage.removeItem('user');

@@ -62,7 +62,7 @@ export default function MaterialsPage() {
 
       const [data, subjData] = await Promise.all([
         api.materials.list(params),
-        api.subjects.list().catch(() => []),
+        api.subjects.listActive().catch(() => []),
       ]);
       setMaterials(data.items || []);
       setSubjects((Array.isArray(subjData) ? subjData : []).filter((s: any) => s.isActive !== false));

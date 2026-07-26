@@ -124,23 +124,10 @@ export default function QuestionsPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    // 科目筛选取自 subjects，按 code 去重（数据字典为基准）
-    Promise.all([
-      api.subjects.list(),
-      api.dataDictionaries.list().catch(() => []),
-    ]).then(([subjs, dicts]) => {
-      const dictCodes = new Set(dicts.map((d: any) => d.code));
-      // 只保留在数据字典中的科目，去重
-      const seen = new Set<string>();
-      const deduped = subjs.filter((s: any) => {
-        if (seen.has(s.code)) return false;
-        seen.add(s.code);
-        return dictCodes.has(s.code); // 只显示数据字典里配了的
-      });
-      setSubjects(deduped);
-    }).catch(() => {
-      api.subjects.list().then(setSubjects).catch(() => {});
-    });
+    // 科目筛选：直接使用 subjects 列表
+    api.subjects.list().then((subjs: any[]) => {
+      setSubjects(Array.isArray(subjs) ? subjs : []);
+    }).catch(() => {});
     // 加载教材列表（供筛选用）
     api.materials.listForFilter().then(setMaterials).catch(() => {});
   }, []);

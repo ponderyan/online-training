@@ -88,6 +88,8 @@ export const api = {
 
   subjects: {
     list: () => request<any[]>('/subjects'),
+    /** 活跃科目列表（过滤停用科目，供选择器使用） */
+    listActive: () => request<any[]>('/subjects/active'),
     get: (id: number) => request<any>(`/subjects/${id}`),
     create: (data: any) => request<any>('/subjects', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -572,8 +574,8 @@ export const api = {
 
   // ── Phase 1b: 学时记录 ──
   learningHours: {
-    list: (params?: { programId?: number; source?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined)) as any).toString() : '';
+    list: (params?: { programId?: number; source?: string; status?: string; studentId?: number }) => {
+      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))).toString() : '';
       return request<{ items: any[]; total: number }>(`/learning-hours${qs}`);
     },
     stats: () => request<{ totalHours: number; completedVideos: number; programStats: any[] }>('/learning-hours/stats'),
@@ -637,10 +639,14 @@ export const api = {
 
   // ── Phase D: 评价体系 ──
   evaluations: {
+    list: (params?: { programId?: number; instructorId?: number }) => {
+      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))).toString() : '';
+      return request<any[]>(`/evaluations${qs}`);
+    },
     create: (data: any) => request<any>('/evaluations', { method: 'POST', body: JSON.stringify(data) }),
     byProgram: (programId: number) => request<any[]>(`/evaluations/program/${programId}`),
     programStats: (programId: number) => request<any>(`/evaluations/program/${programId}/stats`),
-    my: (studentId: number) => request<any[]>(`/evaluations/my?studentId=${studentId}`),
+    my: () => request<any[]>('/evaluations/my'),
     instructorStats: (instructorId: number) => request<any>(`/evaluations/instructor/${instructorId}`),
     delete: (id: number) => request<any>(`/evaluations/${id}`, { method: 'DELETE' }),
   },
@@ -656,18 +662,53 @@ export const api = {
 
   // ── Phase 1e: 知识库 ──
   knowledge: {
-    listDocuments: (params?: { page?: number; pageSize?: number; search?: string }) => {
+    listDocuments: (params?: { page?: number; pageSize?: number; search?: string; subjectId?: number }) => {
       const qp: Record<string, string> = {};
       if (params?.page) qp.page = params.page.toString();
       if (params?.pageSize) qp.pageSize = params.pageSize.toString();
       if (params?.search) qp.search = params.search;
+      if (params?.subjectId) qp.subjectId = params.subjectId.toString();
       const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
-      return request<{ items: any[]; total: number }>(`/knowledge/documents${qs}`);
+      return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/knowledge/documents${qs}`);
     },
-    deleteDocument: (source: string) =>
-      request(`/knowledge/documents/${encodeURIComponent(source)}`, { method: 'DELETE' }),
-    queryPlaceholder: () =>
-      request<{ success: boolean; message: string }>('/knowledge/query', { method: 'POST' }),
+    getDocument: (id: number) => request<any>(`/knowledge/documents/${id}`),
+    uploadDocument: (formData: FormData) =>
+      request<any>('/knowledge/upload', { method: 'POST', body: formData }),
+    deleteDocument: (id: number) =>
+      request(`/knowledge/documents/${id}`, { method: 'DELETE' }),
+    deleteBySource: (source: string) =>
+      request(`/knowledge/by-source/${encodeURIComponent(source)}`, { method: 'DELETE' }),
+    // 分块管理
+    getChunks: (docId: number, params?: { page?: number; pageSize?: number }) => {
+      const qp: Record<string, string> = {};
+      if (params?.page) qp.page = params.page.toString();
+      if (params?.pageSize) qp.pageSize = params.pageSize.toString();
+      const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
+      return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/knowledge/documents/${docId}/chunks${qs}`);
+    },
+    updateChunk: (chunkId: number, data: { content?: string; title?: string }) =>
+      request<any>(`/knowledge/chunks/${chunkId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    mergeChunk: (chunkId: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}/merge`, { method: 'POST' }),
+    splitChunk: (chunkId: number, position: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}/split`, { method: 'POST', body: JSON.stringify({ position }) }),
+    deleteChunk: (chunkId: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}`, { method: 'DELETE' }),
+    rebuildChunks: (docId: number, params?: { chunkSize?: number; overlap?: number }) =>
+      request<any>(`/knowledge/documents/${docId}/rebuild`, { method: 'POST', body: JSON.stringify(params || {}) }),
+    // 知识点关联
+    setChunkKnowledgePoints: (chunkId: number, knowledgePointIds: number[]) =>
+      request<any>(`/knowledge/chunks/${chunkId}/knowledge-points`, { method: 'PUT', body: JSON.stringify({ knowledgePointIds }) }),
+    // 检索测试
+    testQuery: (query: string, subjectId?: number, limit?: number) =>
+      request<{ results: any[]; keywords: string[] }>('/knowledge/test-query', { method: 'POST', body: JSON.stringify({ query, subjectId, limit }) }),
+    // AI 功能
+    autoLabel: (docId: number) =>
+      request<{ labeled: number }>(`/knowledge/documents/${docId}/auto-label`, { method: 'POST' }),
+    generateQuestions: (chunkId: number, data?: { questionType?: string; count?: number }) =>
+      request<{ questions: any[] }>(`/knowledge/chunks/${chunkId}/generate-questions`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    generateQa: (docId: number) =>
+      request<{ total: number }>(`/knowledge/documents/${docId}/generate-qa`, { method: 'POST' }),
   },
 
   // ── Phase E: 消息通知 ──
@@ -748,6 +789,8 @@ export const api = {
       return request<{ total: number; items: any[] }>(`/questions/practice/records${qs}`);
     },
     stats: () => request<any>('/questions/practice/stats'),
+    relatedChunks: (questionId: number) =>
+      request<{ chunks: any[]; knowledgePoints: string[] }>(`/questions/practice/related-chunks/${questionId}`),
     favorite: {
       toggle: (questionId: number) =>
         request<any>('/questions/practice/favorite/toggle', {

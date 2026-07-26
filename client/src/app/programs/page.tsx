@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const STATUS_NAMES: Record<string, string> = {
   PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
@@ -43,6 +44,7 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
 
   const load = async (p?: number) => {
@@ -50,7 +52,7 @@ export default function ProgramsPage() {
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p || page), pageSize: String(PAGE_SIZE) };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
       const data = await api.trainingPrograms.list(params);
       setPrograms(data.items || []);

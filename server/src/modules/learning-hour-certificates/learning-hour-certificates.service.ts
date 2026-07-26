@@ -79,12 +79,12 @@ export class LearningHourCertificatesService {
       throw new BadRequestException('您已申请过该培训班的学时证明，请勿重复申请');
     }
 
-    // 3. 聚合 APPROVED 学时记录，按 typeId 分组
+    // 3. 聚合 APPROVED/AUTO_APPROVED 学时记录，按 typeId 分组
     const approvedRecords = await this.prisma.learningHourRecord.findMany({
       where: {
         studentId,
         programId,
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'AUTO_APPROVED'] },
       },
       include: {
         type: { select: { id: true, name: true, code: true } },
@@ -271,7 +271,7 @@ export class LearningHourCertificatesService {
       where: {
         studentId,
         programId,
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'AUTO_APPROVED'] },
       },
       include: {
         type: { select: { id: true, name: true, code: true } },

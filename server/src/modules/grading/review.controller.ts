@@ -44,6 +44,19 @@ export class ReviewController {
     if (!review) return { error: '复核不存在' };
 
     if (data.action === 'RESOLVED' && data.reviewedScore !== undefined) {
+      // ★ G2 修复：复核改分需校验满分（与 gradeAnswer 一致）
+      const answer = await this.prisma.examAnswer.findUnique({
+        where: { id: review.answerId },
+        select: { paperQuestionId: true },
+      });
+      const pq = answer ? await this.prisma.paperQuestion.findUnique({
+        where: { id: answer.paperQuestionId },
+        select: { score: true },
+      }) : null;
+      const maxScore = pq?.score ?? 0;
+      if (data.reviewedScore < 0) return { error: '评分不能为负数' };
+      if (data.reviewedScore > maxScore) return { error: `评分不能超过该题满分 ${maxScore} 分` };
+
       await this.prisma.examAnswer.update({
         where: { id: review.answerId },
         data: { score: data.reviewedScore },

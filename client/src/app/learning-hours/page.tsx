@@ -82,7 +82,7 @@ export default function LearningHoursPage() {
   };
 
   const statusBadge = (status: string) => {
-    if (status === 'APPROVED') return <span className="text-xs" style={{ color: '#2e7d32' }}>✅ 已审核</span>;
+    if (status === 'APPROVED' || status === 'AUTO_APPROVED') return <span className="text-xs" style={{ color: '#2e7d32' }}>✅ 已审核</span>;
     if (status === 'REJECTED') return <span className="text-xs" style={{ color: '#ef4444' }}>❌ 已驳回</span>;
     return <span className="text-xs" style={{ color: '#e87a30' }}>⏳ 待审核</span>;
   };

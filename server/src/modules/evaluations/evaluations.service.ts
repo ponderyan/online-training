@@ -61,6 +61,25 @@ export class EvaluationsService {
     });
   }
 
+  async findAll(filters?: { programId?: number; instructorId?: number }) {
+    const where: any = {};
+    if (filters?.programId) where.programId = filters.programId;
+    if (filters?.instructorId) {
+      where.instructorRatings = { some: { instructorId: filters.instructorId } };
+    }
+    return this.prisma.evaluation.findMany({
+      where,
+      include: {
+        program: { select: { id: true, name: true, code: true } },
+        student: { select: { id: true, displayName: true } },
+        instructorRatings: {
+          include: { instructor: { select: { id: true, realName: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findByProgram(programId: number) {
     return this.prisma.evaluation.findMany({
       where: { programId },

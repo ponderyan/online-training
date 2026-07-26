@@ -22,11 +22,25 @@ const MODEL_TO_ENTITY: Record<string, string> = {
   EnrollmentAgencyEnrollment: 'Filing', VideoCourse: 'VideoCourse',
   AttendanceRecord: 'AttendanceRecord', BusinessEvidence: 'BusinessEvidence',
   SystemConfig: 'SystemConfig',
+  // ── 补充：业务关键实体 ──
+  Organization: 'Organization',
+  LearningHourRecord: 'LearningHourRecord',
+  LearningHourCertificate: 'LearningHourCertificate',
+  OfflineScoreEntry: 'OfflineScoreEntry',
+  CertificateApprovalLog: 'CertificateApprovalLog',
+  ProgramStatusLog: 'ProgramStatusLog',
+  EnrollmentAgency: 'EnrollmentAgency',
+  DataDictionary: 'DataDictionary',
+  KnowledgePoint: 'KnowledgePoint',
+  SiteSetting: 'SiteSetting',
+  ImportLog: 'ImportLog',
+  ExportLog: 'ExportLog',
 };
 
 /** 关键实体列表：这些实体的 UPDATE 操作会额外捕获 Before 快照 */
 const BEFORE_TRACK_ENTITIES = new Set([
   'Exam', 'Paper', 'Question', 'User', 'Certificate', 'ScoreAppeal',
+  'TrainingProgram', 'Organization', 'SystemConfig',
 ]);
 
 /** 审计日志写入（全局可用的独立函数，可在 PrismaClient 实例外调用） */
@@ -120,6 +134,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           }
 
           const result = await query(args);
+
+          // ── ARCH-1: Org 写操作隔离 ──
+          // 对 ORG_SCOPE_MODELS 的 UPDATE/DELETE，校验结果 orgId 归属
+          if (model && ORG_SCOPE_MODELS.has(model) && (operation === 'update' || operation === 'delete')) {
+            const ctx = requestContext.getStore();
+            if (ctx?.orgId && !ctx.isSuperAdmin) {
+              const resultOrgId = result?.orgId;
+              // orgId 为 null 的共享数据不受限；仅拦截明确属于其他机构的记录
+              if (resultOrgId !== undefined && resultOrgId !== null && resultOrgId !== ctx.orgId) {
+                throw new Error(`[OrgIsolation] 无权操作其他机构的数据 (model=${model}, orgId=${resultOrgId}, userOrgId=${ctx.orgId})`);
+              }
+            }
+          }
+
           if (!WRITE_ACTIONS.has(operation)) return result;
 
           const entityType = MODEL_TO_ENTITY[model];
@@ -158,6 +186,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         (this as any)[key] = (extended as any)[key];
       }
     }
+
+    // ── ARCH-4: 安全护栏 ──
+    // 验证关键 model delegate 复制成功，Prisma 升级后若属性结构变化可立即发现
+    const criticalDelegates = ['user', 'exam', 'auditLog', 'certificate', 'trainingProgram'];
+    const missing = criticalDelegates.filter(k => typeof (this as any)[k]?.findMany !== 'function');
+    if (missing.length > 0) {
+      console.error(`[PrismaService] ⚠️ 审计中间件初始化异常：以下 model delegate 缺失 → ${missing.join(', ')}`);
+      console.error('[PrismaService] 请检查 Prisma 版本兼容性（$extends 属性复制机制）');
+      throw new Error(`PrismaService 审计中间件初始化失败：缺失 ${missing.join(', ')}`);
+    }
+    console.log('[PrismaService] ✓ 审计中间件 + Org写隔离 已就绪');
   }
 
   async onModuleDestroy() {

@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class SchedulesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notificationService: NotificationsService) {}
 
   async findAll(params: { page?: number; pageSize?: number; programId?: number }) {
     const page = params.page || 1;
@@ -55,7 +56,7 @@ export class SchedulesService {
 
   async create(data: any) {
     // 校验时间段不重叠
-    await this.validateNoOverlap(data.programId, data.startTime, data.endTime);
+    await this.validateNoOverlap(data.programId, data.startTime, data.endTime, undefined, data.instructorId || null);
 
     // 校验 instructor 状态
     if (data.instructorId) {
@@ -63,7 +64,7 @@ export class SchedulesService {
       if (!instructor || instructor.status !== 'ACTIVE') throw new BadRequestException('讲师不存在或非活跃状态');
     }
 
-    return this.prisma.schedule.create({
+    const schedule = await this.prisma.schedule.create({
       data: {
         programId: data.programId,
         courseId: data.courseId,
@@ -74,6 +75,13 @@ export class SchedulesService {
         remark: data.remark || null,
       },
     });
+
+    // 通知讲师
+    if (data.instructorId) {
+      void this.notifyInstructor(data.instructorId, data.programId, 'ASSIGNED');
+    }
+
+    return schedule;
   }
 
   async update(id: number, data: any) {
@@ -92,18 +100,25 @@ export class SchedulesService {
     const programId = data.programId || schedule.programId;
     const startTime = upd.startTime || schedule.startTime;
     const endTime = upd.endTime || schedule.endTime;
+    const instructorId = data.instructorId !== undefined ? data.instructorId : schedule.instructorId;
     if (data.startTime || data.endTime) {
-      await this.validateNoOverlap(programId, startTime, endTime, id);
+      await this.validateNoOverlap(programId, startTime, endTime, id, instructorId);
     }
 
     // 校验 instructor 状态
-    const instructorId = data.instructorId !== undefined ? data.instructorId : schedule.instructorId;
     if (instructorId) {
       const instructor = await this.prisma.instructor.findUnique({ where: { id: instructorId } });
       if (!instructor || instructor.status !== 'ACTIVE') throw new BadRequestException('讲师不存在或非活跃状态');
     }
 
-    return this.prisma.schedule.update({ where: { id }, data: upd });
+    const updated = await this.prisma.schedule.update({ where: { id }, data: upd });
+
+    // 讲师变更时通知新讲师
+    if (data.instructorId !== undefined && data.instructorId && data.instructorId !== schedule.instructorId) {
+      void this.notifyInstructor(data.instructorId, updated.programId, 'ASSIGNED');
+    }
+
+    return updated;
   }
 
   async delete(id: number) {
@@ -112,10 +127,11 @@ export class SchedulesService {
     return this.prisma.schedule.delete({ where: { id } });
   }
 
-  private async validateNoOverlap(programId: number, startTime: Date | string, endTime: Date | string, excludeId?: number) {
+  private async validateNoOverlap(programId: number, startTime: Date | string, endTime: Date | string, excludeId?: number, instructorId?: number | null) {
     const start = new Date(startTime);
     const end = new Date(endTime);
 
+    // 同培训班时间冲突
     const where: any = {
       programId,
       AND: [
@@ -127,5 +143,47 @@ export class SchedulesService {
 
     const overlapping = await this.prisma.schedule.findFirst({ where });
     if (overlapping) throw new BadRequestException('该时间段与已有排课冲突');
+
+    // 跨培训班讲师时间冲突（P2-1）
+    if (instructorId) {
+      const instructorConflict = await this.prisma.schedule.findFirst({
+        where: {
+          instructorId,
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } },
+          ],
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+        include: { program: { select: { name: true } } },
+      });
+      if (instructorConflict) {
+        throw new BadRequestException(
+          `该讲师在「${instructorConflict.program?.name || '其他培训班'}」已有同时段排课（${new Date(instructorConflict.startTime).toLocaleString('zh-CN')}）`,
+        );
+      }
+    }
+  }
+
+  /** 通知讲师排课变更 */
+  private async notifyInstructor(instructorId: number, programId: number, action: 'ASSIGNED' | 'CHANGED') {
+    try {
+      const instructor = await this.prisma.instructor.findUnique({
+        where: { id: instructorId },
+        select: { userId: true, realName: true },
+      });
+      if (!instructor?.userId) return;
+      const program = await this.prisma.trainingProgram.findUnique({
+        where: { id: programId },
+        select: { name: true },
+      });
+      await this.notificationService.create(
+        instructor.userId,
+        'SCHEDULE_ASSIGNED' as any,
+        action === 'ASSIGNED' ? '您有新的排课安排' : '您的排课已变更',
+        `【${program?.name || ''}】已为您安排授课，请查看课表`,
+        programId, 'program',
+      );
+    } catch { /* 通知失败不影响主流程 */ }
   }
 }

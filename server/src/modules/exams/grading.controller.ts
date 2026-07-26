@@ -88,6 +88,185 @@ export class GradingController {
     }));
   }
 
+  /** ★ 按题批阅：获取某道主观题的所有学员答案（流水阅卷模式） */
+  @Get(':examId/by-question/:pqId')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  async getAnswersByQuestion(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('pqId', ParseIntPipe) pqId: number,
+    @Req() req: any,
+  ) {
+    // 获取题目信息
+    const pq = await this.prisma.paperQuestion.findUnique({
+      where: { id: pqId },
+      include: {
+        question: {
+          include: { options: { orderBy: { sortOrder: 'asc' } }, subQuestions: { orderBy: { sortOrder: 'asc' } } },
+        },
+      },
+    });
+    if (!pq) return { error: '题目不存在' };
+
+    // 分派隔离：非考务员检查是否被分派该题
+    const userRoles: string[] = req.user?.roles || [];
+    const userId = req.user?.sub || req.user?.id;
+    const isOfficer = userRoles.some(r => {
+      const perms = ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS];
+      return perms?.includes(Permissions.GRADING_PUBLISH);
+    });
+
+    let sessionFilter: any = { examId, status: 'SUBMITTED' };
+    if (!isOfficer) {
+      const myAssignments = await this.prisma.gradingAssignment.findMany({
+        where: { examId, graderId: userId },
+      });
+      // 检查是否有该题的分派（paperQuestionId=pqId 或 null=全部题）
+      const hasQuestionAssignment = myAssignments.some(a => a.paperQuestionId === pqId || a.paperQuestionId === null);
+      if (!hasQuestionAssignment && myAssignments.length > 0) {
+        return { error: '你未被分派评阅此题' };
+      }
+      if (myAssignments.length === 0) return { error: '你未被分派任何阅卷任务' };
+      // 如果有按学员的分派，过滤 session
+      const assignedSessionIds = myAssignments.filter(a => a.sessionId !== null).map(a => a.sessionId);
+      if (assignedSessionIds.length > 0) {
+        sessionFilter.id = { in: assignedSessionIds };
+      }
+    }
+
+    // 获取所有已提交学员对该题的答案
+    const sessions = await this.prisma.examSession.findMany({
+      where: sessionFilter,
+      select: { id: true, studentId: true, student: { select: { id: true, displayName: true } }, scoringStatus: true },
+      orderBy: { submittedAt: 'asc' },
+    });
+    const sessionIds = sessions.map(s => s.id);
+
+    const answers = await this.prisma.examAnswer.findMany({
+      where: { sessionId: { in: sessionIds }, paperQuestionId: pqId },
+      orderBy: { id: 'asc' },
+    });
+
+    const sessionMap = new Map(sessions.map(s => [s.id, s]));
+
+    return {
+      question: {
+        pqId: pq.id,
+        questionId: pq.questionId,
+        type: pq.question.type,
+        content: pq.question.content,
+        maxScore: pq.score,
+        analysis: pq.question.analysis,
+        subQuestions: pq.question.subQuestions,
+        rubric: pq.rubric || [],
+      },
+      answers: answers.map(a => {
+        const session = sessionMap.get(a.sessionId);
+        return {
+          answerId: a.id,
+          sessionId: a.sessionId,
+          studentId: session?.studentId,
+          studentName: session?.student?.displayName || '未知',
+          answer: a.answer,
+          score: a.score,
+          graderNote: a.graderNote,
+          graded: a.score !== null,
+        };
+      }),
+      total: answers.length,
+      gradedCount: answers.filter(a => a.score !== null).length,
+      pendingCount: answers.filter(a => a.score === null).length,
+    };
+  }
+
+  /** ★ 每题统计分析：平均分、得分率、分布 */
+  @Get(':examId/question-stats')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  async getQuestionStats(@Param('examId', ParseIntPipe) examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: { paper: { include: { questions: { include: { question: true } } } } },
+    });
+    if (!exam) return { error: '考试不存在' };
+
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId, status: 'SUBMITTED' },
+      select: { id: true },
+    });
+    const sessionIds = sessions.map(s => s.id);
+    if (sessionIds.length === 0) return { stats: [], totalStudents: 0 };
+
+    const answers = await this.prisma.examAnswer.findMany({
+      where: { sessionId: { in: sessionIds } },
+      select: { paperQuestionId: true, score: true, isCorrect: true },
+    });
+
+    // 按题目分组统计
+    const pqMap = new Map<number, { scores: number[]; correct: number; total: number }>();
+    for (const a of answers) {
+      if (!pqMap.has(a.paperQuestionId)) pqMap.set(a.paperQuestionId, { scores: [], correct: 0, total: 0 });
+      const entry = pqMap.get(a.paperQuestionId)!;
+      entry.total++;
+      if (a.score !== null) entry.scores.push(a.score);
+      if (a.isCorrect) entry.correct++;
+    }
+
+    const stats = (exam.paper?.questions || []).map((pq: any) => {
+      const entry = pqMap.get(pq.id) || { scores: [], correct: 0, total: 0 };
+      const maxScore = pq.score;
+      const avg = entry.scores.length > 0 ? entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length : 0;
+      const scoreRate = maxScore > 0 ? (avg / maxScore) * 100 : 0;
+      const max = entry.scores.length > 0 ? Math.max(...entry.scores) : 0;
+      const min = entry.scores.length > 0 ? Math.min(...entry.scores) : 0;
+      // 分数段分布（0-25%, 25-50%, 50-75%, 75-100%）
+      const dist = [0, 0, 0, 0];
+      for (const s of entry.scores) {
+        const pct = maxScore > 0 ? s / maxScore : 0;
+        if (pct <= 0.25) dist[0]++;
+        else if (pct <= 0.5) dist[1]++;
+        else if (pct <= 0.75) dist[2]++;
+        else dist[3]++;
+      }
+      return {
+        pqId: pq.id,
+        questionId: pq.questionId,
+        type: pq.question?.type,
+        content: pq.question?.content?.slice(0, 50),
+        maxScore,
+        totalStudents: entry.total,
+        gradedCount: entry.scores.length,
+        avgScore: Math.round(avg * 10) / 10,
+        scoreRate: Math.round(scoreRate * 10) / 10,
+        maxScoreGot: max,
+        minScoreGot: min,
+        correctRate: entry.total > 0 ? Math.round((entry.correct / entry.total) * 1000) / 10 : null,
+        distribution: dist,
+      };
+    });
+
+    return { stats, totalStudents: sessionIds.length };
+  }
+
+  /** 设置/更新评分 Rubric（扣分点） */
+  @Put(':examId/rubric/:pqId')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  async setRubric(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('pqId', ParseIntPipe) pqId: number,
+    @Body() data: { rubric: { description: string; points: number; type: 'add' | 'deduct' }[] },
+  ) {
+    const pq = await this.prisma.paperQuestion.findUnique({ where: { id: pqId } });
+    if (!pq) return { error: '题目不存在' };
+    // 验证 rubric 格式
+    if (!Array.isArray(data.rubric)) return { error: 'rubric 必须为数组' };
+    for (const item of data.rubric) {
+      if (!item.description || typeof item.points !== 'number' || !['add', 'deduct'].includes(item.type)) {
+        return { error: 'rubric 项格式错误：需 {description, points, type:add|deduct}' };
+      }
+    }
+    await this.prisma.paperQuestion.update({ where: { id: pqId }, data: { rubric: data.rubric } });
+    return { success: true, rubric: data.rubric };
+  }
+
   /** 获取某个学员的完整答卷（含所有答案） */
   @Get(':examId/:studentId')
   @RequirePermission(Permissions.GRADING_MANUAL)
@@ -222,6 +401,15 @@ export class GradingController {
       }
     }
 
+    // ★ 校验评分不超过该题满分
+    const pq = await this.prisma.paperQuestion.findUnique({
+      where: { id: answer.paperQuestionId },
+      select: { score: true },
+    });
+    const maxScore = pq?.score ?? 0;
+    if (data.score < 0) return { error: '评分不能为负数' };
+    if (data.score > maxScore) return { error: `评分不能超过该题满分 ${maxScore} 分` };
+
     await this.prisma.examAnswer.update({
       where: { id: answerId },
       data: { score: data.score, graderNote: data.graderNote || null },
@@ -236,6 +424,11 @@ export class GradingController {
       select: { examId: true },
     });
     if (gSession) await this.autoPublishIfModeMatches(gSession.examId);
+
+    // P2-2: 更新 GradingAssignment 状态 — 检查该阅卷员在该考试的分派是否已全部完成
+    if (gSession && !isOfficer) {
+      void this.updateAssignmentProgress(gSession.examId, userId);
+    }
 
     return { success: true, ...result };
   }
@@ -283,14 +476,17 @@ export class GradingController {
       return { error: `还有 ${ungraded} 道主观题未评分，请评完后再发布` };
     }
 
-    // ✅ 真正写入数据库
-    await this.prisma.examSession.updateMany({
-      where: { id: { in: sessionIds } },
+    // ✅ 真正写入数据库 — 仅发布已判完的卷（GRADED），与 publishScores 逻辑对齐
+    const result = await this.prisma.examSession.updateMany({
+      where: { id: { in: sessionIds }, scoringStatus: 'GRADED' },
       data: {
         scoringStatus: 'PUBLISHED',
         scoringPublishedAt: new Date(),
       },
     });
+    if (result.count === 0) {
+      return { error: '没有已判完的成绩可发布（需所有主观题评完后 scoringStatus=GRADED）' };
+    }
 
     // ← 通知所有学员成绩已发布
     const allSubmitted = await this.prisma.examSession.findMany({
@@ -493,6 +689,66 @@ export class GradingController {
     return { success: true, originalScore, adjustedScore: data.adjustedScore };
   }
 
+
+  /** P2-2: 检查阅卷员分派进度，全部评完则标记 COMPLETED */
+  private async updateAssignmentProgress(examId: number, graderId: number) {
+    try {
+      const assignments = await this.prisma.gradingAssignment.findMany({
+        where: { examId, graderId, status: { not: 'COMPLETED' } },
+      });
+      if (assignments.length === 0) return;
+
+      // 获取该考试的主观题 paperQuestionIds
+      const paper = await this.prisma.paper.findFirst({
+        where: { exams: { some: { id: examId } } },
+        include: { questions: { include: { question: { select: { type: true } } } } },
+      });
+      const subjectivePQIds = new Set(
+        paper?.questions?.filter(pq => SUBJECTIVE_TYPES.has(pq.question.type)).map(pq => pq.id) || [],
+      );
+
+      for (const assignment of assignments) {
+        // 确定该分派覆盖的学员 session
+        const sessionWhere: any = { examId, status: 'SUBMITTED' };
+        if (assignment.sessionId) sessionWhere.id = assignment.sessionId;
+
+        const sessions = await this.prisma.examSession.findMany({
+          where: sessionWhere, select: { id: true },
+        });
+        const sessionIds = sessions.map(s => s.id);
+        if (sessionIds.length === 0) {
+          await this.prisma.gradingAssignment.update({ where: { id: assignment.id }, data: { status: 'COMPLETED', completedAt: new Date() } });
+          continue;
+        }
+
+        // 确定该分派覆盖的题目
+        const pqFilter = assignment.paperQuestionId
+          ? [assignment.paperQuestionId]
+          : [...subjectivePQIds];
+
+        // 检查是否还有未评分的答案
+        const ungraded = await this.prisma.examAnswer.count({
+          where: {
+            sessionId: { in: sessionIds },
+            paperQuestionId: { in: pqFilter },
+            score: null,
+          },
+        });
+
+        if (ungraded === 0) {
+          await this.prisma.gradingAssignment.update({
+            where: { id: assignment.id },
+            data: { status: 'COMPLETED', completedAt: new Date() },
+          });
+        } else if (assignment.status === 'PENDING') {
+          await this.prisma.gradingAssignment.update({
+            where: { id: assignment.id },
+            data: { status: 'IN_PROGRESS' },
+          });
+        }
+      }
+    } catch { /* 进度更新失败不影响评分主流程 */ }
+  }
 
   /** 如果考试模式是 AUTO，检查所有学员主观题是否已评完 */
   private async autoPublishIfModeMatches(examId: number) {

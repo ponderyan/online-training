@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ChunkingService } from '../ai-assistant/chunking.service.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -11,9 +12,10 @@ const execFileAsync = util.promisify(execFile);
 
 @Injectable()
 export class MaterialsService {
+  private readonly logger = new Logger(MaterialsService.name);
   private uploadDir = path.resolve('uploads');
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, private chunking: ChunkingService) {
     fs.mkdir(this.uploadDir, { recursive: true }).catch(() => {});
   }
 
@@ -111,6 +113,10 @@ export class MaterialsService {
         },
       });
     }
+    // 自动生成知识块（异步，不阻塞主流程）
+    this.chunking.rebuildForMaterial(materialId).catch((e: any) => {
+      this.logger.warn(`[分块] 教材 #${materialId} 知识块生成失败: ${e.message}`);
+    });
     return chapters.length;
   }
 

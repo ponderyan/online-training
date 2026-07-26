@@ -254,4 +254,63 @@ export class RecommendationsService {
     if (rate >= 40) return '薄弱';
     return '危险';
   }
+
+  /**
+   * P2-3: 获取推荐阅读（薄弱知识点对应的教材章节）
+   * 链路：薄弱知识点 → ChunkKnowledgePoint → KnowledgeChunk → KnowledgeDocument
+   */
+  async getRecommendedReading(studentId: number) {
+    const { weakestKps } = await this.getRecommendations(studentId);
+    // 取掌握率 < 75% 的知识点
+    const weakKpIds = weakestKps
+      .filter(kp => kp.avgRate < 75)
+      .slice(0, 5)
+      .map(kp => kp.kpId);
+
+    if (weakKpIds.length === 0) return { readings: [] };
+
+    // 通过 ChunkKnowledgePoint 找到关联的知识块
+    const chunkKps = await this.prisma.chunkKnowledgePoint.findMany({
+      where: { knowledgePointId: { in: weakKpIds } },
+      include: {
+        chunk: {
+          select: { id: true, title: true, content: true, documentId: true },
+        },
+        knowledgePoint: { select: { id: true, name: true } },
+      },
+      orderBy: { confidence: 'desc' },
+      take: 15,
+    });
+
+    // 获取文档信息
+    const docIds = [...new Set(chunkKps.map(c => c.chunk.documentId).filter(Boolean))] as number[];
+    const docs = docIds.length > 0
+      ? await this.prisma.knowledgeDocument.findMany({ where: { id: { in: docIds } }, select: { id: true, name: true } })
+      : [];
+    const docMap = new Map(docs.map(d => [d.id, d.name]));
+
+    // 按知识点分组
+    const readings = weakKpIds.map(kpId => {
+      const kpInfo = weakestKps.find(k => k.kpId === kpId);
+      const relatedChunks = chunkKps
+        .filter(c => c.knowledgePointId === kpId)
+        .slice(0, 3)
+        .map(c => ({
+          chunkId: c.chunk.id,
+          title: c.chunk.title,
+          excerpt: (c.chunk.content || '').slice(0, 150),
+          documentName: c.chunk.documentId ? (docMap.get(c.chunk.documentId) || '') : '',
+        }));
+
+      return {
+        kpId,
+        kpName: kpInfo?.kpName || '',
+        avgRate: kpInfo?.avgRate || 0,
+        level: kpInfo?.level || '',
+        chunks: relatedChunks,
+      };
+    }).filter(r => r.chunks.length > 0);
+
+    return { readings };
+  }
 }

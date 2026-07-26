@@ -80,6 +80,20 @@ export class GradingAssignmentController {
       paperQuestionIds?: number[]; // 不传/空=全题型
     },
   ) {
+    // P2-3: 校验 graderId 合法性
+    const grader = await this.prisma.user.findUnique({
+      where: { id: data.graderId },
+      select: { id: true, roleAssignments: { select: { role: { select: { code: true } } } } },
+    });
+    if (!grader) {
+      throw new BadRequestException('指定的阅卷员用户不存在');
+    }
+    const graderRoles = grader.roleAssignments.map(ra => ra.role.code);
+    const hasGradingRole = graderRoles.some(r => ['LECTURER', 'ORG_ADMIN', 'SUPER_ADMIN', 'EXAM_OFFICER'].includes(r));
+    if (!hasGradingRole) {
+      throw new BadRequestException('该用户不具备阅卷资格（需 LECTURER/ORG_ADMIN/EXAM_OFFICER 角色）');
+    }
+
     // 校验：不能两个都为空或都不传
     const hasSessions = data.sessionIds && data.sessionIds.length > 0;
     const hasQuestions = data.paperQuestionIds && data.paperQuestionIds.length > 0;

@@ -104,15 +104,11 @@ export default function CreateExam() {
   const [passingScore, setPassingScore] = useState('');
   const [scorePublishMode, setScorePublishMode] = useState<string>('MANUAL');
   const [publishAt, setPublishAt] = useState<string>('');
-  const [propositionById, setPropositionById] = useState('');
-  const [lecturers, setLecturers] = useState<any[]>([]);
 
   useEffect(() => {
     api.papers.list(1).then(r => setPapers(r.items || [])).catch(() => {});
     api.trainingPrograms.list({ page: '1', pageSize: '100' }).then(r => setPrograms(r.items || [])).catch(() => {});
-    api.students.list({ pageSize: '100', allRoles: 'true' }).then(r =>
-      setLecturers(r.items?.filter((u: any) => u.role === 'LECTURER' || u.role === 'ORG_ADMIN' || u.role === 'SUPER_ADMIN') || [])
-    ).catch(() => {});
+
   }, []);
 
   // 选择场景 → 应用预设
@@ -382,7 +378,7 @@ export default function CreateExam() {
                 <label key={m.value}
                   className="flex-1 p-3 rounded-lg cursor-pointer transition-all"
                   style={{
-                    background: scorePublishMode === m.value ? 'var(--fox-pale)' : 'var(paper)',
+                    background: scorePublishMode === m.value ? 'var(--fox-pale)' : 'var(--paper)',
                     border: `1px solid ${scorePublishMode === m.value ? 'var(--fox)' : 'var(--ink-100)'}`,
                   }}>
                   <input type="radio" name="scorePublishMode" value={m.value}
@@ -403,13 +399,7 @@ export default function CreateExam() {
               </div>
             )}
           </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>命题人</label>
-                    <select value={propositionById} onChange={e => setPropositionById(e.target.value)} className="input select">
-                      <option value="">— 未指定 —</option>
-                      {lecturers.map((l: any) => <option key={l.id} value={l.id}>{l.displayName}</option>)}
-                    </select>
-                  </div>
+
                 </div>
               </div>
 

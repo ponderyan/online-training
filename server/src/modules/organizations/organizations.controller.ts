@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, Req, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { OrganizationsService } from './organizations.service.js';
@@ -36,6 +36,7 @@ export class OrganizationsController {
   create(@Body() data: {
     name: string; code: string; parentId?: number | null;
     contactName?: string; contactPhone?: string; contactEmail?: string;
+    orgType?: string;
   }) {
     return this.service.create(data);
   }
@@ -50,7 +51,7 @@ export class OrganizationsController {
   @RequirePermission(P.ORG_EDIT)
   update(@Param('id', ParseIntPipe) id: number, @Body() data: {
     name?: string; contactName?: string; contactPhone?: string; contactEmail?: string;
-    isActive?: boolean; sortOrder?: number;
+    isActive?: boolean; sortOrder?: number; orgType?: string;
   }) {
     return this.service.update(id, data);
   }
@@ -92,7 +93,14 @@ export class OrganizationsController {
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { type: string },
+    @Req() req: any,
   ) {
+    // 机构隔离：非 SUPER_ADMIN 只能操作自己所属机构
+    const userRoles: string[] = req.user?.roles || [];
+    const userOrgId = req.user?.orgId;
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN') && userOrgId !== id) {
+      throw new ForbiddenException('无权操作其他机构的证书配置');
+    }
     return this.service.saveCertImage(id, file, body.type);
   }
 
@@ -102,7 +110,13 @@ export class OrganizationsController {
   updateCertConfig(@Param('id', ParseIntPipe) id: number, @Body() data: {
     certIssuerName?: string; certLogoUrl?: string; certFooterText?: string;
     sealUrl?: string; useFoxLearnSeal?: boolean;
-  }) {
+  }, @Req() req?: any) {
+    // 机构隔离：非 SUPER_ADMIN 只能操作自己所属机构
+    const userRoles: string[] = req?.user?.roles || [];
+    const userOrgId = req?.user?.orgId;
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN') && userOrgId !== id) {
+      throw new ForbiddenException('无权操作其他机构的证书配置');
+    }
     return this.service.updateCertConfig(id, data);
   }
 }

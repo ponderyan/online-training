@@ -1,5 +1,7 @@
 'use client';
 
+import { EXAM_STATUS_OPTIONS, EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from '@/lib/exam-constants';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
@@ -8,28 +10,12 @@ import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
+import { useDebounce } from '@/hooks/use-debounce';
 
-const STATUS_OPTS = [
-  { value: '', label: '全部状态' },
-  { value: 'DRAFT', label: '草稿' },
-  { value: 'PUBLISHED', label: '已发布' },
-  { value: 'IN_PROGRESS', label: '进行中' },
-  { value: 'FINISHED', label: '已结束' },
-  { value: 'CANCELLED', label: '已取消' },
-];
 
-const statusColors: Record<string, string> = {
-  DRAFT: '#8b8174', PUBLISHED: '#00897b', IN_PROGRESS: '#e87a30',
-  FINISHED: '#5a5348', CANCELLED: '#aaa',
-  AWAITING_GRADING: '#d97706', GRADING_IN_PROGRESS: '#e87a30',
-  SCORE_CONFIRMED: '#059669', SCORE_PUBLISHED: '#059669',
-};
-const statusLabels: Record<string, string> = {
-  DRAFT: '草稿', PUBLISHED: '已发布', IN_PROGRESS: '进行中',
-  FINISHED: '已结束', CANCELLED: '已取消',
-  AWAITING_GRADING: '待阅卷', GRADING_IN_PROGRESS: '录入中',
-  SCORE_CONFIRMED: '已确认', SCORE_PUBLISHED: '成绩已发布',
-};
+
+
+
 
 export default function ExamList() {
   const router = useRouter();
@@ -40,6 +26,7 @@ export default function ExamList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
 
   const load = async (p = 1) => {
@@ -47,7 +34,7 @@ export default function ExamList() {
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
       const data = await api.exams.list(params as any);
       setExams(data.items || []);
@@ -80,7 +67,7 @@ export default function ExamList() {
           onKeyDown={e => e.key === 'Enter' && load()} />
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); load(1); }}
           className="input select" style={{ maxWidth: 140 }}>
-          {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {EXAM_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
@@ -131,9 +118,9 @@ export default function ExamList() {
                       📊 查看结果
                     </span>
                     <span className="text-xs font-medium px-3 py-1 rounded-full" style={{
-                      background: `${statusColors[exam.status]}18`,
-                      color: statusColors[exam.status],
-                    }}>{statusLabels[exam.status] || exam.status}</span>
+                      background: `${EXAM_STATUS_COLORS[exam.status]}18`,
+                      color: EXAM_STATUS_COLORS[exam.status],
+                    }}>{EXAM_STATUS_LABELS[exam.status] || exam.status}</span>
                     {exam.orgId && (
                       <span className="tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
                         机构

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
 import { EvaluationsService } from './evaluations.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -7,15 +7,29 @@ import { Permissions } from '../../common/permissions.constants.js';
 export class EvaluationsController {
   constructor(private service: EvaluationsService) {}
 
-  /** 学员提交评价 */
+  /** 管理员：全量评价列表（支持按培训班/讲师筛选） */
+  @Get()
+  @RequirePermission(Permissions.EVALUATION_VIEW)
+  async findAll(
+    @Query('programId') programId?: string,
+    @Query('instructorId') instructorId?: string,
+  ) {
+    return this.service.findAll({
+      programId: programId ? parseInt(programId, 10) : undefined,
+      instructorId: instructorId ? parseInt(instructorId, 10) : undefined,
+    });
+  }
+
+  /** 学员提交评价（P2修复：studentId 从 JWT 提取，禁止 body 传入） */
   @Post()
   async create(@Body() data: {
-    studentId: number; programId: number;
+    programId: number;
     contentRating: number; instructorRating: number; organizationRating?: number;
     overallRating: number; comment?: string; isAnonymous?: boolean;
     instructorId?: number; courseId?: number;
-  }) {
-    return this.service.create(data.studentId, data);
+  }, @Req() req: any) {
+    const studentId = req.user?.sub || req.user?.id;
+    return this.service.create(studentId, data);
   }
 
   /** 管理员：某培训班的所有评价 */
@@ -39,9 +53,10 @@ export class EvaluationsController {
     return this.service.getProgramStats(programId);
   }
 
-  /** 学员：我的评价 */
+  /** 学员：我的评价（P2修复：studentId 从 JWT 提取） */
   @Get('my')
-  async findMy(@Query('studentId', ParseIntPipe) studentId: number) {
+  async findMy(@Req() req: any) {
+    const studentId = req.user?.sub || req.user?.id;
     return this.service.findMy(studentId);
   }
 

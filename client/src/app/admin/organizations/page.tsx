@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { validateTel, validateEmail, validateOrgCode, suggestOrgCode } from '@/lib/validators';
 
 // ── 组织树节点（与后端 OrgNode 对齐） ──
 interface OrgNode {
@@ -14,6 +15,7 @@ interface OrgNode {
   level: number;
   path: string | null;
   sortOrder: number;
+  orgType?: string;
   contactName: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
@@ -31,6 +33,7 @@ interface DataScope {
   studentCount: number;
   programCount: number;
   certCount: number;
+  agencyCount: number;
 }
 
 interface OrgUsers {
@@ -39,6 +42,8 @@ interface OrgUsers {
 }
 
 const LEVEL_LABELS: Record<number, string> = { 1: 'Level 1', 2: 'Level 2', 3: 'Level 3', 4: 'Level 4' };
+const ORG_TYPE_LABELS: Record<string, string> = { ASSOCIATION: '协会', BRANCH: '分会', DEPARTMENT: '部门' };
+const ORG_TYPE_COLORS: Record<string, string> = { ASSOCIATION: '#7b1fa2', BRANCH: '#1565c0', DEPARTMENT: '#2e7d32' };
 
 // ── 搜索高亮：匹配关键词部分加淡狐狸色背景 ──
 function highlightText(text: string, keyword: string) {
@@ -70,7 +75,7 @@ export default function OrganizationsPage() {
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [editOrg, setEditOrg] = useState<OrgNode | null>(null);
   const [modalParent, setModalParent] = useState<OrgNode | null>(null); // 新建子组织时的父节点
-  const [orgForm, setOrgForm] = useState({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '' });
+  const [orgForm, setOrgForm] = useState({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '', orgType: 'BRANCH' });
   const [saving, setSaving] = useState(false);
 
   // 拖拽
@@ -94,6 +99,9 @@ export default function OrganizationsPage() {
   const [certSaving, setCertSaving] = useState(false);
   const [certUploading, setCertUploading] = useState<'logo' | 'seal' | null>(null);
 
+  // 下属招生机构
+  const [orgAgencies, setOrgAgencies] = useState<any[]>([]);
+
   const load = async () => {
     try {
       const data = await api.organizations.getTree();
@@ -113,9 +121,10 @@ export default function OrganizationsPage() {
 
   // 选中节点 → 加载详情
   useEffect(() => {
-    if (!selectedId) { setDataScope(null); setOrgUsers(null); setCertConfig(null); return; }
+    if (!selectedId) { setDataScope(null); setOrgUsers(null); setCertConfig(null); setOrgAgencies([]); return; }
     api.organizations.getDataScope(selectedId).then(setDataScope).catch(() => setDataScope(null));
     api.organizations.getOrgUsers(selectedId).then(setOrgUsers).catch(() => setOrgUsers(null));
+    api.agencies.list({ organizationId: String(selectedId) }).then((d: any) => setOrgAgencies(d.items || [])).catch(() => setOrgAgencies([]));
     api.organizations.get(selectedId).then((org: any) => setCertConfig({
       certIssuerName: org.certIssuerName || '', certLogoUrl: org.certLogoUrl || '',
       certFooterText: org.certFooterText || '', sealUrl: org.sealUrl || '',
@@ -177,7 +186,7 @@ export default function OrganizationsPage() {
   const openCreate = (parent: OrgNode | null) => {
     setEditOrg(null);
     setModalParent(parent);
-    setOrgForm({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '' });
+    setOrgForm({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '', orgType: 'BRANCH' });
     setShowOrgModal(true);
   };
   const openEdit = (org: OrgNode) => {
@@ -186,22 +195,36 @@ export default function OrganizationsPage() {
     setOrgForm({
       name: org.name, code: org.code,
       contactName: org.contactName || '', contactPhone: org.contactPhone || '', contactEmail: org.contactEmail || '',
+      orgType: org.orgType || 'BRANCH',
     });
     setShowOrgModal(true);
   };
 
   const handleSaveOrg = async () => {
     if (!orgForm.name || (!editOrg && !orgForm.code)) { toast.warning('名称和编码不能为空'); return; }
+    // 编码格式校验（仅新建时）
+    if (!editOrg) {
+      const codeErr = validateOrgCode(orgForm.code);
+      if (codeErr) { toast.warning(codeErr); return; }
+    }
+    // 联系电话校验
+    const telErr = validateTel(orgForm.contactPhone);
+    if (telErr) { toast.warning(telErr); return; }
+    // 邮箱校验
+    const emailErr = validateEmail(orgForm.contactEmail);
+    if (emailErr) { toast.warning(emailErr); return; }
     setSaving(true);
     try {
       if (editOrg) {
         await api.organizations.update(editOrg.id, {
           name: orgForm.name, contactName: orgForm.contactName, contactPhone: orgForm.contactPhone, contactEmail: orgForm.contactEmail,
+          orgType: orgForm.orgType,
         });
       } else {
         await api.organizations.create({
           name: orgForm.name, code: orgForm.code, parentId: modalParent?.id || null,
           contactName: orgForm.contactName, contactPhone: orgForm.contactPhone, contactEmail: orgForm.contactEmail,
+          orgType: orgForm.orgType,
         });
       }
       setShowOrgModal(false); setEditOrg(null); setModalParent(null);
@@ -424,6 +447,7 @@ export default function OrganizationsPage() {
                     <ScopeStat label="可见学员" value={dataScope.studentCount} suffix="人" />
                     <ScopeStat label="可见培训班" value={dataScope.programCount} suffix="个" />
                     <ScopeStat label="可见证书" value={dataScope.certCount} suffix="张" />
+                    <ScopeStat label="招生机构" value={dataScope.agencyCount} suffix="个" />
                   </div>
                 ) : (
                   <div className="text-xs py-4 text-center" style={{ color: 'var(--ink-300)' }}>加载中…</div>
@@ -459,6 +483,34 @@ export default function OrganizationsPage() {
                   )
                 ) : (
                   <div className="text-xs py-4 text-center" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                )}
+              </div>
+
+              {/* 下属招生机构 */}
+              <div className="card p-5">
+                <h3 className="section-title">🏢 下属招生机构（{orgAgencies.length} 个）</h3>
+                {orgAgencies.length === 0 ? (
+                  <div className="text-xs py-6 text-center" style={{ color: 'var(--ink-300)' }}>该组织下暂无招生机构</div>
+                ) : (
+                  <div className="space-y-2 mt-2">
+                    {orgAgencies.map((a: any) => (
+                      <div key={a.id} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{a.name}</span>
+                          {a.shortName && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>{a.shortName}</span>}
+                          <span className={`tag ${a.isActive ? 'tag-cyan' : 'tag-ink'} text-[10px]`}>{a.isActive ? '启用' : '停用'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--ink-400)' }}>
+                          {a.contactPerson && <span>👤 {a.contactPerson}</span>}
+                          <span>👥 {a._count?.primaryStudents ?? 0} 学员</span>
+                          <span>📋 {a._count?.enrollments ?? 0} 招生</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="text-right mt-2">
+                      <a href="/agencies" className="text-xs" style={{ color: 'var(--fox-dark)' }}>前往招生机构管理 →</a>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -567,12 +619,32 @@ export default function OrganizationsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>组织名称 *</label>
-                  <input value={orgForm.name} onChange={e => setOrgForm({ ...orgForm, name: e.target.value })} className="input" placeholder="如：符合性评估部" />
+                  <input value={orgForm.name} onChange={e => {
+                    const name = e.target.value;
+                    const newForm = { ...orgForm, name };
+                    // 编码自动建议（仅新建且编码为空或等于上次建议时触发）
+                    if (!editOrg && modalParent) {
+                      const suggested = suggestOrgCode(modalParent.code, name);
+                      if (suggested && (!orgForm.code || orgForm.code === suggestOrgCode(modalParent.code, orgForm.name))) {
+                        newForm.code = suggested;
+                      }
+                    }
+                    setOrgForm(newForm);
+                  }} className="input" placeholder="如：符合性评估部" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>组织编码 *</label>
-                  <input value={orgForm.code} onChange={e => setOrgForm({ ...orgForm, code: e.target.value })} className="input" placeholder="如：CEC" disabled={!!editOrg} />
+                  <input value={orgForm.code} onChange={e => setOrgForm({ ...orgForm, code: e.target.value.toUpperCase() })} className="input" placeholder="大写字母+数字+连字符，如 CEC-ITSS" disabled={!!editOrg} maxLength={20} />
+                  {!editOrg && <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>格式：大写字母开头，如 CEC、ITSS-PG</p>}
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>组织类型</label>
+                <select value={orgForm.orgType} onChange={e => setOrgForm({ ...orgForm, orgType: e.target.value })} className="input select">
+                  <option value="ASSOCIATION">协会（总会）</option>
+                  <option value="BRANCH">分会</option>
+                  <option value="DEPARTMENT">部门 / 业务线</option>
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>联系人</label>
@@ -581,11 +653,11 @@ export default function OrganizationsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>联系电话</label>
-                  <input value={orgForm.contactPhone} onChange={e => setOrgForm({ ...orgForm, contactPhone: e.target.value })} className="input" placeholder="手机号" />
+                  <input value={orgForm.contactPhone} onChange={e => setOrgForm({ ...orgForm, contactPhone: e.target.value.replace(/[^\d+\-\s]/g, '') })} className="input" placeholder="如 13800138000" maxLength={20} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>联系邮箱</label>
-                  <input value={orgForm.contactEmail} onChange={e => setOrgForm({ ...orgForm, contactEmail: e.target.value })} className="input" placeholder="邮箱" />
+                  <input value={orgForm.contactEmail} onChange={e => setOrgForm({ ...orgForm, contactEmail: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input" placeholder="邮箱" />
                 </div>
               </div>
             </div>
@@ -761,8 +833,8 @@ function OrgNodeView({ node, depth, selectedId, expanded, onSelect, onToggle, on
         <span className="text-sm font-medium truncate flex-1" style={{ color: isSelected ? 'var(--fox-dark)' : 'var(--ink-600)' }}>
           {highlightText(node.name, searchKeyword || '')}
         </span>
-        <span className="tag text-[9px] flex-shrink-0" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
-          {LEVEL_LABELS[node.level] || `L${node.level}`}
+        <span className="tag text-[9px] flex-shrink-0" style={{ background: 'var(--paper-dark)', color: ORG_TYPE_COLORS[node.orgType || ''] || 'var(--ink-400)' }}>
+          {ORG_TYPE_LABELS[node.orgType || ''] || LEVEL_LABELS[node.level] || `L${node.level}`}
         </span>
         <span className="text-[9px] flex-shrink-0" style={{ color: 'var(--ink-300)' }}>
           {node.childOrgCount > 0 && `🏢${node.childOrgCount}`}

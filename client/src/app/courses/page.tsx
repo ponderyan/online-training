@@ -8,6 +8,7 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '启用', INACTIVE: '停用' };
 const STATUS_COLORS: Record<string, string> = { ACTIVE: '#00897b', INACTIVE: '#8b8174' };
@@ -24,6 +25,7 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -32,7 +34,7 @@ export default function CoursesPage() {
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
       if (filterType) params.type = filterType;
       const data = await api.courses.list(params);
@@ -50,7 +52,7 @@ export default function CoursesPage() {
   useEffect(() => {
     const timer = setTimeout(() => { load(1); }, 400);
     return () => clearTimeout(timer);
-  }, [keyword, filterStatus, filterType]);
+  }, [debouncedKeyword, filterStatus, filterType]);
 
   const handleToggleStatus = async (c: any) => {
     if (c.status === 'ACTIVE') {

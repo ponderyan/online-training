@@ -7,8 +7,7 @@ import { useToast } from '@/components/Toast';
 
 export default function SettingsPage() {
   const toast = useToast();
-  const [dictionaries, setDictionaries] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('dict');
+  const [activeTab, setActiveTab] = useState('sys');
   const [bankPolicy, setBankPolicy] = useState<{ allow_org_own_bank: boolean; org_bank_visibility: string } | null>(null);
   const [bankPolicyLoading, setBankPolicyLoading] = useState(false);
   const [bankPolicySaving, setBankPolicySaving] = useState(false);
@@ -33,13 +32,7 @@ export default function SettingsPage() {
     return ['易', '较易', '较难', '难'];
   });
 
-  // Dictionary form
-  const [newCode, setNewCode] = useState('');
-  const [newName, setNewName] = useState('');
 
-  useEffect(() => {
-    api.dataDictionaries.list().then(setDictionaries).catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (activeTab === 'bank') {
@@ -65,26 +58,7 @@ export default function SettingsPage() {
     toast.success('系统参数已保存');
   };
 
-  const addDictionary = async () => {
-    if (!newCode || !newName) return;
-    const code = newCode.toUpperCase();
-    // 先创建数据字典条目，返回包含实际 id
-    const newDict = await api.dataDictionaries.create({ code, name: newName });
-    // 同步创建对应的科目（Subject），使用实际返回的字典 ID
-    try {
-      await api.subjects.create({ name: newName, code, dictionaryId: newDict.id, sortOrder: 99 });
-    } catch {
-      // 科目可能已存在，忽略
-    }
-    setNewCode(''); setNewName('');
-    api.dataDictionaries.list().then(setDictionaries);
-  };
 
-  const deleteDict = async (id: number) => {
-    if (!confirm('确认删除？')) return;
-    await api.dataDictionaries.delete(id);
-    api.dataDictionaries.list().then(setDictionaries);
-  };
 
   return (
     <AppLayout>
@@ -96,7 +70,6 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'var(--ink-100)' }}>
         {[
-          { key: 'dict', label: '数据字典' },
           { key: 'sys', label: '系统参数' },
           { key: 'bank', label: '题库策略' },
           { key: 'cert', label: '证书策略' },
@@ -112,47 +85,29 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* AI 配置导航 */}
-      <div className="card p-4 max-w-[500px] mb-6" style={{ background: 'var(--paper-50)' }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-medium">🤖 AI 模型配置</h4>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>在独立管理页面中配置</p>
+      {/* 快捷导航 */}
+      <div className="grid grid-cols-2 gap-4 max-w-[500px] mb-6">
+        <div className="card p-4" style={{ background: 'var(--paper-50)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium">📚 科目管理</h4>
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>管理培训科目与编码</p>
+            </div>
+            <a href="/admin/subjects" className="btn btn-fox btn-sm">前往 →</a>
           </div>
-          <a href="/admin/ai-configs" className="btn btn-fox btn-sm">前往配置 →</a>
+        </div>
+        <div className="card p-4" style={{ background: 'var(--paper-50)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium">🤖 AI 模型配置</h4>
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>在独立管理页面中配置</p>
+            </div>
+            <a href="/admin/ai-configs" className="btn btn-fox btn-sm">前往 →</a>
+          </div>
         </div>
       </div>
 
-      {activeTab === 'dict' && (
-        <div className="card p-6 max-w-[500px]">
-          <h3 className="section-title mb-5">
-            数据字典
-            <span className="text-xs font-normal" style={{ color: 'var(--ink-300)' }}>试卷编号编码</span>
-          </h3>
 
-          <div className="space-y-2 mb-5 p-3 rounded" style={{ background: 'var(--paper)' }}>
-            {dictionaries.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无编码，请添加</p>
-            ) : (
-              dictionaries.map((d: any) => (
-                <DictItem key={d.id} dict={d} onUpdate={() => api.dataDictionaries.list().then(setDictionaries)} onDelete={() => deleteDict(d.id)} />
-              ))
-            )}
-          </div>
-
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>编码</label>
-              <input value={newCode} onChange={e => setNewCode(e.target.value)} placeholder="如 DTM" className="input" />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>名称</label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="如 数智化管理师" className="input" />
-            </div>
-            <button onClick={addDictionary} className="btn btn-fox btn-sm">添加</button>
-          </div>
-        </div>
-      )}
 
       {activeTab === 'sys' && (
         <div className="card p-6 max-w-[500px]">
@@ -357,52 +312,3 @@ export default function SettingsPage() {
   );
 }
 
-function DictItem({ dict, onUpdate, onDelete }: { dict: any; onUpdate: () => void; onDelete: () => void }) {
-  const toast = useToast();
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(dict.name);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!editName.trim() || editName === dict.name) { setEditing(false); return; }
-    setSaving(true);
-    try {
-      await api.dataDictionaries.update(dict.id, { name: editName.trim() });
-      setEditing(false);
-      onUpdate();
-    } catch (e: any) {
-      toast.error('保存失败：' + (e.message || '未知错误'));
-    }
-    setSaving(false);
-  };
-
-  return (
-    <div className="flex justify-between items-center py-1.5 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
-      {editing ? (
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-sm font-medium min-w-[60px]">{dict.code}</span>
-          <input value={editName} onChange={e => setEditName(e.target.value)}
-            className="input text-sm flex-1" autoFocus
-            onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setEditName(dict.name); setEditing(false); } }} />
-          <button onClick={handleSave} disabled={saving}
-            className="btn btn-fox btn-xs">{saving ? '保存中…' : '保存'}</button>
-          <button onClick={() => { setEditName(dict.name); setEditing(false); }}
-            className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>取消</button>
-        </div>
-      ) : (
-        <>
-          <span className="text-sm"><span className="font-medium">{dict.code}</span> — {dict.name}</span>
-          <div className="flex gap-1">
-            <button onClick={() => { setEditName(dict.name); setEditing(true); }}
-              className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--fox)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>编辑</button>
-            <button onClick={onDelete} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}

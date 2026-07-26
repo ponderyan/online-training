@@ -8,6 +8,7 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const LEVEL_NAMES: Record<string, string> = { JUNIOR: '初级', MIDDLE: '中级', SENIOR: '高级', EXPERT: '专家' };
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '正常', INACTIVE: '停用', SUSPENDED: '挂起' };
@@ -23,6 +24,7 @@ export default function InstructorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterWorkUnit, setFilterWorkUnit] = useState('');
@@ -32,7 +34,7 @@ export default function InstructorsPage() {
     setError(null);
     try {
       const params: Record<string, string> = { page: '1', pageSize: '50' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
       if (filterType) params.type = filterType;
       if (filterWorkUnit) params.workUnit = filterWorkUnit;

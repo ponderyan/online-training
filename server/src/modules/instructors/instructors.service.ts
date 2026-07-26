@@ -94,7 +94,7 @@ export class InstructorsService {
   async getAvailableGraders() {
     return this.prisma.instructor.findMany({
       where: { status: 'ACTIVE', isGrader: true },
-      select: { id: true, realName: true, title: true },
+      select: { id: true, userId: true, realName: true, title: true },
       orderBy: { realName: 'asc' },
     });
   }

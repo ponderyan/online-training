@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import SubmitConfirmModal from '../components/SubmitConfirmModal';
+import { useExamTimer } from '../hooks/use-exam-timer';
+import { useTabSwitch } from '../hooks/use-tab-switch';
 import AlertModal from '../components/AlertModal';
 import ExamInfoBar from '../../components/ExamInfoBar';
 import SaveIndicator from '../../components/SaveIndicator';
@@ -41,6 +43,7 @@ interface ExamData {
   isOpenBook?: boolean;
   openBookRules?: string;
   autoSaveInterval?: number;
+  tabSwitchLimit?: number;
   studentInfo?: {
     displayName: string;
     studentNumber: string | null;
@@ -58,8 +61,9 @@ export default function ExamTake() {
   const [currentQ, setCurrentQ] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  // P3c: timeLeft 由 useExamTimer hook 管理
   const [submitted, setSubmitted] = useState(false);
+  const [examReady, setExamReady] = useState(false); // P1: 考前须知确认
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -69,17 +73,17 @@ export default function ExamTake() {
   const [alertModal, setAlertModal] = useState<{type: 'FORCE_END'|'TAB_WARN'|'TIME_REMINDER'; message: string} | null>(null);
   const alertConfirmRef = useRef<(() => void) | null>(null);
   const heartbeatRef = useRef<any>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const heartbeatFailCount = useRef(0);
   const [networkError, setNetworkError] = useState(false);
   const [fullscreenOverlay, setFullscreenOverlay] = useState(false);
   const [proctorMessages, setProctorMessages] = useState<any[]>([]);
   const dismissedMessagesRef = useRef<Set<number>>(new Set());
-  const tabSwitchLogRef = useRef<{time: string; duration: number; type?: string}[]>([]);
-  const tabSwitchStartRef = useRef<number | null>(null);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const TAB_SWITCH_WARN = 3;
-  const TAB_SWITCH_MAX = 5;
+  // P3c: 切屏检测由 useTabSwitch hook 管理
+  const [cardFilter, setCardFilter] = useState<'all' | 'unanswered' | 'marked'>('all'); // P2c
+  // ★ 从考试配置读取切屏限制（后端 tabSwitchLimit 字段），无配置时使用默认值
+  const TAB_SWITCH_MAX = exam?.tabSwitchLimit || 5;
+  const TAB_SWITCH_WARN = Math.max(1, TAB_SWITCH_MAX - 2);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -96,7 +100,7 @@ export default function ExamTake() {
       return r.json();
     }).then(data => {
       setExam(data);
-      setTimeLeft(data.remainingTime ?? data.durationMinutes * 60);
+      // P3c: timeLeft 由 useExamTimer hook 从 exam 数据初始化
       // 恢复已有答案和标记状态
       const ans: Record<number, any> = {};
       const marked = new Set<number>();
@@ -208,18 +212,20 @@ export default function ExamTake() {
     if (submitting || submitted) return;
     setSubmitting(true);
     const token = localStorage.getItem('token');
+    const answerArray = Object.entries(answers)
+      .map(([pqId, answer]) => {
+        const qObj = exam!.questions.find(q => q.pqId === parseInt(pqId));
+        if (!qObj) return null; // 跳过无法匹配的残留数据
+        return { paperQuestionId: parseInt(pqId), questionId: qObj.questionId, answer };
+      })
+      .filter(Boolean) as { paperQuestionId: number; questionId: number; answer: any }[];
     try {
-      const answerArray = Object.entries(answers).map(([pqId, answer]) => ({
-        paperQuestionId: parseInt(pqId),
-        questionId: exam!.questions.find(q => q.pqId === parseInt(pqId))!.questionId,
-        answer,
-      }));
       const res = await fetch(`/api/student/exams/${params.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           answers: answerArray,
-          tabSwitchLog: tabSwitchLogRef.current,
+          tabSwitchLog: getTabSwitchLog(),
         }),
       });
       if (!res.ok) {
@@ -234,29 +240,48 @@ export default function ExamTake() {
         return;
       }
       setSubmitted(true);
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current); stopTimer();
       localStorage.removeItem(`exam_${params.id}_answers`);
       router.push(`/exam/result/${params.id}`);
     } catch (e: any) {
-      // 网络错误：答案仍在 localStorage，可重试
-      toast.error('网络异常，交卷未成功，请检查网络后重试');
-      setSubmitting(false);
+      // P1c: 网络错误自动重试（最多3次，间隔2s）
+      let retried = false;
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const retryRes = await fetch(`/api/student/exams/${params.id}/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ answers: answerArray, tabSwitchLog: getTabSwitchLog() }),
+          });
+          if (retryRes.ok) {
+            setSubmitted(true);
+            if (heartbeatRef.current) clearInterval(heartbeatRef.current); stopTimer();
+            localStorage.removeItem(`exam_${params.id}_answers`);
+            router.push(`/exam/result/${params.id}`);
+            retried = true;
+            break;
+          }
+        } catch {}
+      }
+      if (!retried) {
+        toast.error('网络异常，交卷未成功，请检查网络后重试');
+        setSubmitting(false);
+      }
     }
   };
 
-  // 倒计时（handleSubmit 用 ref 避免闭包过期）
+  // P3c: 倒计时由 useExamTimer hook 管理
   const submitRef = useRef<() => Promise<void>>(async () => {});
   submitRef.current = handleSubmit;
-  useEffect(() => {
-    if (loading || submitted || !exam) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) { if (timerRef.current) clearInterval(timerRef.current); submitRef.current(); return 0; }
-        return t - 1;
-      });
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [loading, submitted, exam]);
+  const { timeLeft, setTimeLeft: syncServerTime, stop: stopTimer } = useExamTimer({
+    initialSeconds: exam?.remainingTime ?? (exam?.durationMinutes ?? 0) * 60,
+    active: !loading && !submitted && !!exam && examReady,
+    onTimeUp: () => submitRef.current(),
+    onReminder: (sec) => {
+      setAlertModal({ type: 'TIME_REMINDER', message: sec === 300 ? '⏰ 距离考试结束还有 5 分钟，请注意把握时间' : '⏰ 距离考试结束仅剩 1 分钟！' });
+    },
+  });
 
   // 心跳（每30秒）
   useEffect(() => {
@@ -275,7 +300,7 @@ export default function ExamTake() {
           if (data.sessionStatus && data.sessionStatus !== 'ACTIVE') {
             alertConfirmRef.current = () => {
               setSubmitted(true);
-              if (timerRef.current) clearInterval(timerRef.current);
+              stopTimer();
               router.push('/exam');
             };
             setAlertModal({ type: 'FORCE_END', message: '考试已被监考员结束，系统将退出答题页面。' });
@@ -284,7 +309,7 @@ export default function ExamTake() {
 
           // === P1: 同步服务端剩余时间（监考延长后生效）===
           if (typeof data.remainingTime === 'number') {
-            setTimeLeft(data.remainingTime);
+            syncServerTime(data.remainingTime);
           }
 
           if (data.messages?.length > 0) {
@@ -361,15 +386,8 @@ export default function ExamTake() {
       if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {
           setFullscreenOverlay(true);
-          setTabSwitchCount(prev => {
-            const next = prev + 1;
-            if (next >= TAB_SWITCH_MAX) {
-              setTimeout(() => submitRef.current(), 100);
-            } else {
-              setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到全屏退出（${next}/${TAB_SWITCH_MAX}次），请重新进入全屏模式` });
-            }
-            return next;
-          });
+          addManualLog('FULLSCREEN_EXIT');
+          setAlertModal({ type: 'TAB_WARN', message: '⚠️ 检测到全屏退出，请重新进入全屏模式' });
         });
       }
     };
@@ -398,7 +416,7 @@ export default function ExamTake() {
         if (!confirmLeave) {
           window.history.pushState({ exam: true }, '', currentUrl);
         } else {
-          tabSwitchLogRef.current = [...tabSwitchLogRef.current, { time: new Date().toISOString(), duration: 0, type: 'MANUAL_LEAVE' }];
+          addManualLog('MANUAL_LEAVE');
         }
       }
     };
@@ -464,54 +482,15 @@ export default function ExamTake() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [exam, submitted, currentQ, handleAnswer]);
 
-  // 切屏检测 + 惩罚
-  useEffect(() => {
-    if (loading || submitted) return;
-    const handleVisibility = () => {
-      if (document.hidden) {
-        tabSwitchStartRef.current = Date.now();
-        setTabSwitchCount(prev => {
-          const next = prev + 1;
-          if (next >= TAB_SWITCH_MAX) {
-            setTimeout(() => submitRef.current(), 100);
-            return next;
-          }
-          if (next >= TAB_SWITCH_WARN) {
-            setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到切屏操作（${next}/${TAB_SWITCH_MAX}次），再次切屏将被强制交卷` });
-          }
-          return next;
-        });
-      } else if (tabSwitchStartRef.current !== null) {
-        const duration = Math.round((Date.now() - tabSwitchStartRef.current) / 1000);
-        tabSwitchLogRef.current = [...tabSwitchLogRef.current, {
-          time: new Date(tabSwitchStartRef.current).toISOString(),
-          duration,
-        }];
-        tabSwitchStartRef.current = null;
-      }
-    };
-    const handleBlur = () => {
-      if (tabSwitchStartRef.current === null) tabSwitchStartRef.current = Date.now();
-    };
-    const handleFocus = () => {
-      if (tabSwitchStartRef.current !== null) {
-        const duration = Math.round((Date.now() - tabSwitchStartRef.current) / 1000);
-        tabSwitchLogRef.current = [...tabSwitchLogRef.current, {
-          time: new Date(tabSwitchStartRef.current).toISOString(),
-          duration,
-        }];
-        tabSwitchStartRef.current = null;
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [loading, submitted]);
+  // P3c: 切屏检测 hook
+  const { tabSwitchCount, getLog: getTabSwitchLog, addManualLog } = useTabSwitch({
+    active: !loading && !submitted && examReady,
+    maxSwitches: TAB_SWITCH_MAX,
+    onWarn: (count, max) => {
+      setAlertModal({ type: 'TAB_WARN', message: `⚠️ 检测到切屏操作（${count}/${max}次），再次切屏将被强制交卷` });
+    },
+    onExceed: () => submitRef.current(),
+  });
 
   // 禁止复制粘贴（考试中生效）
   useEffect(() => {
@@ -529,27 +508,58 @@ export default function ExamTake() {
     };
   }, [loading, submitted]);
 
+  // B3: 网络错误自动重连（每10秒）
+  useEffect(() => {
+    if (!networkError) return;
+    const timer = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/student/exams/${params.id}/heartbeat`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) { setNetworkError(false); heartbeatFailCount.current = 0; }
+      } catch {}
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [networkError, params.id]);
+
+  // P2b: 无操作检测（5分钟无操作警告，再2分钟自动交卷）
+  const INACTIVE_WARN_MS = 5 * 60 * 1000;
+  const INACTIVE_SUBMIT_MS = 7 * 60 * 1000;
+  const lastActivityRef = useRef<number>(Date.now());
+  const inactiveWarnedRef = useRef(false);
+  useEffect(() => {
+    if (loading || submitted || !examReady) return;
+    const resetActivity = () => { lastActivityRef.current = Date.now(); };
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
+    events.forEach(evt => document.addEventListener(evt, resetActivity, { passive: true }));
+    const checker = setInterval(() => {
+      const idle = Date.now() - lastActivityRef.current;
+      if (idle >= INACTIVE_SUBMIT_MS) {
+        clearInterval(checker);
+        submitRef.current();
+      } else if (idle >= INACTIVE_WARN_MS && !inactiveWarnedRef.current) {
+        inactiveWarnedRef.current = true;
+        setAlertModal({ type: 'TIME_REMINDER', message: '⚠️ 检测到长时间无操作，2分钟后系统将自动交卷。如需继续答题，请操作页面。' });
+      }
+      if (idle < INACTIVE_WARN_MS) inactiveWarnedRef.current = false;
+    }, 10000);
+    return () => {
+      events.forEach(evt => document.removeEventListener(evt, resetActivity));
+      clearInterval(checker);
+    };
+  }, [loading, submitted, examReady]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
-  if (networkError) return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
-      <div className="text-center max-w-md">
-        <div className="text-4xl mb-4">⚠️</div>
-        <h2 className="text-lg font-bold mb-2 text-[var(--ink-700)]">网络连接异常</h2>
-        <p className="text-sm mb-4 text-[var(--ink-400)]">检测到网络不稳定，但你的答题数据已保存，请不要关闭页面</p>
-        <p className="text-xs text-[var(--ink-300)]">正在尝试重新连接…</p>
-      </div>
-    </div>
-  );
-
-  // 自动保存定时器
+  // 自动保存定时器（★ 必须在 early return 之前，保证 Hooks 调用顺序一致）
   useEffect(() => {
     if (!exam || submitted) return;
-    const interval = (exam.autoSaveInterval || 60) * 1000;
+    const interval = (exam.autoSaveInterval || 30) * 1000; // P1c: 默认30s（竞品标准）
     saveTimerRef.current = setInterval(() => saveCurrentAnswer(), interval);
     return () => { if (saveTimerRef.current) clearInterval(saveTimerRef.current); };
   }, [exam, submitted, saveCurrentAnswer]);
@@ -560,8 +570,105 @@ export default function ExamTake() {
     setCurrentQ(index);
   };
 
+  if (networkError) return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
+      <div className="text-center max-w-md">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h2 className="text-lg font-bold mb-2 text-[var(--ink-700)]">网络连接异常</h2>
+        <p className="text-sm mb-4 text-[var(--ink-400)]">检测到网络不稳定，但你的答题数据已保存，请不要关闭页面</p>
+        <p className="text-xs text-[var(--ink-300)] mb-6">系统每 10 秒自动尝试重连，你也可以手动重试</p>
+        <button onClick={async () => {
+          try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/student/exams/${params.id}/heartbeat`, {
+              method: 'POST', headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) { setNetworkError(false); heartbeatFailCount.current = 0; toast.success('网络已恢复'); }
+            else toast.error('仍无法连接，请稍后再试');
+          } catch { toast.error('仍无法连接，请检查网络'); }
+        }}
+          className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-[var(--fox)] text-white border-none cursor-pointer hover:bg-[var(--fox-dark)] transition-all">
+          🔄 手动重试
+        </button>
+      </div>
+    </div>
+  );
+
+
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p>加载中…</p></div>;
   if (!exam) return null;
+
+  // P1: 考前须知页
+  if (!examReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
+        <div className="max-w-lg w-full bg-[var(--paper-bright)] rounded-2xl border border-[var(--ink-100)] shadow-lg p-8">
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-3">📋</div>
+            <h1 className="text-xl font-bold text-[var(--ink-700)] font-serif">{exam.title}</h1>
+            <p className="text-xs text-[var(--ink-400)] mt-1">请仔细阅读以下考试规则</p>
+          </div>
+
+          <div className="space-y-3 mb-6 text-sm">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+              <span className="text-lg">⏱</span>
+              <div>
+                <span className="font-medium text-[var(--ink-700)]">考试时长</span>
+                <span className="ml-2 text-[var(--ink-500)]">{exam.durationMinutes} 分钟</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+              <span className="text-lg">📝</span>
+              <div>
+                <span className="font-medium text-[var(--ink-700)]">题目数量</span>
+                <span className="ml-2 text-[var(--ink-500)]">{exam.questions.length} 题</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+              <span className="text-lg">{exam.isOpenBook ? '📖' : '🔒'}</span>
+              <div>
+                <span className="font-medium text-[var(--ink-700)]">考试形式</span>
+                <span className="ml-2 text-[var(--ink-500)]">{exam.isOpenBook ? '开卷考试' : '闭卷考试'}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+              <span className="text-lg">🖥</span>
+              <div>
+                <span className="font-medium text-[var(--ink-700)]">切屏限制</span>
+                <span className="ml-2 text-[var(--ink-500)]">最多 {exam.tabSwitchLimit || 5} 次，超出将强制交卷</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+              <span className="text-lg">🕐</span>
+              <div>
+                <span className="font-medium text-[var(--ink-700)]">开考模式</span>
+                <span className="ml-2 text-[var(--ink-500)]">{exam.timeMode === 'FIXED' ? '统一开考（不可暂停）' : '灵活模式（可断点续考）'}</span>
+              </div>
+            </div>
+          </div>
+
+          {exam.isOpenBook && exam.openBookRules && (
+            <div className="mb-6 p-3 rounded-lg bg-[var(--sage-glow)] border border-[var(--sage)] text-xs text-[var(--ink-600)]">
+              <span className="font-medium">📖 开卷规则：</span>{exam.openBookRules}
+            </div>
+          )}
+
+          <div className="mb-6 p-3 rounded-lg bg-[var(--gold-glow)] border border-[var(--gold)] text-xs text-[var(--ink-600)] space-y-1">
+            <p>⚠️ 注意事项：</p>
+            <p>· 考试期间需保持全屏模式，禁止切屏</p>
+            <p>· 答案自动保存，如遇断网请勿关闭页面</p>
+            <p>· 时间结束后系统将自动交卷</p>
+          </div>
+
+          <button onClick={() => setExamReady(true)}
+            className="w-full py-3 rounded-xl text-base font-semibold text-white bg-[var(--fox)] border-none cursor-pointer hover:bg-[var(--fox-dark)] hover:shadow-[0_4px_16px_var(--fox-glow)] transition-all">
+            我已了解，开始考试 →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const q = exam.questions[currentQ];
   const answeredCount = Object.keys(answers).length;
@@ -687,14 +794,36 @@ export default function ExamTake() {
         {/* 答题卡 — 按题型分组 */}
         <div className="w-[230px] flex-shrink-0 overflow-y-auto">
           <div>
-            <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold font-serif text-[var(--ink-700)]">答题卡</p>
               <span className="text-[11px] text-[var(--ink-400)] tabular-nums">
                 <span className="text-[var(--fox)] font-semibold">{answeredCount}</span>/{totalQuestions}
               </span>
             </div>
+            {/* P2c: 筛选标签 */}
+            <div className="flex gap-1 mb-3">
+              {([['all', '全部'], ['unanswered', '未答'], ['marked', '标记']] as const).map(([key, label]) => (
+                <button key={key} onClick={() => setCardFilter(key)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                    cardFilter === key
+                      ? 'bg-[var(--fox)] text-white border-[var(--fox)]'
+                      : 'bg-transparent text-[var(--ink-400)] border-[var(--ink-100)] hover:border-[var(--fox)] hover:text-[var(--fox)]'
+                  }`}>
+                  {label}{key === 'unanswered' ? `${totalQuestions - answeredCount > 0 ? `(${totalQuestions - answeredCount})` : ''}` : ''}{key === 'marked' ? `${markedCount > 0 ? `(${markedCount})` : ''}` : ''}
+                </button>
+              ))}
+            </div>
             {questionTypeSummary.map(section => {
-              const sectionQuestions = exam.questions.filter((q: any) => q.type === section.type);
+              const sectionQuestions = exam.questions.filter((q: any) => {
+                if (q.type !== section.type) return false;
+                if (cardFilter === 'unanswered') {
+                  const a = answers[q.pqId];
+                  return a === undefined || a === '' || (Array.isArray(a) && a.length === 0);
+                }
+                if (cardFilter === 'marked') return markedQuestions.has(q.questionId);
+                return true;
+              });
+              if (sectionQuestions.length === 0) return null;
               return (
                 <div key={section.type} className="mb-4.5">
                   <div className="flex items-center justify-between text-[11px] font-medium text-[var(--ink-400)] mb-2 pb-1.5 border-b border-[var(--ink-100)]">

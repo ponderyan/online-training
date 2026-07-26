@@ -164,7 +164,7 @@ function GeneratePageContent() {
       }
     } catch {}
     Promise.all([
-      api.subjects.list(),
+      api.subjects.listActive(),
       api.templates.list(),
     ]).then(([subs, tpls]) => {
       setSubjects(subs);

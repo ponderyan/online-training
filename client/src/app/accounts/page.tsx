@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { validatePhone, validateEmail, validateIdCard } from '@/lib/validators';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -35,6 +37,7 @@ export default function AccountsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterRole, setFilterRole] = useState('');
 
   const [showModal, setShowModal] = useState(false);
@@ -60,7 +63,7 @@ export default function AccountsPage() {
     setLoading(true);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '50', allRoles: 'true' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       const data = await api.students.list(params);
       const mapped = (data.items || []).map((u: any) => ({
         ...u,
@@ -122,6 +125,12 @@ export default function AccountsPage() {
 
   const handleSave = async () => {
     if (!form.username || !form.displayName) { toast.warning('用户名和姓名不能为空'); return; }
+    const phoneErr = validatePhone(form.phone);
+    if (phoneErr) { toast.warning(phoneErr); return; }
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { toast.warning(emailErr); return; }
+    const idErr = validateIdCard(form.idCard);
+    if (idErr) { toast.warning(idErr); return; }
     setSaving(true);
     try {
       const payload: any = {
@@ -473,7 +482,7 @@ export default function AccountsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>邮箱</label>
-                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="input" placeholder="email@example.com" />
+                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input" placeholder="email@example.com" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>单位</label>

@@ -39,7 +39,7 @@ const TYPE_SHEETS: Record<string, { headers: string[]; sample: string[]; colMap:
   SHORT_ANSWER: {
     headers: ['题干', '参考答案', '难度', '章节名称', '解析'],
     sample: ['请简述数据生命周期管理的主要阶段。', '规划、采集、存储、使用、共享、归档、销毁', '难', '数据生命周期', '七个阶段缺一不可。'],
-    colMap: ['content', 'analysis', 'difficulty', 'chapter', 'analysis'],
+    colMap: ['content', 'analysis', 'difficulty', 'chapter', 'extraAnalysis'],
   },
   CASE_STUDY: {
     headers: ['题干（案例场景）', '子问题', '子问题答案', '难度', '章节名称', '解析'],
@@ -180,6 +180,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
             else if (col === 'difficulty') row.difficulty = val;
             else if (col === 'chapter') row.chapterName = val;
             else if (col === 'analysis') row.analysis = row.analysis || val;
+            else if (col === 'extraAnalysis') { if (val && val !== row.analysis) row.analysis = row.analysis ? row.analysis + '\n解析：' + val : val; }
             else if (col === 'blankAnswers') row.blankAnswers = val;
             else if (col === 'subQuestions') row.subQuestions = val;
             else if (col === 'subAnswers') row.subAnswers = val;

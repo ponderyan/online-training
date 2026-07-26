@@ -30,6 +30,8 @@ export class AuditTrailService {
     const type = entityType.toUpperCase();
     if (type === 'EXAM') return this.getExamTrail(entityId);
     if (type === 'PROGRAM') return this.getProgramTrail(entityId);
+    if (type === 'USER') return this.getUserTrail(entityId);
+    if (type === 'CERTIFICATE') return this.getCertificateTrail(entityId);
     return { entityType: type, entityId, entityName: '', events: [] };
   }
 
@@ -52,6 +54,22 @@ export class AuditTrailService {
         orderBy: { id: 'desc' }, take: 20,
       });
       return { entityType: 'PROGRAM', items };
+    }
+    if (type === 'USER') {
+      const where: any = kw ? { OR: [{ displayName: { contains: kw } }, { username: { contains: kw } }] } : {};
+      const items = await this.prisma.user.findMany({
+        where, select: { id: true, displayName: true, username: true, isActive: true },
+        orderBy: { id: 'desc' }, take: 20,
+      });
+      return { entityType: 'USER', items: items.map(u => ({ id: u.id, title: u.displayName || u.username, status: u.isActive ? 'ACTIVE' : 'DISABLED' })) };
+    }
+    if (type === 'CERTIFICATE') {
+      const where: any = kw ? { studentName: { contains: kw } } : {};
+      const items = await this.prisma.certificate.findMany({
+        where, select: { id: true, studentName: true, certificateNo: true, isRevoked: true },
+        orderBy: { id: 'desc' }, take: 20,
+      });
+      return { entityType: 'CERTIFICATE', items: items.map(c => ({ id: c.id, title: `${c.studentName} - ${c.certificateNo}`, status: c.isRevoked ? 'REVOKED' : 'VALID' })) };
     }
     return { entityType: type, items: [] };
   }
@@ -393,5 +411,157 @@ export class AuditTrailService {
     events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     return { entityType: 'PROGRAM', entityId: programId, entityName: program.name, events };
+  }
+
+  // ═════════════════════════ 用户全链审计 ═══════════════════════════
+
+  private async getUserTrail(userId: number): Promise<TrailResult> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, displayName: true, username: true, isActive: true, orgId: true },
+    });
+    if (!user) return { entityType: 'USER', entityId: userId, entityName: '', events: [] };
+
+    const [auditLogs, sessions, certificates] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where: { entityType: 'User', entityId: userId },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.examSession.findMany({
+        where: { studentId: userId },
+        include: { exam: { select: { title: true } } },
+        orderBy: { startedAt: 'asc' },
+        take: 50,
+      }),
+      this.prisma.certificate.findMany({
+        where: { studentId: userId },
+        orderBy: { issueDate: 'asc' },
+      }),
+    ]);
+
+    const events: TrailEvent[] = [];
+
+    for (const log of auditLogs) {
+      const actionLabel = log.action === 'CREATE' ? '创建用户' : log.action === 'DELETE' ? '删除用户' : '编辑用户';
+      const beforeStatus = (log.before as any)?.status;
+      const afterStatus = (log.after as any)?.status;
+      events.push({
+        id: `audit-${log.id}`,
+        timestamp: log.createdAt.toISOString(),
+        eventType: 'STATE_CHANGE',
+        eventName: actionLabel,
+        fromState: beforeStatus,
+        toState: afterStatus,
+        operatorName: log.operatorName || '系统',
+        summary: beforeStatus && afterStatus && beforeStatus !== afterStatus
+          ? `状态变更：${beforeStatus} → ${afterStatus}`
+          : actionLabel,
+        relatedAuditLogIds: [log.id],
+        detail: { changeReason: log.changeReason },
+      });
+    }
+
+    for (const s of sessions) {
+      if (s.startedAt) {
+        events.push({
+          id: `exam-${s.id}`,
+          timestamp: s.startedAt.toISOString(),
+          eventType: 'SUBMISSION',
+          eventName: '参加考试',
+          operatorName: user.displayName || user.username,
+          summary: `参加考试「${s.exam?.title || '#'+s.examId}」${s.totalScore != null ? `，得分 ${s.totalScore}` : ''}`,
+          relatedAuditLogIds: [],
+        });
+      }
+    }
+
+    for (const c of certificates) {
+      events.push({
+        id: `cert-${c.id}`,
+        timestamp: c.issueDate.toISOString(),
+        eventType: 'CERT_ISSUE',
+        eventName: c.isRevoked ? '证书吊销' : '获得证书',
+        operatorName: '系统',
+        summary: `${c.certificateNo}${c.isRevoked ? '（已吊销）' : ''}`,
+        relatedAuditLogIds: [],
+      });
+    }
+
+    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return { entityType: 'USER', entityId: userId, entityName: user.displayName || user.username, events };
+  }
+
+  // ═════════════════════════ 证书全链审计 ═══════════════════════════
+
+  private async getCertificateTrail(certId: number): Promise<TrailResult> {
+    const cert = await this.prisma.certificate.findUnique({
+      where: { id: certId },
+      include: { traces: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!cert) return { entityType: 'CERTIFICATE', entityId: certId, entityName: '', events: [] };
+
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: { entityType: 'Certificate', entityId: certId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const events: TrailEvent[] = [];
+
+    // 发放事件
+    events.push({
+      id: `issue-${cert.id}`,
+      timestamp: cert.issueDate.toISOString(),
+      eventType: 'CERT_ISSUE',
+      eventName: '证书发放',
+      operatorName: cert.issuerName || '系统',
+      summary: `${cert.studentName} 获得证书 ${cert.certificateNo}`,
+      relatedAuditLogIds: [],
+    });
+
+    // 审计日志中的变更
+    for (const log of auditLogs) {
+      if (log.action === 'UPDATE') {
+        events.push({
+          id: `audit-${log.id}`,
+          timestamp: log.createdAt.toISOString(),
+          eventType: 'STATE_CHANGE',
+          eventName: '证书变更',
+          operatorName: log.operatorName || '系统',
+          summary: log.changeReason || '证书信息更新',
+          relatedAuditLogIds: [log.id],
+          detail: { before: log.before, after: log.after, changeReason: log.changeReason },
+        });
+      }
+    }
+
+    // 验证记录
+    for (const trace of (cert as any).traces || []) {
+      events.push({
+        id: `trace-${trace.id}`,
+        timestamp: trace.createdAt.toISOString(),
+        eventType: 'ASSIGNMENT',
+        eventName: '证书验证',
+        operatorName: trace.verifierName || '外部验证',
+        summary: `证书被验证（${trace.verifyMethod || '在线'}）`,
+        relatedAuditLogIds: [],
+      });
+    }
+
+    // 吊销事件
+    if (cert.isRevoked && cert.revokedAt) {
+      events.push({
+        id: `revoke-${cert.id}`,
+        timestamp: cert.revokedAt.toISOString(),
+        eventType: 'SCORE_ADJUST',
+        eventName: '证书吊销',
+        operatorName: '管理员',
+        summary: `证书被吊销${cert.revokeReason ? `：${cert.revokeReason}` : ''}`,
+        relatedAuditLogIds: [],
+        detail: { revokeReason: cert.revokeReason },
+      });
+    }
+
+    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return { entityType: 'CERTIFICATE', entityId: certId, entityName: `${cert.studentName} - ${cert.certificateNo}`, events };
   }
 }

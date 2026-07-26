@@ -31,7 +31,7 @@ export default function EvaluatePage() {
 
     Promise.all([
       api.trainingPrograms.get(Number(params.id)).catch(() => null),
-      parsed.role === 'STUDENT' ? api.evaluations.my(parsed.id).catch(() => []) : [],
+      parsed.role === 'STUDENT' ? api.evaluations.my().catch(() => []) : [],
       api.schedules.getByProgram(Number(params.id)).catch(() => []),
     ]).then(([p, myEvals, schedules]) => {
       setProgram(p);
@@ -66,7 +66,7 @@ export default function EvaluatePage() {
     setSubmitting(true);
     try {
       await api.evaluations.create({
-        programId: Number(params.id), studentId: user.id,
+        programId: Number(params.id),
         contentRating: form.contentRating,
         instructorRating: effectiveInstructorRating,
         organizationRating: form.organizationRating || null,

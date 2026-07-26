@@ -15,10 +15,10 @@ export default function AssignPage() {
   const [exam, setExam] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [paperQuestions, setPaperQuestions] = useState<any[]>([]);
-  const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<number[]>([]);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]);
   const [graderId, setGraderId] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
+  const [graders, setGraders] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [assignSummary, setAssignSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +27,11 @@ export default function AssignPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const [e, stuRes, aRes, uRes] = await Promise.all([
+      const [e, stuRes, aRes, gradersRes] = await Promise.all([
         api.exams.get(examId),
         fetch(`/api/exams/${examId}/students`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`/api/grading-assignments/${examId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        api.students.list({ pageSize: '100', allRoles: 'true' }),
+        fetch(`/api/instructors/available-graders`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       setExam(e);
 
@@ -49,7 +49,7 @@ export default function AssignPage() {
       setAssignments(aList);
       setAssignSummary(aData?.summary || null);
 
-      setUsers(uRes.items || []);
+      setGraders(await gradersRes.json() || []);
     } catch (e: any) { console.error('加载数据失败:', e); toast.error('加载数据失败：' + (e.message || '未知错误')); }
     setLoading(false);
   };
@@ -57,7 +57,7 @@ export default function AssignPage() {
 
   const handleAssign = async () => {
     if (!graderId) { toast.warning('请选择阅卷员'); return; }
-    if (selectedStudentIds.length === 0 && selectedQuestionIds.length === 0) {
+    if (selectedSessionIds.length === 0 && selectedQuestionIds.length === 0) {
       toast.warning('请至少选择学员或题型'); return;
     }
     try {
@@ -67,7 +67,7 @@ export default function AssignPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           graderId: parseInt(graderId),
-          sessionIds: selectedStudentIds.length > 0 ? selectedStudentIds : undefined,
+          sessionIds: selectedSessionIds.length > 0 ? selectedSessionIds : undefined,
           paperQuestionIds: selectedQuestionIds.length > 0 ? selectedQuestionIds : undefined,
         }),
       });
@@ -77,7 +77,7 @@ export default function AssignPage() {
         return;
       }
       setGraderId('');
-      setSelectedStudentIds([]);
+      setSelectedSessionIds([]);
       setSelectedQuestionIds([]);
       load();
     } catch (e: any) { toast.error('分配失败：' + e.message); }
@@ -123,8 +123,8 @@ export default function AssignPage() {
           <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
             <span>学员（{students.length}）</span>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={selectedStudentIds.length === students.length && students.length > 0}
-                onChange={e => setSelectedStudentIds(e.target.checked ? students.map((s: any) => s.student?.id).filter(Boolean) : [])}
+              <input type="checkbox" checked={selectedSessionIds.length === students.length && students.length > 0}
+                onChange={e => setSelectedSessionIds(e.target.checked ? students.map((s: any) => s.id).filter(Boolean) : [])}
                 className="accent-[var(--fox)]" />
               <span className="text-[10px]">全选</span>
             </label>
@@ -132,10 +132,10 @@ export default function AssignPage() {
           <div className="max-h-[400px] overflow-y-auto divide-y" style={{ borderColor: 'var(--ink-100)' }}>
             {students.map((s: any) => (
               <label key={s.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#fef3e7] transition-colors">
-                <input type="checkbox" checked={selectedStudentIds.includes(s.student?.id)}
+                <input type="checkbox" checked={selectedSessionIds.includes(s.id)}
                   onChange={e => {
-                    if (e.target.checked) setSelectedStudentIds([...selectedStudentIds, s.student?.id]);
-                    else setSelectedStudentIds(selectedStudentIds.filter(id => id !== s.student?.id));
+                    if (e.target.checked) setSelectedSessionIds([...selectedSessionIds, s.id]);
+                    else setSelectedSessionIds(selectedSessionIds.filter(id => id !== s.id));
                   }}
                   className="accent-[var(--fox)]" />
                 <div className="flex-1 min-w-0">
@@ -189,17 +189,17 @@ export default function AssignPage() {
                 <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>选择阅卷员</label>
                 <select value={graderId} onChange={e => setGraderId(e.target.value)} className="input select w-full">
                   <option value="">— 请选择 —</option>
-                  {users.filter((u: any) => u.role === 'LECTURER' || u.role === 'ORG_ADMIN' || u.role === 'SUPER_ADMIN').map((u: any) => (
-                    <option key={u.id} value={u.id}>{u.displayName}（{u.role}）</option>
+                  {graders.map((g: any) => (
+                    <option key={g.id} value={g.userId}>{g.realName}{g.title ? `（${g.title}）` : ''}</option>
                   ))}
                 </select>
               </div>
               <button onClick={handleAssign} disabled={!graderId}
-                className="btn btn-fox btn-sm w-full">{`📋 分配（${selectedStudentIds.length}人 × ${selectedQuestionIds.length || '全部'}题）`}</button>
+                className="btn btn-fox btn-sm w-full">{`📋 分配（${selectedSessionIds.length}人 × ${selectedQuestionIds.length || '全部'}题）`}</button>
               <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
-                {selectedStudentIds.length === 0 && selectedQuestionIds.length === 0
+                {selectedSessionIds.length === 0 && selectedQuestionIds.length === 0
                   ? '至少选择学员或题型'
-                  : `将生成 ${Math.max(selectedStudentIds.length, 1) * Math.max(selectedQuestionIds.length, 1)} 条分派记录`}
+                  : `将生成 ${Math.max(selectedSessionIds.length, 1) * Math.max(selectedQuestionIds.length, 1)} 条分派记录`}
               </div>
             </div>
           </div>

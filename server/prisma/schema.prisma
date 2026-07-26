@@ -64,6 +64,7 @@ model Organization {
   contactPhone String?  @map("contact_phone") @db.VarChar(20)
   contactEmail String?  @map("contact_email") @db.VarChar(100)
   isActive     Boolean  @default(true) @map("is_active")
+  orgType      String   @default("ASSOCIATION") @map("org_type") @db.VarChar(20) // ASSOCIATION | BRANCH | DEPARTMENT
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -81,6 +82,7 @@ model Organization {
   questions          Question[]
   papers             Paper[]
   exams              Exam[]
+  subjects           Subject[]
 
   // ── 印章 ──
   sealUrl        String?  @map("seal_url") @db.VarChar(500)
@@ -332,22 +334,27 @@ model DataDictionary {
 model Subject {
   id           Int      @id @default(autoincrement())
   name         String   @db.VarChar(200)
-  code         String   @db.VarChar(20)
-  dictionaryId Int      @map("dictionary_id")
+  code         String   @unique @db.VarChar(20)
+  dictionaryId Int?     @map("dictionary_id") // deprecated: 不再依赖 DataDictionary
   sortOrder    Int      @default(0) @map("sort_order")
   description  String?  @db.Text
   isActive     Boolean  @default(true) @map("is_active")
+  orgId        Int?     @map("org_id")       // 定义该科目的组织（null=平台级）
+  isSystem     Boolean  @default(false) @map("is_system") // 系统内置科目，禁止删除
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  dictionary      DataDictionary   @relation(fields: [dictionaryId], references: [id])
+  organization Organization? @relation(fields: [orgId], references: [id])
+  dictionary      DataDictionary?  @relation(fields: [dictionaryId], references: [id])
   chapters        Chapter[]
   questions       Question[]
   templates       PaperTemplate[]
   papers          Paper[]
-  knowledgeChunks KnowledgeChunk[]
-  knowledgePoints KnowledgePoint[]
-  materials       Material[]
+  knowledgeChunks    KnowledgeChunk[]
+  knowledgeDocuments KnowledgeDocument[]
+  knowledgePoints    KnowledgePoint[]
+  materials          Material[]
+  trainingPrograms TrainingProgram[]
   paperNumberSeq  Int              @default(1) @map("paper_number_seq") // 当前编号序号
 
   @@map("subjects")
@@ -497,6 +504,7 @@ model KnowledgePoint {
   children    KnowledgePoint[] @relation("KPHierarchy")
   questions   QuestionKnowledgePoint[]
   courseKnowledgePoints CourseKnowledgePoint[]
+  chunkKnowledgePoints  ChunkKnowledgePoint[]
 
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
@@ -654,6 +662,7 @@ model PaperQuestion {
   typeSection String? @map("type_section") // 属于哪个题型区段（如 "SINGLE_CHOICE"）
   // 快照：定稿时冻结的试题内容（防止题库修改影响已定稿试卷）
   snapshot    Json? // { content, analysis, options, blanks, subQuestions }
+  rubric      Json? // 评分标准(扣分点): [{description, points, type:'add'|'deduct'}]
 
   paper    Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id])
@@ -709,16 +718,21 @@ model KnowledgeChunk {
   id         Int      @id @default(autoincrement())
   subjectId  Int      @map("subject_id")
   chapterId  Int?     @map("chapter_id")
-  title      String   @db.VarChar(500) // 来源标题（教材章节名）
-  content    String   @db.Text // 分块后的文本
-  chunkIndex Int      @map("chunk_index") // 块序号
-  source     String?  @db.VarChar(200) // 来源文件名
+  documentId Int?     @map("document_id")
+  title      String   @db.VarChar(500)
+  content    String   @db.Text
+  chunkIndex Int      @map("chunk_index")
+  source     String?  @db.VarChar(200)
   tokenCount Int?     @map("token_count")
+  qaPairs    Json?    @map("qa_pairs")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  subject Subject  @relation(fields: [subjectId], references: [id])
-  chapter Chapter? @relation(fields: [chapterId], references: [id])
+  subject  Subject            @relation(fields: [subjectId], references: [id])
+  chapter  Chapter?           @relation(fields: [chapterId], references: [id])
+  document KnowledgeDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  knowledgePoints ChunkKnowledgePoint[]
 
+  @@index([documentId])
   @@map("knowledge_chunks")
 }
 
@@ -1279,8 +1293,9 @@ model TrainingProgram {
   certFee     Float? @map("cert_fee")
   hoursPerDay Float? @map("hours_per_day")
 
-  subjectId Int @map("subject_id")
-  createdBy Int @map("created_by")
+  subjectId Int     @map("subject_id")
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  createdBy Int     @map("created_by")
 
   status      TrainingProgramStatus @default(PREPARING)
   description String?               @db.Text
@@ -2091,4 +2106,49 @@ model OfflineScoreEntry {
   @@unique([examId, studentId])
   @@index([examId, status])
   @@map("offline_score_entries")
+}
+
+// ═══════════════════════════════════════════
+// 知识库文档（独立上传，与 Material 解耦）
+// ═══════════════════════════════════════════
+
+model KnowledgeDocument {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(200)
+  fileName    String   @map("file_name") @db.VarChar(500)
+  filePath    String   @map("file_path") @db.VarChar(500)
+  fileType    String   @db.VarChar(20)
+  fileSize    Int      @map("file_size")
+  subjectId   Int      @map("subject_id")
+  chunkCount  Int      @default(0) @map("chunk_count")
+  status      String   @default("PROCESSING") @db.VarChar(20)
+  version     Int      @default(1)
+  previousVersionId Int? @map("previous_version_id")
+  createdBy   Int      @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subject Subject          @relation(fields: [subjectId], references: [id])
+  chunks  KnowledgeChunk[]
+
+  @@index([subjectId])
+  @@map("knowledge_documents")
+}
+
+// ═══════════════════════════════════════════
+// 知识块 ↔ 知识点关联
+// ═══════════════════════════════════════════
+
+model ChunkKnowledgePoint {
+  id               Int     @id @default(autoincrement())
+  chunkId          Int     @map("chunk_id")
+  knowledgePointId Int     @map("knowledge_point_id")
+  confidence       Float   @default(1.0)
+  source           String  @default("MANUAL") @db.VarChar(20)
+
+  chunk          KnowledgeChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  knowledgePoint KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, knowledgePointId])
+  @@map("chunk_knowledge_points")
 }

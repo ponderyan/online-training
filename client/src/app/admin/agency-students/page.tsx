@@ -34,6 +34,9 @@ export default function AgencyStudentsPage() {
   const [memberForm, setMemberForm] = useState({ displayName: '', username: '', phone: '', roleCode: 'STUDENT' });
   const [memberSaving, setMemberSaving] = useState(false);
 
+  // AGENCY_ADMIN 自动锁定自己的机构，不显示选择器
+  const [isAgencyAdmin, setIsAgencyAdmin] = useState(false);
+
   useEffect(() => {
     init();
   }, []);
@@ -54,6 +57,11 @@ export default function AgencyStudentsPage() {
       const u = JSON.parse(localStorage.getItem('user') || '{}');
       const merged = { ...u, ...perms };
       setUser(merged);
+
+      // 检测是否为纯 AGENCY_ADMIN
+      const roles: string[] = u.roles || [];
+      const agencyOnly = roles.includes('AGENCY_ADMIN') && !roles.includes('SUPER_ADMIN') && !roles.includes('ORG_ADMIN');
+      setIsAgencyAdmin(agencyOnly);
 
       // Load agency list
       const list = await api.enrollmentAgencies.list();
@@ -128,26 +136,34 @@ export default function AgencyStudentsPage() {
         <p className="page-subtitle">管理招生机构名下的学员</p>
       </div>
 
-      {/* Agency selector */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>选择机构</span>
-        <select
-          value={selectedAgencyId ?? ''}
-          onChange={handleAgencyChange}
-          className="input select text-xs"
-          style={{ width: 260 }}
-        >
-          {agencies.map(a => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
-        {selectedAgency && (
-          <span className="text-[11px]" style={{ color: 'var(--ink-300)' }}>
-            {selectedAgency.contactPerson && `${selectedAgency.contactPerson} / `}
-            {selectedAgency.contactPhone}
-          </span>
-        )}
-      </div>
+      {/* Agency selector（AGENCY_ADMIN 自动锁定，不显示选择器） */}
+      {!isAgencyAdmin && (
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>选择机构</span>
+          <select
+            value={selectedAgencyId ?? ''}
+            onChange={handleAgencyChange}
+            className="input select text-xs"
+            style={{ width: 260 }}
+          >
+            {agencies.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+          {selectedAgency && (
+            <span className="text-[11px]" style={{ color: 'var(--ink-300)' }}>
+              {selectedAgency.contactPerson && `${selectedAgency.contactPerson} / `}
+              {selectedAgency.contactPhone}
+            </span>
+          )}
+        </div>
+      )}
+      {isAgencyAdmin && selectedAgency && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>当前机构：</span>
+          <span className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{selectedAgency.name}</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>

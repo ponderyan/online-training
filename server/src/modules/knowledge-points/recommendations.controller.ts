@@ -41,4 +41,13 @@ export class RecommendationsController {
     const studentId = req.user?.id || req.user?.sub;
     return this.recommendationsService.getRecommendations(studentId);
   }
+
+  /**
+   * P2-3: 推荐阅读（薄弱知识点对应的教材章节）
+   */
+  @Get('student/recommended-reading')
+  getRecommendedReading(@Req() req: any) {
+    const studentId = req.user?.id || req.user?.sub;
+    return this.recommendationsService.getRecommendedReading(studentId);
+  }
 }

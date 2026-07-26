@@ -45,7 +45,7 @@ export class TrainingProgramsService {
       _count: true,
     });
     const countMap = new Map(enrollCounts.map(e => [e.programId, e._count]));
-    const subjects = await this.prisma.dataDictionary.findMany();
+    const subjects = await this.prisma.subject.findMany();
     const subjectMap = new Map(subjects.map(s => [s.id, s]));
 
     return {
@@ -71,7 +71,7 @@ export class TrainingProgramsService {
     }) : [];
     const userMap = new Map(users.map(u => [u.id, u]));
 
-    const subjects = await this.prisma.dataDictionary.findMany();
+    const subjects = await this.prisma.subject.findMany();
     const subjectMap = new Map(subjects.map(s => [s.id, s]));
     return {
       ...program,

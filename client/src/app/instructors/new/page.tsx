@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
+import { validateIdCard } from '@/lib/validators';
 import { api } from '@/lib/api';
 
 export default function NewInstructorPage() {
@@ -28,6 +29,7 @@ export default function NewInstructorPage() {
     if (!form.userId) { toast.warning('请选择关联用户'); return; }
     if (!form.realName) { toast.warning('请输入姓名'); return; }
     if (form.type === 'EXTERNAL' && !form.idCard) { toast.warning('外聘讲师必须填写身份证号'); return; }
+    if (form.idCard) { const idErr = validateIdCard(form.idCard); if (idErr) { toast.warning(idErr); return; } }
     setSaving(true);
     try {
       await api.instructors.create({

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Query, Body, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuditLogsService } from './audit-logs.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
@@ -56,6 +56,34 @@ export class AuditLogsController {
     res!.setHeader('Content-Disposition', `attachment; filename="audit_logs_${dateStr}.csv"`);
     // UTF-8 BOM 头，兼容 Excel 中文
     res!.send('\ufeff' + csv);
+  }
+
+  /** 获取审计日志归档配置 */
+  @Get('config')
+  @RequirePermission(Permissions.AUDIT_LOG_VIEW)
+  async getConfig() {
+    return this.service.getArchiveConfig();
+  }
+
+  /** 更新审计日志归档配置 */
+  @Put('config')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async updateConfig(@Body() body: { retentionDays?: number; autoCleanupEnabled?: boolean }) {
+    return this.service.updateArchiveConfig(body);
+  }
+
+  /** ARCH-2: 审计日志归档清理（仅 SUPER_ADMIN） */
+  @Delete('archive')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async archive(@Body() body?: { retentionDays?: number }) {
+    return this.service.archive(body?.retentionDays || 730);
+  }
+
+  /** 审计日志统计 */
+  @Get('stats')
+  @RequirePermission(Permissions.AUDIT_LOG_VIEW)
+  async stats() {
+    return this.service.getStats();
   }
 
   @Get()

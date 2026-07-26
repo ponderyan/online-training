@@ -1,5 +1,7 @@
 'use client';
 
+import { EXAM_STATUS_LABELS } from '@/lib/exam-constants';
+
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
@@ -66,9 +68,7 @@ export default function ExamDetail() {
   if (loading) return <AppLayout><p style={{ color: 'var(--ink-300)' }}>加载中…</p></AppLayout>;
   if (!exam) return null;
 
-  const statusLabels: Record<string, string> = {
-    DRAFT: '草稿', PUBLISHED: '已发布', IN_PROGRESS: '进行中', FINISHED: '已结束', CANCELLED: '已取消',
-  };
+
 
   const isOffline = exam.examMode === 'OFFLINE';
   const sessionStatusLabels: Record<string, string> = isOffline
@@ -144,7 +144,7 @@ export default function ExamDetail() {
       {/* Status Overview — auto-refresh during active exams */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         {[
-          { label: '考试状态', value: statusLabels[exam.status] || exam.status, color: '#8b8174' },
+          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: '#8b8174' },
           { label: '已提交', value: submittedCount, color: '#00897b' },
           { label: '考试中', value: activeCount, color: '#e87a30' },
           { label: '已断线', value: pausedCount, color: '#ef4444' },

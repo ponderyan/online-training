@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 
@@ -12,6 +12,16 @@ const DIFF_LABELS: Record<string, string> = {
   EASY: '简单', MEDIUM: '中等', HARD: '困难',
 };
 const AUTO_TYPES = new Set(['SINGLE_CHOICE', 'TRUE_FALSE']);
+const PROGRESS_KEY = 'foxlearn_practice_progress';
+
+interface SavedProgress {
+  title: string;
+  questionIds: number[];
+  currentIdx: number;
+  answers: Record<number, any>;
+  results: Record<number, { isCorrect: boolean; correctAnswer: any; analysis: string }>;
+  savedAt: string;
+}
 
 export default function PracticePlayer({ title, loadQuestions }: {
   title: string;
@@ -26,6 +36,42 @@ export default function PracticePlayer({ title, loadQuestions }: {
   const [submitting, setSubmitting] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [mode, setMode] = useState<'practice' | 'browse'>('practice');
+  const [resumePrompt, setResumePrompt] = useState<SavedProgress | null>(null);
+  const questionStartTimeRef = useRef<number>(Date.now());
+  const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({});
+
+  // P2a: 保存进度到 localStorage
+  const saveProgress = useCallback((idx: number, ans: Record<number, any>, res: Record<number, any>) => {
+    if (questions.length === 0) return;
+    try {
+      const progress: SavedProgress = {
+        title,
+        questionIds: questions.map(q => q.id),
+        currentIdx: idx,
+        answers: ans,
+        results: res,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    } catch {}
+  }, [questions, title]);
+
+  // P2a: 进度变化时自动保存
+  useEffect(() => {
+    if (questions.length > 0 && !done && !loading) {
+      saveProgress(currentIdx, answers, results);
+    }
+  }, [currentIdx, answers, results, done, loading, questions.length, saveProgress]);
+
+  // P3b: 记录每题用时
+  useEffect(() => {
+    questionStartTimeRef.current = Date.now();
+  }, [currentIdx]);
+
+  const recordQuestionTime = useCallback((qId: number) => {
+    const elapsed = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
+    setQuestionTimes(prev => ({ ...prev, [qId]: (prev[qId] || 0) + elapsed }));
+  }, []);
 
   const init = useCallback(async () => {
     setLoading(true);
@@ -40,7 +86,54 @@ export default function PracticePlayer({ title, loadQuestions }: {
     setLoading(false);
   }, [loadQuestions]);
 
-  useEffect(() => { init(); }, [init]);
+  // P2a: 初始化时检查是否有可恢复的进度
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PROGRESS_KEY);
+      if (saved) {
+        const progress: SavedProgress = JSON.parse(saved);
+        const age = Date.now() - new Date(progress.savedAt).getTime();
+        const answeredCount = Object.keys(progress.results).length;
+        if (progress.title === title && age < 2 * 60 * 60 * 1000 && answeredCount < progress.questionIds.length) {
+          setResumePrompt(progress);
+          return;
+        }
+      }
+    } catch {}
+    init();
+  }, [init, title]);
+
+  // P2a: 恢复进度
+  const handleResume = async () => {
+    if (!resumePrompt) return;
+    setLoading(true);
+    try {
+      const data = await loadQuestions();
+      const savedIds = new Set(resumePrompt.questionIds);
+      const matched = (data || []).filter((q: any) => savedIds.has(q.id));
+      if (matched.length >= resumePrompt.questionIds.length * 0.5) {
+        const ordered = resumePrompt.questionIds
+          .map(id => matched.find((q: any) => q.id === id))
+          .filter(Boolean);
+        setQuestions(ordered);
+        setAnswers(resumePrompt.answers || {});
+        setResults(resumePrompt.results || {});
+        setCurrentIdx(Math.min(resumePrompt.currentIdx, ordered.length - 1));
+      } else {
+        setQuestions(data || []);
+      }
+      const favIds = await api.practice.favorite.ids().catch(() => [] as number[]);
+      setFavoriteIds(favIds || []);
+    } catch { setQuestions([]); }
+    setResumePrompt(null);
+    setLoading(false);
+  };
+
+  const handleDiscard = () => {
+    localStorage.removeItem(PROGRESS_KEY);
+    setResumePrompt(null);
+    init();
+  };
 
   const current = questions[currentIdx];
   const submitted = results[current?.id] != null;
@@ -63,8 +156,12 @@ export default function PracticePlayer({ title, loadQuestions }: {
   };
 
   const handleNext = () => {
+    if (current) recordQuestionTime(current.id);
     if (currentIdx < questions.length - 1) setCurrentIdx(prev => prev + 1);
-    else setDone(true);
+    else {
+      localStorage.removeItem(PROGRESS_KEY);
+      setDone(true);
+    }
   };
 
   const handleToggleFavorite = useCallback(async (questionId: number) => {
@@ -85,6 +182,28 @@ export default function PracticePlayer({ title, loadQuestions }: {
       }
     }
   };
+
+  // P2a: 恢复进度提示页
+  if (resumePrompt) {
+    const answeredCount = Object.keys(resumePrompt.results).length;
+    const savedTime = new Date(resumePrompt.savedAt).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', month: 'numeric', day: 'numeric' });
+    return (
+      <AppLayout>
+        <div className="max-w-md mx-auto py-16 text-center">
+          <div className="card p-8">
+            <div className="text-4xl mb-4">📝</div>
+            <h2 className="text-lg font-bold mb-2 text-[var(--ink-700)]">发现未完成的练习</h2>
+            <p className="text-sm text-[var(--ink-400)] mb-1">{resumePrompt.title}</p>
+            <p className="text-xs text-[var(--ink-300)] mb-6">已答 {answeredCount}/{resumePrompt.questionIds.length} 题 · 保存于 {savedTime}</p>
+            <div className="flex gap-3">
+              <button onClick={handleResume} className="btn btn-fox flex-1">继续练习</button>
+              <button onClick={handleDiscard} className="btn flex-1 border border-[var(--ink-200)] text-[var(--ink-500)]">重新开始</button>
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (loading) {
     return (
@@ -228,7 +347,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
             )}
 
             {/* Fill Blank / Short Answer / Case Study */}
-            {(current.type === 'FILL_BLANK' || current.type === 'SHORT_ANSWER' || current.type === 'CASE_STUDY') && !submitted && (
+            {(current.type === 'FILL_BLANK' || current.type === 'SHORT_ANSWER' || current.type === 'CASE_STUDY') && !submitted && mode === 'practice' && (
               <div>
                 <textarea value={answers[current.id] || ''}
                   onChange={e => setAnswers(prev => ({ ...prev, [current.id]: e.target.value }))}
@@ -242,15 +361,40 @@ export default function PracticePlayer({ title, loadQuestions }: {
               </div>
             )}
 
+            {/* P3a: 填空题提交后逐空对比反馈 */}
+            {current.type === 'FILL_BLANK' && submitted && result && (
+              <div className="mt-3 space-y-2">
+                <div className="p-3 rounded-lg bg-[var(--paper)] border border-[var(--ink-100)]">
+                  <p className="text-xs font-medium text-[var(--ink-400)] mb-1.5">你的答案</p>
+                  <p className={`text-sm ${result.isCorrect ? 'text-[var(--sage)]' : 'text-[var(--verm)]'}`}>{answers[current.id] || '（未作答）'}</p>
+                </div>
+                {!result.isCorrect && (
+                  <div className="p-3 rounded-lg bg-[var(--sage-glow)] border border-[var(--sage)]">
+                    <p className="text-xs font-medium text-[var(--sage)] mb-1.5">参考答案</p>
+                    <p className="text-sm text-[var(--ink-700)]">{result.correctAnswer}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Browse mode - show answer */}
             {mode === 'browse' && (
               <div className="mt-4 p-4 rounded-lg text-sm bg-[var(--fox-glow)] border border-[var(--ink-100)]">
                 <p className="font-bold mb-1 text-[var(--fox-dark)]">📖 背题模式</p>
-                {current.options?.map((o: any) => o.isCorrect && (
-                  <p key={o.id} className="text-sm text-[var(--ink-600)]">
-                    正确答案：<strong className="text-[var(--cyan)]">{o.label}. {o.content}</strong>
+                {/* 选择题：显示正确选项 */}
+                {current.options?.filter((o: any) => o.isCorrect).length > 0 && (
+                  current.options.filter((o: any) => o.isCorrect).map((o: any) => (
+                    <p key={o.id} className="text-sm text-[var(--ink-600)]">
+                      正确答案：<strong className="text-[var(--cyan)]">{o.label}. {o.content}</strong>
+                    </p>
+                  ))
+                )}
+                {/* 非选择题：显示参考答案 */}
+                {(!current.options || current.options.filter((o: any) => o.isCorrect).length === 0) && current.correctAnswer && (
+                  <p className="text-sm text-[var(--ink-600)]">
+                    参考答案：<strong className="text-[var(--cyan)]">{current.correctAnswer}</strong>
                   </p>
-                ))}
+                )}
                 {current.analysis && (
                   <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
                     <p className="text-xs font-medium mb-1 text-[var(--ink-500)]">解析：</p>
@@ -292,7 +436,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
                   {currentIdx < questions.length - 1 ? '下一题 →' : '查看结果'}
                 </button>
               ) : (
-                <button onClick={() => { if (currentIdx < questions.length - 1) setCurrentIdx(prev => prev + 1); else setDone(true); }}
+                <button onClick={() => { if (current) recordQuestionTime(current.id); if (currentIdx < questions.length - 1) setCurrentIdx(prev => prev + 1); else { localStorage.removeItem(PROGRESS_KEY); setDone(true); } }}
                   className="text-xs bg-transparent border-none cursor-pointer text-[var(--ink-300)]">
                   跳过本题 →
                 </button>

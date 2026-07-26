@@ -10,6 +10,8 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { validatePhone, validateEmail } from '@/lib/validators';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -36,6 +38,7 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterGroup, setFilterGroup] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
@@ -69,7 +72,7 @@ export default function StudentsPage() {
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterGroup) params.groupId = filterGroup;
       const data = await api.students.list(params);
       setStudents(data.items);
@@ -92,7 +95,7 @@ export default function StudentsPage() {
   useEffect(() => {
     const timer = setTimeout(() => { load(1); }, 400);
     return () => clearTimeout(timer);
-  }, [keyword, filterGroup]);
+  }, [debouncedKeyword, filterGroup]);
 
   const resetForm = () => setForm({
     username: '', displayName: '', password: '123456',
@@ -102,6 +105,10 @@ export default function StudentsPage() {
 
   const handleSave = async () => {
     if (!form.username || !form.displayName) { toast.warning('用户名和姓名不能为空'); return; }
+    const phoneErr = validatePhone(form.phone);
+    if (phoneErr) { toast.warning(phoneErr); return; }
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { toast.warning(emailErr); return; }
     setSaving(true);
     try {
       const payload = { ...form, roles: selectedRolesStu, groupId: form.groupId ? Number(form.groupId) : undefined };
@@ -403,12 +410,12 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>
-                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
-                    className="input" placeholder="手机号" />
+                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/[^\d]/g, '')})}
+                    className="input" placeholder="11位手机号" maxLength={11} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>邮箱</label>
-                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })}
                     className="input" placeholder="邮箱" />
                 </div>
                 <div className="col-span-2">

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Req } from '@nestjs/common';
 import { SubjectsService } from './subjects.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
@@ -10,7 +10,20 @@ export class SubjectsController {
 
   @Get()
   @RequirePermission(Permissions.QUESTION_CREATE)
-  findAll() { return this.service.findAll(); }
+  findAll(@Req() req: any) {
+    const orgId = req.user?.orgId || null;
+    const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
+    return this.service.findAllWithOwnership(isSuperAdmin ? null : orgId);
+  }
+
+  /** 活跃科目列表（供前端选择器使用，根据JWT orgId自动过滤可见范围） */
+  @Get('active')
+  @RequirePermission(Permissions.QUESTION_CREATE)
+  findActive(@Req() req: any) {
+    const orgId = req.user?.orgId || null;
+    const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
+    return this.service.findActive(isSuperAdmin ? null : orgId);
+  }
 
   @Public()
   @Get('public')
@@ -22,13 +35,17 @@ export class SubjectsController {
 
   @Post()
   @RequirePermission(Permissions.QUESTION_CREATE)
-  create(@Body() data: { name: string; code: string; dictionaryId: number; description?: string }) {
+  create(@Body() data: { name: string; code: string; description?: string; sortOrder?: number; orgId?: number }, @Req() req: any) {
+    // 自动归属：如果前端未传orgId，则取当前用户的orgId
+    if (!data.orgId && req.user?.orgId) {
+      data.orgId = req.user.orgId;
+    }
     return this.service.create(data);
   }
 
   @Put(':id')
   @RequirePermission(Permissions.QUESTION_EDIT)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: { name?: string; description?: string; sortOrder?: number }) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: { name?: string; code?: string; description?: string; sortOrder?: number; isActive?: boolean }) {
     return this.service.update(id, data);
   }
 

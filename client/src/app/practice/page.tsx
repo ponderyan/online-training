@@ -21,7 +21,7 @@ export default function PracticePage() {
     setLoading(true);
     setError(null);
     Promise.all([
-      api.subjects.list().catch(() => []),
+      api.subjects.listActive().catch(() => []),
       api.practice.stats().catch(() => null),
     ]).then(([s, st]) => {
       setSubjects(s);

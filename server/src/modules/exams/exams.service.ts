@@ -170,7 +170,8 @@ export class ExamsService {
   }
 
   async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
-    await this.findOne(id, userOrgId, userRoles);
+    const exam = await this.findOne(id, userOrgId, userRoles);
+    if (exam.status !== 'DRAFT') throw new BadRequestException('只能删除草稿状态的考试');
     return this.prisma.exam.delete({ where: { id } });
   }
 
@@ -389,6 +390,7 @@ export class ExamsService {
       isOpenBook: exam.isOpenBook,
       openBookRules: exam.openBookRules,
       autoSaveInterval: exam.autoSaveInterval,
+      tabSwitchLimit: exam.tabSwitchLimit,
       studentInfo: student ? {
         displayName: student.displayName,
         studentNumber: student.studentNumber,
@@ -405,10 +407,15 @@ export class ExamsService {
     });
     if (!session) throw new NotFoundException('考试记录不存在');
     if (session.status === 'SUBMITTED') throw new BadRequestException('已提交，不可重复提交');
-    if (session.exam.endTime && new Date() > new Date(session.exam.endTime)) throw new BadRequestException('考试已结束，无法提交');
-    if (session.remainingTime !== null && session.remainingTime <= 0) throw new BadRequestException('考试时间已到，无法提交');
+    // ★ 宽限期：允许 endTime 后 120 秒内交卷（避免 heartbeat 未触发时答案丢失）
+    const GRACE_SECONDS = 120;
+    if (session.exam.endTime) {
+      const graceDeadline = new Date(new Date(session.exam.endTime).getTime() + GRACE_SECONDS * 1000);
+      if (new Date() > graceDeadline) throw new BadRequestException('考试已结束，无法提交');
+    }
+    // remainingTime<=0 时不拒绝：前端倒计时归零会触发交卷，后端应接受（heartbeat 可能尚未同步）
 
-    for (const ans of answers) {
+    for (const ans of (answers || [])) {
       await this.prisma.examAnswer.upsert({
         where: { sessionId_paperQuestionId: { sessionId: session.id, paperQuestionId: ans.paperQuestionId } },
         create: { sessionId: session.id, questionId: ans.questionId, paperQuestionId: ans.paperQuestionId, answer: ans.answer },
@@ -432,7 +439,12 @@ export class ExamsService {
     // 统一收口：重算 submittedCount，并在全员交完时推进到 FINISHED
     await this.syncExamProgress(examId);
 
-    return { success: true };
+    // P1-1: 返回交卷后的成绩概要（客观题已自动判分）
+    const updatedSession = await this.prisma.examSession.findUnique({
+      where: { id: session.id },
+      select: { totalScore: true, subjectiveScore: true, finalScore: true, scoringStatus: true, isPassed: true },
+    });
+    return { success: true, ...updatedSession };
   }
 
   async saveSingleAnswer(
@@ -714,6 +726,7 @@ export class ExamsService {
     const paperQuestions = answers[0]?.session?.exam?.paper?.questions || [];
     const pqMap = new Map(paperQuestions.map((pq: any) => [pq.id, pq]));
     let totalScore = 0;
+    const answerUpdates: { id: number; isCorrect: boolean; score: number }[] = [];
 
     for (const ans of answers) {
       const pq = pqMap.get(ans.paperQuestionId);
@@ -765,11 +778,18 @@ export class ExamsService {
         default: continue;
       }
 
-      await this.prisma.examAnswer.update({
-        where: { id: ans.id },
-        data: { isCorrect, score },
-      });
+      // ★ 批量优化：先收集，最后统一写入（避免 N 次串行 DB 调用）
+      answerUpdates.push({ id: ans.id, isCorrect, score });
       totalScore += score;
+    }
+
+    // 批量更新所有客观题答案（单事务）
+    if (answerUpdates.length > 0) {
+      await this.prisma.$transaction(
+        answerUpdates.map(u =>
+          this.prisma.examAnswer.update({ where: { id: u.id }, data: { isCorrect: u.isCorrect, score: u.score } })
+        )
+      );
     }
 
     const examData = answers[0]?.session?.exam;
@@ -1123,9 +1143,15 @@ export class ExamsService {
     if (data.status === 'APPROVED' && data.newScore !== undefined) {
       const appeal = await this.prisma.scoreAppeal.findUnique({ where: { id: appealId } });
       if (!appeal) throw new NotFoundException('申诉记录不存在');
+      // ★ 改分后重算 isPassed
+      const session = await this.prisma.examSession.findUnique({
+        where: { examId_studentId: { examId: appeal.examId, studentId: appeal.studentId } },
+        include: { exam: { include: { paper: { select: { totalScore: true } } } } },
+      });
+      const passingRef = getPassingScore(session?.exam?.passingScore, session?.exam?.paper?.totalScore);
       await this.prisma.examSession.update({
         where: { examId_studentId: { examId: appeal.examId, studentId: appeal.studentId } },
-        data: { finalScore: data.newScore },
+        data: { finalScore: data.newScore, isPassed: data.newScore >= passingRef },
       });
       updateData.newScore = data.newScore;
     }
@@ -1141,20 +1167,22 @@ export class ExamsService {
       data: { scoringStatus: 'PUBLISHED', scoringPublishedAt: new Date() },
     });
 
-    // 成绩发布后通知学员
-    const submittedSessions = await this.prisma.examSession.findMany({
-      where: { examId, status: 'SUBMITTED' },
-      select: { studentId: true },
-    });
-    const gradedStudentIds = [...new Set(submittedSessions.map(s => s.studentId))];
-    if (gradedStudentIds.length > 0) {
-      void this.notificationService.createMany(
-        gradedStudentIds,
-        'EXAM_GRADED' as any,
-        `成绩已发布「${exam.title}」`,
-        `考试成绩已发布，请查看你的成绩`,
-        examId, 'exam',
-      );
+    // ★ 只通知实际被发布的学员（scoringStatus 从 GRADED → PUBLISHED 的）
+    if (result.count > 0) {
+      const publishedSessions = await this.prisma.examSession.findMany({
+        where: { examId, scoringStatus: 'PUBLISHED' },
+        select: { studentId: true },
+      });
+      const publishedStudentIds = [...new Set(publishedSessions.map(s => s.studentId))];
+      if (publishedStudentIds.length > 0) {
+        void this.notificationService.createMany(
+          publishedStudentIds,
+          'EXAM_GRADED' as any,
+          `成绩已发布「${exam.title}」`,
+          `考试成绩已发布，请查看你的成绩`,
+          examId, 'exam',
+        );
+      }
     }
 
     return { ok: true, publishedCount: result.count, message: `已发布 ${result.count} 份成绩` };

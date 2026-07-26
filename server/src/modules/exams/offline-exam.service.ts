@@ -147,7 +147,7 @@ export class OfflineExamService {
 
     if (existing) {
       // 记录审计日志
-      await this.prisma.scoreAuditLog.create({
+      const overrideLog = await this.prisma.scoreAuditLog.create({
         data: {
           examId,
           sessionId,
@@ -160,6 +160,19 @@ export class OfflineExamService {
           reason: JSON.stringify({ from: existing.scoreByType, to: data.scoreByType }),
         },
       });
+      // 同步写入主审计日志，打通全链审计
+      await this.prisma.auditLog.create({
+        data: {
+          entityType: 'ScoreAuditLog',
+          entityId: overrideLog.id,
+          action: 'SCORE_OVERRIDE',
+          before: { totalScore: existing.totalScore },
+          after: { totalScore },
+          operatorId: data.enteredBy,
+          changeReason: '线下成绩覆盖录入',
+          eventSource: 'MANUAL',
+        },
+      }).catch(() => {});
     }
 
     // upsert 成绩

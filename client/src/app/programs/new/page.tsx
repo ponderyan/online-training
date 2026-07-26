@@ -38,7 +38,7 @@ export default function NewProgramPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    api.subjects.list().then((items: any) => {
+    api.subjects.listActive().then((items: any) => {
       const list = Array.isArray(items) ? items : items?.items || [];
       if (list.length) setSubjects(list.map((s: any) => ({ id: s.id, code: s.code, name: s.name })));
     }).catch(() => {});

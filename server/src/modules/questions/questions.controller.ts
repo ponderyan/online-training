@@ -120,6 +120,11 @@ export class QuestionsController {
     return this.service.toggleFavorite(req.user.id, data.questionId);
   }
 
+  @Get('practice/related-chunks/:questionId')
+  async getRelatedChunks(@Param('questionId', ParseIntPipe) questionId: number) {
+    return this.service.getRelatedKnowledgeChunks(questionId);
+  }
+
   @Get('practice/favorites')
   @UseGuards(JwtAuthGuard)
   getFavoriteQuestions(

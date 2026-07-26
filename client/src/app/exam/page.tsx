@@ -195,6 +195,31 @@ export default function ExamList() {
           )}
         </section>
 
+        {/* ⚠️ 已缺考 */}
+        {missedExams.length > 0 && (
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>⚠️ 已缺考</h2>
+            {missedExams.map(exam => (
+              <div key={exam.id} style={{
+                background: 'white', borderRadius: '12px', border: '1px solid #fecaca',
+                padding: '16px 24px', marginBottom: '8px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                opacity: 0.8,
+              }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
+                  <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                    ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 截止 {new Date(exam.endTime).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <span style={{ padding: '6px 14px', borderRadius: '8px', background: '#fef2f2', color: '#dc2626', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+                  未参加
+                </span>
+              </div>
+            ))}
+          </section>
+        )}
+
         {/* 📋 历史记录 */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📋 历史记录</h2>

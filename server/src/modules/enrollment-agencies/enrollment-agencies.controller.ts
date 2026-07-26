@@ -32,8 +32,8 @@ export class EnrollmentAgenciesController {
   }
 
   @Get() @RequirePermission(P.AGENCY_VIEW)
-  async findAll(@Req() req: any, @Query('page') page?: string, @Query('keyword') keyword?: string) {
-    return this.service.findAll(req.user, { page: page ? parseInt(page) : undefined, keyword });
+  async findAll(@Req() req: any, @Query('page') page?: string, @Query('keyword') keyword?: string, @Query('organizationId') organizationId?: string) {
+    return this.service.findAll(req.user, { page: page ? parseInt(page) : undefined, keyword, organizationId: organizationId ? parseInt(organizationId) : undefined });
   }
 
   @Get(':id') @RequirePermission(P.AGENCY_VIEW)

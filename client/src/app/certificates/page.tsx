@@ -11,6 +11,7 @@ import { SkeletonTable } from '@/components/Skeleton';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { useToast } from '@/components/Toast';
 import CertificatePreviewModal, { PreviewTarget } from '@/components/CertificatePreviewModal';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const STATUS_NAMES: Record<string, string> = {
   ACTIVE: '有效', PENDING: '待审批', APPROVED: '有效',
@@ -37,6 +38,7 @@ function CertificatesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
   const [preview, setPreview] = useState<PreviewTarget | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<number | null>(null);
@@ -61,7 +63,7 @@ function CertificatesContent() {
     setError(null);
     try {
       const params = new URLSearchParams({ page: String(p), limit: '20' });
-      if (keyword) params.set('keyword', keyword);
+      if (debouncedKeyword) params.set('keyword', debouncedKeyword);
       if (filterStatus) params.set('status', filterStatus);
       if (filterExamSessionId) params.set('examSessionId', filterExamSessionId);
       const res = await fetch(`/api/certificates?${params}`, {
@@ -81,7 +83,7 @@ function CertificatesContent() {
   useEffect(() => {
     const timer = setTimeout(() => { load(1); }, 400);
     return () => clearTimeout(timer);
-  }, [keyword, filterStatus]);
+  }, [debouncedKeyword, filterStatus]);
 
   const handleRevoke = async (reason: string) => {
     if (!revokeTarget) return;
