@@ -1,6 +1,6 @@
 'use client';
 
-import RichAnswerEditor from './RichAnswerEditor';
+import RichAnswerEditor from '@/components/RichAnswerEditor';
 
 /** 题型 → 图标 + 中文标签 */
 const TYPE_META: Record<string, { icon: string; label: string }> = {

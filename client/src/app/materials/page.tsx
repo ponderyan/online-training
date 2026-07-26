@@ -452,7 +452,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
       formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx)$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
-      formData.append('createdBy', '1');
+      // P1-1: createdBy 由后端从认证token取，不再前端传入
       const result = await api.materials.upload(formData);
       setProgress('✅ 上传成功！小狐狸马上开始处理');
       setTimeout(() => { onClose(); router.push(`/materials/${result.id}`); }, 1500);

@@ -323,6 +323,7 @@ export class ExamsService {
       myFinalScore: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.finalScore : null,
       isPassed: s.scoringStatus === 'PUBLISHED' || s.scoringStatus === 'ADJUSTED' ? s.isPassed : null,
       submittedAt: s.submittedAt,
+      lateEntryMinutes: s.exam.lateEntryMinutes,
     }));
   }
 
@@ -337,6 +338,15 @@ export class ExamsService {
     }
     if (exam.endTime && now > new Date(exam.endTime)) {
       throw new BadRequestException('考试已结束，无法进入');
+    }
+
+    // ★ A2: 迟到禁入（每场考试优先，null 回退系统默认）
+    const lateMinutes = exam.lateEntryMinutes ?? parseInt(await this.systemConfig.getConfig('exam_default_late_entry_minutes') || '30');
+    if (lateMinutes > 0 && exam.startTime) {
+      const lateDeadline = new Date(new Date(exam.startTime).getTime() + lateMinutes * 60000);
+      if (now > lateDeadline) {
+        throw new BadRequestException(`已超过迟到禁入时间（开考${lateMinutes}分钟后不可入场）`);
+      }
     }
 
     const session = await this.prisma.examSession.findUnique({
@@ -385,12 +395,22 @@ export class ExamsService {
       select: { id: true, displayName: true, studentNumber: true, avatar: true, gender: true },
     });
 
+    // ★ A4: 返回考试规则供前端展示
+    const earlyExitMinutes = exam.earlyExitMinutes ?? parseInt(await this.systemConfig.getConfig('exam_default_early_exit_minutes') || '30');
+    const countdownWarningMinutes = parseInt(await this.systemConfig.getConfig('exam_countdown_warning_minutes') || '5');
+
     return {
       ...questionsData,
+      startedAt: session.startedAt ? new Date(session.startedAt).toISOString() : null,
       isOpenBook: exam.isOpenBook,
       openBookRules: exam.openBookRules,
       autoSaveInterval: exam.autoSaveInterval,
       tabSwitchLimit: exam.tabSwitchLimit,
+      rules: {
+        lateEntryMinutes: lateMinutes,
+        earlyExitMinutes,
+        countdownWarningMinutes,
+      },
       studentInfo: student ? {
         displayName: student.displayName,
         studentNumber: student.studentNumber,
@@ -407,6 +427,14 @@ export class ExamsService {
     });
     if (!session) throw new NotFoundException('考试记录不存在');
     if (session.status === 'SUBMITTED') throw new BadRequestException('已提交，不可重复提交');
+    // ★ A3: 最早交卷限制（每场考试优先，null 回退系统默认）
+    const earlyMinutes = session.exam.earlyExitMinutes ?? parseInt(await this.systemConfig.getConfig('exam_default_early_exit_minutes') || '30');
+    if (earlyMinutes > 0 && session.startedAt) {
+      const earliestSubmit = new Date(new Date(session.startedAt).getTime() + earlyMinutes * 60000);
+      if (new Date() < earliestSubmit) {
+        throw new BadRequestException(`开考${earlyMinutes}分钟内不允许交卷`);
+      }
+    }
     // ★ 宽限期：允许 endTime 后 120 秒内交卷（避免 heartbeat 未触发时答案丢失）
     const GRACE_SECONDS = 120;
     if (session.exam.endTime) {

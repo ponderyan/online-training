@@ -102,6 +102,8 @@ export default function CreateExam() {
   const [programs, setPrograms] = useState<any[]>([]);
   const [programId, setProgramId] = useState('');
   const [passingScore, setPassingScore] = useState('');
+  const [lateEntryMinutes, setLateEntryMinutes] = useState('');
+  const [earlyExitMinutes, setEarlyExitMinutes] = useState('');
   const [scorePublishMode, setScorePublishMode] = useState<string>('MANUAL');
   const [publishAt, setPublishAt] = useState<string>('');
 
@@ -144,6 +146,8 @@ export default function CreateExam() {
         publishAt: publishAt || undefined,
         timeMode, paperMode,
         tabSwitchLimit, copyProtection, autoSaveInterval,
+        lateEntryMinutes: lateEntryMinutes !== '' ? parseInt(lateEntryMinutes) : undefined,
+        earlyExitMinutes: earlyExitMinutes !== '' ? parseInt(earlyExitMinutes) : undefined,
         examMode,
         locations: examMode === 'OFFLINE' ? locations : undefined,
       });
@@ -254,6 +258,25 @@ export default function CreateExam() {
                 <div className="mt-3">
                   <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>答题时长（分钟）</label>
                   <input type="number" value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} className="input" min={1} style={{ width: '120px' }} />
+                </div>
+</div>
+
+              {/* ⏰ 考试规则 */}
+              <div className="pt-4 border-t mt-4" style={{ borderColor: 'var(--ink-100)' }}>
+                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 考试规则</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>迟到禁入（分钟）</label>
+                    <input type="number" value={lateEntryMinutes} onChange={e => setLateEntryMinutes(e.target.value)}
+                      className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考N分钟后禁止入场，0=不限制，留空=使用系统默认</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>最早交卷（分钟）</label>
+                    <input type="number" value={earlyExitMinutes} onChange={e => setEarlyExitMinutes(e.target.value)}
+                      className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考N分钟内不允许交卷，0=不限制，留空=使用系统默认</p>
+                  </div>
                 </div>
               </div>
 

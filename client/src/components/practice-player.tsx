@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import RichAnswerEditor from '@/components/RichAnswerEditor';
 
 const TYPE_LABELS: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
 };
 const DIFF_LABELS: Record<string, string> = {
-  EASY: '简单', MEDIUM: '中等', HARD: '困难',
+  EASY: '简单', MEDIUM_EASY: '较易', MEDIUM_HARD: '较难', HARD: '困难',
 };
 const AUTO_TYPES = new Set(['SINGLE_CHOICE', 'TRUE_FALSE']);
 const PROGRESS_KEY = 'foxlearn_practice_progress';
@@ -19,7 +20,7 @@ interface SavedProgress {
   questionIds: number[];
   currentIdx: number;
   answers: Record<number, any>;
-  results: Record<number, { isCorrect: boolean; correctAnswer: any; analysis: string }>;
+  results: Record<number, { isCorrect: boolean; correctAnswer: any; analysis: string; subjective?: boolean }>;
   savedAt: string;
 }
 
@@ -30,7 +31,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
-  const [results, setResults] = useState<Record<number, { isCorrect: boolean; correctAnswer: any; analysis: string }>>({});
+  const [results, setResults] = useState<Record<number, { isCorrect: boolean; correctAnswer: any; analysis: string; subjective?: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -214,15 +215,62 @@ export default function PracticePlayer({ title, loadQuestions }: {
   }
 
   if (done) {
-    const correctCount = Object.values(results).filter(r => r?.isCorrect).length;
-    const wrongCount = Object.values(results).filter(r => r && !r.isCorrect).length;
+    const allResults = Object.values(results);
+    const objectiveResults = allResults.filter(r => r && !r.subjective);
+    const correctCount = objectiveResults.filter(r => r?.isCorrect).length;
+    const wrongCount = objectiveResults.filter(r => r && !r.isCorrect).length;
+    const subjectiveCount = allResults.filter(r => r?.subjective).length;
+    const accuracy = objectiveResults.length > 0 ? Math.round((correctCount / objectiveResults.length) * 100) : 0;
+    const totalTime = Object.values(questionTimes).reduce((a, b) => a + b, 0);
+    const answeredCount = Object.keys(results).length;
+    const avgTime = answeredCount > 0 ? Math.round(totalTime / answeredCount) : 0;
+    const fmtTime = (s: number) => s >= 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s}秒`;
     return (
       <AppLayout>
-        <div className="max-w-3xl mx-auto text-center py-16">
-          <h2 className="text-xl font-bold mb-4">🎉 练习完成</h2>
-          <p>共 <strong>{questions.length}</strong> 题 · 正确 <strong className="text-[var(--cyan)]">{correctCount}</strong> · 错误 <strong className="text-[var(--verm)]">{wrongCount}</strong></p>
-          <button onClick={() => { setCurrentIdx(0); setDone(false); setResults({}); setAnswers({}); init(); }}
-            className="btn btn-fox mt-6">再练一次</button>
+        <div className="max-w-3xl mx-auto py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-bold mb-4">🎉 练习完成</h2>
+            <p className="mb-2">共 <strong>{questions.length}</strong> 题 · 已答 <strong>{answeredCount}</strong> 题</p>
+            <p className="text-sm text-[var(--ink-500)]">
+              正确 <strong className="text-[var(--cyan)]">{correctCount}</strong> · 错误 <strong className="text-[var(--verm)]">{wrongCount}</strong>
+              {subjectiveCount > 0 && <> · 自评 <strong className="text-[#f59e0b]">{subjectiveCount}</strong></>}
+              {objectiveResults.length > 0 && <> · 客观题正确率 <strong>{accuracy}%</strong></>}
+            </p>
+            <p className="text-xs text-[var(--ink-400)] mt-2">
+              总用时 {fmtTime(totalTime)} · 平均每题 {fmtTime(avgTime)}
+            </p>
+          </div>
+
+          {/* 逐题回顾 */}
+          <div className="card p-4 mb-6">
+            <h3 className="text-sm font-bold mb-3 text-[var(--ink-600)]">📋 逐题回顾</h3>
+            <div className="space-y-1.5">
+              {questions.map((q: any, i: number) => {
+                const r = results[q.id];
+                const t = questionTimes[q.id] || 0;
+                return (
+                  <button key={q.id} onClick={() => { setCurrentIdx(i); setDone(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm hover:bg-[var(--paper)] transition-colors border-none bg-transparent cursor-pointer">
+                    <span className="w-6 h-6 flex items-center justify-center rounded text-[11px] font-bold text-white flex-shrink-0"
+                      style={{ background: !r ? 'var(--ink-200)' : r.subjective ? '#f59e0b' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
+                      {i + 1}
+                    </span>
+                    <span className="text-xs text-[var(--ink-400)] w-14 flex-shrink-0">{TYPE_LABELS[q.type] || q.type}</span>
+                    <span className="flex-1 text-xs text-[var(--ink-500)] truncate">{q.content?.replace(/<[^>]*>/g, '').slice(0, 30)}</span>
+                    <span className="text-xs flex-shrink-0" style={{ color: !r ? 'var(--ink-300)' : r.subjective ? '#f59e0b' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
+                      {!r ? '未答' : r.subjective ? '自评' : r.isCorrect ? '✓' : '✗'}
+                    </span>
+                    <span className="text-[10px] text-[var(--ink-300)] w-12 text-right flex-shrink-0">{t > 0 ? fmtTime(t) : '-'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <button onClick={() => { setCurrentIdx(0); setDone(false); setResults({}); setAnswers({}); setQuestionTimes({}); init(); }}
+              className="btn btn-fox">再练一次</button>
+          </div>
         </div>
       </AppLayout>
     );
@@ -243,6 +291,10 @@ export default function PracticePlayer({ title, loadQuestions }: {
         <div className="flex-1 min-w-0">
           {/* Progress + mode toggle */}
           <div className="flex items-center gap-3 mb-3">
+            <button onClick={() => window.history.back()}
+              className="text-xs text-[var(--ink-400)] hover:text-[var(--fox)] transition-colors border-none bg-transparent cursor-pointer flex-shrink-0">
+              ← 返回
+            </button>
             <span className="text-sm font-medium">{title}</span>
             <div className="flex-1 h-1.5 rounded-full bg-[var(--ink-100)]">
               <div className="h-full rounded-full transition-all bg-[var(--fox)]"
@@ -282,9 +334,11 @@ export default function PracticePlayer({ title, loadQuestions }: {
               </button>
             </div>
 
-            <div className="text-sm leading-relaxed mb-5 text-[var(--ink-800)]">
-              {current.content}
-            </div>
+            {current.type !== 'FILL_BLANK' && (
+              <div className="text-sm leading-relaxed mb-5 text-[var(--ink-800)]">
+                {current.content}
+              </div>
+            )}
 
             {/* Single Choice & True/False */}
             {(current.type === 'SINGLE_CHOICE' || current.type === 'TRUE_FALSE') && current.options?.map((o: any) => {
@@ -346,34 +400,92 @@ export default function PracticePlayer({ title, loadQuestions }: {
               </div>
             )}
 
-            {/* Fill Blank / Short Answer / Case Study */}
-            {(current.type === 'FILL_BLANK' || current.type === 'SHORT_ANSWER' || current.type === 'CASE_STUDY') && !submitted && mode === 'practice' && (
+            {/* FILL_BLANK — 题干内嵌逐空输入框 */}
+            {current.type === 'FILL_BLANK' && (
+              <div className="text-sm leading-9 text-[var(--ink-800)] mb-2">
+                {current.content.split(/\{\{_\}\}/).map((part: string, i: number, arr: string[]) => {
+                  const blankAns = (answers[current.id] || [])[i] || '';
+                  const blankCorrect = submitted && current.blanks?.[i] != null &&
+                    String(blankAns).trim().toLowerCase() === String(current.blanks[i].answer || '').trim().toLowerCase();
+                  const blankWrong = submitted && !blankCorrect;
+                  return (
+                    <span key={i}>
+                      {part}
+                      {i < arr.length - 1 && (
+                        <input
+                          type="text"
+                          value={blankAns}
+                          onChange={e => {
+                            const blanks = [...(answers[current.id] || [])];
+                            blanks[i] = e.target.value;
+                            setAnswers(prev => ({ ...prev, [current.id]: blanks }));
+                          }}
+                          disabled={submitted || mode !== 'practice'}
+                          className={`inline-block mx-1 px-2 py-0.5 text-center text-sm border-b-2 outline-none w-[130px] transition-colors ${
+                            blankCorrect ? 'border-[var(--sage)] bg-[var(--sage-glow)] text-[var(--sage)] font-medium'
+                              : blankWrong ? 'border-[var(--verm)] bg-[var(--verm-glow)] text-[var(--verm)]'
+                              : 'border-[var(--fox)] bg-white focus:border-[var(--fox-dark)]'
+                          }`}
+                          placeholder={`第${i + 1}空`}
+                        />
+                      )}
+                    </span>
+                  );
+                })}
+                {!submitted && mode === 'practice' && (
+                  <div className="flex justify-end mt-3">
+                    <button onClick={handleSubmit}
+                      disabled={!(answers[current.id] || []).some((a: string) => a && a.trim()) || submitting}
+                      className="btn btn-fox btn-xs">{submitting ? '提交中…' : '提交答案'}</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SHORT_ANSWER — 富文本编辑器 */}
+            {current.type === 'SHORT_ANSWER' && !submitted && mode === 'practice' && (
               <div>
-                <textarea value={answers[current.id] || ''}
-                  onChange={e => setAnswers(prev => ({ ...prev, [current.id]: e.target.value }))}
-                  disabled={submitted}
-                  className="input w-full" rows={current.type === 'FILL_BLANK' ? 3 : 5}
-                  placeholder={current.type === 'FILL_BLANK' ? '输入答案…' : '输入你的答案…'} />
+                <RichAnswerEditor
+                  value={answers[current.id] || ''}
+                  onChange={html => setAnswers(prev => ({ ...prev, [current.id]: html }))}
+                  maxChars={2000}
+                  placeholder="请输入你的答案…"
+                />
                 <div className="flex justify-end mt-3">
-                  <button onClick={handleSubmit} disabled={answers[current.id] == null || submitting}
+                  <button onClick={handleSubmit}
+                    disabled={!answers[current.id] || !String(answers[current.id]).replace(/<[^>]*>/g, '').trim() || submitting}
                     className="btn btn-fox btn-xs">{submitting ? '提交中…' : '提交答案'}</button>
                 </div>
               </div>
             )}
 
-            {/* P3a: 填空题提交后逐空对比反馈 */}
-            {current.type === 'FILL_BLANK' && submitted && result && (
-              <div className="mt-3 space-y-2">
-                <div className="p-3 rounded-lg bg-[var(--paper)] border border-[var(--ink-100)]">
-                  <p className="text-xs font-medium text-[var(--ink-400)] mb-1.5">你的答案</p>
-                  <p className={`text-sm ${result.isCorrect ? 'text-[var(--sage)]' : 'text-[var(--verm)]'}`}>{answers[current.id] || '（未作答）'}</p>
-                </div>
-                {!result.isCorrect && (
-                  <div className="p-3 rounded-lg bg-[var(--sage-glow)] border border-[var(--sage)]">
-                    <p className="text-xs font-medium text-[var(--sage)] mb-1.5">参考答案</p>
-                    <p className="text-sm text-[var(--ink-700)]">{result.correctAnswer}</p>
+            {/* CASE_STUDY — 按子问题逐题作答 */}
+            {current.type === 'CASE_STUDY' && !submitted && mode === 'practice' && (
+              <div className="space-y-4">
+                {(current.subQuestions?.length ? current.subQuestions : [null]).map((sq: any, i: number) => (
+                  <div key={sq?.id ?? i}>
+                    {sq && (
+                      <div className="text-sm font-medium mb-2 pl-3 border-l-[3px] border-[var(--fox)] text-[var(--ink-600)]">
+                        ({i + 1}) {sq.content}
+                      </div>
+                    )}
+                    <RichAnswerEditor
+                      value={(answers[current.id] || [])[i] || ''}
+                      onChange={html => {
+                        const arr = [...(answers[current.id] || [])];
+                        arr[i] = html;
+                        setAnswers(prev => ({ ...prev, [current.id]: arr }));
+                      }}
+                      maxChars={2000}
+                      placeholder="请输入答案…"
+                    />
                   </div>
-                )}
+                ))}
+                <div className="flex justify-end mt-3">
+                  <button onClick={handleSubmit}
+                    disabled={!(answers[current.id] || []).some((a: string) => a && String(a).replace(/<[^>]*>/g, '').trim()) || submitting}
+                    className="btn btn-fox btn-xs">{submitting ? '提交中…' : '提交答案'}</button>
+                </div>
               </div>
             )}
 
@@ -389,11 +501,13 @@ export default function PracticePlayer({ title, loadQuestions }: {
                     </p>
                   ))
                 )}
-                {/* 非选择题：显示参考答案 */}
+                {/* 非选择题：显示参考答案（支持富文本） */}
                 {(!current.options || current.options.filter((o: any) => o.isCorrect).length === 0) && current.correctAnswer && (
-                  <p className="text-sm text-[var(--ink-600)]">
-                    参考答案：<strong className="text-[var(--cyan)]">{current.correctAnswer}</strong>
-                  </p>
+                  <div className="text-sm text-[var(--ink-600)]">
+                    <span className="font-medium">参考答案：</span>
+                    <div className="mt-1 text-[var(--cyan)] leading-relaxed [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                      dangerouslySetInnerHTML={{ __html: String(current.correctAnswer).startsWith('<') ? current.correctAnswer : `<p>${current.correctAnswer}</p>` }} />
+                  </div>
                 )}
                 {current.analysis && (
                   <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
@@ -404,8 +518,8 @@ export default function PracticePlayer({ title, loadQuestions }: {
               </div>
             )}
 
-            {/* Result feedback */}
-            {submitted && result && (
+            {/* Result feedback — 客观题 */}
+            {submitted && result && !result.subjective && (
               <div className={`mt-4 p-4 rounded-lg text-sm ${result.isCorrect ? 'bg-[var(--sage-glow)] border border-[var(--sage)]' : 'bg-[var(--verm-glow)] border border-[var(--verm)]'}`}>
                 <p className={`font-bold mb-2 ${result.isCorrect ? 'text-[var(--sage)]' : 'text-red-700'}`}>
                   {result.isCorrect ? '✅ 回答正确！' : '❌ 回答错误'}
@@ -414,6 +528,23 @@ export default function PracticePlayer({ title, loadQuestions }: {
                   <p className="mb-1 text-[var(--ink-600)]">
                     正确答案：<strong className="text-[var(--cyan)]">{result.correctAnswer}</strong>
                   </p>
+                )}
+                {result.analysis && (
+                  <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
+                    <p className="text-xs font-medium mb-1 text-[var(--ink-500)]">解析：</p>
+                    <p className="text-xs text-[var(--ink-600)]">{result.analysis}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Result feedback — 主观题(自评模式：展示参考答案，不判对错) */}
+            {submitted && result && result.subjective && (
+              <div className="mt-4 p-4 rounded-lg text-sm bg-[var(--fox-glow)] border border-[var(--fox)]">
+                <p className="font-bold mb-2 text-[var(--fox-dark)]">📝 参考答案（请自行对照评判）</p>
+                {result.correctAnswer && (
+                  <div className="mb-2 text-[var(--ink-700)] leading-relaxed [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                    dangerouslySetInnerHTML={{ __html: typeof result.correctAnswer === 'string' && result.correctAnswer.startsWith('<') ? result.correctAnswer : `<p>${typeof result.correctAnswer === 'string' ? result.correctAnswer : JSON.stringify(result.correctAnswer, null, 2)}</p>` }} />
                 )}
                 {result.analysis && (
                   <div className="mt-2 pt-2 border-t border-dashed border-[var(--ink-100)]">
@@ -454,13 +585,15 @@ export default function PracticePlayer({ title, loadQuestions }: {
                 const isCurrent = i === currentIdx;
                 const isShown = results[q.id] !== undefined;
                 const isCorrect = results[q.id]?.isCorrect;
+                const isSubjective = results[q.id]?.subjective;
                 return (
                   <button key={q.id} onClick={() => setCurrentIdx(i)}
                     className={`
                       w-6 h-6 rounded text-[11px] font-medium border-none cursor-pointer
                       ${isCurrent ? 'bg-[var(--fox)] text-white' : ''}
-                      ${!isCurrent && isShown && isCorrect ? 'bg-[var(--cyan)] text-white' : ''}
-                      ${!isCurrent && isShown && !isCorrect ? 'bg-[var(--verm)] text-white' : ''}
+                      ${!isCurrent && isShown && isSubjective ? 'bg-[var(--amber,#f59e0b)] text-white' : ''}
+                      ${!isCurrent && isShown && !isSubjective && isCorrect ? 'bg-[var(--cyan)] text-white' : ''}
+                      ${!isCurrent && isShown && !isSubjective && !isCorrect ? 'bg-[var(--verm)] text-white' : ''}
                       ${!isCurrent && !isShown ? 'bg-[var(--paper)] text-[var(--ink-300)]' : ''}
                     `}>
                     {i + 1}
@@ -469,8 +602,9 @@ export default function PracticePlayer({ title, loadQuestions }: {
               })}
             </div>
             <div className="text-[10px] space-y-0.5 text-[var(--ink-400)]">
-              <div>✓ 正确：{Object.values(results).filter(r => r?.isCorrect).length}</div>
-              <div>✗ 错误：{Object.values(results).filter(r => r && !r.isCorrect).length}</div>
+              <div>✓ 正确：{Object.values(results).filter(r => r && !r.subjective && r.isCorrect).length}</div>
+              <div>✗ 错误：{Object.values(results).filter(r => r && !r.subjective && !r.isCorrect).length}</div>
+              <div>✎ 自评：{Object.values(results).filter(r => r?.subjective).length}</div>
               <div>— 未答：{questions.length - Object.keys(results).length}</div>
               <div className="mt-2 pt-1 border-t border-[var(--ink-100)]">共 {questions.length} 题</div>
             </div>

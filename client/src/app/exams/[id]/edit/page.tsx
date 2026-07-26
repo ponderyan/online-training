@@ -36,6 +36,8 @@ export default function EditExam() {
   const [autoSaveInterval, setAutoSaveInterval] = useState(30);
   const [programId, setProgramId] = useState('');
   const [passingScore, setPassingScore] = useState('');
+  const [lateEntryMinutes, setLateEntryMinutes] = useState('');
+  const [earlyExitMinutes, setEarlyExitMinutes] = useState('');
   const [programs, setPrograms] = useState<any[]>([]);
   const [examMode, setExamMode] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
   const [locations, setLocations] = useState<any[]>([]);
@@ -60,6 +62,8 @@ export default function EditExam() {
       setCopyProtection(exam.copyProtection ?? true);
       setAutoSaveInterval(exam.autoSaveInterval ?? 30);
       setPassingScore(exam.passingScore ?? '');
+      setLateEntryMinutes(exam.lateEntryMinutes != null ? String(exam.lateEntryMinutes) : '');
+      setEarlyExitMinutes(exam.earlyExitMinutes != null ? String(exam.earlyExitMinutes) : '');
       setProgramId(exam.programId ? String(exam.programId) : '');
       setExamMode(exam.examMode || 'ONLINE');
       setLocations(exam.locations || []);
@@ -94,6 +98,8 @@ export default function EditExam() {
         autoSaveInterval: isOffline ? 0 : autoSaveInterval,
         programId: programId ? parseInt(programId) : undefined,
         passingScore: passingScore ? parseFloat(passingScore) : undefined,
+        lateEntryMinutes: lateEntryMinutes !== '' ? parseInt(lateEntryMinutes) : null,
+        earlyExitMinutes: earlyExitMinutes !== '' ? parseInt(earlyExitMinutes) : null,
         examMode,
         locations: isOffline ? locations : undefined,
       });
@@ -190,6 +196,25 @@ export default function EditExam() {
                 <input type="number" value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} className="input" min={1} style={{ width: '120px' }} />
               </div>
             </div>
+
+            {/* ⏰ 考试规则 */}
+            {!isOffline && <div className="pt-4 border-t mt-4" style={{ borderColor: 'var(--ink-100)' }}>
+              <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 考试规则</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>迟到禁入（分钟）</label>
+                  <input type="number" value={lateEntryMinutes} onChange={e => setLateEntryMinutes(e.target.value)}
+                    className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考后超过此时间禁止入场，0=不限制，留空=使用系统默认</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>最早交卷（分钟）</label>
+                  <input type="number" value={earlyExitMinutes} onChange={e => setEarlyExitMinutes(e.target.value)}
+                    className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考后需等待此时间才可交卷，0=不限制，留空=使用系统默认</p>
+                </div>
+              </div>
+            </div>}
 
             {/* 📄 试卷模式（线上专用） */}
             {!isOffline && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>

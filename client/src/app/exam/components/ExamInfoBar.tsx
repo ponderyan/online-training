@@ -23,6 +23,9 @@ export default function ExamInfoBar({
   currentQuestionType,
   currentQuestionScore,
   timeMode,
+  countdownWarningMinutes = 5,
+  earlyExitMinutes = 0,
+  startedAt,
   onShowSubmitModal,
 }: {
   examTitle: string;
@@ -38,6 +41,9 @@ export default function ExamInfoBar({
   currentQuestionType?: string;
   currentQuestionScore?: number;
   timeMode?: 'FIXED' | 'FLEXIBLE';
+  countdownWarningMinutes?: number;
+  earlyExitMinutes?: number;
+  startedAt?: string;
   onShowSubmitModal: () => void;
 }) {
   const formatTime = (s: number) => {
@@ -48,9 +54,18 @@ export default function ExamInfoBar({
 
   // 剩余时间百分比与颜色档位
   const pct = totalDuration > 0 ? Math.max(0, Math.min(100, (timeLeft / totalDuration) * 100)) : 0;
-  const urgent = pct < 10;       // <10% 紧急（红，闪烁）
-  const warning = pct < 30;      // <30% 警告（橙）
-  const barColor = urgent ? 'var(--verm)' : warning ? 'var(--gold)' : 'var(--fox)';
+  const warningSeconds = countdownWarningMinutes * 60;
+  const urgent = timeLeft < 60;              // <1分钟 紧急（红，闪烁）
+  const warning = timeLeft <= warningSeconds; // <=N分钟 警告（红）
+  const barColor = urgent ? 'var(--verm)' : warning ? 'var(--verm)' : pct < 30 ? 'var(--gold)' : 'var(--fox)';
+
+  // C3: 最早交卷限制计算
+  const canSubmit = (() => {
+    if (!earlyExitMinutes || earlyExitMinutes <= 0 || !startedAt) return true;
+    const earliest = new Date(new Date(startedAt).getTime() + earlyExitMinutes * 60000);
+    return new Date() >= earliest;
+  })();
+  const submitTooltip = !canSubmit ? `开考 ${earlyExitMinutes} 分钟后方可交卷` : '';
   const typeLabel = currentQuestionType
     ? (currentQuestionType === 'SINGLE_CHOICE' ? '单选题' :
        currentQuestionType === 'MULTIPLE_CHOICE' ? '多选题' :
@@ -96,20 +111,26 @@ export default function ExamInfoBar({
             <span className="text-base">🕐</span>
             <div className="flex flex-col items-end leading-none">
               <span className={`font-serif text-2xl font-bold tabular-nums tracking-wide ${
-                timeLeft < 60 ? 'text-[var(--verm-light)] animate-pulse-fast'
-                : timeLeft < 300 ? 'text-[var(--gold-light)]'
+                urgent ? 'text-[var(--verm-light)] animate-pulse'
+                : warning ? 'text-[var(--verm-light)]'
                 : 'text-white'
               }`}>
                 {formatTime(timeLeft)}
               </span>
-              <span className="text-[10px] text-[var(--ink-300)] mt-0.5">
-                {timeMode === 'FIXED' ? '统一开考' : '剩余时间'}
+              <span className="text-[10px] mt-0.5" style={{ color: urgent ? 'var(--verm-light)' : 'var(--ink-300)' }}>
+                {urgent ? '⚠️ 即将强制收卷' : timeMode === 'FIXED' ? '统一开考' : '剩余时间'}
               </span>
             </div>
           </div>
           <button onClick={onShowSubmitModal}
-            className="text-sm font-semibold px-5 py-2 rounded-lg border-none cursor-pointer text-white bg-[var(--fox)] hover:bg-[var(--fox-dark)] transition-all hover:shadow-[0_4px_12px_var(--fox-glow)]">
-            交卷
+            disabled={!canSubmit}
+            title={submitTooltip}
+            className={`text-sm font-semibold px-5 py-2 rounded-lg border-none transition-all ${
+              canSubmit
+                ? 'cursor-pointer text-white bg-[var(--fox)] hover:bg-[var(--fox-dark)] hover:shadow-[0_4px_12px_var(--fox-glow)]'
+                : 'cursor-not-allowed text-[var(--ink-300)] bg-[rgba(255,255,255,0.08)]'
+            }`}>
+            {canSubmit ? '交卷' : `交卷（${earlyExitMinutes}分钟后可用）`}
           </button>
         </div>
       </div>

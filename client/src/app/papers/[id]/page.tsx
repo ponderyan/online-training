@@ -12,13 +12,13 @@ const TYPE_NAMES: Record<string, string> = {
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
 };
 const DIFF_LABELS: Record<string, string> = {
-  EASY: '易', MEDIUM: '较易', HARD: '较难', VERY_HARD: '难',
+  EASY: '易', MEDIUM_EASY: '较易', MEDIUM_HARD: '较难', HARD: '难',
 };
 const DIFF_COLORS: Record<string, string> = {
-  EASY: 'var(--cyan)', MEDIUM: 'var(--gold)', HARD: 'var(--ink-500)', VERY_HARD: 'var(--verm)',
+  EASY: 'var(--cyan)', MEDIUM_EASY: 'var(--gold)', MEDIUM_HARD: 'var(--ink-500)', HARD: 'var(--verm)',
 };
 const DIFF_BG: Record<string, string> = {
-  EASY: 'var(--cyan-glow)', MEDIUM: 'var(--gold-glow)', HARD: 'transparent', VERY_HARD: 'var(--verm-glow)',
+  EASY: 'var(--cyan-glow)', MEDIUM_EASY: 'var(--gold-glow)', MEDIUM_HARD: 'transparent', HARD: 'var(--verm-glow)',
 };
 
 export default function PaperDetailPage() {

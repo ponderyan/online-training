@@ -44,6 +44,12 @@ interface ExamData {
   openBookRules?: string;
   autoSaveInterval?: number;
   tabSwitchLimit?: number;
+  rules?: {
+    lateEntryMinutes: number;
+    earlyExitMinutes: number;
+    countdownWarningMinutes: number;
+  };
+  startedAt?: string;
   studentInfo?: {
     displayName: string;
     studentNumber: string | null;
@@ -598,6 +604,7 @@ export default function ExamTake() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p>加载中…</p></div>;
   if (!exam) return null;
+  if (!exam.questions || exam.questions.length === 0) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">该考试暂无题目</p></div>;
 
   // P1: 考前须知页
   if (!examReady) {
@@ -646,6 +653,24 @@ export default function ExamTake() {
                 <span className="ml-2 text-[var(--ink-500)]">{exam.timeMode === 'FIXED' ? '统一开考（不可暂停）' : '灵活模式（可断点续考）'}</span>
               </div>
             </div>
+            {exam.rules && exam.rules.lateEntryMinutes > 0 && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+                <span className="text-lg">🚫</span>
+                <div>
+                  <span className="font-medium text-[var(--ink-700)]">迟到禁入</span>
+                  <span className="ml-2 text-[var(--ink-500)]">开考 {exam.rules.lateEntryMinutes} 分钟后不可入场</span>
+                </div>
+              </div>
+            )}
+            {exam.rules && exam.rules.earlyExitMinutes > 0 && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--paper)]">
+                <span className="text-lg">⏳</span>
+                <div>
+                  <span className="font-medium text-[var(--ink-700)]">最早交卷</span>
+                  <span className="ml-2 text-[var(--ink-500)]">开考 {exam.rules.earlyExitMinutes} 分钟后方可交卷</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {exam.isOpenBook && exam.openBookRules && (
@@ -671,6 +696,7 @@ export default function ExamTake() {
   }
 
   const q = exam.questions[currentQ];
+  if (!q) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">题目加载异常，请刷新页面</p></div>;
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = exam.questions.length;
   const markedCount = markedQuestions.size;
@@ -779,6 +805,9 @@ export default function ExamTake() {
         currentQuestionType={q?.type}
         currentQuestionScore={q?.score}
         timeMode={exam.timeMode}
+        countdownWarningMinutes={exam.rules?.countdownWarningMinutes ?? 5}
+        earlyExitMinutes={exam.rules?.earlyExitMinutes ?? 0}
+        startedAt={exam.startedAt}
         onShowSubmitModal={() => setShowSubmitModal(true)}
       />
       {/* 答题进度条 */}

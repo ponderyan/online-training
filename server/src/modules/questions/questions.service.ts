@@ -317,6 +317,7 @@ export class QuestionsService {
         chapter: { select: { name: true } },
         options: { orderBy: { sortOrder: 'asc' } },
         blanks: { orderBy: { blankIndex: 'asc' } },
+        subQuestions: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -431,7 +432,9 @@ export class QuestionsService {
     });
     if (!question) throw new NotFoundException('题目不存在');
 
-    const isCorrect = this.checkAnswer(question, data.answer);
+    // 1.2: 主观题(简答/案例)自评模式 — 不判对错，不计入正确率
+    const isSubjective = question.type === 'SHORT_ANSWER' || question.type === 'CASE_STUDY';
+    const isCorrect = isSubjective ? false : this.checkAnswer(question, data.answer);
 
     const record = await this.prisma.practiceRecord.upsert({
       where: {
@@ -442,20 +445,23 @@ export class QuestionsService {
         questionId: data.questionId,
         answer: data.answer,
         isCorrect,
+        subjective: isSubjective,
       },
       update: {
         answer: data.answer,
         isCorrect,
+        subjective: isSubjective,
       },
     });
 
     const correctAnswer = this.formatCorrectAnswer(question);
-    return { isCorrect, correctAnswer, analysis: question.analysis };
+    return { isCorrect, subjective: isSubjective, correctAnswer, analysis: question.analysis };
   }
 
   async getPracticeRecords(params: { studentId: number; onlyWrong?: boolean; subjectId?: number }) {
     const where: any = { studentId: params.studentId };
-    if (params.onlyWrong) where.isCorrect = false;
+    // 1.2: 错题本不含主观题(自评题无对错)
+    if (params.onlyWrong) { where.isCorrect = false; where.subjective = false; }
 
     const records = await this.prisma.practiceRecord.findMany({
       where,
@@ -482,8 +488,9 @@ export class QuestionsService {
 
   async getPracticeStats(studentId: number) {
     const total = await this.prisma.practiceRecord.count({ where: { studentId } });
-    const correct = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: true } });
-    const wrong = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: false } });
+    // 1.2: 正确率仅统计客观题(主观题为自评，不计入)
+    const correct = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: true, subjective: false } });
+    const wrong = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: false, subjective: false } });
 
     const rows: any[] = await this.prisma.$queryRawUnsafe(`
       SELECT q.subject_id, ANY_VALUE(s.name) as subject_name,
@@ -507,7 +514,7 @@ export class QuestionsService {
       total,
       correct,
       wrong,
-      accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+      accuracy: (correct + wrong) > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0,
       bySubject,
     };
   }

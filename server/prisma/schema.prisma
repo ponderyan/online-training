@@ -2053,6 +2053,7 @@ model PracticeRecord {
 
   answer    Json // 学员提交的答案
   isCorrect Boolean @map("is_correct")
+  subjective Boolean @default(false) @map("is_subjective") // 主观题(简答/案例)自评标记，不计入正确率
 
   createdAt DateTime @default(now()) @map("created_at")
 

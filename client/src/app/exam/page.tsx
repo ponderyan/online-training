@@ -25,6 +25,7 @@ interface ExamItem {
   isPassed: boolean | null;
   scoringStatus: string | null;
   submittedAt: string | null;
+  lateEntryMinutes?: number | null;
 }
 
 function formatRemainingTime(seconds?: number): string {
