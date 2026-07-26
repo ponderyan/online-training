@@ -13,6 +13,7 @@ interface KnowledgePoint {
   sortOrder: number;
   parentId: number | null;
   subjectId: number;
+  manageable?: boolean;
   children: KnowledgePoint[];
   createdAt: string;
   updatedAt: string;
@@ -198,7 +199,8 @@ export default function KnowledgePointsPage() {
             </span>
           )}
 
-          {/* Actions - shown on hover */}
+          {/* Actions - shown on hover, only when manageable */}
+          {node.manageable && (
           <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0 ml-2">
             <button
               onClick={e => { e.stopPropagation(); openCreateChild(node.id); }}
@@ -230,6 +232,7 @@ export default function KnowledgePointsPage() {
               onMouseLeave={e => e.currentTarget.style.color = 'var(--ink-300)'}
             >删除</button>
           </div>
+          )}
         </div>
 
         {/* Children (if expanded) */}
@@ -243,6 +246,8 @@ export default function KnowledgePointsPage() {
   };
 
   const allNodes = flattenTree(tree);
+  // 当前科目是否可管理（取任意节点的 manageable 标记，同科目下一致）
+  const canManage = tree.length > 0 ? !!tree[0].manageable : true;
 
   return (
     <AppLayout>
@@ -256,7 +261,10 @@ export default function KnowledgePointsPage() {
             }
           </p>
         </div>
-        {subjectId > 0 && <button onClick={openCreateRoot} className="btn btn-fox btn-sm">➕ 新增根节点</button>}
+        {subjectId > 0 && canManage && <button onClick={openCreateRoot} className="btn btn-fox btn-sm">➕ 新增根节点</button>}
+        {subjectId > 0 && !canManage && (
+          <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>🔒 只读 — 该科目由上级组织定义</span>
+        )}
       </div>
 
       {/* 科目选择器 */}
@@ -352,6 +360,7 @@ export default function KnowledgePointsPage() {
                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                     className="input"
                     placeholder="知识点名称"
+                    readOnly={!selectedNode.manageable}
                   />
                 </div>
 
@@ -365,6 +374,7 @@ export default function KnowledgePointsPage() {
                     onChange={e => setEditForm({ ...editForm, code: e.target.value })}
                     className="input"
                     placeholder="如：KP-001"
+                    readOnly={!selectedNode.manageable}
                   />
                 </div>
 
@@ -379,6 +389,7 @@ export default function KnowledgePointsPage() {
                     onChange={e => setEditForm({ ...editForm, sortOrder: parseInt(e.target.value) || 0 })}
                     className="input"
                     style={{ width: '120px' }}
+                    readOnly={!selectedNode.manageable}
                   />
                 </div>
 
@@ -393,10 +404,12 @@ export default function KnowledgePointsPage() {
                     rows={3}
                     className="input textarea"
                     placeholder="知识点描述…"
+                    readOnly={!selectedNode.manageable}
                   />
                 </div>
 
-                {/* Action buttons */}
+                {/* Action buttons - only when manageable */}
+                {selectedNode.manageable ? (
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={handleSaveEdit}
@@ -412,6 +425,11 @@ export default function KnowledgePointsPage() {
                     ➕ 添加子节点
                   </button>
                 </div>
+                ) : (
+                <div className="pt-2 text-xs px-3 py-2 rounded-md" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>
+                  🔒 只读 — 该知识点所属科目由上级组织定义，不可编辑
+                </div>
+                )}
 
                 {/* Metadata */}
                 <div className="pt-3 border-t text-xs space-y-1" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-400)' }}>
