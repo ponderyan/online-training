@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 const PERM_TREE: { key: string; icon: string; children: { permission: string; name: string }[] }[] = [
   { key: '系统管理', icon: '⚙️', children: [
@@ -103,6 +105,7 @@ const PERM_TREE: { key: string; icon: string; children: { permission: string; na
 const PRESET_COLORS = ['#ef4444', '#e87a30', '#1565c0', '#f59e0b', '#2e7d32', '#7b1fa2', '#0ea5e9', '#ec4899'];
 
 export default function PermissionsPage() {
+  const toast = useToast();
   const [roles, setRoles] = useState<any[]>([]);
   const [matrix, setMatrix] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,10 +125,22 @@ export default function PermissionsPage() {
   const [memberPage, setMemberPage] = useState(1);
   const [memberLoading, setMemberLoading] = useState(false);
 
+  // Add-member modal states
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [addMemberQ, setAddMemberQ] = useState('');
+  const [addMemberResults, setAddMemberResults] = useState<any[]>([]);
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
+  const [addMemberSavingId, setAddMemberSavingId] = useState<number | null>(null);
+
   // Role modal states
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editRoleData, setEditRoleData] = useState<any>(null);
   const [roleForm, setRoleForm] = useState({ name: '', code: '', description: '', color: '#0ea5e9', copyFromRoleId: 0 });
+
+  // Reason confirm modals
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<number | null>(null);
+  const [removeRoleUserTarget, setRemoveRoleUserTarget] = useState<number | null>(null);
+  const [savePermsReason, setSavePermsReason] = useState<string | null>(null); // null=not showing, '' or string=reason
 
   const load = async () => {
     try {
@@ -186,14 +201,42 @@ export default function PermissionsPage() {
     ));
   };
 
+  // 关键角色：修改权限时需二次确认
+  const CRITICAL_ROLES = ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'];
+  const isCriticalRole = !!selectedRole && CRITICAL_ROLES.includes(selectedRole.code);
+
   const saveRolePerms = async () => {
     if (!selectedRoleId) return;
     setSaving(true);
     try {
       const row = matrix.find(r => r.roleId === selectedRoleId);
       if (row) await api.permissions.updateRolePerms(selectedRoleId, row.permissions);
-    } catch (e: any) { alert('保存失败：' + e.message); }
+      toast.success('保存成功');
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
+  };
+
+  // 关键角色：修改权限前需弹出原因确认
+  const requestSavePerms = () => {
+    if (!selectedRoleId) return;
+    if (isCriticalRole) {
+      setSavePermsReason(''); // 触发 modal
+    } else {
+      saveRolePerms();
+    }
+  };
+
+  const [resetting, setResetting] = useState(false);
+  const resetToDefault = async () => {
+    const ok = window.confirm('↩️ 将所有角色权限恢复为系统默认值（permissions.constants.ts），此操作不可撤销，确认？');
+    if (!ok) return;
+    setResetting(true);
+    try {
+      await api.permissions.seed();
+      await load();
+      toast.success('已重置为默认权限配置');
+    } catch (e: any) { toast.error('重置失败：' + e.message); }
+    setResetting(false);
   };
 
   const loadRoleUsers = async (rid: number, p: number, search?: string) => {
@@ -216,19 +259,35 @@ export default function PermissionsPage() {
   }, [selectedRoleId, activeTab, memberPage]);
 
   const removeRoleUser = async (assignmentId: number) => {
-    if (!confirm('确认移除该用户的此角色？')) return;
+    setRemoveRoleUserTarget(assignmentId);
+  };
+  const searchAddMember = async (q: string) => {
+    setAddMemberQ(q);
+    if (!q.trim()) { setAddMemberResults([]); return; }
+    setAddMemberLoading(true);
     try {
-      await fetch(`/api/permissions/roles/${selectedRoleId}/users/${assignmentId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      loadRoleUsers(selectedRoleId!, memberPage, memberSearch);
-      load();
-    } catch {}
+      const res = await api.permissions.searchUsers(q, selectedRoleId || undefined);
+      setAddMemberResults(res || []);
+    } catch { setAddMemberResults([]); }
+    setAddMemberLoading(false);
+  };
+
+  const addMember = async (userId: number) => {
+    if (!selectedRoleId) return;
+    setAddMemberSavingId(userId);
+    try {
+      await api.permissions.addRoleUser(selectedRoleId, userId);
+      // 刷新成员列表 + 角色用户计数
+      await loadRoleUsers(selectedRoleId, memberPage, memberSearch);
+      await load();
+      // 从搜索结果里标记已添加
+      setAddMemberResults(prev => prev.map(u => u.id === userId ? { ...u, hasRole: true } : u));
+    } catch (e: any) { toast.error('添加失败：' + e.message); }
+    setAddMemberSavingId(null);
   };
 
   const handleSaveRole = async () => {
-    if (!roleForm.name || (!editRoleData && !roleForm.code)) { alert('请填写必要信息'); return; }
+    if (!roleForm.name || (!editRoleData && !roleForm.code)) { toast.warning('请填写必要信息'); return; }
     try {
       if (editRoleData) {
         await fetch(`/api/permissions/roles/${editRoleData.id}`, {
@@ -242,20 +301,33 @@ export default function PermissionsPage() {
         });
       }
       setShowRoleModal(false); setEditRoleData(null); load();
-    } catch (e: any) { alert('保存失败'); }
+    } catch (e: any) { toast.error('保存失败'); }
   };
 
-  const deleteRole = async (id: number) => {
-    const role = roles.find(r => r.id === id);
-    const msg = role?.userCount > 0
-      ? `此角色共 ${role.userCount} 个用户，删除后这些用户将失去此角色下的所有权限。确认删除？`
-      : '确认删除此角色？';
-    if (!confirm(msg)) return;
+  const deleteRole = async (reason: string) => {
+    if (!deleteRoleTarget) return;
+    const id = deleteRoleTarget;
     try {
-      await fetch(`/api/permissions/roles/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      await fetch(`/api/permissions/roles/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
       if (selectedRoleId === id) setSelectedRoleId(null);
+      setDeleteRoleTarget(null);
       load();
-    } catch (e: any) { alert('删除失败'); }
+    } catch (e: any) { toast.error('删除失败'); setDeleteRoleTarget(null); }
+  };
+
+  // 移除用户角色（走 ReasonConfirmModal）
+  const handleRemoveRoleUser = async (reason: string) => {
+    const id = removeRoleUserTarget;
+    if (!id) return;
+    try {
+      await fetch(`/api/permissions/roles/${selectedRoleId}/users/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      loadRoleUsers(selectedRoleId!, memberPage, memberSearch);
+      load();
+      setRemoveRoleUserTarget(null);
+    } catch { setRemoveRoleUserTarget(null); }
   };
 
   if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
@@ -289,7 +361,7 @@ export default function PermissionsPage() {
                       </span>
                     </div>
                     {!role?.isSystem && (
-                      <button onClick={e => { e.stopPropagation(); deleteRole(row.roleId); }}
+                      <button onClick={e => { e.stopPropagation(); setDeleteRoleTarget(row.roleId); }}
                         className="text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0 hover:opacity-70" style={{ color: 'var(--ink-300)' }}>
                         🗑️
                       </button>
@@ -349,7 +421,11 @@ export default function PermissionsPage() {
                       仅显示已启用
                     </label>
                     <div className="flex-1" />
-                    <button onClick={saveRolePerms} disabled={saving}
+                    <button onClick={resetToDefault} disabled={resetting || saving}
+                      className="btn btn-ghost btn-xs" title="恢复到 permissions.constants.ts 默认值">
+                      {resetting ? '重置中…' : '↩️ 重置默认'}
+                    </button>
+                    <button onClick={requestSavePerms} disabled={saving}
                       className="btn btn-fox btn-xs">
                       {saving ? '保存中…' : '💾 保存权限'}
                     </button>
@@ -423,6 +499,9 @@ export default function PermissionsPage() {
                     <button onClick={() => loadRoleUsers(selectedRoleId!, 1, memberSearch)}
                       className="btn btn-ghost btn-xs">搜索</button>
                     <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {roleUsersTotal} 人</span>
+                    <div className="flex-1" />
+                    <button onClick={() => { setShowAddMember(true); setAddMemberQ(''); setAddMemberResults([]); }}
+                      className="btn btn-fox btn-xs">➕ 添加成员</button>
                   </div>
                   {memberLoading ? (
                     <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</div>
@@ -521,6 +600,85 @@ export default function PermissionsPage() {
           </div>
         </div>
       )}
+
+      {/* Add Member Modal */}
+      {showAddMember && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddMember(false); }}>
+          <div className="modal-card max-w-[480px] animate-fadeSlide">
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-base">➕ 添加成员到「{selectedRole?.name || selectedRole?.code}」</h3>
+              <button onClick={() => setShowAddMember(false)}
+                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+            <div className="modal-body space-y-3">
+              <input value={addMemberQ} onChange={e => searchAddMember(e.target.value)}
+                autoFocus placeholder="🔍 输入用户名或姓名搜索…" className="input" />
+              {addMemberLoading && (
+                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>搜索中…</div>
+              )}
+              {!addMemberLoading && addMemberQ.trim() && addMemberResults.length === 0 && (
+                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>未找到匹配用户</div>
+              )}
+              <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
+                {addMemberResults.map(u => (
+                  <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>
+                        {u.displayName} <span className="text-xs font-normal" style={{ color: 'var(--ink-300)' }}>({u.username})</span>
+                      </div>
+                      <div className="text-[11px]" style={{ color: 'var(--ink-300)' }}>{u.orgName}</div>
+                    </div>
+                    {u.hasRole ? (
+                      <span className="text-[11px] px-2 py-1 rounded" style={{ color: '#2e7d32', background: '#2e7d3218' }}>✓ 已是该角色</span>
+                    ) : (
+                      <button onClick={() => addMember(u.id)} disabled={addMemberSavingId === u.id}
+                        className="btn btn-fox btn-xs">{addMemberSavingId === u.id ? '添加中…' : '添加'}</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowAddMember(false)} className="btn btn-ghost btn-sm">完成</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 删除角色弹窗 */}
+      <ReasonConfirmModal
+        open={deleteRoleTarget !== null}
+        title="🗑 删除角色"
+        required
+        presetReasons={['角色不再使用', '角色创建错误', '角色合并']}
+        confirmText="确认删除"
+        onConfirm={deleteRole}
+        onCancel={() => setDeleteRoleTarget(null)}
+      />
+
+      {/* 移除用户角色确认 */}
+      <ReasonConfirmModal
+        open={removeRoleUserTarget !== null}
+        title="👤 移除用户角色"
+        message="确认移除该用户的此角色？"
+        required
+        presetReasons={['角色分配错误', '用户离职', '用户角色变更']}
+        confirmText="确认移除"
+        onConfirm={handleRemoveRoleUser}
+        onCancel={() => setRemoveRoleUserTarget(null)}
+      />
+
+      {/* 关键角色权限修改确认 */}
+      <ReasonConfirmModal
+        open={savePermsReason !== null}
+        title="⚠️ 关键角色权限修改"
+        message="此角色拥有广泛权限，修改可能影响系统安全，请填写变更原因。"
+        required
+        confirmText="确认保存"
+        onConfirm={(reason) => { setSavePermsReason(null); saveRolePerms(); }}
+        onCancel={() => setSavePermsReason(null)}
+      />
     </AppLayout>
   );
 }

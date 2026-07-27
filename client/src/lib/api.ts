@@ -16,12 +16,13 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-/** 跳转到登录页 */
+/** 跳转到登录页（SPA 导航，避免 window.location.href 全页刷新割裂浏览器历史栈） */
 function redirectToLogin() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  window.location.href = '/login';
+  localStorage.removeItem('userPermissions');
+  window.dispatchEvent(new CustomEvent('auth:redirect-login'));
 }
 
 async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
@@ -87,6 +88,8 @@ export const api = {
 
   subjects: {
     list: () => request<any[]>('/subjects'),
+    /** 活跃科目列表（过滤停用科目，供选择器使用） */
+    listActive: () => request<any[]>('/subjects/active'),
     get: (id: number) => request<any>(`/subjects/${id}`),
     create: (data: any) => request<any>('/subjects', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -212,6 +215,35 @@ export const api = {
       messages: (examId: number, sessionId: number) =>
         request<any[]>(`/exams/${examId}/proctoring/sessions/${sessionId}/messages`),
     },
+  },
+
+  // ── 线下笔试考试 ──
+  offlineExams: {
+    publish: (id: number) => request<any>(`/offline-exams/${id}/publish`, { method: 'PUT' }),
+    startGrading: (id: number) => request<any>(`/offline-exams/${id}/start-grading`, { method: 'PUT' }),
+    startScoreEntry: (id: number) => request<any>(`/offline-exams/${id}/start-score-entry`, { method: 'PUT' }),
+    confirmScores: (id: number, data?: { approvalNote?: string }) =>
+      request<any>(`/offline-exams/${id}/confirm-scores`, { method: 'PUT', body: JSON.stringify(data || {}) }),
+    publishScores: (id: number) => request<any>(`/offline-exams/${id}/publish-scores`, { method: 'PUT' }),
+    enterScore: (id: number, data: { sessionId: number; scoreByType: Record<string, number>; graderName?: string; graderId?: number; gradedAt?: string }) =>
+      request<any>(`/offline-exams/${id}/scores`, { method: 'POST', body: JSON.stringify(data) }),
+    batchImport: (id: number, entries: any[]) =>
+      request<any>(`/offline-exams/${id}/scores/batch`, { method: 'POST', body: JSON.stringify({ entries }) }),
+    getScores: (id: number) => request<any[]>(`/offline-exams/${id}/scores`),
+    getAuditLogs: (id: number) => request<any[]>(`/offline-exams/${id}/audit-logs`),
+    markAbsent: (id: number, sessionId: number, absent: boolean) =>
+      request<any>(`/offline-exams/${id}/sessions/${sessionId}/absent`, { method: 'PUT', body: JSON.stringify({ absent }) }),
+    assignSeats: (id: number, data?: { startFrom?: number }) =>
+      request<any>(`/offline-exams/${id}/assign-seats`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    getSeatTable: (id: number) => request<any>(`/offline-exams/${id}/seat-table`),
+    importTemplateUrl: (id: number) => `/api/offline-exams/${id}/import-template?token=${getToken()}`,
+    createRetake: (id: number, data: { startTime: string; endTime: string; durationMinutes?: number; locations?: any }) =>
+      request<any>(`/offline-exams/${id}/retake`, { method: 'POST', body: JSON.stringify(data) }),
+    getRetakeInfo: (id: number) => request<any>(`/offline-exams/${id}/retake-info`),
+    reviewScore: (id: number, sessionId: number, data: { reviewerName: string; reviewerId?: number; reviewNote?: string; approved: boolean }) =>
+      request<any>(`/offline-exams/${id}/scores/${sessionId}/review`, { method: 'PUT', body: JSON.stringify(data) }),
+    seatTableExcelUrl: (id: number) => `/api/offline-exams/${id}/seat-table/excel?token=${getToken()}`,
+    seatTablePdfUrl: (id: number) => `/api/offline-exams/${id}/seat-table/pdf?token=${getToken()}`,
   },
 
   students: {
@@ -370,8 +402,17 @@ export const api = {
       const qs = `?page=${page}&pageSize=20${search ? '&search=' + encodeURIComponent(search) : ''}`;
       return request<any>(`/permissions/roles/${roleId}/users${qs}`);
     },
+    addRoleUser: (roleId: number, userId: number) =>
+      request<any>(`/permissions/roles/${roleId}/users`, { method: 'POST', body: JSON.stringify({ userId }) }),
     removeRoleUser: (roleId: number, assignmentId: number) =>
       request<any>(`/permissions/roles/${roleId}/users/${assignmentId}`, { method: 'DELETE' }),
+    searchUsers: (q: string, excludeRoleId?: number) => {
+      const qp: Record<string, string> = { q };
+      if (excludeRoleId) qp.excludeRoleId = excludeRoleId.toString();
+      return request<any[]>(`/permissions/users/search?` + new URLSearchParams(qp).toString());
+    },
+    /** 重置所有角色权限为 permissions.constants.ts 默认值 */
+    seed: () => request<any>('/permissions/seed', { method: 'POST' }),
   },
 
 
@@ -533,8 +574,8 @@ export const api = {
 
   // ── Phase 1b: 学时记录 ──
   learningHours: {
-    list: (params?: { programId?: number; source?: string }) => {
-      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined)) as any).toString() : '';
+    list: (params?: { programId?: number; source?: string; status?: string; studentId?: number }) => {
+      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))).toString() : '';
       return request<{ items: any[]; total: number }>(`/learning-hours${qs}`);
     },
     stats: () => request<{ totalHours: number; completedVideos: number; programStats: any[] }>('/learning-hours/stats'),
@@ -598,10 +639,14 @@ export const api = {
 
   // ── Phase D: 评价体系 ──
   evaluations: {
+    list: (params?: { programId?: number; instructorId?: number }) => {
+      const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))).toString() : '';
+      return request<any[]>(`/evaluations${qs}`);
+    },
     create: (data: any) => request<any>('/evaluations', { method: 'POST', body: JSON.stringify(data) }),
     byProgram: (programId: number) => request<any[]>(`/evaluations/program/${programId}`),
     programStats: (programId: number) => request<any>(`/evaluations/program/${programId}/stats`),
-    my: (studentId: number) => request<any[]>(`/evaluations/my?studentId=${studentId}`),
+    my: () => request<any[]>('/evaluations/my'),
     instructorStats: (instructorId: number) => request<any>(`/evaluations/instructor/${instructorId}`),
     delete: (id: number) => request<any>(`/evaluations/${id}`, { method: 'DELETE' }),
   },
@@ -617,18 +662,53 @@ export const api = {
 
   // ── Phase 1e: 知识库 ──
   knowledge: {
-    listDocuments: (params?: { page?: number; pageSize?: number; search?: string }) => {
+    listDocuments: (params?: { page?: number; pageSize?: number; search?: string; subjectId?: number }) => {
       const qp: Record<string, string> = {};
       if (params?.page) qp.page = params.page.toString();
       if (params?.pageSize) qp.pageSize = params.pageSize.toString();
       if (params?.search) qp.search = params.search;
+      if (params?.subjectId) qp.subjectId = params.subjectId.toString();
       const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
-      return request<{ items: any[]; total: number }>(`/knowledge/documents${qs}`);
+      return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/knowledge/documents${qs}`);
     },
-    deleteDocument: (source: string) =>
-      request(`/knowledge/documents/${encodeURIComponent(source)}`, { method: 'DELETE' }),
-    queryPlaceholder: () =>
-      request<{ success: boolean; message: string }>('/knowledge/query', { method: 'POST' }),
+    getDocument: (id: number) => request<any>(`/knowledge/documents/${id}`),
+    uploadDocument: (formData: FormData) =>
+      request<any>('/knowledge/upload', { method: 'POST', body: formData }),
+    deleteDocument: (id: number) =>
+      request(`/knowledge/documents/${id}`, { method: 'DELETE' }),
+    deleteBySource: (source: string) =>
+      request(`/knowledge/by-source/${encodeURIComponent(source)}`, { method: 'DELETE' }),
+    // 分块管理
+    getChunks: (docId: number, params?: { page?: number; pageSize?: number }) => {
+      const qp: Record<string, string> = {};
+      if (params?.page) qp.page = params.page.toString();
+      if (params?.pageSize) qp.pageSize = params.pageSize.toString();
+      const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
+      return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/knowledge/documents/${docId}/chunks${qs}`);
+    },
+    updateChunk: (chunkId: number, data: { content?: string; title?: string }) =>
+      request<any>(`/knowledge/chunks/${chunkId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    mergeChunk: (chunkId: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}/merge`, { method: 'POST' }),
+    splitChunk: (chunkId: number, position: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}/split`, { method: 'POST', body: JSON.stringify({ position }) }),
+    deleteChunk: (chunkId: number) =>
+      request<any>(`/knowledge/chunks/${chunkId}`, { method: 'DELETE' }),
+    rebuildChunks: (docId: number, params?: { chunkSize?: number; overlap?: number }) =>
+      request<any>(`/knowledge/documents/${docId}/rebuild`, { method: 'POST', body: JSON.stringify(params || {}) }),
+    // 知识点关联
+    setChunkKnowledgePoints: (chunkId: number, knowledgePointIds: number[]) =>
+      request<any>(`/knowledge/chunks/${chunkId}/knowledge-points`, { method: 'PUT', body: JSON.stringify({ knowledgePointIds }) }),
+    // 检索测试
+    testQuery: (query: string, subjectId?: number, limit?: number) =>
+      request<{ results: any[]; keywords: string[] }>('/knowledge/test-query', { method: 'POST', body: JSON.stringify({ query, subjectId, limit }) }),
+    // AI 功能
+    autoLabel: (docId: number) =>
+      request<{ labeled: number }>(`/knowledge/documents/${docId}/auto-label`, { method: 'POST' }),
+    generateQuestions: (chunkId: number, data?: { questionType?: string; count?: number }) =>
+      request<{ questions: any[] }>(`/knowledge/chunks/${chunkId}/generate-questions`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    generateQa: (docId: number) =>
+      request<{ total: number }>(`/knowledge/documents/${docId}/generate-qa`, { method: 'POST' }),
   },
 
   // ── Phase E: 消息通知 ──
@@ -648,6 +728,23 @@ export const api = {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
       return request<{ data: any[]; total: number; page: number; pageSize: number }>(`/audit-logs${qs}`);
     },
+  },
+
+  // ── 全链审计（业务实体生命周期时间线）──
+  auditTrail: {
+    getTrail: (entityType: string, entityId: number) =>
+      request<{ entityType: string; entityId: number; entityName: string; events: any[] }>(`/audit-trail/${entityType}/${entityId}`),
+    search: (entityType: string, keyword?: string) => {
+      const params: Record<string, string> = { entityType };
+      if (keyword) params.keyword = keyword;
+      return request<{ entityType: string; items: any[] }>(`/audit-trail/search?${new URLSearchParams(params).toString()}`);
+    },
+  },
+
+  // ── 学员成绩变动记录（脱敏版）──
+  studentScores: {
+    changes: (examId: number) =>
+      request<{ changes: any[] }>(`/student/scores/${examId}/changes`),
   },
 
   // ── Phase E: 成绩分析 ──
@@ -692,6 +789,8 @@ export const api = {
       return request<{ total: number; items: any[] }>(`/questions/practice/records${qs}`);
     },
     stats: () => request<any>('/questions/practice/stats'),
+    relatedChunks: (questionId: number) =>
+      request<{ chunks: any[]; knowledgePoints: string[] }>(`/questions/practice/related-chunks/${questionId}`),
     favorite: {
       toggle: (questionId: number) =>
         request<any>('/questions/practice/favorite/toggle', {
@@ -750,15 +849,44 @@ export const api = {
   },
 
   // ── 机构管理 ──
+  orgCodes: {
+    getAbbreviations: () => request<any[]>('/org-codes/abbreviations'),
+    createAbbreviation: (data: any) => request<any>('/org-codes/abbreviations', { method: 'POST', body: JSON.stringify(data) }),
+    updateAbbreviation: (id: number, data: any) => request<any>(`/org-codes/abbreviations/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteAbbreviation: (id: number) => request<any>(`/org-codes/abbreviations/${id}`, { method: 'DELETE' }),
+    getRules: () => request<any>('/org-codes/rules'),
+    updateRules: (data: any) => request<any>('/org-codes/rules', { method: 'PUT', body: JSON.stringify(data) }),
+    preview: (parentId: number | null, name: string) => request<{ code: string }>(`/org-codes/preview?parentId=${parentId || ''}&name=${encodeURIComponent(name)}`).then(r => r.code),
+  },
+
   organizations: {
     list: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
       return request<any[]>(`/organizations${qs}`);
     },
+    getTree: () => request<any[]>('/organizations/tree'),
     get: (id: number) => request<any>(`/organizations/${id}`),
+    getDataScope: (id: number) => request<any>(`/organizations/${id}/data-scope`),
+    getOrgUsers: (id: number) => request<any>(`/organizations/${id}/users`),
     create: (data: any) => request<any>('/organizations', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: any) => request<any>(`/organizations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    move: (id: number, newParentId: number | null) =>
+      request<any>(`/organizations/${id}/move`, { method: 'PUT', body: JSON.stringify({ newParentId }) }),
     remove: (id: number) => request<any>(`/organizations/${id}`, { method: 'DELETE' }),
+    importOrganizations: (rows: { name: string; parentName?: string; sortOrder?: number }[]) =>
+      request<{ success: boolean; imported: number; skipped: number; errors: string[] }>(`/organizations/import`, {
+        method: 'POST', body: JSON.stringify({ rows }),
+      }),
+    migrateStudents: (id: number, data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean }) =>
+      request<any>(`/organizations/${id}/migrate-students`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCertConfig: (id: number, data: { certIssuerName?: string; certLogoUrl?: string; certFooterText?: string; sealUrl?: string; useFoxLearnSeal?: boolean }) =>
+      request<any>(`/organizations/${id}/cert-config`, { method: 'PUT', body: JSON.stringify(data) }),
+    uploadCertImage: (id: number, file: File, type: 'logo' | 'seal') => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      return request<{ url: string; fileName: string }>(`/organizations/${id}/cert-upload`, { method: 'POST', body: formData, headers: {} });
+    },
   },
 
   // ── 用户个人资料 ──
@@ -812,6 +940,16 @@ export const api = {
       update: (data: { allow_org_own_bank?: boolean; org_bank_visibility?: string }) =>
         request<{ allow_org_own_bank: boolean; org_bank_visibility: string }>(
           '/system-config/bank-policy',
+          { method: 'PUT', body: JSON.stringify(data) }
+        ),
+    },
+    certPolicy: {
+      get: () => request<{ cert_org_self_issue: boolean; cert_approval_required: boolean; cert_seal_mode: string }>(
+        '/system-config/cert-policy'
+      ),
+      update: (data: { cert_org_self_issue?: boolean; cert_approval_required?: boolean; cert_seal_mode?: string }) =>
+        request<{ cert_org_self_issue: boolean; cert_approval_required: boolean; cert_seal_mode: string }>(
+          '/system-config/cert-policy',
           { method: 'PUT', body: JSON.stringify(data) }
         ),
     },

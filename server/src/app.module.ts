@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
 import { ExamsModule } from './modules/exams/exams.module.js';
 import { SubjectsModule } from './modules/subjects/subjects.module.js';
@@ -29,12 +30,14 @@ import { DataImportExportModule } from './modules/data-import-export/data-import
 import { FilingModule } from './modules/filing/filing.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module.js';
+import { AuditTrailModule } from './modules/audit-trail/audit-trail.module.js';
 import { CourseVideosModule } from './modules/course-videos/course-videos.module.js';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { VideoCoursesModule } from './modules/video-courses/video-courses.module.js';
 import { LearningHoursModule } from './modules/learning-hours/learning-hours.module.js';
 import { LearningHourCertificatesModule } from './modules/learning-hour-certificates/learning-hour-certificates.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { OrgCodesModule } from './modules/org-codes/org-codes.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { SystemConfigModule } from './modules/system-config/system-config.module.js';
 import { KnowledgePointsModule } from './modules/knowledge-points/knowledge-points.module.js';
@@ -43,6 +46,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     SubjectsModule,
@@ -69,6 +73,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     EvaluationsModule,
     NotificationsModule,
     AuditLogsModule,
+    AuditTrailModule,
     SiteSettingsModule,
     DataImportExportModule,
     FilingModule,
@@ -78,6 +83,7 @@ import { PermissionGuard } from './common/guards/permission.guard.js';
     KnowledgeModule,
     VideoCoursesModule,
     OrganizationsModule,
+    OrgCodesModule,
     UsersModule,
     SystemConfigModule,
     KnowledgePointsModule,

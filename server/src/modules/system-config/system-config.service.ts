@@ -1,9 +1,28 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
-export class SystemConfigService {
+export class SystemConfigService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
+
+  /** 启动时自动注册考试默认配置（幂等，不覆盖已有值） */
+  async onModuleInit() {
+    const examDefaults = [
+      { key: 'exam_default_late_entry_minutes', value: '30', desc: '默认迟到禁入时间（分钟），0=不限制', group: 'exam', inputType: 'number' },
+      { key: 'exam_default_early_exit_minutes', value: '30', desc: '默认开考后最早交卷时间（分钟），0=不限制', group: 'exam', inputType: 'number' },
+      { key: 'exam_countdown_warning_minutes', value: '5', desc: '倒计时警告阈值（分钟）', group: 'exam', inputType: 'number' },
+      { key: 'exam_grace_seconds', value: '120', desc: '考试结束后交卷宽限期（秒）', group: 'exam', inputType: 'number' },
+      { key: 'exam_force_submit_on_end', value: 'true', desc: '考试时间到是否强制收卷', group: 'exam', inputType: 'boolean' },
+      { key: 'exam_allow_pause_resume', value: 'true', desc: 'FLEXIBLE模式是否允许断点续考', group: 'exam', inputType: 'boolean' },
+    ];
+    for (const cfg of examDefaults) {
+      await this.prisma.systemConfig.upsert({
+        where: { key: cfg.key },
+        update: {},  // 不覆盖已有值
+        create: cfg,
+      });
+    }
+  }
 
   /** 获取所有配置，按 group 分组 */
   async getAll() {
@@ -75,20 +94,6 @@ export class SystemConfigService {
       where: { key },
       data: { value },
     });
-
-    // 审计日志
-    if (operatorId) {
-      await this.prisma.auditLog.create({
-        data: {
-          entityType: 'SystemConfig',
-          entityId: existing.id,
-          action: 'UPDATE',
-          before: { value: existing.value },
-          after: { value },
-          operatorId,
-        },
-      });
-    }
 
     return {
       key: updated.key,

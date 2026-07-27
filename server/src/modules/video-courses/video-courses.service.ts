@@ -182,6 +182,10 @@ export class VideoCoursesService {
     const existing = await this.prisma.videoProgress.findUnique({
       where: { videoId_studentId: { videoId, studentId } },
     });
+    // ★ 防刷校验：单次上报进度跳跃不得超过 20%（防止直接调 API 秒完视频）
+    if (existing && progress > existing.progress + 20 && progress < 100) {
+      return existing; // 静默忽略异常跳跃，返回上次进度
+    }
     const record = await this.prisma.videoProgress.upsert({
       where: { videoId_studentId: { videoId, studentId } },
       create: { videoId, studentId, progress, lastPosition, completed: completed || false, completedAt: completed ? new Date() : null },
@@ -204,7 +208,7 @@ export class VideoCoursesService {
     if (existing) return;
 
     await this.prisma.learningHourRecord.create({
-      data: { studentId, source: 'VIDEO', sourceId: videoId, hours: video.hours, programId: null },
+      data: { studentId, source: 'VIDEO', sourceId: videoId, hours: video.hours, programId: null, status: 'APPROVED' },
     });
   }
 

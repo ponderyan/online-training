@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
 const TYPE_COLORS: Record<string, string> = { PUBLIC: '#00897b', SPECIALIZED: '#1565c0' };
@@ -27,6 +28,7 @@ const fmtDuration = (sec: number) => {
 };
 
 export default function VideoCoursesPage() {
+  const toast = useToast();
   const [videos, setVideos] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -123,7 +125,7 @@ export default function VideoCoursesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name) { alert('请输入视频课程名称'); return; }
+    if (!form.name) { toast.warning('请输入视频课程名称'); return; }
     setSaving(true);
     try {
       // Upload file first if selected
@@ -169,13 +171,13 @@ export default function VideoCoursesPage() {
       setCoverUrlInput('');
       setShowCoverUrlInput(false);
       load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定删除该视频课程吗？')) return;
-    try { await api.videoCourses.delete(id); load(); } catch (e: any) { alert('删除失败：' + e.message); }
+    try { await api.videoCourses.delete(id); load(); } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   const formatDuration = (sec: number) => {

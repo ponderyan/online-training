@@ -71,16 +71,17 @@ export default function ExamAnalysisPage() {
             {distribution.buckets.map((b: any) => {
               const pct = maxDistribution > 0 ? b.count / maxDistribution * 100 : 0;
               const isFail = b.range === '0-59';
+              const barColor = isFail ? 'var(--verm)' : b.range === '60-69' ? 'var(--gold)' : b.range === '70-79' ? 'var(--fox)' : b.range === '80-89' ? 'var(--cyan)' : 'var(--sage)';
               return (
                 <div key={b.range}>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span style={{ color: isFail ? 'var(--verm)' : 'var(--ink-500)' }}>{b.range} 分</span>
-                    <span style={{ color: 'var(--ink-400)' }}>{b.count} 人</span>
+                    <span className="num" style={{ color: 'var(--ink-400)' }}>{b.count} 人</span>
                   </div>
                   <div className="h-6 rounded-lg overflow-hidden" style={{ background: 'var(--paper-dark)' }}>
-                    <div className="h-full rounded-lg flex items-center justify-end px-2 text-[10px] text-white font-medium transition-all"
-                      style={{ width: `${Math.max(pct, 3)}%`, background: isFail ? '#e53935' : b.range === '60-69' ? '#f5a061' : b.range === '70-79' ? '#e87a30' : b.range === '80-89' ? '#00897b' : '#2e7d32' }}>
-                      {pct > 15 ? `${b.count}人` : ''}
+                    <div className="hist-bar h-full rounded-lg flex items-center justify-end px-2 text-[10px] text-white font-medium transition-all"
+                      style={{ width: `${Math.max(pct, b.count > 0 ? 4 : 0)}%`, background: `linear-gradient(90deg, ${barColor}, ${barColor}dd)` }}>
+                      {b.count > 0 && `${b.count}人`}
                     </div>
                   </div>
                 </div>

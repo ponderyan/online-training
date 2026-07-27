@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const REASON_OPTIONS = [
@@ -16,6 +17,7 @@ export default function AppealPage() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.id as string);
+  const toast = useToast();
   const [user, setUser] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
   const [existingAppeal, setExistingAppeal] = useState<any>(null);
@@ -46,13 +48,13 @@ export default function AppealPage() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!reason) { alert('请选择申诉原因'); return; }
-    if (!description) { alert('请填写详细说明'); return; }
+    if (!reason) { toast.warning('请选择申诉原因'); return; }
+    if (!description) { toast.warning('请填写详细说明'); return; }
     setSubmitting(true);
     try {
       await api.scoreAppeals.create(examId, { reason, description, studentId: user.id });
       setSubmitted(true);
-    } catch (e: any) { alert('提交失败：' + e.message); }
+    } catch (e: any) { toast.error('提交失败：' + e.message); }
     setSubmitting(false);
   };
 

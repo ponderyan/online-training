@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const TYPE_OPTIONS = [
@@ -48,6 +49,7 @@ export default function QuestionPlanTab({
   const [executingPlanId, setExecutingPlanId] = useState<number | null>(null);
   const [execProgress, setExecProgress] = useState<any>(null);
   const [batchNoteLoading, setBatchNoteLoading] = useState(false);
+  const toast = useToast();
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -111,7 +113,7 @@ export default function QuestionPlanTab({
         focusKeywords: c.focusKeywords || undefined,
       }));
 
-    if (validConfigs.length === 0) { alert('请至少为一道题配置出题项'); return; }
+    if (validConfigs.length === 0) { toast.warning('请至少为一道题配置出题项'); return; }
 
     setSaving(true);
     try {
@@ -121,7 +123,7 @@ export default function QuestionPlanTab({
       if (andExecute) {
         await handleExecute(plan.id);
       }
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
@@ -137,7 +139,7 @@ export default function QuestionPlanTab({
         setExecutingPlanId(null);
         onGenerate();
       }).catch(e => {
-        alert('出题失败：' + e.message);
+        toast.error('出题失败：' + e.message);
         setExecutingPlanId(null);
       });
 
@@ -155,7 +157,7 @@ export default function QuestionPlanTab({
           }
         } catch {}
       }, 3000);
-    } catch (e: any) { alert('启动失败：' + e.message); setExecutingPlanId(null); }
+    } catch (e: any) { toast.error('启动失败：' + e.message); setExecutingPlanId(null); }
   };
 
   // ── 从 batchNote 快速出题 ──
@@ -164,10 +166,10 @@ export default function QuestionPlanTab({
     setBatchNoteLoading(true);
     try {
       const result = await api.materials.generateFromBatchNote(materialId);
-      alert(`出题完成！生成了 ${result.total} 道试题（${result.chapters} 个章节）`);
+      toast.success(`出题完成！生成了 ${result.total} 道试题（${result.chapters} 个章节）`);
       await loadPlans();
       onGenerate();
-    } catch (e: any) { alert('出题失败：' + e.message); }
+    } catch (e: any) { toast.error('出题失败：' + e.message); }
     setBatchNoteLoading(false);
   };
 

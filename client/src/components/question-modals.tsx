@@ -82,13 +82,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
     }
   }, [editQuestion]);
 
-  // Load KP tree when modal opens
+  // Load KP tree when modal opens（按当前科目过滤）
   useEffect(() => {
     if (!open) return;
     setKpLoading(true);
     setKpSearch('');
     setSelectedKPIds([]);
-    api.knowledgePoints.getTree()
+    api.knowledgePoints.getTree(subjectId || undefined)
       .then(data => {
         const flatten = (nodes: any[]): any[] => {
           const result: any[] = [];
@@ -105,13 +105,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
       })
       .catch(() => {})
       .finally(() => setKpLoading(false));
-  }, [open]);
+  }, [open, subjectId]);
 
   // Pre-select KPs when editing a question
   useEffect(() => {
     if (!editQuestion) return;
     api.knowledgePoints.getQuestionKPs(editQuestion.id)
-      .then(data => setSelectedKPIds((data || []).map((kp: any) => kp.id)))
+      .then(data => setSelectedKPIds((data || []).map((kp: any) => kp.knowledgePointId)))
       .catch(() => {});
   }, [editQuestion]);
 
@@ -157,8 +157,8 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
         } catch {}
       }
 
-      // Save KP associations
-      if (savedId && selectedKPIds.length > 0) {
+      // Save KP associations（空数组=清空旧关联）
+      if (savedId) {
         await api.knowledgePoints.setQuestionKPs(savedId, selectedKPIds).catch(() => {});
       }
 

@@ -98,7 +98,7 @@ export class ScoreAppealService {
       });
 
       // Record audit log
-      await this.prisma.scoreAuditLog.create({
+      const scoreLog = await this.prisma.scoreAuditLog.create({
         data: {
           examId: appeal.examId,
           sessionId: appeal.sessionId,
@@ -112,6 +112,19 @@ export class ScoreAppealService {
           operatorName: '管理员',
         },
       });
+      // 同步写入主审计日志，打通全链审计
+      await this.prisma.auditLog.create({
+        data: {
+          entityType: 'ScoreAuditLog',
+          entityId: scoreLog.id,
+          action: 'APPEAL_ADJUST',
+          before: { totalScore: appeal.oldScore || 0 },
+          after: { totalScore: data.newScore },
+          operatorId: reviewerId,
+          changeReason: '申诉批准调分',
+          eventSource: 'API',
+        },
+      }).catch(() => {});
     }
 
     return this.prisma.scoreAppeal.update({ where: { id }, data: updateData });

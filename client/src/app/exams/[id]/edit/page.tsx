@@ -36,7 +36,11 @@ export default function EditExam() {
   const [autoSaveInterval, setAutoSaveInterval] = useState(30);
   const [programId, setProgramId] = useState('');
   const [passingScore, setPassingScore] = useState('');
+  const [lateEntryMinutes, setLateEntryMinutes] = useState('');
+  const [earlyExitMinutes, setEarlyExitMinutes] = useState('');
   const [programs, setPrograms] = useState<any[]>([]);
+  const [examMode, setExamMode] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
+  const [locations, setLocations] = useState<any[]>([]);
 
   useEffect(() => {
     api.papers.list(1).then(r => setPapers(r.items || [])).catch(() => {});
@@ -58,16 +62,23 @@ export default function EditExam() {
       setCopyProtection(exam.copyProtection ?? true);
       setAutoSaveInterval(exam.autoSaveInterval ?? 30);
       setPassingScore(exam.passingScore ?? '');
+      setLateEntryMinutes(exam.lateEntryMinutes != null ? String(exam.lateEntryMinutes) : '');
+      setEarlyExitMinutes(exam.earlyExitMinutes != null ? String(exam.earlyExitMinutes) : '');
       setProgramId(exam.programId ? String(exam.programId) : '');
+      setExamMode(exam.examMode || 'ONLINE');
+      setLocations(exam.locations || []);
       setLoading(false);
     }).catch(() => { router.push('/exams'); });
   }, [examId, router]);
 
+  const isOffline = examMode === 'OFFLINE';
   // 推断场景
-  const inferredScenario = timeMode === 'FIXED' && paperMode === 'SAME' && tabSwitchLimit >= 3 ? 'formal'
+  const inferredScenario = isOffline ? 'offline'
+    : timeMode === 'FIXED' && paperMode === 'SAME' && tabSwitchLimit >= 3 ? 'formal'
     : timeMode === 'FLEXIBLE' && paperMode === 'RANDOM' ? 'training'
     : 'practice';
-  const scenarioLabel = SCENARIOS.find(s => s.id === inferredScenario);
+  const ALL_SCENARIOS = [...SCENARIOS, { id: 'offline', icon: '🏫', title: '线下笔试' }];
+  const scenarioLabel = ALL_SCENARIOS.find(s => s.id === inferredScenario);
 
   const handleUpdate = async () => {
     if (!title || !paperId || !startTime) { setError('请填写必填项'); return; }
@@ -77,10 +88,20 @@ export default function EditExam() {
         title, paperId: parseInt(paperId),
         startTime: new Date(startTime).toISOString(),
         endTime: endTime ? new Date(endTime).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
-        durationMinutes, shuffleQuestions, shuffleOptions,
-        timeMode, paperMode, tabSwitchLimit, copyProtection, autoSaveInterval,
+        durationMinutes,
+        shuffleQuestions: isOffline ? false : shuffleQuestions,
+        shuffleOptions: isOffline ? false : shuffleOptions,
+        timeMode: isOffline ? 'FIXED' : timeMode,
+        paperMode: isOffline ? 'SAME' : paperMode,
+        tabSwitchLimit: isOffline ? 0 : tabSwitchLimit,
+        copyProtection: isOffline ? false : copyProtection,
+        autoSaveInterval: isOffline ? 0 : autoSaveInterval,
         programId: programId ? parseInt(programId) : undefined,
         passingScore: passingScore ? parseFloat(passingScore) : undefined,
+        lateEntryMinutes: lateEntryMinutes !== '' ? parseInt(lateEntryMinutes) : null,
+        earlyExitMinutes: earlyExitMinutes !== '' ? parseInt(earlyExitMinutes) : null,
+        examMode,
+        locations: isOffline ? locations : undefined,
       });
       router.push(`/exams/${examId}`);
     } catch (e: any) { setError(e.message); }
@@ -133,6 +154,9 @@ export default function EditExam() {
             {/* ⏰ 时间模式 */}
             <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
               <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 时间模式</label>
+              {isOffline ? (
+                <div className="text-xs px-3 py-2 rounded-lg mb-4" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>🏫 线下笔试固定为「统一开考」</div>
+              ) : (
               <div className="flex gap-4 mb-4">
                 {[
                   { value: 'FIXED', label: '统一开考', desc: '所有考生同一时间开考' },
@@ -152,6 +176,7 @@ export default function EditExam() {
                   </label>
                 ))}
               </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
@@ -172,8 +197,27 @@ export default function EditExam() {
               </div>
             </div>
 
-            {/* 📄 试卷模式 */}
-            <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+            {/* ⏰ 考试规则 */}
+            {!isOffline && <div className="pt-4 border-t mt-4" style={{ borderColor: 'var(--ink-100)' }}>
+              <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 考试规则</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>迟到禁入（分钟）</label>
+                  <input type="number" value={lateEntryMinutes} onChange={e => setLateEntryMinutes(e.target.value)}
+                    className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考后超过此时间禁止入场，0=不限制，留空=使用系统默认</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>最早交卷（分钟）</label>
+                  <input type="number" value={earlyExitMinutes} onChange={e => setEarlyExitMinutes(e.target.value)}
+                    className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考后需等待此时间才可交卷，0=不限制，留空=使用系统默认</p>
+                </div>
+              </div>
+            </div>}
+
+            {/* 📄 试卷模式（线上专用） */}
+            {!isOffline && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
               <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>📄 试卷模式</label>
               <div className="flex gap-4 mb-3">
                 {[
@@ -206,10 +250,9 @@ export default function EditExam() {
                   <span className="text-xs" style={{ color: 'var(--ink-500)' }}>选项乱序</span>
                 </label>
               </div>
-            </div>
-
-            {/* 🛡️ 防作弊设置 */}
-            <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+            </div>}
+            {/* 🛡️ 防作弊设置（线上专用） */}
+            {!isOffline && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
               <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🛡️ 防作弊设置</label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -232,8 +275,23 @@ export default function EditExam() {
                   className="accent-[var(--fox)]" />
                 <span className="text-xs" style={{ color: 'var(--ink-500)' }}>禁止复制粘贴</span>
               </label>
-            </div>
-
+            </div>}
+            {/* 🏫 考场信息（线下专用） */}
+            {isOffline && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🏫 考场信息</label>
+              {locations.map((loc: any, idx: number) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <input value={loc.name || ''} placeholder="考场名称"
+                    onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], name: e.target.value }; setLocations(arr); }}
+                    className="input flex-1" />
+                  <input type="number" value={loc.capacity || ''} placeholder="容量"
+                    onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], capacity: Number(e.target.value) }; setLocations(arr); }}
+                    className="input" style={{ width: '80px' }} />
+                  <button onClick={() => setLocations(locations.filter((_: any, i: number) => i !== idx))} className="text-xs" style={{ color: 'var(--verm)' }}>✕</button>
+                </div>
+              ))}
+              <button onClick={() => setLocations([...locations, { name: '', capacity: 30 }])} className="btn btn-outline btn-xs mt-1">+ 添加考场</button>
+            </div>}
             {/* 其他设置 */}
             <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
               <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>其他设置</label>

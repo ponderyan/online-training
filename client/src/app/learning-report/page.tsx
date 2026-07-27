@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import Loading from '@/components/Loading';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, PieChart, Pie, Cell,
@@ -112,16 +115,6 @@ function truncate(str: string, len: number): string {
   return str.length > len ? str.slice(0, len) + '...' : str;
 }
 
-// ── 空状态组件 ──
-function EmptySection({ icon, message }: { icon: string; message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12" style={{ color: 'var(--ink-300)' }}>
-      <div className="text-3xl mb-3">{icon}</div>
-      <p className="text-xs">{message}</p>
-    </div>
-  );
-}
-
 // ── 各等级进度条颜色 ──
 function masteryBarColor(level: string): string {
   return LEVEL_COLORS[level] || '#8b8174';
@@ -207,11 +200,7 @@ export default function LearningReportPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center py-32">
-          <div style={{ color: 'var(--ink-300)', fontSize: '1rem' }}>
-            小狐狸正在加载学习报告… 🦊
-          </div>
-        </div>
+        <Loading text="小狐狸正在加载学习报告…" />
       </AppLayout>
     );
   }
@@ -220,11 +209,7 @@ export default function LearningReportPage() {
   if (error) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center py-32">
-          <div className="text-lg mb-3" style={{ color: 'var(--verm)' }}>⚠️</div>
-          <p className="text-sm mb-4" style={{ color: 'var(--ink-500)' }}>{error}</p>
-          <button onClick={loadReport} className="btn btn-fox btn-sm">重新加载</button>
-        </div>
+        <div className="card"><ErrorCard message={error} onRetry={loadReport} /></div>
       </AppLayout>
     );
   }
@@ -283,6 +268,85 @@ export default function LearningReportPage() {
           <h1 className="page-title">📊 学习报告</h1>
           <p className="page-subtitle">学习数据全景 · 考试趋势 · 掌握分析</p>
         </div>
+
+        {/* ════════ 1.5 学习画像摘要 ════════ */}
+        {data && (() => {
+          // 从 practiceTrend 汇总练习数量与平均正确率
+          const practiceCount = practiceTrend.reduce(
+            (sum, d) => sum + (d.totalQuestions || 0), 0,
+          );
+          const totalCorrect = practiceTrend.reduce(
+            (sum, d) => sum + (d.correctCount || 0), 0,
+          );
+          const avgAccuracy = practiceCount > 0
+            ? Math.round((totalCorrect / practiceCount) * 100)
+            : (summary?.passRate ?? 0);
+          const weakName = weakAreas[0]?.kpName || '无';
+          return (
+            <div
+              className="card p-5"
+              style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🦊</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                    学习画像摘要
+                  </span>
+                </div>
+                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                  最近30天 · {data.recent30DayActive} 天活跃
+                </span>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">📅</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>累计学习天数</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
+                    {streak?.totalActiveDays ?? 0}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>天</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">✏️</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>练习数量</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
+                    {practiceCount}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>题</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">🎯</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>平均正确率</span>
+                  </div>
+                  <div className="stat-card-value" style={{ fontSize: '1.5rem', color: 'var(--fox)' }}>
+                    {avgAccuracy}
+                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>%</span>
+                  </div>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">⚠️</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>薄弱环节</span>
+                  </div>
+                  <div className="text-sm font-semibold truncate" style={{ color: weakAreas[0] ? 'var(--verm)' : 'var(--ink-400)' }} title={weakName}>
+                    {weakName}
+                  </div>
+                  {weakAreas[0] && (
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                      掌握率 {weakAreas[0].rate}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ════════ 2. 摘要卡片 ════════ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -508,7 +572,7 @@ export default function LearningReportPage() {
         <div className="card p-5">
           <h2 className="section-title">知识点掌握度</h2>
           {kpData.length === 0 ? (
-            <EmptySection icon="🧠" message="暂无知识点数据" />
+            <EmptyState icon="🧠" title="暂无知识点数据" size="small" />
           ) : (
             <div className="overflow-y-auto" style={{ maxHeight: 400 }}>
               <ResponsiveContainer width="100%" height={Math.max(kpData.length * 44, 120)}>
@@ -568,7 +632,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">学时分布</h2>
             {pieData.length === 0 ? (
-              <EmptySection icon="🕐" message="暂无学时数据" />
+              <EmptyState icon="🕐" title="暂无学时数据" size="small" />
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={220}>
@@ -606,7 +670,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">薄弱环节</h2>
             {topWeak.length === 0 ? (
-              <EmptySection icon="👍" message="暂无明显薄弱环节" />
+              <EmptyState icon="👍" title="暂无明显薄弱环节，继续保持" size="small" />
             ) : (
               <div className="space-y-4">
                 {topWeak.map((kp, idx) => (
@@ -689,7 +753,7 @@ export default function LearningReportPage() {
           <div className="card p-5">
             <h2 className="section-title">近7天学习明细</h2>
             {last7Days.length === 0 ? (
-              <EmptySection icon="📅" message="暂无学习记录" />
+              <EmptyState icon="📅" title="暂无学习记录" size="small" />
             ) : (
               <>
                 <div className="overflow-x-auto">

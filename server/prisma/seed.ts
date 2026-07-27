@@ -41,12 +41,121 @@ async function main() {
     console.log(`  角色: ${role.name} (${role.code})`);
   }
 
+  // ── 2.5 填充角色权限映射（role_permissions 表）
+  // 从 permissions.constants.ts 的 ROLE_PERMISSIONS 镜像
+  const ROLE_PERMISSIONS_MAP: Record<string, string[]> = {
+    SUPER_ADMIN: [
+      'system:config', 'system:logs', 'system:tenant', 'system:dictionary',
+      'question:create', 'question:edit', 'question:delete', 'question:import', 'question:audit',
+      'paper:view', 'paper:generate', 'paper:edit', 'paper:publish', 'paper:download', 'paper:answer_sheet', 'template:manage',
+      'exam:create', 'exam:edit', 'exam:delete', 'exam:assign', 'exam:view', 'exam:result:view', 'appeal:manage',
+      'proctor:view', 'proctor:force_submit', 'proctor:extend_time',
+      'grading:auto', 'grading:manual', 'grading:publish',
+      'student:view', 'student:create', 'student:import', 'student:edit', 'student:group', 'student:reset_pwd',
+      'report:view', 'report:export',
+      'material:upload', 'material:review', 'material:generate',
+      'notice:send', 'notice:manage', 'notification:view',
+      'cert:issue', 'cert:revoke', 'cert:view',
+      'program:view', 'program:create', 'program:edit', 'program:delete', 'program:enroll',
+      'agency:view', 'agency:view:students', 'agency:manage:students', 'agency:manage:certificates',
+      'agency:create', 'agency:edit', 'agency:delete',
+      'cert:approve', 'cert:reject', 'cert:application_view',
+      'transcript:view',
+      'instructor:view', 'instructor:create', 'instructor:edit', 'instructor:delete',
+      'course:view', 'course:create', 'course:edit', 'course:delete',
+      'schedule:view', 'schedule:create', 'schedule:edit', 'schedule:delete',
+      'org:view', 'org:create', 'org:edit', 'org:delete',
+      'role:view', 'role:create', 'role:edit', 'role:delete',
+      'learningHour:view', 'learningHour:manage', 'learningHour:approve',
+      'evaluation:view', 'evaluation:manage',
+      'aiConfig:view', 'aiConfig:manage',
+      'auditLog:view',
+      'bankPolicy:view', 'bankPolicy:manage',
+      'systemConfig:view', 'systemConfig:manage',
+      'knowledge:view', 'knowledge:manage',
+      'stats:view',
+    ],
+    ORG_ADMIN: [
+      'system:config', 'systemConfig:view', 'systemConfig:manage', 'system:logs', 'system:dictionary',
+      'question:create', 'question:edit', 'question:delete', 'question:import', 'question:audit',
+      'paper:view', 'paper:generate', 'paper:edit', 'paper:publish', 'paper:download', 'paper:answer_sheet', 'template:manage',
+      'exam:create', 'exam:edit', 'exam:delete', 'exam:assign', 'exam:view',
+      'proctor:view', 'proctor:force_submit', 'proctor:extend_time',
+      'grading:auto', 'grading:manual', 'grading:publish',
+      'student:create', 'student:import', 'student:edit', 'student:group',
+      'report:view', 'report:export',
+      'material:upload', 'material:review', 'material:generate',
+      'notice:send', 'notice:manage', 'notification:view',
+      'cert:issue', 'cert:revoke', 'cert:view',
+      'program:view', 'program:create', 'program:edit', 'program:delete', 'program:enroll',
+      'agency:view', 'agency:create', 'agency:edit', 'agency:delete',
+      'cert:approve', 'cert:reject', 'cert:application_view',
+      'transcript:view',
+      'instructor:view', 'instructor:create', 'instructor:edit', 'instructor:delete',
+      'course:view', 'course:create', 'course:edit', 'course:delete',
+      'schedule:view', 'schedule:create', 'schedule:edit', 'schedule:delete',
+      'org:view',
+      'role:view', 'role:create', 'role:edit', 'role:delete',
+      'learningHour:view', 'learningHour:manage', 'learningHour:approve',
+      'evaluation:view', 'evaluation:manage',
+      'aiConfig:view', 'aiConfig:manage',
+      'auditLog:view',
+      'knowledge:view', 'knowledge:manage',
+      'stats:view',
+    ],
+    LECTURER: [
+      'transcript:view', 'report:view', 'grading:manual', 'exam:result:view',
+      'course:view', 'notification:view', 'knowledge:view',
+    ],
+    PROCTOR: [
+      'proctor:view', 'proctor:force_submit', 'proctor:extend_time',
+    ],
+    STUDENT: [
+      'course:view', 'exam:view', 'learningHour:view', 'cert:view',
+      'notification:view', 'evaluation:view', 'report:view', 'knowledge:view',
+    ],
+    EXAM_OFFICER: [
+      'question:create', 'question:edit', 'question:delete', 'question:import', 'question:audit',
+      'paper:view', 'paper:generate', 'paper:edit', 'paper:publish', 'paper:download', 'paper:answer_sheet', 'template:manage',
+      'exam:view', 'exam:create', 'exam:edit', 'exam:delete', 'exam:assign', 'exam:result:view',
+      'grading:auto', 'grading:manual', 'grading:publish',
+      'proctor:view', 'proctor:force_submit', 'proctor:extend_time',
+      'appeal:manage',
+      'cert:view', 'cert:issue', 'cert:revoke', 'cert:application_view',
+      'material:upload', 'material:review', 'material:generate',
+      'report:view', 'report:export', 'transcript:view', 'notification:view',
+      'knowledge:view', 'knowledge:manage',
+    ],
+    AGENCY_ADMIN: [
+      'agency:view', 'agency:view:students', 'agency:manage:students', 'agency:manage:certificates',
+      'learningHour:manage', 'notification:view',
+    ],
+    AUDITOR: [
+      'exam:result:view', 'cert:view', 'cert:application_view', 'transcript:view',
+      'program:view', 'schedule:view', 'report:view', 'report:export',
+      'auditLog:view', 'learningHour:view', 'evaluation:view',
+    ],
+  };
+
+  for (const r of roles) {
+    const perms = ROLE_PERMISSIONS_MAP[r.code];
+    if (!perms) continue;
+    for (const perm of perms) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permission: { roleId: r.id, permission: perm } },
+        update: { isGranted: true },
+        create: { roleId: r.id, permission: perm, isGranted: true },
+      });
+    }
+  }
+  console.log('✅ 角色权限映射: 已填充所有 8 个角色的权限点');
+
   // ── 3. 创建默认管理员用户 ──
-  const passwordHash = await bcrypt.hash('admin_temp', 10);
+  const passwordHash = await bcrypt.hash('123456', 10);
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: { passwordHash },
-    create: { username: 'admin', passwordHash, displayName: '管理员', orgId: org.id },
+    update: { passwordHash, email: '747097458@qq.com', phone: '13301240496' },
+    create: { username: 'admin', passwordHash, displayName: '管理员', orgId: org.id, email: '747097458@qq.com', phone: '13301240496' },
   });
   const superRole = roles.find(r => r.code === 'SUPER_ADMIN')!;
   await prisma.userRoleAssignment.upsert({
@@ -54,7 +163,7 @@ async function main() {
     update: {},
     create: { userId: admin.id, roleId: superRole.id },
   });
-  console.log(`✅ 管理员: ${admin.displayName} (admin / admin_temp)`);
+  console.log(`✅ 管理员: ${admin.displayName} (admin / 123456)`);
 
   // ── 4. 数据字典 ──
   const dicts = [
@@ -585,6 +694,66 @@ async function main() {
   }
   console.log(`✅ SystemConfig: ${configDefaults.length} 项`);
 
+  // ── 消息中心配置 ──
+  const msgConfigs = [
+    { key: 'email_smtp_host', value: '', desc: 'SMTP服务器地址', group: 'email', inputType: 'string', options: null },
+    { key: 'email_smtp_port', value: '587', desc: 'SMTP端口', group: 'email', inputType: 'number', options: null },
+    { key: 'email_user', value: '', desc: 'SMTP用户名', group: 'email', inputType: 'string', options: null },
+    { key: 'email_pass', value: '', desc: 'SMTP密码', group: 'email', inputType: 'password', options: null },
+    { key: 'email_from', value: 'noreply@foxlearn.cn', desc: '发件人地址', group: 'email', inputType: 'string', options: null },
+    { key: 'sms_enabled', value: 'false', desc: '是否启用短信', group: 'sms', inputType: 'boolean', options: null },
+  ];
+  for (const cfg of msgConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
+      create: cfg,
+    });
+  }
+  console.log(`✅ 消息中心配置: ${msgConfigs.length} 项`);
+
+  // ── 组织编码规则配置（Phase 2）──
+  const orgCodeConfigs = [
+    { key: 'org_code_separator', value: '-', desc: '组织编码层级分隔符', group: 'general', inputType: 'text', options: null },
+    { key: 'org_code_auto_generate', value: 'true', desc: '创建组织时自动生成编码', group: 'general', inputType: 'boolean', options: null },
+    { key: 'org_code_include_level', value: 'true', desc: '编码是否体现层级（父编码+子缩写）', group: 'general', inputType: 'boolean', options: null },
+  ];
+  for (const cfg of orgCodeConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
+      create: cfg,
+    });
+  }
+  console.log(`✅ 组织编码配置: ${orgCodeConfigs.length} 项`);
+
+  // ── 组织编码缩写词典（Phase 2）──
+  const abbreviations = [
+    { keyword: '评估部', abbr: 'PG', category: 'department', sortOrder: 1 },
+    { keyword: '创新部', abbr: 'CX', category: 'department', sortOrder: 2 },
+    { keyword: '培训部', abbr: 'PX', category: 'department', sortOrder: 3 },
+    { keyword: '技术部', abbr: 'JS', category: 'department', sortOrder: 4 },
+    { keyword: '市场部', abbr: 'SC', category: 'department', sortOrder: 5 },
+    { keyword: '运营部', abbr: 'YY', category: 'department', sortOrder: 6 },
+    { keyword: '综合部', abbr: 'ZH', category: 'department', sortOrder: 7 },
+    { keyword: '财务部', abbr: 'CW', category: 'department', sortOrder: 8 },
+    { keyword: '人事部', abbr: 'RS', category: 'department', sortOrder: 9 },
+    { keyword: '研发部', abbr: 'YF', category: 'department', sortOrder: 10 },
+    { keyword: '考务部', abbr: 'KW', category: 'department', sortOrder: 11 },
+    { keyword: '认证部', abbr: 'RZ', category: 'department', sortOrder: 12 },
+    { keyword: '信息化', abbr: 'XXH', category: 'business', sortOrder: 20 },
+    { keyword: '数智化', abbr: 'SZH', category: 'business', sortOrder: 21 },
+    { keyword: '标准化', abbr: 'BZH', category: 'business', sortOrder: 22 },
+  ];
+  for (const abbr of abbreviations) {
+    await prisma.orgAbbreviation.upsert({
+      where: { keyword: abbr.keyword },
+      update: { abbr: abbr.abbr, category: abbr.category, sortOrder: abbr.sortOrder },
+      create: abbr,
+    });
+  }
+  console.log(`✅ 组织编码缩写词典: ${abbreviations.length} 条`);
+
   // ═══════════════════════════════════════
   // 学时类型字典
   // ═══════════════════════════════════════
@@ -686,6 +855,8 @@ async function main() {
 
     console.log(`✅ 知识点树: ${kpData.length + childData.length} 个节点`);
   }
+
+
 
   // ── 最终输出 ──
   console.log('\n🎉 种子数据初始化完成!');

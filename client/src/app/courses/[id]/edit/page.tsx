@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 export default function EditCoursePage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,7 +33,7 @@ export default function EditCoursePage() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!form.name) { alert('请输入课程名称'); return; }
+    if (!form.name) { toast.warning('请输入课程名称'); return; }
     setSaving(true);
     try {
       await api.courses.update(Number(params.id), {
@@ -42,7 +44,7 @@ export default function EditCoursePage() {
         isReviewed: form.type === 'CUSTOM' ? form.isReviewed : true,
       });
       router.push('/courses');
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 

@@ -122,6 +122,9 @@ export default function ExamResult() {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showScoreChanges, setShowScoreChanges] = useState(false);
+  const [scoreChanges, setScoreChanges] = useState<any[]>([]);
+  const [loadingChanges, setLoadingChanges] = useState(false);
   const [kpAnalysis, setKpAnalysis] = useState<KpAnalysisData | null>(null);
   const [recommendations, setRecommendations] = useState<any>(null);
   const [maxRecHeight, setMaxRecHeight] = useState(0);
@@ -183,6 +186,19 @@ export default function ExamResult() {
     </div>
   );
   if (!result) return null;
+
+  // 加载成绩变动记录（脱敏版，不含操作人）
+  const loadScoreChanges = async () => {
+    setLoadingChanges(true);
+    setShowScoreChanges(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/student/scores/${params.id}/changes`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setScoreChanges(data.changes || []);
+    } catch { setScoreChanges([]); }
+    setLoadingChanges(false);
+  };
 
   const correctCount = result.answers.filter(a => a.isCorrect === true).length;
   const wrongCount = result.answers.filter(a => a.isCorrect === false).length;
@@ -271,6 +287,10 @@ export default function ExamResult() {
                 <button onClick={() => setShowPrintModal(true)}
                   className="btn btn-sm text-xs px-3 py-1.5 bg-[var(--fox)] text-white border-none cursor-pointer">
                   🖨️ 打印成绩单
+                </button>
+                <button onClick={loadScoreChanges}
+                  className="btn btn-sm text-xs px-3 py-1.5 bg-[var(--paper-dark)] text-[var(--ink-500)] border border-[var(--ink-200)] cursor-pointer">
+                  📊 成绩变动记录
                 </button>
                 {showCertEntry && (
                   <button onClick={() => window.location.href = '/my-certificates'}
@@ -563,6 +583,55 @@ export default function ExamResult() {
         onClose={() => setShowPrintModal(false)}
         result={result}
       />
+
+      {/* 成绩变动记录 Modal（脱敏版，不含操作人） */}
+      {showScoreChanges && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => setShowScoreChanges(false)}>
+          <div className="rounded-2xl p-6 max-w-md w-[90%] max-h-[80vh] overflow-y-auto" style={{ background: 'var(--paper-bright, #fff)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold m-0" style={{ color: 'var(--ink-700)' }}>📊 成绩变动记录</h3>
+              <button onClick={() => setShowScoreChanges(false)}
+                className="bg-transparent border-none cursor-pointer text-lg" style={{ color: 'var(--ink-300)' }}>✕</button>
+            </div>
+
+            {loadingChanges ? (
+              <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+            ) : scoreChanges.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-3xl mb-3">📭</p>
+                <p className="text-sm" style={{ color: 'var(--ink-400)' }}>暂无成绩变动记录</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>成绩未被调整过</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {scoreChanges.map((c, i) => (
+                  <div key={i} className="p-3 rounded-lg" style={{ background: 'var(--paper-dark, #f5f0eb)' }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-mono font-bold" style={{ color: 'var(--fox)' }}>
+                        {c.fromScore ?? '?'} → {c.toScore ?? '?'}
+                      </span>
+                      <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                        {new Date(c.timestamp).toLocaleString('zh-CN')}
+                      </span>
+                    </div>
+                    {c.reason && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--ink-500)' }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded mr-1" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{c.action}</span>
+                        {c.reason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+                <p className="text-[10px] text-center pt-2" style={{ color: 'var(--ink-300)' }}>
+                  ※ 仅展示分数变化与原因，不显示操作人信息
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

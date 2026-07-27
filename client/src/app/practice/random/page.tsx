@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
 import PracticePlayer from '@/components/practice-player';
 import { api } from '@/lib/api';
@@ -9,7 +9,7 @@ const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
 };
-const ALL_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK'];
+const ALL_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
 const COUNT_OPTIONS = [5, 10, 20, 30];
 
 export default function RandomPracticePage() {
@@ -20,13 +20,17 @@ export default function RandomPracticePage() {
   const [types, setTypes] = useState<string[]>([...ALL_TYPES]);
   const [onlyWrong, setOnlyWrong] = useState(false);
 
-  useState(() => { api.subjects.list().then(setSubjects).catch(() => {}); });
+  useEffect(() => { api.subjects.listActive().then(setSubjects).catch(() => {}); }, []);
 
   if (!started) {
     return (
       <AppLayout>
         <div className="max-w-lg mx-auto py-16">
-          <h1 className="page-title mb-6 text-center">🔀 随机练习</h1>
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => window.history.back()} className="btn btn-outline btn-sm">← 返回</button>
+            <h1 className="page-title mb-0">🔀 随机练习</h1>
+            <span className="w-16" />
+          </div>
           <div className="card p-5 space-y-4">
             <div>
               <label className="text-xs font-medium mb-1 block text-[var(--ink-500)]">科目</label>
@@ -72,7 +76,7 @@ export default function RandomPracticePage() {
   const loadQuestions = async () => {
     const params: Record<string, any> = { random: 'true', count };
     if (subjectId) params.subjectId = subjectId;
-    if (types.length < 4) params.types = types.join(',');
+    if (types.length < ALL_TYPES.length) params.types = types.join(',');
     if (onlyWrong) params.onlyWrong = 'true';
     return api.practice.questions(params);
   };

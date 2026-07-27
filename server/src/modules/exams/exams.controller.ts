@@ -1,14 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, ParseIntPipe, ForbiddenException } from '@nestjs/common';
 import { ExamsService } from './exams.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Controller('api/exams')
 export class ExamsController {
-  constructor(private service: ExamsService) {}
+  constructor(private service: ExamsService, private systemConfig: SystemConfigService) {}
 
   @Get()
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_VIEW)
   findAll(
     @Req() req: any,
     @Query('page') page?: string,
@@ -17,11 +18,12 @@ export class ExamsController {
     @Query('status') status?: string,
     @Query('paperId') paperId?: string,
     @Query('programId') programId?: string,
+    @Query('examMode') examMode?: string,
   ) {
     return this.service.findAll({
       page: page ? parseInt(page) : 1,
       pageSize: pageSize ? parseInt(pageSize) : 20,
-      keyword, status,
+      keyword, status, examMode,
       paperId: paperId ? parseInt(paperId) : undefined,
       programId: programId ? parseInt(programId) : undefined,
       userOrgId: req.user?.orgId ?? null,
@@ -30,7 +32,7 @@ export class ExamsController {
   }
 
   @Get(':id')
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
   findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.findOne(id, req.user?.orgId ?? null, req.user?.roles);
   }
@@ -45,9 +47,22 @@ export class ExamsController {
     programId?: number; passingScore?: number;
     timeMode?: string; paperMode?: string;
     tabSwitchLimit?: number; copyProtection?: boolean; autoSaveInterval?: number;
+    scorePublishMode?: string;
+    publishAt?: string;
+    examMode?: string;
+    locations?: any;
   }, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    return this.service.create({ ...data, createdBy: userId, orgId: req.user?.orgId ?? null });
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+    // 机构角色创建考试 → 检查 allow_org_own_bank 开关
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
+      return this.systemConfig.getBoolean('allow_org_own_bank').then(allow => {
+        if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法创建考试');
+        return this.service.create({ ...data, createdBy: userId, orgId: userOrgId });
+      });
+    }
+    return this.service.create({ ...data, createdBy: userId, orgId: userOrgId });
   }
 
   @Put(':id')
@@ -75,7 +90,7 @@ export class ExamsController {
   }
 
   @Get(':id/students')
-  @RequirePermission(Permissions.EXAM_CREATE)
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
   getStudents(@Param('id', ParseIntPipe) id: number) {
     return this.service.getStudents(id);
   }
@@ -87,5 +102,17 @@ export class ExamsController {
     @Body() data: { studentIds: number[] },
   ) {
     return this.service.addStudents(id, data.studentIds);
+  }
+
+  @Get(':id/grading-progress')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  getGradingProgress(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getGradingProgress(id);
+  }
+
+  @Get(':id/sessions/status-summary')
+  @RequirePermission(Permissions.GRADING_MANUAL)
+  getSessionStatusSummary(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getSessionStatusSummary(id);
   }
 }

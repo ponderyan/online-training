@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import FoxLogo from '@/components/fox-logo';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
 
 interface ExamItem {
   id: number;
@@ -22,6 +25,7 @@ interface ExamItem {
   isPassed: boolean | null;
   scoringStatus: string | null;
   submittedAt: string | null;
+  lateEntryMinutes?: number | null;
 }
 
 function formatRemainingTime(seconds?: number): string {
@@ -60,19 +64,31 @@ export default function ExamList() {
   const router = useRouter();
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
+    setLoading(true);
+    setError(null);
     fetch('/api/student/exams', {
       headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(data => {
+    }).then(r => {
+      if (!r.ok) throw new Error('加载失败');
+      return r.json();
+    }).then(data => {
       setExams(Array.isArray(data) ? data : []);
+    }).catch(e => {
+      setError(e.message || '加载考试列表失败');
     }).finally(() => setLoading(false));
-  }, [router]);
+  };
 
+  useEffect(() => { load(); }, []);
+
+  const now = new Date();
   const activeExams = exams.filter(e => e.sessionStatus === 'ACTIVE');
-  const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE');
+  const pendingExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE' && !(e.endTime && now > new Date(e.endTime)));
+  const missedExams = exams.filter(e => !e.submittedAt && e.sessionStatus !== 'ACTIVE' && e.endTime && now > new Date(e.endTime));
   const historyExams = exams.filter(e => e.submittedAt);
 
   const sortedActive = [...activeExams].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -80,13 +96,23 @@ export default function ExamList() {
   const sortedHistory = [...historyExams].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'var(--paper)' }}>
-      <div className="text-4xl mb-4 animate-pulse">🦊</div>
-      <p style={{ color: 'var(--ink-300)' }}>小狐狸正在加载…</p>
+    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+      <div style={styles.container}>
+        <div className="card" style={{ marginBottom: 40 }}><div className="card-body"><SkeletonList count={3} /></div></div>
+        <div className="card"><div className="card-body"><SkeletonList count={4} /></div></div>
+      </div>
     </div>
   );
 
-  const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0;
+  if (error) return (
+    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+      <div style={styles.container}>
+        <div className="card"><ErrorCard message={error} onRetry={load} /></div>
+      </div>
+    </div>
+  );
+
+  const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0 || missedExams.length > 0;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
@@ -107,12 +133,13 @@ export default function ExamList() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📝 当前考试</h2>
           {!hasCurrent ? (
-            <p style={styles.emptyText}>暂无当前考试</p>
+            <EmptyState icon="📝" title="暂无当前考试" description="有新的考试时会在这里提醒你" />
           ) : (
             <>
               {sortedActive.map(exam => (
                 <div key={exam.id} style={{
-                  background: 'white', borderRadius: '12px', border: '2px solid #e87a30',
+                  background: 'white', borderRadius: '12px',
+                  border: exam.accessType === 'UNIFIED' ? '1px solid #e87a30' : '2px solid #e87a30',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
@@ -122,20 +149,28 @@ export default function ExamList() {
                     </div>
                     <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                      {exam.paperName} · ⏱ {formatRemainingTime(exam.remainingTime)}
+                      {exam.paperName}
+                      {exam.accessType === 'UNIFIED'
+                        ? ` · 📅 ${new Date(exam.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}-${new Date(exam.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+                        : ` · ⏱ ${formatRemainingTime(exam.remainingTime)}`}
                     </p>
                   </div>
                   <Link href={`/exam/take/${exam.id}`} style={{
                     padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
                     fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
-                  }}>继续答题 →</Link>
+                  }}>{exam.accessType === 'UNIFIED' ? '返回考场 →' : '继续答题 →'}</Link>
                 </div>
               ))}
-              {sortedPending.map(exam => (
+              {sortedPending.map(exam => {
+                const now = new Date();
+                const notStarted = exam.startTime && now < new Date(exam.startTime);
+                const ended = exam.endTime && now > new Date(exam.endTime);
+                return (
                 <div key={exam.id} style={{
                   background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  opacity: ended ? 0.6 : 1,
                 }}>
                   <div>
                     <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
@@ -144,21 +179,53 @@ export default function ExamList() {
                     </p>
                     <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{exam.paperName}</p>
                   </div>
-                  <Link href={`/exam/take/${exam.id}`} style={{
-                    padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
-                    fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
-                  }}>进入考试 →</Link>
+                  {notStarted ? (
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
+                  ) : ended ? (
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#fef2f2', color: '#ef4444', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
+                  ) : (
+                    <Link href={`/exam/take/${exam.id}`} style={{
+                      padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                      fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
+                    }}>进入考试 →</Link>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </>
           )}
         </section>
+
+        {/* ⚠️ 已缺考 */}
+        {missedExams.length > 0 && (
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>⚠️ 已缺考</h2>
+            {missedExams.map(exam => (
+              <div key={exam.id} style={{
+                background: 'white', borderRadius: '12px', border: '1px solid #fecaca',
+                padding: '16px 24px', marginBottom: '8px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                opacity: 0.8,
+              }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
+                  <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                    ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 截止 {new Date(exam.endTime).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <span style={{ padding: '6px 14px', borderRadius: '8px', background: '#fef2f2', color: '#dc2626', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+                  未参加
+                </span>
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* 📋 历史记录 */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📋 历史记录</h2>
           {sortedHistory.length === 0 ? (
-            <p style={styles.emptyText}>暂无历史记录</p>
+            <EmptyState icon="📋" title="还没有参加过考试" description="完成考试后，历史记录会出现在这里" />
           ) : (
             sortedHistory.map(exam => {
               const isPublished = exam.scoringStatus === 'PUBLISHED' || exam.scoringStatus === 'ADJUSTED';

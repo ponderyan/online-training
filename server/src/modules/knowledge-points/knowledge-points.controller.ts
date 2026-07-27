@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
 import { KnowledgePointsService } from './knowledge-points.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
@@ -9,8 +9,12 @@ export class KnowledgePointsController {
 
   @Get('knowledge-points')
   @RequirePermission(P.KNOWLEDGE_VIEW)
-  getTree(@Query('subjectId') subjectId?: string) {
-    return this.service.getTree(subjectId ? parseInt(subjectId) : undefined);
+  getTree(@Query('subjectId') subjectId?: string, @Req() req?: any) {
+    return this.service.getTree(
+      subjectId ? parseInt(subjectId) : undefined,
+      req.user?.orgId ?? null,
+      req.user?.roles || [],
+    );
   }
 
   @Get('knowledge-points/:id')
@@ -19,15 +23,21 @@ export class KnowledgePointsController {
 
   @Post('knowledge-points')
   @RequirePermission(P.KNOWLEDGE_MANAGE)
-  create(@Body() data: any) { return this.service.create(data); }
+  create(@Body() data: any, @Req() req: any) {
+    return this.service.create(data, req.user?.orgId ?? null, req.user?.roles || []);
+  }
 
   @Patch('knowledge-points/:id')
   @RequirePermission(P.KNOWLEDGE_MANAGE)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: any, @Req() req: any) {
+    return this.service.update(id, data, req.user?.orgId ?? null, req.user?.roles || []);
+  }
 
   @Delete('knowledge-points/:id')
   @RequirePermission(P.KNOWLEDGE_MANAGE)
-  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.remove(id, req.user?.orgId ?? null, req.user?.roles || []);
+  }
 
   @Get('questions/:id/knowledge-points')
   @RequirePermission(P.KNOWLEDGE_VIEW)

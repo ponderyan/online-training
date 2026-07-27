@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ export default function ChapterStructureTab({
   const [splitChapterId, setSplitChapterId] = useState<number | null>(null);
   const [splitPosition, setSplitPosition] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  const toast = useToast();
   const isLocked = chapters.some(c => c.status === 'STRUCTURED');
 
   // ── 展开/折叠章节正文 ──
@@ -69,7 +71,7 @@ export default function ChapterStructureTab({
       await api.materials.updateChapter(materialId, chId, { title: editTitleValue.trim() });
       setEditingTitle(null);
       onConfirm();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setLoadingChapter(null);
   };
 
@@ -81,7 +83,7 @@ export default function ChapterStructureTab({
     try {
       await api.materials.deleteChapter(materialId, chId);
       onConfirm();
-    } catch (e: any) { alert('删除失败：' + e.message); }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
     setLoadingChapter(null);
   };
 
@@ -99,7 +101,7 @@ export default function ChapterStructureTab({
       await api.materials.mergeChapters(materialId, { chapterIds: ids });
       setSelectedIds(new Set());
       onConfirm();
-    } catch (e: any) { alert('合并失败：' + e.message); }
+    } catch (e: any) { toast.error('合并失败：' + e.message); }
     setLoadingChapter(null);
   };
 
@@ -113,7 +115,7 @@ export default function ChapterStructureTab({
       setSplitChapterId(null);
       setSplitPosition(0);
       onConfirm();
-    } catch (e: any) { alert('分割失败：' + e.message); }
+    } catch (e: any) { toast.error('分割失败：' + e.message); }
     setLoadingChapter(null);
   };
 
@@ -124,7 +126,7 @@ export default function ChapterStructureTab({
     try {
       await api.materials.confirmStructure(materialId);
       onConfirm();
-    } catch (e: any) { alert('确认失败：' + e.message); }
+    } catch (e: any) { toast.error('确认失败：' + e.message); }
     setConfirming(false);
   };
 

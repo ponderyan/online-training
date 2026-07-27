@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, ConflictException } from '@nestjs/common';
+import { Injectable, ForbiddenException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import * as bcrypt from 'bcryptjs';
 
@@ -9,25 +9,62 @@ const AGENCY_MANAGEABLE_ROLES = ['PROCTOR', 'LECTURER', 'STUDENT'];
 export class EnrollmentAgenciesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(user: any, params: { page?: number; keyword?: string }) {
+  async findAll(user: any, params: { page?: number; keyword?: string; organizationId?: number }) {
     const page = params.page || 1;
     const where: any = {};
     if (params.keyword) where.name = { contains: params.keyword };
+    if (params.organizationId) where.organizationId = params.organizationId;
     // AGENCY_ADMIN 只看自己的机构
     if (user?.roles?.includes('AGENCY_ADMIN') && user.primaryAgencyId) {
       where.id = user.primaryAgencyId;
     }
     const [items, total] = await Promise.all([
-      this.prisma.enrollmentAgency.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * 20, take: 20 }),
+      this.prisma.enrollmentAgency.findMany({
+        where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * 20, take: 20,
+        include: { organization: { select: { id: true, name: true } }, _count: { select: { primaryStudents: true, enrollments: true } } },
+      }),
       this.prisma.enrollmentAgency.count({ where }),
     ]);
     return { items, total, page, pageSize: 20, totalPages: Math.ceil(total / 20) };
   }
 
-  async findOne(id: number) { return this.prisma.enrollmentAgency.findUnique({ where: { id } }); }
-  async create(data: any) { return this.prisma.enrollmentAgency.create({ data }); }
-  async update(id: number, data: any) { return this.prisma.enrollmentAgency.update({ where: { id }, data }); }
-  async delete(id: number) { return this.prisma.enrollmentAgency.delete({ where: { id } }); }
+  async findOne(id: number) {
+    const agency = await this.prisma.enrollmentAgency.findUnique({
+      where: { id },
+      include: { organization: { select: { id: true, name: true } }, _count: { select: { primaryStudents: true, enrollments: true } } },
+    });
+    if (!agency) throw new NotFoundException(`招生机构 ${id} 不存在`);
+    return agency;
+  }
+
+  async create(data: { name: string; shortName?: string; contactPerson?: string; contactPhone?: string; contactEmail?: string; remark?: string; organizationId?: number }) {
+    // 校验组织存在性
+    if (data.organizationId) {
+      const org = await this.prisma.organization.findUnique({ where: { id: data.organizationId } });
+      if (!org) throw new BadRequestException(`组织 ${data.organizationId} 不存在`);
+    }
+    return this.prisma.enrollmentAgency.create({ data });
+  }
+
+  async update(id: number, data: { name?: string; shortName?: string; contactPerson?: string; contactPhone?: string; contactEmail?: string; remark?: string; organizationId?: number; isActive?: boolean }) {
+    await this.findOne(id);
+    if (data.organizationId) {
+      const org = await this.prisma.organization.findUnique({ where: { id: data.organizationId } });
+      if (!org) throw new BadRequestException(`组织 ${data.organizationId} 不存在`);
+    }
+    return this.prisma.enrollmentAgency.update({ where: { id }, data });
+  }
+
+  async delete(id: number) {
+    const agency = await this.findOne(id);
+    const issues: string[] = [];
+    if (agency._count.primaryStudents > 0) issues.push(`${agency._count.primaryStudents} 名学员`);
+    if (agency._count.enrollments > 0) issues.push(`${agency._count.enrollments} 条招生记录`);
+    if (issues.length > 0) {
+      throw new ConflictException(`该机构下还有 ${issues.join('、')}，无法删除。请先迁移或清理关联数据。`);
+    }
+    return this.prisma.enrollmentAgency.delete({ where: { id } });
+  }
 
   async findStudents(agencyId: number, query: { page?: number; keyword?: string }) {
     const where: any = { primaryAgencyId: agencyId };
@@ -96,7 +133,11 @@ export class EnrollmentAgenciesService {
     const role = await this.prisma.role.findUnique({ where: { code: data.roleCode } });
     if (!role) throw new ForbiddenException('角色不存在');
 
-    // 创建用户
+    // 获取机构所属组织（联动 orgId）
+    const agency = await this.prisma.enrollmentAgency.findUnique({ where: { id: agencyId } });
+    if (!agency) throw new NotFoundException(`招生机构 ${agencyId} 不存在`);
+
+    // 创建用户（自动继承机构的 organizationId）
     const passwordHash = await bcrypt.hash('123456', 10);
     const user = await this.prisma.user.create({
       data: {
@@ -105,6 +146,7 @@ export class EnrollmentAgenciesService {
         displayName: data.displayName,
         phone: data.phone || null,
         primaryAgencyId: agencyId,
+        orgId: agency.organizationId || null,
       },
     });
 

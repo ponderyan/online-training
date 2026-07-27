@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const LEVEL_NAMES: Record<string, string> = { JUNIOR: '初级', MIDDLE: '中级', SENIOR: '高级', EXPERT: '专家' };
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '正常', INACTIVE: '停用', SUSPENDED: '挂起' };
@@ -13,33 +18,39 @@ const TYPE_COLORS: Record<string, string> = { INTERNAL: '#1565c0', EXTERNAL: '#e
 
 export default function InstructorsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [instructors, setInstructors] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterWorkUnit, setFilterWorkUnit] = useState('');
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: '1', pageSize: '50' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
       if (filterType) params.type = filterType;
       if (filterWorkUnit) params.workUnit = filterWorkUnit;
       const data = await api.instructors.list(params);
       setInstructors(data.items || []);
       setTotal(data.total || 0);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载讲师列表失败');
+    }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定停用该讲师吗？')) return;
-    try { await api.instructors.delete(id); load(); } catch (e: any) { alert('操作失败：' + e.message); }
+    try { await api.instructors.delete(id); toast.success('讲师已停用'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   return (
@@ -70,12 +81,11 @@ export default function InstructorsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={6} cols={6} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : instructors.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>
-          <p className="text-4xl mb-4">👨‍🏫</p>
-          <p>暂无讲师</p>
-        </div>
+        <div className="card"><EmptyState icon="👨‍🏫" title="暂无讲师" description="添加讲师后，可分派阅卷和授课" /></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <table className="list-table">

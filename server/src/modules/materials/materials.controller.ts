@@ -72,9 +72,11 @@ export class MaterialsController {
   }))
   upload(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { subjectId: string; name?: string; batchNote?: string; createdBy: string },
+    @Body() body: { subjectId: string; name?: string; batchNote?: string },
+    @Req() req: any,
   ) {
-    return this.service.upload(file, body);
+    // P1-1: createdBy 从认证用户取，不信任客户端
+    return this.service.upload(file, { ...body, createdBy: String(req.user.id) });
   }
 
   @Put('questions/:id/review')

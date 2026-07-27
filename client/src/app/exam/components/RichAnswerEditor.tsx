@@ -43,10 +43,11 @@ export default function RichAnswerEditor({
 
       // Handle changes
       quill.on('text-change', () => {
-        const html = quill.root.innerHTML;
-        if (html.length > maxChars * 2) {
-          // Rough char limit enforcement
-          quill.root.innerHTML = html.slice(0, maxChars * 2);
+        // 基于纯文本长度限制，避免截断 HTML 标签
+        const textLen = quill.getText().length - 1; // Quill 末尾有 
+
+        if (textLen > maxChars) {
+          quill.deleteText(maxChars, textLen - maxChars);
         }
         onChange(quill.root.innerHTML === '<p><br></p>' ? '' : quill.root.innerHTML);
       });

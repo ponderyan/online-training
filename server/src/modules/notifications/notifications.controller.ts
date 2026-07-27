@@ -51,17 +51,54 @@ export class NotificationsController {
     return { success: true };
   }
 
-  /** 管理员发送消息 */
+  /** 管理员发送消息（支持多通道） */
   @Post('send')
   @RequirePermission(Permissions.NOTICE_MANAGE)
-  async sendMessage(@Body() dto: { userIds: number[]; title: string; message: string; type: string }, @Req() req: any) {
+  async sendMessage(@Body() dto: {
+    userIds: number[];
+    title: string;
+    message: string;
+    type: string;
+    sendInApp?: boolean;
+    sendEmail?: boolean;
+    sendSms?: boolean;
+  }, @Req() req: any) {
     const admin = (req as any).user;
     if (!admin?.id) return { success: false, error: '未登录' };
     if (!dto.userIds?.length || !dto.title || !dto.message) return { success: false, error: '参数不完整' };
 
-    await this.service.createMany(dto.userIds, dto.type as any, dto.title, dto.message);
+    const result = await this.service.createMany(
+      dto.userIds, dto.type as any, dto.title, dto.message,
+      undefined, undefined,
+      { inApp: dto.sendInApp !== false, email: dto.sendEmail, sms: dto.sendSms },
+      admin.id,
+    );
 
-    return { success: true, sentCount: dto.userIds.length };
+    return {
+      success: result.sent > 0,
+      sentCount: result.sent,
+      failedCount: result.failed,
+      batchId: result.batchId,
+    };
+  }
+
+  /** 查询管理员发送记录 */
+  @Get('sent-history')
+  @RequirePermission(Permissions.NOTICE_MANAGE)
+  async getSentHistory(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    const admin = (req as any).user;
+    if (!admin?.id) return { items: [], total: 0 };
+    return this.service.getSentHistory(admin.id, {
+      page: page ? parseInt(page) : 1,
+      pageSize: pageSize ? parseInt(pageSize) : 20,
+    });
+  }
+
+  /** 查询某条消息的渠道送达详情 */
+  @Get(':id/channels')
+  @RequirePermission(Permissions.NOTICE_MANAGE)
+  async getNotificationChannels(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getChannelsByNotificationId(id);
   }
 
   /** 获取消息发送候选用户 */
@@ -69,12 +106,10 @@ export class NotificationsController {
   @RequirePermission(Permissions.NOTICE_MANAGE)
   async getCandidates(
     @Query('role') role?: string,
-    @Query('batchId') batchId?: string,
     @Query('search') search?: string,
   ) {
     const where: any = { isActive: true };
     if (role) where.roleAssignments = { some: { role: { code: role } } };
-    if (batchId) where.batchId = parseInt(batchId);
     if (search) {
       where.OR = [
         { displayName: { contains: search } },

@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import ImportModal from './import-modal';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
+import { validatePhone, validateEmail } from '@/lib/validators';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -21,13 +28,17 @@ const ROLE_BGS: Record<string, string> = {
 
 export default function StudentsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [students, setStudents] = useState<any[]>([]);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<{id:number;name:string} | null>(null);
   const [groups, setGroups] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterGroup, setFilterGroup] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
@@ -58,16 +69,19 @@ export default function StudentsPage() {
 
   const load = async (p: number = page) => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
-      if (keyword) params.keyword = keyword;
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterGroup) params.groupId = filterGroup;
       const data = await api.students.list(params);
       setStudents(data.items);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载学员列表失败');
+    }
     setLoading(false);
   };
 
@@ -81,7 +95,7 @@ export default function StudentsPage() {
   useEffect(() => {
     const timer = setTimeout(() => { load(1); }, 400);
     return () => clearTimeout(timer);
-  }, [keyword, filterGroup]);
+  }, [debouncedKeyword, filterGroup]);
 
   const resetForm = () => setForm({
     username: '', displayName: '', password: '123456',
@@ -90,7 +104,11 @@ export default function StudentsPage() {
   });
 
   const handleSave = async () => {
-    if (!form.username || !form.displayName) { alert('用户名和姓名不能为空'); return; }
+    if (!form.username || !form.displayName) { toast.warning('用户名和姓名不能为空'); return; }
+    const phoneErr = validatePhone(form.phone);
+    if (phoneErr) { toast.warning(phoneErr); return; }
+    const emailErr = validateEmail(form.email);
+    if (emailErr) { toast.warning(emailErr); return; }
     setSaving(true);
     try {
       const payload = { ...form, roles: selectedRolesStu, groupId: form.groupId ? Number(form.groupId) : undefined };
@@ -99,8 +117,9 @@ export default function StudentsPage() {
       } else {
         await api.students.create(payload);
       }
+      toast.success(editStudent ? '学员信息已更新' : '学员已添加');
       setShowAdd(false); setEditStudent(null); resetForm(); load();
-    } catch (e: any) { alert('保存失败：' + e.message); }
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
     setSaving(false);
   };
 
@@ -115,12 +134,13 @@ export default function StudentsPage() {
       const parts = line.split(/[,，\t]/).map((s: string) => s.trim());
       return { username: parts[0], displayName: parts[1], password: parts[2] || '123456', studentNumber: parts[3] || '', phone: parts[4] || '', organization: parts[5] || '' };
     }).filter(s => s.username && s.displayName);
-    if (students.length === 0) { alert('请填写有效的学员数据（每行：用户名,姓名,密码,学号,手机号,单位）'); return; }
+    if (students.length === 0) { toast.warning('请填写有效的学员数据（每行：用户名,姓名,密码,学号,手机号,单位）'); return; }
     setBatchImporting(true);
     try {
       const res = await api.students.batchCreate({ students });
       setBatchResult(res);
-    } catch (e: any) { alert('批量导入失败：' + e.message); }
+      toast.success(`批量导入完成：成功 ${res.successCount} 条`);
+    } catch (e: any) { toast.error('批量导入失败：' + e.message); }
     setBatchImporting(false);
   };
 
@@ -208,7 +228,7 @@ export default function StudentsPage() {
               a.download = `学员数据_${new Date().toISOString().slice(0, 10)}.csv`;
               a.click();
               URL.revokeObjectURL(url);
-            } catch (e: any) { alert('导出失败：' + e.message); }
+            } catch (e: any) { toast.error('导出失败：' + e.message); }
           }} className="btn btn-outline btn-sm">📤 导出CSV</button>
           <button onClick={() => { setShowGroup(true); setGroupForm({ name: '', note: '' }); }}
             className="btn btn-outline btn-sm">📂 分组管理</button>
@@ -243,11 +263,14 @@ export default function StudentsPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={8} cols={7} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : students.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>
-          <p className="mb-3">还没有学员记录</p>
-          <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">添加第一位学员</button>
+        <div className="card">
+          <EmptyState icon="👥" title="还没有学员记录" description="添加学员或批量导入，开始管理">
+            <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">添加第一位学员</button>
+          </EmptyState>
         </div>
       ) : viewMode === 'table' ? (
         /* ── 表格视图 ── */
@@ -387,12 +410,12 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>
-                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
-                    className="input" placeholder="手机号" />
+                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/[^\d]/g, '')})}
+                    className="input" placeholder="11位手机号" maxLength={11} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>邮箱</label>
-                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })}
                     className="input" placeholder="邮箱" />
                 </div>
                 <div className="col-span-2">
@@ -470,8 +493,8 @@ export default function StudentsPage() {
                 <button onClick={async () => {
                   if (!groupForm.name) return;
                   setGroupSaving(true);
-                  try { await api.students.createGroup(groupForm); setGroupForm({ name: '', note: '' }); loadGroups(); }
-                  catch (e: any) { alert('创建失败：' + e.message); }
+                  try { await api.students.createGroup(groupForm); setGroupForm({ name: '', note: '' }); loadGroups(); toast.success('分组已创建'); }
+                  catch (e: any) { toast.error('创建失败：' + e.message); }
                   setGroupSaving(false);
                 }} disabled={groupSaving || !groupForm.name} className="btn btn-fox btn-sm">
                   {groupSaving ? '…' : '添加'}

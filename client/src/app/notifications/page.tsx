@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonList } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 const FOX = '#e87a30';
 const INK_200 = '#bbb';
@@ -65,15 +69,18 @@ function getAuthHeaders(): Record<string, string> {
 
 export default function NotificationsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (filter === 'unread') params.set('unreadOnly', 'true');
@@ -84,7 +91,9 @@ export default function NotificationsPage() {
       const data = await res.json();
       setNotifications(data.items || []);
       setTotal(data.total || 0);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载通知列表失败');
+    }
     setLoading(false);
   };
 
@@ -99,7 +108,9 @@ export default function NotificationsPage() {
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       });
       load();
-    } catch {}
+    } catch (e: any) {
+      toast.error('标记已读失败：' + (e.message || '未知错误'));
+    }
   };
 
   const handleMarkAllRead = async () => {
@@ -108,8 +119,11 @@ export default function NotificationsPage() {
         method: 'PATCH',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       });
+      toast.success('已全部标为已读');
       load();
-    } catch {}
+    } catch (e: any) {
+      toast.error('操作失败：' + (e.message || '未知错误'));
+    }
   };
 
   const handleClick = (n: any) => {
@@ -168,20 +182,11 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: INK_300 }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonList count={5} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : notifications.length === 0 ? (
-        <div
-          style={{
-            padding: 48,
-            textAlign: 'center',
-            borderRadius: 12,
-            background: 'white',
-            border: `1px solid var(--ink-100, #e8e4e0)`,
-          }}
-        >
-          <p style={{ fontSize: 40, marginBottom: 16 }}>🔔</p>
-          <p style={{ color: INK_300 }}>暂无通知</p>
-        </div>
+        <div className="card"><EmptyState icon="🔔" title="暂时没有新消息" description="新的通知会在这里提醒你" /></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {notifications.map((n: any) => (

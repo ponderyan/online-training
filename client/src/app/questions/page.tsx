@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { AddQuestionModal, ViewQuestionModal } from '@/components/question-modals';
 import QuestionImportModal from '@/components/question-import-modal';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import { SkeletonTable } from '@/components/Skeleton';
+import { useToast } from '@/components/Toast';
 
 const TYPE_LABELS: Record<string, string> = {
   SINGLE_CHOICE: '单选', MULTIPLE_CHOICE: '多选', TRUE_FALSE: '判断',
@@ -21,12 +27,18 @@ const DIFF_LABELS: Record<string, { label: string; cls: string }> = {
 const PAGE_SIZE_OPTIONS = [10, 15, 20, 30, 50, 100];
 
 export default function QuestionsPage() {
+  const toast = useToast();
   const [questions, setQuestions] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<any | null>(null);
   const [filterType, setFilterType] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
@@ -68,7 +80,10 @@ export default function QuestionsPage() {
     setKpModalQuestion(q);
     setKpTree([]);
     setKpSelected(new Set());
-    setKpSubjectId(0);
+    // ★ 自动选中题目所属科目并加载知识点树
+    const qSubjectId = q.subjectId || 0;
+    setKpSubjectId(qSubjectId);
+    if (qSubjectId > 0) loadKpTree(qSubjectId);
     try {
       const existing = await api.knowledgePoints.getQuestionKPs(q.id);
       setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
@@ -86,39 +101,33 @@ export default function QuestionsPage() {
   };
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     const params: Record<string, string> = { page: String(page), pageSize: String(pageSize) };
-    if (keyword) params.keyword = keyword;
+    if (debouncedKeyword) params.keyword = debouncedKeyword;
     if (filterType) params.type = filterType;
     if (filterDifficulty) params.difficulty = filterDifficulty;
     if (filterSubject) params.subjectId = filterSubject;
     if (filterMaterial) params.materialId = filterMaterial;
     if (filterMatChapter) params.chapterId = filterMatChapter;
 
-    const data = await api.questions.list(params);
-    setQuestions(data.items);
-    setTotal(data.total);
-    setTotalPages(data.totalPages);
-  }, [page, pageSize, keyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
+    try {
+      const data = await api.questions.list(params);
+      setQuestions(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
+    } catch (e: any) {
+      setError(e.message || '加载试题列表失败');
+    }
+    setLoading(false);
+  }, [page, pageSize, debouncedKeyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    // 科目筛选取自 subjects，按 code 去重（数据字典为基准）
-    Promise.all([
-      api.subjects.list(),
-      api.dataDictionaries.list().catch(() => []),
-    ]).then(([subjs, dicts]) => {
-      const dictCodes = new Set(dicts.map((d: any) => d.code));
-      // 只保留在数据字典中的科目，去重
-      const seen = new Set<string>();
-      const deduped = subjs.filter((s: any) => {
-        if (seen.has(s.code)) return false;
-        seen.add(s.code);
-        return dictCodes.has(s.code); // 只显示数据字典里配了的
-      });
-      setSubjects(deduped);
-    }).catch(() => {
-      api.subjects.list().then(setSubjects).catch(() => {});
-    });
+    // 科目筛选：直接使用 subjects 列表
+    api.subjects.list().then((subjs: any[]) => {
+      setSubjects(Array.isArray(subjs) ? subjs : []);
+    }).catch(() => {});
     // 加载教材列表（供筛选用）
     api.materials.listForFilter().then(setMaterials).catch(() => {});
   }, []);
@@ -143,30 +152,42 @@ export default function QuestionsPage() {
   const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN') || false;
 
   const toggleStatus = async (q: any) => {
-    const newStatus = q.status === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
-    await api.questions.update(q.id, { status: newStatus });
+    setToggleTarget(q);
+  };
+
+  const confirmToggle = async (reason: string) => {
+    if (!toggleTarget) return;
+    const newStatus = toggleTarget.status === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
+    await api.questions.update(toggleTarget.id, { status: newStatus });
+    setToggleTarget(null);
     load();
   };
 
-  const handleDelete = async (q: any) => {
-    // 先查引用
-    try {
-      const refs = await api.questions.getReferencedPapers(q.id);
-      if (refs.count > 0) {
-        alert(`该试题已被 ${refs.count} 份试卷引用，无法删除。\n\n建议：使用「停用」功能将其归档，已引用的试卷不受影响。`);
-        return;
-      }
-    } catch {}
-
-    if (!confirm(`确认永久删除此题？\n\n「${q.content?.slice(0, 40)}…」\n\n此操作不可撤销！`)) return;
-    if (!confirm('⚠️ 再次确认：删除后数据不可恢复，确定要永久删除吗？')) return;
+  const handleDelete = async (reason: string) => {
+    if (deleteTarget === null) return;
+    const q = questions.find(qx => qx.id === deleteTarget);
+    if (!q) { setDeleteTarget(null); return; }
 
     try {
       await api.questions.delete(q.id);
+      toast.success('试题已删除');
+      setDeleteTarget(null);
       load();
     } catch (e: any) {
-      alert('删除失败：' + e.message);
+      toast.error('删除失败：' + e.message);
     }
+  };
+
+  // 点击删除按钮：先查引用，无引用才打开原因弹窗
+  const requestDelete = async (q: any) => {
+    try {
+      const refs = await api.questions.getReferencedPapers(q.id);
+      if (refs.count > 0) {
+        toast.warning(`该试题已被 ${refs.count} 份试卷引用，无法删除。建议使用「停用」功能将其归档，已引用的试卷不受影响。`);
+        return;
+      }
+    } catch {}
+    setDeleteTarget(q.id);
   };
 
   const openEditModal = async (q: any) => {
@@ -188,7 +209,7 @@ export default function QuestionsPage() {
       const data = await api.questions.getReferencedPapers(questionId);
       setReferencedPapers(data);
     } catch (e: any) {
-      alert('查询失败：' + e.message);
+      toast.error('查询失败：' + e.message);
     }
     setLoadingRefs(false);
   };
@@ -227,7 +248,7 @@ export default function QuestionsPage() {
   };
 
   const goGenerateWithSelected = () => {
-    if (selectedIds.size === 0) { alert('请先勾选试题'); return; }
+    if (selectedIds.size === 0) { toast.warning('请先勾选试题'); return; }
     // 存储选中试题的 ID 和题型（用于锁定题型）
     const selectedData = questions.filter(q => selectedIds.has(q.id)).map(q => ({
       id: q.id,
@@ -320,10 +341,15 @@ export default function QuestionsPage() {
             </tr>
           </thead>
           <tbody>
-            {questions.length === 0 ? (
-              <tr><td colSpan={11} className="text-center py-12" style={{ color: 'var(--ink-300)' }}>
-                小狐狸还没找到试题呢 🦊<br/>
-                <span className="text-xs mt-2 block">点击右上角「录入试题」开始吧</span>
+            {loading ? (
+              <tr><td colSpan={11} style={{ padding: 0 }}><SkeletonTable rows={6} cols={6} /></td></tr>
+            ) : error ? (
+              <tr><td colSpan={11}><ErrorCard message={error} onRetry={() => load()} /></td></tr>
+            ) : questions.length === 0 ? (
+              <tr><td colSpan={11}>
+                <EmptyState icon="🦊" title="还没有试题" description="点击右上角「录入试题」开始">
+                  <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">录入试题</button>
+                </EmptyState>
               </td></tr>
             ) : questions.map((q: any, idx: number) => (
               <tr key={q.id}
@@ -406,7 +432,7 @@ export default function QuestionsPage() {
                       )}
                       <button onClick={(e) => { e.stopPropagation(); openKpModal(q); }}
                         className="btn btn-xs btn-ghost" style={{ color: 'var(--fox)' }}>🧠</button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(q); }}
+                      <button onClick={(e) => { e.stopPropagation(); requestDelete(q); }}
                         className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                         disabled={isViewOnly}
                         onMouseEnter={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--verm)'; }}
@@ -575,13 +601,36 @@ export default function QuestionsPage() {
                 try {
                   await api.knowledgePoints.setQuestionKPs(kpModalQuestion.id, Array.from(kpSelected));
                   setKpModalQuestion(null);
-                } catch (e: any) { alert('保存失败：' + e.message); }
+                  toast.success('知识点已保存');
+                } catch (e: any) { toast.error('保存失败：' + e.message); }
               }} className="btn btn-fox btn-sm">保存</button>
             </div>
           </div>
         </div>
       )}
 
+
+      {/* 删除确认弹窗 */}
+      <ReasonConfirmModal
+        open={deleteTarget !== null}
+        title="🗑 删除试题"
+        message="确认永久删除此题？此操作不可撤销。"
+        required
+        presetReasons={['创建错误', '题目内容有误', '重复创建']}
+        confirmText="确认删除"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      {/* 停用/启用确认弹窗 */}
+      <ReasonConfirmModal
+        open={toggleTarget !== null}
+        title={toggleTarget?.status === 'PUBLISHED' ? '⏸ 停用试题' : '▶️ 启用试题'}
+        message={toggleTarget?.status === 'PUBLISHED' ? '停用后，试题不再出现在试卷选题列表中，已引用的试卷不受影响。' : '启用后，试题可被再次选入试卷。'}
+        required={false}
+        confirmText="确认"
+        onConfirm={confirmToggle}
+        onCancel={() => setToggleTarget(null)}
+      />
     </AppLayout>
   );
 }

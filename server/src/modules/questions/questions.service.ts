@@ -5,6 +5,9 @@ import { Prisma, QuestionType } from '@prisma/client';
 
 @Injectable()
 export class QuestionsService {
+  private static readonly VALID_DIFFICULTIES = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'];
+  private static readonly VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
@@ -48,9 +51,10 @@ export class QuestionsService {
     userRoles: string[],
   ): Promise<boolean> {
     if (userRoles.includes('SUPER_ADMIN')) {
-      // SUPER_ADMIN 只能写系统级记录
+      // SUPER_ADMIN 可写系统级记录 + 自己机构的记录
       if (record.orgId === null) return true;
-      // 有归属的记录 → 只有 full_access 才能写
+      if (userOrgId !== null && record.orgId === userOrgId) return true;
+      // 其他机构记录 → 需要 full_access 配置
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'full_access') return true;
       return false;
@@ -193,6 +197,14 @@ export class QuestionsService {
   }) {
     const { options, blanks, subQuestions, tagIds, createdBy, orgId, ...questionData } = data;
 
+    // ── 枚举校验 ──
+    if (data.difficulty && !QuestionsService.VALID_DIFFICULTIES.includes(data.difficulty)) {
+      throw new BadRequestException(`无效难度：${data.difficulty}（可选：${QuestionsService.VALID_DIFFICULTIES.join('/')}）`);
+    }
+    if (data.type && !QuestionsService.VALID_TYPES.includes(data.type)) {
+      throw new BadRequestException(`无效题型：${data.type}（可选：${QuestionsService.VALID_TYPES.join('/')}）`);
+    }
+
     return this.prisma.question.create({
       data: {
         ...questionData,
@@ -305,6 +317,7 @@ export class QuestionsService {
         chapter: { select: { name: true } },
         options: { orderBy: { sortOrder: 'asc' } },
         blanks: { orderBy: { blankIndex: 'asc' } },
+        subQuestions: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
@@ -318,22 +331,59 @@ export class QuestionsService {
   }
 
   async batchCreate(questions: any[], userOrgId?: number | null) {
+    const MAX_BATCH = 300;
+    if (questions.length > MAX_BATCH) {
+      throw new BadRequestException(`单次最多导入 ${MAX_BATCH} 道题目，当前 ${questions.length} 道，请分批导入`);
+    }
+
     const results: { index: number; success: boolean; id?: number; error?: string }[] = [];
+
+    // 预加载：按 subjectId 缓存默认章节（用于 chapterId 缺失时兜底）
+    const defaultChapterCache: Record<number, number | null> = {};
 
     for (let i = 0; i < questions.length; i++) {
       try {
         const q = questions[i];
+
+        // ── 入参校验 ──
+        if (!q.subjectId) { results.push({ index: i, success: false, error: '缺少科目ID（subjectId）' }); continue; }
+        if (!q.content?.trim()) { results.push({ index: i, success: false, error: '题干不能为空' }); continue; }
+        if (q.type && !QuestionsService.VALID_TYPES.includes(q.type)) {
+          results.push({ index: i, success: false, error: `无效题型：${q.type}（可选：${QuestionsService.VALID_TYPES.join('/')}）` }); continue;
+        }
+        if (q.difficulty && !QuestionsService.VALID_DIFFICULTIES.includes(q.difficulty)) {
+          results.push({ index: i, success: false, error: `无效难度：${q.difficulty}（可选：${QuestionsService.VALID_DIFFICULTIES.join('/')}）` }); continue;
+        }
+
+        // ── chapterId 兜底：缺失时取该科目下第一个章节 ──
+        let chapterId = q.chapterId;
+        if (!chapterId) {
+          if (defaultChapterCache[q.subjectId] === undefined) {
+            const firstChapter = await this.prisma.chapter.findFirst({
+              where: { subjectId: q.subjectId },
+              orderBy: { sortOrder: 'asc' },
+              select: { id: true },
+            });
+            defaultChapterCache[q.subjectId] = firstChapter?.id ?? null;
+          }
+          chapterId = defaultChapterCache[q.subjectId];
+          if (!chapterId) {
+            results.push({ index: i, success: false, error: `科目 ${q.subjectId} 下无可用章节，请先创建章节` }); continue;
+          }
+        }
+
         const created = await this.prisma.question.create({
           data: {
             subjectId: q.subjectId,
-            chapterId: q.chapterId || undefined,
+            chapterId,
             type: q.type,
             content: q.content,
-            difficulty: q.difficulty,
+            difficulty: q.difficulty || 'EASY',
             source: q.source || 'BATCH_IMPORT',
             status: q.status || 'PUBLISHED',
             analysis: q.analysis || undefined,
-            isPublic: q.isPublic || false,
+            isPublic: q.isPublic ?? false,
+            practiceVisible: q.practiceVisible ?? false,
             createdBy: q.createdBy ?? undefined,
             orgId: userOrgId ?? null,
             options: q.options ? { create: q.options.map((o: any, idx: number) => ({ ...o, sortOrder: idx })) } : undefined,
@@ -343,7 +393,9 @@ export class QuestionsService {
         });
         results.push({ index: i, success: true, id: created.id });
       } catch (e: any) {
-        results.push({ index: i, success: false, error: e.message });
+        // 提取 Prisma 已知错误的关键信息，避免返回冗长堆栈
+        const msg = e.meta?.cause || e.message?.split('\\n').find((l: string) => l.includes('Argument') || l.includes('Invalid')) || e.message;
+        results.push({ index: i, success: false, error: msg.substring(0, 200) });
       }
     }
 
@@ -380,7 +432,9 @@ export class QuestionsService {
     });
     if (!question) throw new NotFoundException('题目不存在');
 
-    const isCorrect = this.checkAnswer(question, data.answer);
+    // 1.2: 主观题(简答/案例)自评模式 — 不判对错，不计入正确率
+    const isSubjective = question.type === 'SHORT_ANSWER' || question.type === 'CASE_STUDY';
+    const isCorrect = isSubjective ? false : this.checkAnswer(question, data.answer);
 
     const record = await this.prisma.practiceRecord.upsert({
       where: {
@@ -391,20 +445,23 @@ export class QuestionsService {
         questionId: data.questionId,
         answer: data.answer,
         isCorrect,
+        subjective: isSubjective,
       },
       update: {
         answer: data.answer,
         isCorrect,
+        subjective: isSubjective,
       },
     });
 
     const correctAnswer = this.formatCorrectAnswer(question);
-    return { isCorrect, correctAnswer, analysis: question.analysis };
+    return { isCorrect, subjective: isSubjective, correctAnswer, analysis: question.analysis };
   }
 
   async getPracticeRecords(params: { studentId: number; onlyWrong?: boolean; subjectId?: number }) {
     const where: any = { studentId: params.studentId };
-    if (params.onlyWrong) where.isCorrect = false;
+    // 1.2: 错题本不含主观题(自评题无对错)
+    if (params.onlyWrong) { where.isCorrect = false; where.subjective = false; }
 
     const records = await this.prisma.practiceRecord.findMany({
       where,
@@ -431,8 +488,9 @@ export class QuestionsService {
 
   async getPracticeStats(studentId: number) {
     const total = await this.prisma.practiceRecord.count({ where: { studentId } });
-    const correct = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: true } });
-    const wrong = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: false } });
+    // 1.2: 正确率仅统计客观题(主观题为自评，不计入)
+    const correct = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: true, subjective: false } });
+    const wrong = await this.prisma.practiceRecord.count({ where: { studentId, isCorrect: false, subjective: false } });
 
     const rows: any[] = await this.prisma.$queryRawUnsafe(`
       SELECT q.subject_id, ANY_VALUE(s.name) as subject_name,
@@ -456,7 +514,7 @@ export class QuestionsService {
       total,
       correct,
       wrong,
-      accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+      accuracy: (correct + wrong) > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0,
       bySubject,
     };
   }
@@ -627,5 +685,54 @@ export class QuestionsService {
       default:
         return '—';
     }
+  }
+
+  /**
+   * P2-1: 错题 → 知识块 → 教材回顾
+   * 链路：Question → QuestionKnowledgePoint → ChunkKnowledgePoint → KnowledgeChunk
+   */
+  async getRelatedKnowledgeChunks(questionId: number) {
+    // 找到题目关联的知识点
+    const qkps = await this.prisma.questionKnowledgePoint.findMany({
+      where: { questionId },
+      select: { knowledgePointId: true },
+    });
+    if (qkps.length === 0) return { chunks: [], knowledgePoints: [] };
+
+    const kpIds = qkps.map(q => q.knowledgePointId);
+
+    // 通过 ChunkKnowledgePoint 找到关联的知识块
+    const chunkKps = await this.prisma.chunkKnowledgePoint.findMany({
+      where: { knowledgePointId: { in: kpIds } },
+      include: {
+        chunk: {
+          select: { id: true, content: true, title: true, source: true, documentId: true },
+        },
+        knowledgePoint: { select: { id: true, name: true } },
+      },
+      orderBy: { confidence: 'desc' },
+      take: 10,
+    });
+
+    // 获取文档名
+    const docIds = [...new Set(chunkKps.map(c => c.chunk.documentId).filter(Boolean))] as number[];
+    const docs = docIds.length > 0
+      ? await this.prisma.knowledgeDocument.findMany({ where: { id: { in: docIds } }, select: { id: true, name: true } })
+      : [];
+    const docMap = new Map(docs.map(d => [d.id, d.name]));
+
+    const chunks = chunkKps.map(ckp => ({
+      id: ckp.chunk.id,
+      content: (ckp.chunk.content || '').slice(0, 400),
+      title: ckp.chunk.title,
+      source: ckp.chunk.source,
+      documentName: ckp.chunk.documentId ? (docMap.get(ckp.chunk.documentId) || ckp.chunk.title) : ckp.chunk.title,
+      knowledgePoint: ckp.knowledgePoint.name,
+      confidence: ckp.confidence,
+    }));
+
+    const knowledgePoints = [...new Set(chunkKps.map(c => c.knowledgePoint.name))];
+
+    return { chunks, knowledgePoints };
   }
 }

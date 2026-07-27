@@ -56,23 +56,17 @@ export class AttendanceService {
           where: { studentId, programId, source: 'OFFLINE' },
           orderBy: { recordedAt: 'desc' },
         });
-        if (existingLHR && existingLHR.status === 'APPROVED') {
-          // 已审批学时不被篡改，新建 PENDING 记录走审批
-          await this.prisma.learningHourRecord.create({
-            data: {
-              studentId, programId, source: 'OFFLINE', hours, status: 'PENDING',
-              evidenceUrl: data.signInSheetUrl ?? undefined, recordedAt: new Date(),
-            },
-          });
-        } else if (existingLHR) {
+        if (existingLHR) {
+          // 已有学时记录 → 更新 hours（出勤记录有完整变更历史，无需保留多个版本）
           await this.prisma.learningHourRecord.update({
             where: { id: existingLHR.id },
-            data: { hours, evidenceUrl: data.signInSheetUrl ?? undefined },
+            data: { hours, status: 'APPROVED', evidenceUrl: data.signInSheetUrl ?? undefined },
           });
         } else {
+          // 无记录 → 新建 APPROVED（管理员已核实出勤，无需二次审核）
           await this.prisma.learningHourRecord.create({
             data: {
-              studentId, programId, source: 'OFFLINE', hours, status: 'PENDING',
+              studentId, programId, source: 'OFFLINE', hours, status: 'APPROVED',
               evidenceUrl: data.signInSheetUrl ?? undefined, recordedAt: new Date(),
             },
           });

@@ -64,8 +64,17 @@ model Organization {
   contactPhone String?  @map("contact_phone") @db.VarChar(20)
   contactEmail String?  @map("contact_email") @db.VarChar(100)
   isActive     Boolean  @default(true) @map("is_active")
+  orgType      String   @default("ASSOCIATION") @map("org_type") @db.VarChar(20) // ASSOCIATION | BRANCH | DEPARTMENT
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // ── 组织树层级 ──
+  parentId   Int?           @map("parent_id")
+  parent     Organization?  @relation("OrgTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children   Organization[] @relation("OrgTree")
+  level      Int            @default(1) @map("level")
+  path       String?        @db.VarChar(500) // 物化路径，如 "/1/3/"
+  sortOrder  Int            @default(0) @map("sort_order")
 
   users              User[]
   programs           TrainingProgram[]
@@ -73,12 +82,20 @@ model Organization {
   questions          Question[]
   papers             Paper[]
   exams              Exam[]
+  subjects           Subject[]
 
   // ── 印章 ──
   sealUrl        String?  @map("seal_url") @db.VarChar(500)
   sealHash       String?  @map("seal_hash") @db.VarChar(64)
   useFoxLearnSeal Boolean @default(true) @map("use_foxlearn_seal")
 
+  // ── 证书配置 ──
+  certIssuerName String?  @map("cert_issuer_name") @db.VarChar(200) // 签发单位名称
+  certLogoUrl    String?  @map("cert_logo_url") @db.VarChar(500)    // 证书 logo
+  certFooterText String?  @map("cert_footer_text") @db.VarChar(500) // 证书底部说明
+  certificates   Certificate[]
+
+  @@index([parentId])
   @@map("organizations")
 }
 
@@ -193,6 +210,7 @@ model User {
   appealReviews         ScoreAppeal[]                @relation("AppealReviewer")
   evaluations           Evaluation[]
   notifications         Notification[]
+  sentNotifications     Notification[] @relation("SentNotifications")
   importLogs            ImportLog[]
   exportLogs            ExportLog[]
   programEnrollments    ProgramEnrollment[]
@@ -209,6 +227,8 @@ model User {
   learningHourRecords   LearningHourRecord[]
   practiceRecords       PracticeRecord[]
   favoriteQuestions     QuestionFavorite[]
+  offlineScoreEntries   OfflineScoreEntry[]        @relation("OfflineScoreStudent")
+  offlineScoreEntered   OfflineScoreEntry[]        @relation("OfflineScoreEnterer")
 
   @@map("users")
 }
@@ -280,6 +300,8 @@ model AuditLog {
   after        Json? // 修改后（可选）
   operatorId   Int?     @map("operator_id")
   operatorName String?  @map("operator_name") @db.VarChar(100)
+  changeReason String?  @map("change_reason") @db.Text // 操作原因（强制/可选原因操作时由前端传入）
+  eventSource  String?  @map("event_source") @db.VarChar(20) // MANUAL / API / SYSTEM / CRON
   ip           String?  @map("ip") @db.VarChar(45)
   createdAt    DateTime @default(now()) @map("created_at")
 
@@ -312,22 +334,27 @@ model DataDictionary {
 model Subject {
   id           Int      @id @default(autoincrement())
   name         String   @db.VarChar(200)
-  code         String   @db.VarChar(20)
-  dictionaryId Int      @map("dictionary_id")
+  code         String   @unique @db.VarChar(20)
+  dictionaryId Int?     @map("dictionary_id") // deprecated: 不再依赖 DataDictionary
   sortOrder    Int      @default(0) @map("sort_order")
   description  String?  @db.Text
   isActive     Boolean  @default(true) @map("is_active")
+  orgId        Int?     @map("org_id")       // 定义该科目的组织（null=平台级）
+  isSystem     Boolean  @default(false) @map("is_system") // 系统内置科目，禁止删除
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  dictionary      DataDictionary   @relation(fields: [dictionaryId], references: [id])
+  organization Organization? @relation(fields: [orgId], references: [id])
+  dictionary      DataDictionary?  @relation(fields: [dictionaryId], references: [id])
   chapters        Chapter[]
   questions       Question[]
   templates       PaperTemplate[]
   papers          Paper[]
-  knowledgeChunks KnowledgeChunk[]
-  knowledgePoints KnowledgePoint[]
-  materials       Material[]
+  knowledgeChunks    KnowledgeChunk[]
+  knowledgeDocuments KnowledgeDocument[]
+  knowledgePoints    KnowledgePoint[]
+  materials          Material[]
+  trainingPrograms TrainingProgram[]
   paperNumberSeq  Int              @default(1) @map("paper_number_seq") // 当前编号序号
 
   @@map("subjects")
@@ -477,6 +504,7 @@ model KnowledgePoint {
   children    KnowledgePoint[] @relation("KPHierarchy")
   questions   QuestionKnowledgePoint[]
   courseKnowledgePoints CourseKnowledgePoint[]
+  chunkKnowledgePoints  ChunkKnowledgePoint[]
 
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
@@ -634,6 +662,7 @@ model PaperQuestion {
   typeSection String? @map("type_section") // 属于哪个题型区段（如 "SINGLE_CHOICE"）
   // 快照：定稿时冻结的试题内容（防止题库修改影响已定稿试卷）
   snapshot    Json? // { content, analysis, options, blanks, subQuestions }
+  rubric      Json? // 评分标准(扣分点): [{description, points, type:'add'|'deduct'}]
 
   paper    Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id])
@@ -689,16 +718,21 @@ model KnowledgeChunk {
   id         Int      @id @default(autoincrement())
   subjectId  Int      @map("subject_id")
   chapterId  Int?     @map("chapter_id")
-  title      String   @db.VarChar(500) // 来源标题（教材章节名）
-  content    String   @db.Text // 分块后的文本
-  chunkIndex Int      @map("chunk_index") // 块序号
-  source     String?  @db.VarChar(200) // 来源文件名
+  documentId Int?     @map("document_id")
+  title      String   @db.VarChar(500)
+  content    String   @db.Text
+  chunkIndex Int      @map("chunk_index")
+  source     String?  @db.VarChar(200)
   tokenCount Int?     @map("token_count")
+  qaPairs    Json?    @map("qa_pairs")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  subject Subject  @relation(fields: [subjectId], references: [id])
-  chapter Chapter? @relation(fields: [chapterId], references: [id])
+  subject  Subject            @relation(fields: [subjectId], references: [id])
+  chapter  Chapter?           @relation(fields: [chapterId], references: [id])
+  document KnowledgeDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  knowledgePoints ChunkKnowledgePoint[]
 
+  @@index([documentId])
   @@map("knowledge_chunks")
 }
 
@@ -869,11 +903,21 @@ enum ExamStatus {
   IN_PROGRESS
   FINISHED
   CANCELLED
+  // ── 线下笔试专用状态 ──
+  AWAITING_GRADING      // 待阅卷
+  GRADING_IN_PROGRESS   // 成绩录入中
+  SCORE_CONFIRMED       // 成绩已确认
+  SCORE_PUBLISHED       // 成绩已发布
 }
 
 enum ExamAccessType {
   UNIFIED // 统一开考
   FLEXIBLE // 随到随考
+}
+
+enum ExamMode {
+  ONLINE  // 线上考试
+  OFFLINE // 线下笔试
 }
 
 // ═══════════════════════════════════════════
@@ -904,15 +948,21 @@ enum NotificationType {
   EXAM_PUBLISHED
   EXAM_CONFIRMED
   EXAM_GRADED
+  EXAM_STARTING      // 考试即将开始提醒
   APPEAL_SUBMITTED
   APPEAL_RESOLVED
   GRADING_ASSIGNED
+  LEARNING_HOUR_SUBMITTED  // 学时已提交（等待审核）
   LEARNING_HOUR_APPROVED
   LEARNING_HOUR_REJECTED
   CERT_ISSUED
   CERT_APPROVED
   CERT_REJECTED
   CERT_APPLICATION
+  CERT_EXPIRING      // 证书到期提醒
+  PROGRAM_ENROLLED   // 培训班报名成功
+  PROGRAM_STATUS     // 培训班状态变更（开班/结业）
+  ACCOUNT_CREATED    // 账号创建通知
   SYSTEM_NOTICE
   ANNOUNCEMENT
 }
@@ -920,20 +970,42 @@ enum NotificationType {
 model Notification {
   id            Int              @id @default(autoincrement())
   userId        Int              @map("user_id")
+  senderId      Int?             @map("sender_id")    // null=系统自动发送
   type          NotificationType
   title         String           @db.VarChar(200)
   message       String           @db.Text
   referenceId   Int?             @map("reference_id")
   referenceType String?          @map("reference_type")
+  batchId       String?          @map("batch_id")    // 一次群发的批次标识，便于聚合展示
   isRead        Boolean          @default(false) @map("is_read")
   createdAt     DateTime         @default(now()) @map("created_at")
   readAt        DateTime?        @map("read_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user   User                 @relation(fields: [userId], references: [id])
+  sender User?                @relation("SentNotifications", fields: [senderId], references: [id])
+
+  channels NotificationChannel[]
 
   @@index([userId, isRead])
   @@index([createdAt])
+  @@index([senderId])
+  @@index([senderId, createdAt])
+  @@index([batchId])
   @@map("notifications")
+}
+
+model NotificationChannel {
+  id             Int      @id @default(autoincrement())
+  notificationId Int      @map("notification_id")
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        String   @db.VarChar(20)   // in_app / email / sms
+  status         String   @default("PENDING") @db.VarChar(20) // PENDING / SENT / FAILED
+  errorMessage   String?  @map("error_message") @db.Text
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([notificationId])
+  @@map("notification_channels")
 }
 
 model Exam {
@@ -988,6 +1060,11 @@ model Exam {
   appealDeadlineHours Int?    @default(72) @map("appeal_deadline_hours") // 申诉截止（小时），0=不允许申诉
   showAnswerAfterExam Boolean @default(false) @map("show_answer_after_exam") // 考后是否显示答案
 
+  // ── 线下笔试考试（2026-07-22）──
+  examMode   ExamMode @default(ONLINE) @map("exam_mode")   // ONLINE | OFFLINE
+  locations  Json?    @map("locations")                     // 多考场信息 JSON
+  seatLayout Json?    @map("seat_layout")                   // 座位布局配置
+
   createdBy Int      @map("created_by")
 
   // ── 机构归属（2026-07-02）──
@@ -1003,6 +1080,7 @@ model Exam {
   instructorId       Int?                @map("instructor_id")
   instructor         Instructor?         @relation(fields: [instructorId], references: [id])
   appeals            ScoreAppeal[]
+  offlineScoreEntries OfflineScoreEntry[]
 
   @@map("exams")
 }
@@ -1045,14 +1123,23 @@ model ExamSession {
 
   markedQuestions String @default("[]") @map("marked_questions")
 
+  // ── 线下笔试考试（2026-07-22）──
+  seatNumber        Int?     @map("seat_number")          // 座位号
+  absent            Boolean  @default(false) @map("absent") // 缺考标记
+  attemptNo         Int      @default(1) @map("attempt_no") // 第几次考试（1=首考，2=补考）
+  isRetake          Boolean  @default(false) @map("is_retake")
+  originalSessionId Int?     @map("original_session_id")  // 补考关联原 session
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   answers                 ExamAnswer[]
   certificateApplications CertificateApplication[]
   gradingReviews          GradingReview[]
+  gradingAssignments      GradingAssignment[]
   scoreAppeal             ScoreAppeal?
   examMessages            ExamMessage[]
+  offlineScoreEntry       OfflineScoreEntry[]
 
   @@unique([examId, studentId])
   @@map("exam_sessions")
@@ -1146,6 +1233,12 @@ model Certificate {
   metadata         Json? // 扩展信息
   programId        Int?               @map("program_id")
   program          TrainingProgram?   @relation(fields: [programId], references: [id])
+
+  // ── 发证机构（可配置化）──
+  orgId            Int?               @map("org_id")
+  org              Organization?      @relation(fields: [orgId], references: [id])
+  issuerName       String?            @map("issuer_name") @db.VarChar(200) // 签发单位快照
+
   traces           CertificateTrace[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1200,8 +1293,9 @@ model TrainingProgram {
   certFee     Float? @map("cert_fee")
   hoursPerDay Float? @map("hours_per_day")
 
-  subjectId Int @map("subject_id")
-  createdBy Int @map("created_by")
+  subjectId Int     @map("subject_id")
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  createdBy Int     @map("created_by")
 
   status      TrainingProgramStatus @default(PREPARING)
   description String?               @db.Text
@@ -1387,16 +1481,18 @@ model GradingAssignment {
   examId          Int       @map("exam_id")
   graderId        Int       @map("grader_id")
   paperQuestionId Int?      @map("paper_question_id")
+  sessionId       Int?      @map("session_id")     // null=全学员
   status          String    @default("PENDING") @db.VarChar(20)
   assignedAt      DateTime  @default(now()) @map("assigned_at")
   completedAt     DateTime? @map("completed_at")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  exam   Exam @relation(fields: [examId], references: [id])
-  grader User @relation(fields: [graderId], references: [id])
+  exam    Exam         @relation(fields: [examId], references: [id])
+  grader  User         @relation(fields: [graderId], references: [id])
+  session ExamSession? @relation(fields: [sessionId], references: [id])
 
-  @@unique([examId, graderId, paperQuestionId])
+  @@unique([examId, graderId, paperQuestionId, sessionId])
   @@map("grading_assignments")
 }
 
@@ -1957,10 +2053,119 @@ model PracticeRecord {
 
   answer    Json // 学员提交的答案
   isCorrect Boolean @map("is_correct")
+  subjective Boolean @default(false) @map("is_subjective") // 主观题(简答/案例)自评标记，不计入正确率
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([studentId, questionId])
   @@index([studentId, isCorrect])
   @@map("practice_records")
+}
+
+// ═══════════════════════════════════════════
+// 线下笔试考试（2026-07-22）
+// ═══════════════════════════════════════════
+
+/// 线下考试成绩录入记录
+model OfflineScoreEntry {
+  id        Int @id @default(autoincrement())
+  examId    Int @map("exam_id")
+  sessionId Int @unique @map("session_id")
+  studentId Int @map("student_id")
+
+  /// 按题型细分分数 JSON: {singleChoice: 18, multiChoice: 16, ...}
+  scoreByType Json  @map("score_by_type")
+  totalScore  Float @map("total_score")
+
+  // 录入信息（考务人员）
+  enteredBy Int      @map("entered_by")
+  enteredAt DateTime @default(now()) @map("entered_at")
+
+  // 阅卷信息（分开记录，可以是不同人）
+  graderName String?   @map("grader_name") @db.VarChar(100)
+  graderId   Int?      @map("grader_id")
+  gradedAt   DateTime? @map("graded_at")
+
+  // 复核信息
+  reviewerName String?   @map("reviewer_name") @db.VarChar(100)
+  reviewerId   Int?      @map("reviewer_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewNote   String?   @map("review_note") @db.Text
+
+  // 状态: DRAFT(暂存) | CONFIRMED(确认) | LOCKED(锁定)
+  status String @default("DRAFT") @db.VarChar(20)
+  remark String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  exam     Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  session  ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student  User        @relation("OfflineScoreStudent", fields: [studentId], references: [id])
+  enterer  User        @relation("OfflineScoreEnterer", fields: [enteredBy], references: [id])
+
+  @@unique([examId, studentId])
+  @@index([examId, status])
+  @@map("offline_score_entries")
+}
+
+// ═══════════════════════════════════════════
+// 知识库文档（独立上传，与 Material 解耦）
+// ═══════════════════════════════════════════
+
+model KnowledgeDocument {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(200)
+  fileName    String   @map("file_name") @db.VarChar(500)
+  filePath    String   @map("file_path") @db.VarChar(500)
+  fileType    String   @db.VarChar(20)
+  fileSize    Int      @map("file_size")
+  subjectId   Int      @map("subject_id")
+  chunkCount  Int      @default(0) @map("chunk_count")
+  status      String   @default("PROCESSING") @db.VarChar(20)
+  version     Int      @default(1)
+  previousVersionId Int? @map("previous_version_id")
+  createdBy   Int      @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subject Subject          @relation(fields: [subjectId], references: [id])
+  chunks  KnowledgeChunk[]
+
+  @@index([subjectId])
+  @@map("knowledge_documents")
+}
+
+// ═══════════════════════════════════════════
+// 知识块 ↔ 知识点关联
+// ═══════════════════════════════════════════
+
+model ChunkKnowledgePoint {
+  id               Int     @id @default(autoincrement())
+  chunkId          Int     @map("chunk_id")
+  knowledgePointId Int     @map("knowledge_point_id")
+  confidence       Float   @default(1.0)
+  source           String  @default("MANUAL") @db.VarChar(20)
+
+  chunk          KnowledgeChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  knowledgePoint KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, knowledgePointId])
+  @@map("chunk_knowledge_points")
+}
+
+// ═══════════════════════════════════════════
+// 组织编码缩写词典（Phase 2）
+// ═══════════════════════════════════════════
+
+model OrgAbbreviation {
+  id        Int      @id @default(autoincrement())
+  keyword   String   @unique @db.VarChar(50)   // 匹配关键词，如"创新部"
+  abbr      String   @db.VarChar(20)           // 缩写，如"CX"
+  category  String?  @db.VarChar(50)           // 分类：department/business/region
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("org_abbreviation")
 }

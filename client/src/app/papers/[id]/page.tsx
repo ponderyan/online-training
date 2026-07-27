@@ -3,35 +3,40 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
 };
 const DIFF_LABELS: Record<string, string> = {
-  EASY: '易', MEDIUM: '较易', HARD: '较难', VERY_HARD: '难',
+  EASY: '易', MEDIUM_EASY: '较易', MEDIUM_HARD: '较难', HARD: '难',
 };
 const DIFF_COLORS: Record<string, string> = {
-  EASY: 'var(--cyan)', MEDIUM: 'var(--gold)', HARD: 'var(--ink-500)', VERY_HARD: 'var(--verm)',
+  EASY: 'var(--cyan)', MEDIUM_EASY: 'var(--gold)', MEDIUM_HARD: 'var(--ink-500)', HARD: 'var(--verm)',
 };
 const DIFF_BG: Record<string, string> = {
-  EASY: 'var(--cyan-glow)', MEDIUM: 'var(--gold-glow)', HARD: 'transparent', VERY_HARD: 'var(--verm-glow)',
+  EASY: 'var(--cyan-glow)', MEDIUM_EASY: 'var(--gold-glow)', MEDIUM_HARD: 'transparent', HARD: 'var(--verm-glow)',
 };
 
 export default function PaperDetailPage() {
   const router = useRouter();
   const params = useParams();
   const paperId = Number(params.id);
+  const toast = useToast();
 
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAnswer, setShowAnswer] = useState(false);
+  const [deletePaperTarget, setDeletePaperTarget] = useState<boolean | null>(false);
   const [showPickModal, setShowPickModal] = useState(false);
   const [availableQuestions, setAvailableQuestions] = useState<any[]>([]);
   const [pickingSection, setPickingSection] = useState('');
   const [pickingScore, setPickingScore] = useState(0);
+  const [removeQuestionTarget, setRemoveQuestionTarget] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -73,12 +78,12 @@ export default function PaperDetailPage() {
     const qLen = paper.questions?.length || 0;
     // 验证：至少1题
     if (qLen === 0) {
-      alert('试卷没有试题，请至少添加一道题后再定稿。');
+      toast.warning('试卷没有试题，请至少添加一道题后再定稿。');
       return;
     }
     // 验证：总分必须匹配
     if (actualTotal !== paper.totalScore) {
-      alert(`总分不匹配：当前试题总分 ${actualTotal}分 ≠ 试卷设定总分 ${paper.totalScore}分，请调整试题后再定稿。`);
+      toast.warning(`总分不匹配：当前试题总分 ${actualTotal}分 ≠ 试卷设定总分 ${paper.totalScore}分，请调整试题后再定稿。`);
       return;
     }
     await api.papers.finalize(paper.id);
@@ -91,10 +96,10 @@ export default function PaperDetailPage() {
     load();
   };
 
-  const handleDelete = async () => {
+  const handlePaperDeleteWithReason = async (reason: string) => {
     if (!paper) return;
-    if (!confirm('确认删除此试卷？')) return;
     await api.papers.delete(paper.id);
+    setDeletePaperTarget(false);
     router.push('/papers');
   };
 
@@ -105,8 +110,13 @@ export default function PaperDetailPage() {
   };
 
   const handleRemoveQuestion = async (pqId: number) => {
-    if (!confirm('确认从试卷中移除该试题？')) return;
-    await fetch(`/api/papers/${paperId}/questions/${pqId}`, { method: 'DELETE' });
+    setRemoveQuestionTarget(pqId);
+  };
+
+  const confirmRemoveQuestion = async (reason: string) => {
+    if (!removeQuestionTarget) return;
+    await fetch(`/api/papers/${paperId}/questions/${removeQuestionTarget}`, { method: 'DELETE' });
+    setRemoveQuestionTarget(null);
     load();
   };
 
@@ -119,7 +129,7 @@ export default function PaperDetailPage() {
     const currentQIds = new Set(paper.questions?.map((pq: any) => pq.questionId) || []);
     const available = (data.items || []).filter((q: any) => !currentQIds.has(q.id));
     if (available.length === 0) {
-      alert('没有可替换的试题（该题型下所有试题已在试卷中）');
+      toast.warning('没有可替换的试题（该题型下所有试题已在试卷中）');
       return;
     }
     setAvailableQuestions(available);
@@ -215,7 +225,7 @@ export default function PaperDetailPage() {
           {canPromote && (
             <button onClick={handlePromote} className="btn btn-verm btn-sm">转为正式</button>
           )}
-          <button onClick={handleDelete} className="btn btn-ghost btn-sm" style={{ color: 'var(--ink-300)' }}
+          <button onClick={() => setDeletePaperTarget(true)} className="btn btn-ghost btn-sm" style={{ color: 'var(--ink-300)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
         </div>
@@ -462,6 +472,28 @@ export default function PaperDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 删除试卷弹窗 */}
+      <ReasonConfirmModal
+        open={deletePaperTarget !== null}
+        title="🗑 删除试卷"
+        required
+        presetReasons={['创建错误', '试卷作废', '重复创建']}
+        confirmText="确认删除"
+        onConfirm={handlePaperDeleteWithReason}
+        onCancel={() => setDeletePaperTarget(null)}
+      />
+      {/* 从试卷移除试题确认 */}
+      <ReasonConfirmModal
+        open={removeQuestionTarget !== null}
+        title="📝 移除试题"
+        message="确认从试卷中移除该试题？试卷内容会被修改，但不影响已分配的考试。"
+        required
+        presetReasons={['试题不适合本试卷', '题型调整', '创建错误']}
+        confirmText="确认移除"
+        onConfirm={confirmRemoveQuestion}
+        onCancel={() => setRemoveQuestionTarget(null)}
+      />
     </AppLayout>
   );
 }

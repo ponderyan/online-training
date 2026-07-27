@@ -4,6 +4,14 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import EmptyState from '@/components/EmptyState';
+import ErrorCard from '@/components/ErrorCard';
+import Loading from '@/components/Loading';
+import { SkeletonTable } from '@/components/Skeleton';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
+import { useToast } from '@/components/Toast';
+import CertificatePreviewModal, { PreviewTarget } from '@/components/CertificatePreviewModal';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const STATUS_NAMES: Record<string, string> = {
   ACTIVE: '有效', PENDING: '待审批', APPROVED: '有效',
@@ -19,6 +27,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
 
 function CertificatesContent() {
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const filterExamSessionId = searchParams.get('examSessionId');
 
@@ -27,14 +36,34 @@ function CertificatesContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
+  const [preview, setPreview] = useState<PreviewTarget | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<number | null>(null);
+
+  const openPreview = (cert: any) => {
+    setPreview({
+      type: 'completion',
+      pdfUrl: `/api/certificates/${cert.id}/pdf`,
+      title: cert.courseName,
+      completion: {
+        studentName: cert.studentName,
+        courseName: cert.courseName,
+        certificateNo: cert.certificateNo,
+        issueDate: cert.issueDate,
+        verificationCode: cert.verificationCode || '',
+      },
+    });
+  };
 
   const load = async (p: number = page) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: String(p), limit: '20' });
-      if (keyword) params.set('keyword', keyword);
+      if (debouncedKeyword) params.set('keyword', debouncedKeyword);
       if (filterStatus) params.set('status', filterStatus);
       if (filterExamSessionId) params.set('examSessionId', filterExamSessionId);
       const res = await fetch(`/api/certificates?${params}`, {
@@ -44,7 +73,9 @@ function CertificatesContent() {
       setTotal(res.total || 0);
       setPage(res.page || 1);
       setTotalPages(res.totalPages || 1);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || '加载证书列表失败');
+    }
     setLoading(false);
   };
 
@@ -52,20 +83,23 @@ function CertificatesContent() {
   useEffect(() => {
     const timer = setTimeout(() => { load(1); }, 400);
     return () => clearTimeout(timer);
-  }, [keyword, filterStatus]);
+  }, [debouncedKeyword, filterStatus]);
 
-  const handleRevoke = async (id: number) => {
-    const reason = prompt('请输入撤销原因：');
-    if (!reason) return;
+  const handleRevoke = async (reason: string) => {
+    if (!revokeTarget) return;
     try {
-      await fetch(`/api/certificates/${id}/revoke`, {
+      const res = await fetch(`/api/certificates/${revokeTarget}/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ reason }),
       });
+      if (!res.ok) throw new Error('操作失败');
+      toast.success('证书已撤销');
+      setRevokeTarget(null);
       load();
     } catch (e: any) {
-      alert('操作失败：' + e.message);
+      toast.error('操作失败：' + e.message);
+      setRevokeTarget(null);
     }
   };
 
@@ -84,7 +118,7 @@ function CertificatesContent() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      alert('下载失败：' + e.message);
+      toast.error('下载失败：' + e.message);
     }
   };
 
@@ -123,12 +157,12 @@ function CertificatesContent() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="card"><div className="card-body"><SkeletonTable rows={6} cols={8} /></div></div>
+      ) : error ? (
+        <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : certificates.length === 0 ? (
-        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
-          <div className="text-4xl mb-4">🏅</div>
-          <p>暂无证书</p>
-          <p className="text-xs mt-2">发布成绩后，可在此发证并下载 PDF</p>
+        <div className="card">
+          <EmptyState icon="🏅" title="暂无证书" description="发布成绩后，可在此发证并下载 PDF" />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -172,10 +206,12 @@ function CertificatesContent() {
                     <td>{renderStatus(cert)}</td>
                     <td>
                       <div className="flex gap-1">
+                        <button onClick={() => openPreview(cert)}
+                          className="btn btn-ghost btn-xs">👁 预览</button>
                         <button onClick={() => downloadPdf(cert.id)}
                           className="btn btn-ghost btn-xs">📄 PDF</button>
                         {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
-                          <button onClick={() => handleRevoke(cert.id)}
+                          <button onClick={() => setRevokeTarget(cert.id)}
                             className="btn btn-ghost btn-xs"
                             style={{ color: 'var(--verm)' }}>撤销</button>
                         )}
@@ -207,6 +243,19 @@ function CertificatesContent() {
             className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>下一页 ›</button>
         </div>
       )}
+
+      <CertificatePreviewModal target={preview} onClose={() => setPreview(null)} />
+      {/* 吊销确认弹窗 */}
+      <ReasonConfirmModal
+        open={revokeTarget !== null}
+        title="🛑 撤销证书"
+        message="此操作将作废该证书，撤销后该证书的验证链接将显示为已撤销。确定继续？"
+        required
+        presetReasons={['证书发放错误', '学员信息有误', '考试资格不符', '管理员申请撤销']}
+        confirmText="确认撤销"
+        onConfirm={handleRevoke}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </AppLayout>
   );
 }
@@ -215,7 +264,7 @@ export default function CertificatesPage() {
   return (
     <Suspense fallback={
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <Loading />
       </AppLayout>
     }>
       <CertificatesContent />

@@ -53,12 +53,14 @@ export class LearningHoursService {
       },
     });
 
-    const totalHours = records.reduce((sum, r) => sum + r.hours, 0);
-    const completedVideos = records.filter(r => r.source === 'VIDEO').length;
+    // P1-2: 只统计已通过记录（APPROVED + AUTO_APPROVED），排除 REJECTED 和 PENDING
+    const approvedRecords = records.filter(r => r.status === 'APPROVED' || r.status === 'AUTO_APPROVED');
+    const totalHours = approvedRecords.reduce((sum, r) => sum + r.hours, 0);
+    const completedVideos = approvedRecords.filter(r => r.source === 'VIDEO').length;
 
     // Group by type
     const typeHours: Record<string, { typeName: string; typeCode: string; hours: number }> = {};
-    for (const r of records) {
+    for (const r of approvedRecords) {
       if (r.type) {
         const key = r.type.code;
         if (!typeHours[key]) {
@@ -70,7 +72,7 @@ export class LearningHoursService {
 
     // Group by program
     const programMap = new Map<number, { programId: number; programName: string; hours: number }>();
-    for (const r of records) {
+    for (const r of approvedRecords) {
       if (!r.programId) continue;
       const existing = programMap.get(r.programId);
       if (existing) {
@@ -129,7 +131,7 @@ export class LearningHoursService {
       if (r.source === 'VIDEO') { entry.videoHours += r.hours; entry.videos += 1; }
       else { entry.offlineHours += r.hours; }
       if (r.status === 'PENDING') entry.pendingHours += r.hours;
-      else if (r.status === 'APPROVED') entry.approvedHours += r.hours;
+      else if (r.status === 'APPROVED' || r.status === 'AUTO_APPROVED') entry.approvedHours += r.hours;
       else if (r.status === 'REJECTED') entry.rejectedHours += r.hours;
     }
 
@@ -145,54 +147,6 @@ export class LearningHoursService {
       rejectedHours: Math.round(s.rejectedHours * 100) / 100,
       videos: s.videos,
     }));
-  }
-
-  // Auto-record when video is completed
-  async recordVideoCompletion(videoId: number, studentId: number) {
-    const video = await this.prisma.courseVideo.findUnique({
-      where: { id: videoId },
-      include: {
-        course: {
-          include: { programs: { select: { id: true } } },
-        },
-      },
-    });
-    if (!video) return;
-
-    // Calculate hours: (duration / 3600) * (requiredPct / 100)
-    const hours = Math.round(((video.duration / 3600) * (video.requiredPct / 100)) * 100) / 100;
-    if (hours <= 0) return;
-
-    // Deduplicate: same videoId + studentId only once
-    const existing = await this.prisma.learningHourRecord.findFirst({
-      where: { studentId, source: 'VIDEO', sourceId: videoId },
-    });
-    if (existing) return;
-
-    // 自动标记为公需科目
-    const publicRequiredType = await this.prisma.learningHourType.findFirst({
-      where: { code: 'PUBLIC_REQUIRED' },
-    });
-
-    // Create record for each linked program
-    const programs = video.course?.programs || [];
-    if (programs.length === 0) {
-      await this.prisma.learningHourRecord.create({
-        data: {
-          studentId, source: 'VIDEO', sourceId: videoId, hours, programId: null,
-          typeId: publicRequiredType?.id || null,
-        },
-      });
-    } else {
-      for (const program of programs) {
-        await this.prisma.learningHourRecord.create({
-          data: {
-            studentId, source: 'VIDEO', sourceId: videoId, hours, programId: program.id,
-            typeId: publicRequiredType?.id || null,
-          },
-        });
-      }
-    }
   }
 
   async getPendingHours(programId?: number, source?: string) {

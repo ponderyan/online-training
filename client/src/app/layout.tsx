@@ -1,7 +1,16 @@
 import type { Metadata } from 'next';
+import { Noto_Serif_SC } from 'next/font/google';
 import './globals.css';
 import { SiteSettingsProvider } from '@/hooks/use-site-settings';
 import DynamicBrand from '@/components/dynamic-brand';
+import { ToastProvider } from '@/components/Toast';
+
+const notoSerifSC = Noto_Serif_SC({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-serif-sc',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: '狐学 · 智能在线培训考试平台',
@@ -13,12 +22,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body><SiteSettingsProvider><DynamicBrand />{children}</SiteSettingsProvider></body>
+    <html lang="zh-CN" className={notoSerifSC.variable}>
+      <body><SiteSettingsProvider><ToastProvider><DynamicBrand />{children}</ToastProvider></SiteSettingsProvider></body>
     </html>
   );
 }

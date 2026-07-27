@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function AdminStudentResultPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const examId = Number(params.id);
   const studentId = Number(params.studentId);
   const [result, setResult] = useState<any>(null);
@@ -30,7 +32,7 @@ export default function AdminStudentResultPage() {
     try {
       await api.exams.admin.resolveAppeal(examId, appealId, { status, adminNote: adminNote || undefined, newScore: adjustScore ? parseInt(adjustScore) : undefined });
       window.location.reload();
-    } catch (e: any) { alert('操作失败：' + e.message); }
+    } catch (e: any) { toast.error('操作失败：' + e.message); }
   };
 
   return (

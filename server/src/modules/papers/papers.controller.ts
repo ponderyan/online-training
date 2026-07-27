@@ -1,13 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req, UploadedFile, UseInterceptors, Res, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PapersService } from './papers.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Controller('api/papers')
 export class PapersController {
-  constructor(private service: PapersService) {}
+  constructor(private service: PapersService, private systemConfig: SystemConfigService) {}
 
   @Get()
   @RequirePermission(Permissions.PAPER_EDIT)
@@ -34,24 +35,29 @@ export class PapersController {
 
   @Post()
   @RequirePermission(Permissions.PAPER_GENERATE)
-  create(@Body() data: any, @Req() req: any) {
+  async create(@Body() data: any, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    return this.service.create({
-      ...data,
-      createdBy: userId,
-      orgId: req.user?.orgId ?? null,
-    });
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+    // 机构角色组卷 → 检查 allow_org_own_bank 开关
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
+      const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
+      if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法组卷');
+    }
+    return this.service.create({ ...data, createdBy: userId, orgId: userOrgId });
   }
 
   @Post('generate')
   @RequirePermission(Permissions.PAPER_GENERATE)
-  generate(@Body() data: any, @Req() req: any) {
+  async generate(@Body() data: any, @Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    return this.service.generate({
-      ...data,
-      createdBy: userId,
-      orgId: req.user?.orgId ?? null,
-    });
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+    if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
+      const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
+      if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法组卷');
+    }
+    return this.service.generate({ ...data, createdBy: userId, orgId: userOrgId });
   }
 
   @Put(':id/finalize')

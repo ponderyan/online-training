@@ -220,11 +220,8 @@ export class ProctoringService {
       },
     });
 
-    // Increment exam submittedCount
-    await this.prisma.exam.update({
-      where: { id: examId },
-      data: { submittedCount: { increment: 1 } },
-    });
+    // ★ 统一收口：重算 submittedCount（避免并发计数偏移）
+    await this.examsService.syncExamProgress(examId);
 
     return { success: true, finalScore: session.finalScore || session.totalScore };
   }

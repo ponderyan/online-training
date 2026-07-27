@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 export default function AgencyStudentsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [user, setUser] = useState<any>(null);
   const [agencies, setAgencies] = useState<any[]>([]);
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
@@ -32,6 +34,9 @@ export default function AgencyStudentsPage() {
   const [memberForm, setMemberForm] = useState({ displayName: '', username: '', phone: '', roleCode: 'STUDENT' });
   const [memberSaving, setMemberSaving] = useState(false);
 
+  // AGENCY_ADMIN 自动锁定自己的机构，不显示选择器
+  const [isAgencyAdmin, setIsAgencyAdmin] = useState(false);
+
   useEffect(() => {
     init();
   }, []);
@@ -52,6 +57,11 @@ export default function AgencyStudentsPage() {
       const u = JSON.parse(localStorage.getItem('user') || '{}');
       const merged = { ...u, ...perms };
       setUser(merged);
+
+      // 检测是否为纯 AGENCY_ADMIN
+      const roles: string[] = u.roles || [];
+      const agencyOnly = roles.includes('AGENCY_ADMIN') && !roles.includes('SUPER_ADMIN') && !roles.includes('ORG_ADMIN');
+      setIsAgencyAdmin(agencyOnly);
 
       // Load agency list
       const list = await api.enrollmentAgencies.list();
@@ -96,7 +106,7 @@ export default function AgencyStudentsPage() {
 
   const handleSubmitHours = async () => {
     const hours = parseFloat(submitForm.hours);
-    if (!hours || hours <= 0 || !submitTarget) { alert('请输入有效的学时数'); return; }
+    if (!hours || hours <= 0 || !submitTarget) { toast.warning('请输入有效的学时数'); return; }
     setSubmitting(true);
     try {
       let evidenceUrl: string | undefined;
@@ -115,7 +125,7 @@ export default function AgencyStudentsPage() {
       });
       setShowSubmitModal(false);
       setSubmitTarget(null);
-    } catch (e: any) { alert('提交失败：' + (e.message || '未知错误')); }
+    } catch (e: any) { toast.error('提交失败：' + (e.message || '未知错误')); }
     setSubmitting(false);
   };
 
@@ -126,26 +136,34 @@ export default function AgencyStudentsPage() {
         <p className="page-subtitle">管理招生机构名下的学员</p>
       </div>
 
-      {/* Agency selector */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>选择机构</span>
-        <select
-          value={selectedAgencyId ?? ''}
-          onChange={handleAgencyChange}
-          className="input select text-xs"
-          style={{ width: 260 }}
-        >
-          {agencies.map(a => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
-        {selectedAgency && (
-          <span className="text-[11px]" style={{ color: 'var(--ink-300)' }}>
-            {selectedAgency.contactPerson && `${selectedAgency.contactPerson} / `}
-            {selectedAgency.contactPhone}
-          </span>
-        )}
-      </div>
+      {/* Agency selector（AGENCY_ADMIN 自动锁定，不显示选择器） */}
+      {!isAgencyAdmin && (
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>选择机构</span>
+          <select
+            value={selectedAgencyId ?? ''}
+            onChange={handleAgencyChange}
+            className="input select text-xs"
+            style={{ width: 260 }}
+          >
+            {agencies.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+          {selectedAgency && (
+            <span className="text-[11px]" style={{ color: 'var(--ink-300)' }}>
+              {selectedAgency.contactPerson && `${selectedAgency.contactPerson} / `}
+              {selectedAgency.contactPhone}
+            </span>
+          )}
+        </div>
+      )}
+      {isAgencyAdmin && selectedAgency && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>当前机构：</span>
+          <span className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{selectedAgency.name}</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
@@ -257,7 +275,7 @@ export default function AgencyStudentsPage() {
                                   if (!confirm('确认移除此成员？')) return;
                                   api.enrollmentAgencies.removeMember(selectedAgencyId!, m.id).then(() => {
                                     api.enrollmentAgencies.listMembers(selectedAgencyId!).then(setMembers);
-                                  }).catch((e: any) => alert('操作失败：' + e.message));
+                                  }).catch((e: any) => toast.error('操作失败：' + e.message));
                                 }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>移除</button>
                               </td>
                             </tr>
@@ -368,14 +386,14 @@ export default function AgencyStudentsPage() {
             <div className="modal-footer">
               <button onClick={() => setShowMemberModal(false)} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={async () => {
-                if (!memberForm.displayName || !memberForm.username) { alert('姓名和用户名为必填'); return; }
+                if (!memberForm.displayName || !memberForm.username) { toast.warning('姓名和用户名为必填'); return; }
                 setMemberSaving(true);
                 try {
                   await api.enrollmentAgencies.createMember(selectedAgencyId!, memberForm);
                   setShowMemberModal(false);
                   const d = await api.enrollmentAgencies.listMembers(selectedAgencyId!);
                   setMembers(d || []);
-                } catch (e: any) { alert('创建失败：' + (e.message || '未知错误')); }
+                } catch (e: any) { toast.error('创建失败：' + (e.message || '未知错误')); }
                 setMemberSaving(false);
               }} disabled={memberSaving} className="btn btn-fox btn-sm">
                 {memberSaving ? '创建中…' : '创建'}

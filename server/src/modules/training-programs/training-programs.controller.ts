@@ -24,14 +24,14 @@ export class TrainingProgramsController {
 
   @Get()
   @RequirePermission(P.PROGRAM_VIEW)
-  findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string) {
-    return this.service.findAll({ page: page ? parseInt(page) : undefined, pageSize: pageSize ? parseInt(pageSize) : undefined, keyword, status, subjectId: subjectId ? parseInt(subjectId) : undefined });
+  findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string, @Req() req?: any) {
+    return this.service.findAll({ page: page ? parseInt(page) : undefined, pageSize: pageSize ? parseInt(pageSize) : undefined, keyword, status, subjectId: subjectId ? parseInt(subjectId) : undefined, userOrgId: req?.user?.orgId ?? null, userRoles: req?.user?.roles });
   }
   @Get(':id')
   @RequirePermission(P.PROGRAM_VIEW)
   findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
   @Post() @RequirePermission(P.PROGRAM_CREATE)
-  create(@Body() data: any) { return this.service.create(data); }
+  create(@Body() data: any, @Req() req?: any) { return this.service.create(data, req?.user?.orgId ?? null); }
   @Put(':id') @RequirePermission(P.PROGRAM_EDIT)
   update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
   @Delete(':id') @RequirePermission(P.PROGRAM_DELETE)

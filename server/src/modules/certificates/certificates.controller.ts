@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query, ParseIntPipe, Res, Req, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
+import { requestContext } from '../../common/utils/request-context.js';
 import { CertificatesService } from './certificates.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
@@ -73,8 +74,11 @@ export class CertificatesController {
   /** 批量发证 */
   @Post()
   @RequirePermission(Permissions.CERT_ISSUE)
-  async issue(@Body() data: { examSessionId: number; studentIds: number[] }) {
-    return this.service.issueCertificates(data.examSessionId, data.studentIds);
+  async issue(@Body() data: { examSessionId: number; studentIds: number[] }, @Req() req: any) {
+    return this.service.issueCertificates(data.examSessionId, data.studentIds, {
+      userOrgId: req.user?.orgId ?? null,
+      userRoles: req.user?.roles || [],
+    });
   }
 
   /** 证书列表（后台） */
@@ -100,8 +104,12 @@ export class CertificatesController {
   async issueSingle(
     @Param('examSessionId', ParseIntPipe) examSessionId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req?: any,
   ) {
-    return this.service.issueSingleCertificate(examSessionId, studentId);
+    return this.service.issueSingleCertificate(examSessionId, studentId, {
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles || [],
+    });
   }
 
   /** 撤销证书 */
@@ -111,6 +119,8 @@ export class CertificatesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { reason: string; operatorId?: number },
   ) {
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.revokeCertificate(id, data.reason, data.operatorId);
   }
 

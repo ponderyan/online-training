@@ -1,9 +1,12 @@
 'use client';
 
+import { EXAM_STATUS_LABELS } from '@/lib/exam-constants';
+
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 export default function ExamDetail() {
   const params = useParams();
@@ -12,6 +15,7 @@ export default function ExamDetail() {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [confirmAction, setConfirmAction] = useState<'delete' | 'finish' | null>(null);
   const refreshRef = useRef<any>(null);
 
   const loadExam = () => {
@@ -50,27 +54,26 @@ export default function ExamDetail() {
     await api.exams.publish(parseInt(params.id as string));
     loadAll();
   };
-  const handleFinish = async () => {
-    if (!confirm('确定结束考试？未提交学员将强制收卷。')) return;
+  const handleFinish = async (reason: string) => {
     await api.exams.finish(parseInt(params.id as string));
+    setConfirmAction(null);
     loadAll();
   };
-  const handleDelete = async () => {
-    if (!confirm('确定删除该考试场次？')) return;
+  const handleDelete = async (reason: string) => {
     await api.exams.delete(parseInt(params.id as string));
+    setConfirmAction(null);
     router.push('/exams');
   };
 
   if (loading) return <AppLayout><p style={{ color: 'var(--ink-300)' }}>加载中…</p></AppLayout>;
   if (!exam) return null;
 
-  const statusLabels: Record<string, string> = {
-    DRAFT: '草稿', PUBLISHED: '已发布', IN_PROGRESS: '进行中', FINISHED: '已结束', CANCELLED: '已取消',
-  };
 
-  const sessionStatusLabels: Record<string, string> = {
-    ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交',
-  };
+
+  const isOffline = exam.examMode === 'OFFLINE';
+  const sessionStatusLabels: Record<string, string> = isOffline
+    ? { ASSIGNED: '待录入', ACTIVE: '待录入', PAUSED: '待录入', SUBMITTED: '已录入' }
+    : { ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交' };
 
   const submittedCount = students.filter(s => s.status === 'SUBMITTED').length;
   const activeCount = students.filter(s => s.status === 'ACTIVE').length;
@@ -83,7 +86,7 @@ export default function ExamDetail() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="page-title">{exam.title}</h1>
-          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生</p>
+          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生{exam.examMode === 'OFFLINE' ? ' · ✍️ 线下笔试' : ''}</p>
         </div>
         <div className="flex gap-2">
           {exam.status === 'DRAFT' && (
@@ -96,11 +99,11 @@ export default function ExamDetail() {
             </>
           )}
           {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && (
-            <button onClick={handleFinish} className="btn text-sm px-4 py-2"
+            <button onClick={() => setConfirmAction('finish')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--verm)', color: 'var(--verm)' }}>结束考试</button>
           )}
           {exam.status === 'DRAFT' && (
-            <button onClick={handleDelete} className="btn text-sm px-4 py-2"
+            <button onClick={() => setConfirmAction('delete')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>删除</button>
           )}
           {exam.status === 'FINISHED' && (
@@ -123,10 +126,16 @@ export default function ExamDetail() {
               </button>
             </>
           )}
-          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && (
+          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && exam.examMode !== 'OFFLINE' && (
             <button onClick={() => router.push(`/proctoring/${exam.id}`)}
               className="btn text-sm px-4 py-2" style={{ border: '1px solid #ef4444', color: '#ef4444' }}>
               🎥 监考
+            </button>
+          )}
+          {exam.examMode === 'OFFLINE' && (
+            <button onClick={() => router.push(`/exams/${exam.id}/offline-scores`)}
+              className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
+              ✍️ 成绩管理
             </button>
           )}
         </div>
@@ -135,7 +144,7 @@ export default function ExamDetail() {
       {/* Status Overview — auto-refresh during active exams */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         {[
-          { label: '考试状态', value: statusLabels[exam.status] || exam.status, color: '#8b8174' },
+          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: '#8b8174' },
           { label: '已提交', value: submittedCount, color: '#00897b' },
           { label: '考试中', value: activeCount, color: '#e87a30' },
           { label: '已断线', value: pausedCount, color: '#ef4444' },
@@ -192,10 +201,10 @@ export default function ExamDetail() {
               <div className="flex items-center gap-4">
                 {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
                 <span className="text-xs px-2.5 py-1 rounded-full" style={{
-                  background: s.status === 'SUBMITTED' ? '#e8f5e9' : s.status === 'ACTIVE' ? '#fff3e0' : '#f5f5f5',
-                  color: s.status === 'SUBMITTED' ? '#2e7d32' : s.status === 'ACTIVE' ? '#e65100' : '#757575',
+                  background: s.absent ? '#fef3c7' : s.status === 'SUBMITTED' ? '#e8f5e9' : s.status === 'ACTIVE' ? '#fff3e0' : '#f5f5f5',
+                  color: s.absent ? '#d97706' : s.status === 'SUBMITTED' ? '#2e7d32' : s.status === 'ACTIVE' ? '#e65100' : '#757575',
                 }}>
-                  {sessionStatusLabels[s.status] || s.status}
+                  {s.absent ? '缺考' : (sessionStatusLabels[s.status] || s.status)}
                 </span>
                 {s.suspicionLevel > 0 && <span className="text-xs">⚠️ 异常{s.suspicionLevel}</span>}
               </div>
@@ -206,6 +215,20 @@ export default function ExamDetail() {
           )}
         </div>
       </div>
+      <ReasonConfirmModal
+        open={confirmAction !== null}
+        title={confirmAction === 'delete' ? '🗑 删除考试' : '🛑 结束考试'}
+        message={confirmAction === 'delete'
+          ? '确定删除该考试场次？此操作不可撤销。'
+          : '确定结束考试？未提交学员将被强制收卷。'}
+        required
+        presetReasons={confirmAction === 'delete'
+          ? ['创建错误', '考试安排取消', '重复创建']
+          : ['考试时间已到', '所有学员已交卷', '考试异常需终止']}
+        confirmText={confirmAction === 'delete' ? '确认删除' : '确认结束'}
+        onConfirm={confirmAction === 'delete' ? handleDelete : handleFinish}
+        onCancel={() => setConfirmAction(null)}
+      />
     </AppLayout>
   );
 }
