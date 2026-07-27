@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FoxLogo from '@/components/fox-logo';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { validatePhone, validateEmail } from '@/lib/validators';
 
 // ── 输入框 icon SVG（与登录页一致）──
 const UserIcon = ({ className }: { className?: string }) => (
@@ -70,6 +71,8 @@ export default function RegisterPage() {
     if (!form.username || !form.displayName || !form.password) { setError('请填写必填项'); return; }
     if (form.password !== form.confirmPwd) { setError('两次密码不一致'); return; }
     if (form.password.length < 6) { setError('密码至少6位'); return; }
+    if (form.phone) { const phoneErr = validatePhone(form.phone); if (phoneErr) { setError(phoneErr); return; } }
+    if (form.email) { const emailErr = validateEmail(form.email); if (emailErr) { setError(emailErr); return; } }
 
     setLoading(true);
     setError('');
@@ -207,10 +210,10 @@ export default function RegisterPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="手机号" icon={<PhoneIcon className="w-[18px] h-[18px]" />}>
-                          <input value={form.phone} onChange={set('phone')} placeholder="选填" className={inputClass} />
+                          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/[^\d]/g, '') })} placeholder="选填" className={inputClass} maxLength={11} />
                         </Field>
                         <Field label="邮箱" icon={<MailIcon className="w-[18px] h-[18px]" />}>
-                          <input value={form.email} onChange={set('email')} placeholder="选填" className={inputClass} />
+                          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} placeholder="选填" className={inputClass} />
                         </Field>
                       </div>
                     </div>

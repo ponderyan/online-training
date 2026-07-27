@@ -309,7 +309,7 @@ export default function QuestionPlanTab({
                                 className="input text-xs" style={{ width: '50px' }} />
                             </div>
                             <div className="flex items-center gap-1">
-                              <span className="w-6" style={{ color: 'var(--ink-400)' }}>难</span>
+                              <span className="w-6" style={{ color: 'var(--ink-400)' }}>易</span>
                               <input type="number" min={0} max={100} value={cfg.difficultyEasy}
                                 onChange={e => updateConfig(idx, 'difficultyEasy', Number(e.target.value))}
                                 className="input text-xs" style={{ width: '40px' }} />

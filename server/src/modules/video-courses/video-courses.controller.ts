@@ -32,6 +32,15 @@ export class VideoCoursesController {
     });
   }
 
+  // ── 学员端：可见视频列表 + 学时统计（必须在 :id 之前声明）──
+  @Get('student/visible')
+  @RequirePermission(P.COURSE_VIEW)
+  async findVisible(@Req() req: any) {
+    const studentId = req.user?.id;
+    if (!studentId) throw new Error('未登录');
+    return this.service.findVisibleForStudent(studentId);
+  }
+
   @Get(':id')
   @RequirePermission(P.COURSE_VIEW)
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -184,12 +193,4 @@ export class VideoCoursesController {
     return this.service.reportProgress(id, studentId, body);
   }
 
-  // ── 学员端：可见视频列表 + 学时统计 ──
-  @Get('student/visible')
-  @RequirePermission(P.COURSE_VIEW)
-  async findVisible(@Req() req: any) {
-    const studentId = req.user?.id;
-    if (!studentId) throw new Error('未登录');
-    return this.service.findVisibleForStudent(studentId);
-  }
 }

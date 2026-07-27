@@ -166,7 +166,7 @@ export default function PapersPage() {
                 <button onClick={() => handleAnswerSheet(p.id)} className="btn btn-fox btn-xs">答题卡</button>
                 <button onClick={() => handleDownload(p.id, 'pdf')} className="btn btn-outline btn-xs">PDF</button>
                 {p.status === 'FINALIZED' && (
-                  <button onClick={() => { api.papers.promote(p.id); load(); }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
+                  <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
                 )}
                 <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-ghost btn-xs">复制</button>
                 <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}

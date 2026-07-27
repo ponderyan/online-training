@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ChunkingService } from '../ai-assistant/chunking.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -15,7 +16,7 @@ export class MaterialsService {
   private readonly logger = new Logger(MaterialsService.name);
   private uploadDir = path.resolve('uploads');
 
-  constructor(private prisma: PrismaService, private chunking: ChunkingService) {
+  constructor(private prisma: PrismaService, private chunking: ChunkingService, private systemConfig: SystemConfigService) {
     fs.mkdir(this.uploadDir, { recursive: true }).catch(() => {});
   }
 
@@ -97,9 +98,18 @@ export class MaterialsService {
   }
 
   /**
-   * 保存章节到数据库
+   * 保存章节到数据库（Part 3.2: 单章节大文档自动触发 AI 分章）
    */
-  private async saveChapters(materialId: number, chapters: Array<{ title: string; content: string }>) {
+  private async saveChapters(materialId: number, chapters: Array<{ title: string; content: string }>, materialName?: string) {
+    // Part 3.2: 如果只有1章且内容>5000字，尝试 AI 辅助分章
+    if (chapters.length === 1 && chapters[0].content.length > 5000 && materialName) {
+      const aiChapters = await this.aiSplitChapters(chapters[0].content, materialName);
+      if (aiChapters.length > 1) {
+        console.log(`[AI分章] 教材 "${materialName}" 从1章拆分为${aiChapters.length}章`);
+        chapters = aiChapters;
+      }
+    }
+
     for (let i = 0; i < chapters.length; i++) {
       await this.prisma.materialChapter.create({
         data: {
@@ -160,7 +170,7 @@ export class MaterialsService {
     // 如果有内容，自动创建章节
     if (data.content) {
       const chapters = this.parseTextToChapters(data.content);
-      const chapterCount = await this.saveChapters(material.id, chapters);
+      const chapterCount = await this.saveChapters(material.id, chapters, data.name);
 
       // 更新章节数
       await this.prisma.material.update({
@@ -254,7 +264,7 @@ export class MaterialsService {
           const ocrText = await this.ocrPdfFallback(filePath);
           if (ocrText.length > 20) {
             const chapters = this.parseTextToChapters(ocrText);
-            await this.saveChapters(materialId, chapters);
+            await this.saveChapters(materialId, chapters, originalName);
             await this.prisma.material.update({
               where: { id: materialId },
               data: { status: 'OCR_DONE', totalPages: numPages || 1, errorMessage: null },
@@ -268,8 +278,8 @@ export class MaterialsService {
           data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字，PDF 可能为扫描件，建议手动录入正文' },
         });
       } else {
-        const chapters = this.parseTextToChapters(text);
-        await this.saveChapters(materialId, chapters);
+        const chapters = this.parseTextToChapters(cleanPdfText(text));
+        await this.saveChapters(materialId, chapters, originalName);
         await this.prisma.material.update({
           where: { id: materialId },
           data: {
@@ -531,6 +541,22 @@ export class MaterialsService {
     // P0-1: 智能匹配 Subject 的 Chapter（按名称模糊匹配，兜底取第一个）
     const chapterId = await this.resolveSubjectChapter(subjectId, context?.chapterTitle || undefined);
 
+    // Part 1.3: 入库去重 — 同科目下内容高度相似的题目不重复创建
+    const contentPrefix = content.trim().slice(0, 50);
+    if (contentPrefix.length >= 10) {
+      const candidates = await this.prisma.question.findMany({
+        where: { subjectId, content: { contains: contentPrefix.slice(0, 30) } },
+        select: { id: true, content: true },
+        take: 5,
+      });
+      for (const c of candidates) {
+        if (jaccardSimilarity(normalizeContent(c.content), normalizeContent(content)) > 0.9) {
+          console.log(`[入库去重] 跳过重复题目: "${content.slice(0, 40)}..." (已有 #${c.id})`);
+          return c as any;
+        }
+      }
+    }
+
     // 创建正式试题
     const question = await this.prisma.question.create({
       data: {
@@ -607,18 +633,62 @@ export class MaterialsService {
     }
     if (!materialChapterTitle) return chapters[0].id;
 
-    // 精确匹配
+    // 1. 精确匹配
     const exact = chapters.find(c => c.name === materialChapterTitle);
     if (exact) return exact.id;
 
-    // 包含匹配（教材章节标题包含科目章节名，或反之）
+    // 2. 包含匹配（教材章节标题包含科目章节名，或反之）
     const partial = chapters.find(c =>
       materialChapterTitle.includes(c.name) || c.name.includes(materialChapterTitle)
     );
     if (partial) return partial.id;
 
-    // 兜底：第一个章节
+    // 3. 关键词交集匹配：将标题拆词，计算交集/并集比 > 0.5 则命中
+    const tokenize = (s: string): Set<string> => {
+      // 去掉章节序号前缀（第X章、X.X 等），提取有效词
+      const cleaned = s.replace(/^第[一二三四五六七八九十百千\d]+[章节篇单元模块]?\s*/, '').replace(/^[\d.．]+\s*/, '');
+      // 按标点和空格拆词，过滤单字
+      const words = cleaned.split(/[\s，。、；：''（）【】\/\-—·]+/).filter(w => w.length >= 2);
+      return new Set(words);
+    };
+    const titleTokens = tokenize(materialChapterTitle);
+    if (titleTokens.size > 0) {
+      let bestMatch: { id: number; score: number } | null = null;
+      for (const c of chapters) {
+        const cTokens = tokenize(c.name);
+        if (cTokens.size === 0) continue;
+        let inter = 0;
+        for (const t of titleTokens) { if (cTokens.has(t)) inter++; }
+        const union = new Set([...titleTokens, ...cTokens]).size;
+        const score = union > 0 ? inter / union : 0;
+        if (score > 0.5 && (!bestMatch || score > bestMatch.score)) {
+          bestMatch = { id: c.id, score };
+        }
+      }
+      if (bestMatch) return bestMatch.id;
+    }
+
+    // 4. 兜底：第一个章节
     return chapters[0].id;
+  }
+
+  /** 从系统配置加载难度定义，注入 AI Prompt */
+  private async getDifficultyPromptBlock(): Promise<string> {
+    const defs = await this.prisma.systemConfig.findMany({
+      where: { key: { in: ['difficulty_def_easy', 'difficulty_def_medium_easy', 'difficulty_def_medium_hard', 'difficulty_def_hard'] } },
+      select: { key: true, value: true },
+    });
+    const map: Record<string, string> = {};
+    for (const d of defs) map[d.key] = d.value;
+    const easy = map['difficulty_def_easy'] || '识记：教材原文直接可答，无需推理';
+    const mediumEasy = map['difficulty_def_medium_easy'] || '理解：原文的归纳、改写、同义替换';
+    const mediumHard = map['difficulty_def_medium_hard'] || '应用：综合2+知识点，或应用到具体情境';
+    const hard = map['difficulty_def_hard'] || '分析评价：新情境下的诊断/决策，教材无直接答案';
+    return `难度判定标准（必须严格遵循）：
+- EASY（识记）：${easy}
+- MEDIUM_EASY（理解）：${mediumEasy}
+- MEDIUM_HARD（应用）：${mediumHard}
+- HARD（分析评价）：${hard}`;
   }
 
   // ═══════════════════════════════════════════════
@@ -683,6 +753,11 @@ export class MaterialsService {
 
     const allQuestions: any[] = [];
     let totalTokens = 0;
+    // Part 1: 程序级去重 + Part 2: 质量统计
+    const seenContents: string[] = [];
+    let skippedDupes = 0;
+    let skippedInvalid = 0;
+    let noExplanation = 0;
 
     for (const chapter of material.chapters) {
       const content = chapter.content || '';
@@ -694,6 +769,18 @@ export class MaterialsService {
         );
         if (result.questions?.length > 0) {
           for (const q of result.questions) {
+            // Part 1: 程序级去重（跨章节累积）
+            const normalized = normalizeContent(q.content || '');
+            if (isDuplicateQuestion(normalized, seenContents)) {
+              skippedDupes++;
+              continue;
+            }
+            seenContents.push(normalized);
+
+            // Part 2: 质量标记
+            const qualityFlag = q._qualityFlag || null;
+            if (qualityFlag === 'NO_EXPLANATION') noExplanation++;
+
             const saved = await this.prisma.materialQuestion.create({
               data: {
                 materialId: material.id,
@@ -709,6 +796,7 @@ export class MaterialsService {
                 explanation: q.explanation || null,
                 suggestedGroup: q.suggestedGroup || 'EXAM_GROUP',
                 reviewStatus: 'PENDING',
+                ...(qualityFlag ? { reviewNote: `[质量标记] ${qualityFlag}` } : {}),
               },
             });
             allQuestions.push(saved);
@@ -733,8 +821,15 @@ export class MaterialsService {
       await this.prisma.material.update({ where: { id }, data: { status: 'GENERATED' } });
     }
 
+    if (skippedDupes > 0 || skippedInvalid > 0) {
+      console.log(`[AI出题质量] 教材 #${id} 去重丢弃 ${skippedDupes} 题，不合格丢弃 ${skippedInvalid} 题，缺解析 ${noExplanation} 题`);
+    }
+
     return {
       total: allQuestions.length,
+      skippedDupes,
+      skippedInvalid,
+      noExplanation,
       chapters: material.chapters.length,
       tokens: totalTokens,
       status: allQuestions.length > 0 ? 'GENERATED' : 'FAILED',
@@ -747,25 +842,37 @@ export class MaterialsService {
     chapterCounts?: Record<string, number>
   ): Promise<{ questions: any[]; tokens: number }> {
     const url = config.apiBaseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const difficultyBlock = await this.getDifficultyPromptBlock();
 
-    const systemPrompt = `你是一名资深学科命题专家。请根据提供的教材内容，生成符合中国考试标准的试题。
+    const systemPrompt = `你是一名资深学科命题专家，擅长根据教材内容编制高质量考试试题。
 
-要求：
+核心要求：
 1. 严格基于教材内容出题，不要编造教材中没有的知识点
 2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)
-3. 每题标注难度：EASY(易)、MEDIUM_EASY(较易)、MEDIUM_HARD(较难)、HARD(难)
+3. 难度标注必须严格遵循以下标准：
+${difficultyBlock}
 4. 标注所属知识点(knowledgePoint)
-5. 单选题需提供4个选项(A/B/C/D)，多选题提供4-5个选项
-6. 判断题答案填 true 或 false
-7. 填空题需给出正确答案
-8. 简答题需给出参考答案要点
-9. 题目覆盖教材的重点和难点
-10. 返回严格的 JSON 格式，不要包含任何其他文字
-11. 每道题必须包含以下所有字段（不可省略任一）：
-    - type - difficulty - knowledgePoint - sourceChunk(20-50字原文引用)
-    - content - options(选择题必填) - blanks(填空题必填)
-    - answer - explanation(答案解析，必须包含)
-    - suggestedGroup(默认"EXAM_GROUP")`;
+5. 单选题提供4个选项(A/B/C/D)，有且仅有1个正确选项
+6. 多选题提供4-5个选项，有2-4个正确选项
+7. 判断题答案填 true 或 false
+8. 填空题需给出正确答案
+9. 简答题需给出参考答案要点（至少3个要点）
+10. 题目覆盖教材的重点和难点，避免重复考查同一知识点
+
+答案规范（极其重要）：
+- 选择题的 answer 字段必须填写正确选项的 label，如单选 "A"，多选 "A,B,C"
+- 选择题的 options 中 isCorrect 必须与 answer 字段完全一致
+- explanation 字段必须包含，需说明正确答案的依据，引用教材原文
+- sourceChunk 必须是从教材中直接引用的20-50字原文
+
+返回严格的 JSON 数组格式，不要包含任何其他文字。每道题必须包含以下所有字段：
+type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")
+
+示例（单选题）：
+{"type":"SINGLE_CHOICE","difficulty":"MEDIUM_EASY","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"数字化转型的核心目标是？","options":[{"label":"A","content":"降低人力成本","isCorrect":false},{"label":"B","content":"重塑业务流程和组织架构","isCorrect":true},{"label":"C","content":"增加IT设备采购","isCorrect":false},{"label":"D","content":"实现无纸化办公","isCorrect":false}],"answer":"B","explanation":"教材明确指出数字化转型是企业利用数字技术重塑业务流程和组织架构的过程，而非简单的成本削减或设备采购。","suggestedGroup":"EXAM_GROUP"}
+
+示例（填空题）：
+{"type":"FILL_BLANK","difficulty":"EASY","knowledgePoint":"云计算","sourceChunk":"云计算的三大服务模式为IaaS、PaaS和SaaS","content":"云计算的三大服务模式为____、____和____。","blanks":[{"blankIndex":0,"answer":"IaaS"},{"blankIndex":1,"answer":"PaaS"},{"blankIndex":2,"answer":"SaaS"}],"answer":"IaaS,PaaS,SaaS","explanation":"教材原文：云计算的三大服务模式为IaaS（基础设施即服务）、PaaS（平台即服务）和SaaS（软件即服务）。","suggestedGroup":"EXAM_GROUP"}`;
 
     // 如果有按比例分配的章节题量，优先使用；否则回退到 batchNote 整份说明
     let countNote = '';
@@ -804,61 +911,62 @@ ${
   }
 ]`;
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: config.modelVersion,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: Math.min(config.temperature || 0.7, 0.5), // 出题需要较低温度保证准确性
-          max_tokens: config.maxTokens || 8192,
-        }),
-        signal: AbortSignal.timeout(300000), // 5分钟，55道题生成需要时间
-      });
-
-      if (!response.ok) {
-        let detail = '';
-        try { const body: any = await response.json(); detail = body.error?.message || JSON.stringify(body); }
-        catch { detail = await response.text().catch(() => ''); }
-        throw new Error(`API 错误 (${response.status}): ${detail}`);
-      }
-
-      const body: any = await response.json();
-      const reply = body.choices?.[0]?.message?.content || '';
-      const usage = body.usage || {};
-      const totalTokens = (usage.total_tokens || 0) + (usage.completion_tokens || 0);
-
-      const questions = parseAIJsonResponse(reply);
-
-      // 验证和清洗
-      const validQuestions = questions
-        .filter((q: any) => q.content && q.type)
-        .map((q: any) => {
-          const { question, warnings } = validateAndFixQuestion(q);
-          if (warnings.length > 0) {
-            console.warn(`[AI出题质量] 章节 "${chapter.title}" 题目: ${warnings.join('; ')}`);
-          }
-          return {
-            ...question,
-            type: question.type,
-            difficulty: question.difficulty,
-          };
+    // B3: 包装重试机制（最多3次尝试）
+    return withAiRetry(
+      async (attempt) => {
+        const temp = Math.min(config.temperature || 0.7, 0.3) - (attempt * 0.05); // 重试时更保守
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: config.modelVersion,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: Math.max(0.1, temp),
+            max_tokens: config.maxTokens || 8192,
+          }),
+          signal: AbortSignal.timeout(300000),
         });
 
-      return { questions: validQuestions, tokens: totalTokens };
-    } catch (e: any) {
-      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        throw new Error('AI 请求超时，请检查模型配置或稍后重试');
-      }
-      throw e;
-    }
+        if (!response.ok) {
+          let detail = '';
+          try { const body: any = await response.json(); detail = body.error?.message || JSON.stringify(body); }
+          catch { detail = await response.text().catch(() => ''); }
+          throw new Error(`API 错误 (${response.status}): ${detail}`);
+        }
+
+        const body: any = await response.json();
+        const reply = body.choices?.[0]?.message?.content || '';
+        const usage = body.usage || {};
+        const totalTokens = (usage.total_tokens || 0) + (usage.completion_tokens || 0);
+
+        const questions = parseAIJsonResponse(reply);
+
+        const validated = questions
+          .filter((q: any) => q.content && q.type)
+          .map((q: any) => {
+            const { question, warnings, valid } = validateAndFixQuestion(q);
+            if (warnings.length > 0) {
+              console.warn(`[AI出题质量] 章节 "${chapter.title}" 题目: ${warnings.join('; ')}`);
+            }
+            return { question: { ...question, type: question.type, difficulty: question.difficulty }, valid };
+          });
+        const validQuestions = validated.filter(v => v.valid).map(v => v.question);
+        const invalidCount = validated.filter(v => !v.valid).length;
+        if (invalidCount > 0) {
+          console.warn(`[AI出题质量] 章节 "${chapter.title}" 丢弃 ${invalidCount} 道不合格题目`);
+        }
+
+        return { questions: validQuestions, tokens: totalTokens };
+      },
+      (result) => result.questions.length > 0, // 验证：至少有1题
+      2,
+    );
   }
 
   /**
@@ -1370,6 +1478,7 @@ ${
   ): Promise<any[]> {
     const content = cfg.chapter?.content || '';
     if (content.trim().length < 20) return [];
+    const difficultyBlock = await this.getDifficultyPromptBlock();
 
     const typeLabel: Record<string, string> = {
       'SINGLE_CHOICE': '单选题',
@@ -1385,25 +1494,36 @@ ${
       cfg.type === 'FILL_BLANK' ? '给出正确答案及填空位置' :
       cfg.type === 'SHORT_ANSWER' ? '给出参考答案要点' : '';
 
-    const difficultyNote = `难度分布：易${cfg.difficultyEasy ?? 30}%、中${cfg.difficultyMedium ?? 50}%、难${cfg.difficultyHard ?? 20}%`;
+    // 3级难度映射到4级：易->EASY, 中->MEDIUM_EASY+MEDIUM_HARD(各半), 难->HARD
+    const dEasy = cfg.difficultyEasy ?? 30;
+    const dMedium = cfg.difficultyMedium ?? 50;
+    const dHard = cfg.difficultyHard ?? 20;
+    const dMediumHalf = Math.round(dMedium / 2);
+    const difficultyNote = `难度分布（4级）：EASY ${dEasy}%、MEDIUM_EASY ${dMediumHalf}%、MEDIUM_HARD ${dMedium - dMediumHalf}%、HARD ${dHard}%`;
     const focusNote = cfg.focusKeywords ? `重点关注的考点/关键词：${cfg.focusKeywords}` : '';
 
     const url = (config.apiBaseUrl?.replace(/\/+$/, '') || 'https://api.deepseek.com') + '/chat/completions';
 
-    const systemPrompt = `你是一名资深学科命题专家。请根据提供的教材内容，生成符合中国考试标准的${typeLabel[cfg.type] || cfg.type}。
+    const systemPrompt = `你是一名资深学科命题专家，擅长根据教材内容编制高质量考试试题。请生成符合中国考试标准的${typeLabel[cfg.type] || cfg.type}。
 
-要求：
+核心要求：
 1. 严格基于教材内容出题，不要编造教材中没有的知识点
 2. 题型：${typeLabel[cfg.type] || cfg.type}
 3. ${typeInstructions}
-4. 标注难度：EASY/MEDIUM_EASY/MEDIUM_HARD/HARD
+4. 难度标注必须严格遵循以下标准：
+${difficultyBlock}
 5. 标注所属知识点(knowledgePoint)
-6. 返回严格的JSON数组格式
-7. 每道题必须包含以下所有字段（不可省略任一）：
-   - type - difficulty - knowledgePoint - sourceChunk(20-50字原文引用)
-   - content - options(选择题必填) - blanks(填空题必填)
-   - answer - explanation(答案解析，必须包含)
-   - suggestedGroup(默认"EXAM_GROUP")`;
+6. 题目之间不要重复考查同一知识点，确保覆盖面广
+
+答案规范（极其重要）：
+- 选择题的 answer 字段必须填写正确选项的 label，如单选 "A"，多选 "A,B,C"
+- 选择题的 options 中 isCorrect 必须与 answer 字段完全一致
+- 单选题有且仅有1个正确选项，多选题有2-4个正确选项
+- explanation 字段必须包含，需说明正确答案的依据，引用教材原文
+- sourceChunk 必须是从教材中直接引用的20-50字原文
+
+返回严格的JSON数组格式，不要有任何其他文字。每道题必须包含以下所有字段：
+type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")`;
 
     const userPrompt = `教材名称：${material.name}
 ${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
@@ -1431,56 +1551,58 @@ ${content.slice(0, 15000)}
   }
 ]`;
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: config.modelVersion,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: Math.min(config.temperature || 0.7, 0.5),
-          max_tokens: config.maxTokens || 4096,
-        }),
-        signal: AbortSignal.timeout(120000),
-      });
-
-      if (!response.ok) {
-        let detail = '';
-        try { const body: any = await response.json(); detail = body.error?.message || JSON.stringify(body); }
-        catch { detail = await response.text().catch(() => ''); }
-        throw new Error(`API 错误 (${response.status}): ${detail}`);
-      }
-
-      const body: any = await response.json();
-      const reply = body.choices?.[0]?.message?.content || '';
-
-      const questions = parseAIJsonResponse(reply);
-
-      return questions
-        .filter((q: any) => q.content)
-        .map((q: any) => {
-          const { question, warnings } = validateAndFixQuestion(q);
-          if (warnings.length > 0) {
-            console.warn(`[AI出题质量] 章节 "${cfg.chapter?.title || ''}" 题型 ${cfg.type}: ${warnings.join('; ')}`);
-          }
-          return {
-            ...question,
-            type: cfg.type,
-            difficulty: question.difficulty,
-          };
+    // B3: 包装重试机制（最多3次尝试）
+    return withAiRetry(
+      async (attempt) => {
+        const temp = Math.min(config.temperature || 0.7, 0.3) - (attempt * 0.05);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: config.modelVersion,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: Math.max(0.1, temp),
+            max_tokens: config.maxTokens || 4096,
+          }),
+          signal: AbortSignal.timeout(120000),
         });
-    } catch (e: any) {
-      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        throw new Error('AI 请求超时');
-      }
-      throw e;
-    }
+
+        if (!response.ok) {
+          let detail = '';
+          try { const body: any = await response.json(); detail = body.error?.message || JSON.stringify(body); }
+          catch { detail = await response.text().catch(() => ''); }
+          throw new Error(`API 错误 (${response.status}): ${detail}`);
+        }
+
+        const body: any = await response.json();
+        const reply = body.choices?.[0]?.message?.content || '';
+
+        const questions = parseAIJsonResponse(reply);
+
+        const validated = questions
+          .filter((q: any) => q.content)
+          .map((q: any) => {
+            const { question, warnings, valid } = validateAndFixQuestion(q);
+            if (warnings.length > 0) {
+              console.warn(`[AI出题质量] 章节 "${cfg.chapter?.title || ''}" 题型 ${cfg.type}: ${warnings.join('; ')}`);
+            }
+            return { question: { ...question, type: cfg.type, difficulty: question.difficulty }, valid };
+          });
+        const invalidCount = validated.filter(v => !v.valid).length;
+        if (invalidCount > 0) {
+          console.warn(`[AI出题质量] 章节 "${cfg.chapter?.title || ''}" 丢弃 ${invalidCount} 道不合格题目`);
+        }
+        return validated.filter(v => v.valid).map(v => v.question);
+      },
+      (result) => result.length > 0, // 验证：至少有1题
+      2,
+    );
   }
 
   /**
@@ -1611,6 +1733,61 @@ ${content.slice(0, 15000)}
       });
     }
   }
+
+  /**
+   * Part 3.2: AI 辅助分章 — 当正则只解析出1章且内容>5000字时调用
+   * 失败时静默回退到单章节
+   */
+  private async aiSplitChapters(text: string, materialName: string): Promise<Array<{ title: string; content: string }>> {
+    try {
+      const config = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
+      if (!config) return [];
+
+      const url = (config.apiBaseUrl?.replace(/\/+$/, '') || 'https://api.deepseek.com') + '/chat/completions';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+        body: JSON.stringify({
+          model: config.modelVersion,
+          messages: [
+            { role: 'system', content: '你是一名教材编辑专家。请分析以下教材文本，识别其中的章节结构。返回严格JSON数组格式：[{"title":"章节标题","startLine":行号}]。行号从0开始计数。如果无法识别章节，返回空数组[]。' },
+            { role: 'user', content: `教材名称：${materialName}\n\n以下为教材文本（每行一个元素，行号标注）：\n${text.slice(0, 12000).split('\n').map((l, i) => `${i}: ${l}`).join('\n')}` },
+          ],
+          temperature: 0.2,
+          max_tokens: 2048,
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (!response.ok) return [];
+      const body: any = await response.json();
+      const reply = body.choices?.[0]?.message?.content || '';
+      const splits = parseAIJsonResponse(reply);
+
+      if (!Array.isArray(splits) || splits.length < 2) return [];
+
+      // 按 startLine 切分文本
+      const lines = text.split('\n');
+      const chapters: Array<{ title: string; content: string }> = [];
+      const sorted = splits.sort((a: any, b: any) => (a.startLine || 0) - (b.startLine || 0));
+
+      for (let i = 0; i < sorted.length; i++) {
+        const start = Math.max(0, Math.min(sorted[i].startLine || 0, lines.length - 1));
+        const end = i < sorted.length - 1
+          ? Math.max(start + 1, Math.min(sorted[i + 1].startLine || lines.length, lines.length))
+          : lines.length;
+        const chapterContent = lines.slice(start, end).join('\n').trim();
+        if (chapterContent.length > 20) {
+          chapters.push({ title: sorted[i].title || `第${i + 1}章`, content: chapterContent });
+        }
+      }
+
+      return chapters.length > 1 ? chapters : [];
+    } catch (e: any) {
+      console.warn(`[AI分章] 失败，回退到单章节: ${e.message}`);
+      return [];
+    }
+  }
 }
 
 /**
@@ -1634,6 +1811,31 @@ function removeTrailingCommas(s: string): string {
  *
  *  ⑦ 兜底：去掉所有 markdown 标记 + 在中括号级别上平衡提取
  */
+/**
+ * B3: AI 调用重试包装器
+ * 最多重试 maxRetries 次，重试条件：JSON解析失败、返回0题、API超时
+ */
+async function withAiRetry<T>(
+  fn: (attempt: number) => Promise<T>,
+  validate: (result: T) => boolean,
+  maxRetries = 2,
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn(attempt);
+      if (validate(result)) return result;
+      lastError = new Error('AI 返回结果为空或无效');
+    } catch (e: any) {
+      lastError = e;
+    }
+    if (attempt < maxRetries) {
+      await new Promise(r => setTimeout(r, 2000)); // 重试间隔2秒
+    }
+  }
+  throw lastError || new Error('AI 调用失败');
+}
+
 function parseAIJsonResponse(reply: string): any[] {
   // 去除尾逗号的包装器
   const withClean = (fn: (s: string) => any) =>
@@ -1733,11 +1935,17 @@ function parseAIJsonResponse(reply: string): any[] {
 }
 
 /**
- * 逐题校验和修复
+ * 逐题校验和修复（B2升级：从 warn 升级为自动修复）
  */
-function validateAndFixQuestion(q: any): { question: any; warnings: string[] } {
+function validateAndFixQuestion(q: any): { question: any; warnings: string[]; valid: boolean } {
   const warnings: string[] = [];
   const fixed = { ...q };
+  let valid = true;
+
+  // 0. 硬拦截：content 为空或少于5字
+  if (!fixed.content || String(fixed.content).trim().length < 5) {
+    return { question: fixed, warnings: ['题目内容(content)为空或少于5字，丢弃'], valid: false };
+  }
 
   // 1. 类型验证
   const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'];
@@ -1760,35 +1968,62 @@ function validateAndFixQuestion(q: any): { question: any; warnings: string[] } {
     }
   }
 
-  // 3. 答案解析强制提示
-  if (!fixed.explanation || !fixed.explanation.trim()) {
-    warnings.push('缺少答案解析(explanation)');
+  // 3. 清洗options标签（提前到选择题校验之前）
+  if (fixed.options && Array.isArray(fixed.options)) {
+    fixed.options = fixed.options.map((o: any, i: number) => ({
+      ...o,
+      label: o.label || String.fromCharCode(65 + i),
+      isCorrect: !!o.isCorrect,
+    }));
   }
 
-  // 4. 知识点提示
-  if (!fixed.knowledgePoint || !fixed.knowledgePoint.trim()) {
-    warnings.push('缺少知识点(knowledgePoint)');
-  }
-
-  // 5. 原文引用提示
-  if (!fixed.sourceChunk || !fixed.sourceChunk.trim()) {
-    warnings.push('缺少原文引用(sourceChunk)');
-  }
-
-  // 6. 选择题校验
+  // 4. 选择题：自动修复 answer 与 isCorrect 的一致性
   if (['SINGLE_CHOICE', 'MULTIPLE_CHOICE'].includes(fixed.type)) {
     if (!fixed.options || !Array.isArray(fixed.options) || fixed.options.length < 2) {
-      warnings.push('选择题选项不足');
-    }
-    if (fixed.type === 'SINGLE_CHOICE') {
-      const correct = (fixed.options || []).filter((o: any) => o.isCorrect);
-      if (correct.length !== 1) {
-        warnings.push(`单选题应有1个正确选项，当前${correct.length}个`);
+      warnings.push('选择题选项不足2个，丢弃');
+      valid = false;
+    } else {
+      if (fixed.type === 'SINGLE_CHOICE') {
+        let correctOpts = fixed.options.filter((o: any) => o.isCorrect);
+        if (correctOpts.length === 0) {
+          // 尝试从 answer 字段推断正确选项
+          const ansLabel = String(fixed.answer || '').trim().toUpperCase();
+          if (ansLabel && ansLabel.length === 1) {
+            const target = fixed.options.find((o: any) => o.label === ansLabel);
+            if (target) { target.isCorrect = true; correctOpts = [target]; }
+          }
+          if (correctOpts.length === 0) {
+            warnings.push('单选题无正确选项且无法推断，丢弃');
+            valid = false;
+          }
+        } else if (correctOpts.length > 1) {
+          // 多个正确选项：只保留第一个
+          warnings.push(`单选题有${correctOpts.length}个正确选项，仅保留第一个`);
+          let kept = false;
+          for (const o of fixed.options) {
+            if (o.isCorrect && !kept) { kept = true; }
+            else if (o.isCorrect && kept) { o.isCorrect = false; }
+          }
+          correctOpts = fixed.options.filter((o: any) => o.isCorrect);
+        }
+        // 强制同步 answer 字段（仅在有效时）
+        if (valid && correctOpts.length > 0) {
+          fixed.answer = correctOpts[0]?.label || 'A';
+        }
+      } else {
+        // 多选题：从 isCorrect 生成 answer
+        const correctLabels = fixed.options.filter((o: any) => o.isCorrect).map((o: any) => o.label);
+        if (correctLabels.length < 2) {
+          warnings.push(`多选题正确选项不足2个(当前${correctLabels.length}个)`);
+        }
+        if (correctLabels.length > 0) {
+          fixed.answer = correctLabels.join(',');
+        }
       }
     }
   }
 
-  // 7. 判断题答案标准化
+  // 5. 判断题答案标准化
   if (fixed.type === 'TRUE_FALSE') {
     const ans = String(fixed.answer || '').trim().toLowerCase();
     if (['true', 't', '对', '正确', '√', '✓', '是', '1'].includes(ans)) {
@@ -1800,22 +2035,39 @@ function validateAndFixQuestion(q: any): { question: any; warnings: string[] } {
     }
   }
 
-  // 8. 填空题校验
+  // 6. 填空题：如果 blanks 为空但 answer 有值，自动生成 blanks
   if (fixed.type === 'FILL_BLANK') {
     if (!fixed.blanks || !Array.isArray(fixed.blanks) || fixed.blanks.length === 0) {
-      warnings.push('填空题缺少空白(blanks)');
+      if (fixed.answer && String(fixed.answer).trim()) {
+        // 从 answer 解析生成 blanks（逗号/顿号分隔）
+        const answers = String(fixed.answer).split(/[,，、/]/).map((s: string) => s.trim()).filter(Boolean);
+        fixed.blanks = answers.map((ans: string, i: number) => ({ blankIndex: i, answer: ans }));
+        warnings.push(`填空题缺少blanks，已从answer自动生成${fixed.blanks.length}个空`);
+      } else {
+        warnings.push('填空题缺少空白(blanks)和答案(answer)，丢弃');
+        valid = false;
+      }
     }
   }
 
-  // 9. 清洗options标签
-  if (fixed.options && Array.isArray(fixed.options)) {
-    fixed.options = fixed.options.map((o: any, i: number) => ({
-      ...o,
-      label: o.label || String.fromCharCode(65 + i),
-    }));
+  // 7. explanation 为空时标记质量缺陷（不设占位，由调用方决定是否入库）
+  if (!fixed.explanation || !String(fixed.explanation).trim()) {
+    fixed.explanation = null;
+    fixed._qualityFlag = 'NO_EXPLANATION';
+    warnings.push('缺少答案解析(explanation)，标记为低质量');
   }
 
-  return { question: fixed, warnings };
+  // 8. 知识点提示
+  if (!fixed.knowledgePoint || !fixed.knowledgePoint.trim()) {
+    warnings.push('缺少知识点(knowledgePoint)');
+  }
+
+  // 9. 原文引用提示
+  if (!fixed.sourceChunk || !fixed.sourceChunk.trim()) {
+    warnings.push('缺少原文引用(sourceChunk)');
+  }
+
+  return { question: fixed, warnings, valid };
 }
 
 /**
@@ -1831,3 +2083,97 @@ function detectOfficeType(buffer: Buffer, originalName: string): { ext: string; 
   if (ext === '.doc') return { ext: '.doc', type: 'doc' };
   return { ext: '.pptx', type: 'pptx' };
 }
+
+
+// ═══════════════════════════════════════════════
+// Part 3.3: PDF 提取文本预处理
+// ═══════════════════════════════════════════════
+
+/** 清洗 PDF 提取文本：去页眉页脚重复行 + 合并断行段落 */
+function cleanPdfText(text: string): string {
+  const lines = text.split('\n');
+
+  // 1. 统计短行（<30字）出现频率，去除出现>3次的重复行（页眉页脚）
+  const lineCount = new Map<string, number>();
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length > 0 && trimmed.length < 30) {
+      lineCount.set(trimmed, (lineCount.get(trimmed) || 0) + 1);
+    }
+  }
+  const headerFooter = new Set<string>();
+  for (const [line, count] of lineCount) {
+    if (count > 3) headerFooter.add(line);
+  }
+
+  const filtered = lines.filter(l => !headerFooter.has(l.trim()));
+
+  // 2. 合并被 PDF 换行打断的段落（行尾非标点且下行非标题 → 合并）
+  const sectionPattern = /^(第[一二三四五六七八九十百千\d]+[章节篇]|[一二三四五六七八九十]+[、.．]|[（(][一二三四五六七八九十\d]+[)）]|\d+[.．]\d+|#+\s*|Chapter|Part|模块|项目|任务)/i;
+  const endPunct = /[。！？；：.!?;:]$/;
+  const merged: string[] = [];
+
+  for (let i = 0; i < filtered.length; i++) {
+    const line = filtered[i].trim();
+    if (!line) continue;
+
+    if (merged.length > 0) {
+      const prev = merged[merged.length - 1];
+      // 如果前一行不以标点结尾，且当前行不是标题行，则合并
+      if (!endPunct.test(prev) && !sectionPattern.test(line) && line.length > 0) {
+        merged[merged.length - 1] = prev + line;
+        continue;
+      }
+    }
+    merged.push(line);
+  }
+
+  return merged.join('\n');
+}
+
+// ═══════════════════════════════════════════════
+// 程序级去重工具（Part 1: 系统级硬约束）
+// ═══════════════════════════════════════════════
+
+/** 标准化题目文本：去空格、标点归一化、转小写 */
+function normalizeContent(text: string): string {
+  return text
+    .replace(/[\s　]+/g, '')       // 去所有空白（含全角）
+    .replace(/[，。！？、；：''（）【】]/g, m => {
+      const map: Record<string,string> = {'，':',','。':'.','！':'!','？':'?','、':',','；':';','：':':','“':'"','”':'"','‘':"'",'’':"'",'（':'(','）':')','【':'[','】':']'};
+      return map[m] || m;
+    })
+    .toLowerCase();
+}
+
+/** 字符级 bigram 集合 */
+function bigrams(s: string): Set<string> {
+  const set = new Set<string>();
+  for (let i = 0; i < s.length - 1; i++) {
+    set.add(s.slice(i, i + 2));
+  }
+  return set;
+}
+
+/** Jaccard 相似度（字符级 bigram） */
+function jaccardSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const setA = bigrams(a);
+  const setB = bigrams(b);
+  let intersection = 0;
+  for (const item of setA) {
+    if (setB.has(item)) intersection++;
+  }
+  const union = setA.size + setB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+/** 判断题目是否与已见列表重复（相似度 > 0.9） */
+function isDuplicateQuestion(normalized: string, seenList: string[]): boolean {
+  for (const seen of seenList) {
+    if (jaccardSimilarity(normalized, seen) > 0.9) return true;
+  }
+  return false;
+}
+

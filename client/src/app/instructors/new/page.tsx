@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
-import { validateIdCard } from '@/lib/validators';
+import { validateIdCard, validatePhone, validateEmail } from '@/lib/validators';
 import { api } from '@/lib/api';
 
 export default function NewInstructorPage() {
@@ -30,6 +30,8 @@ export default function NewInstructorPage() {
     if (!form.realName) { toast.warning('请输入姓名'); return; }
     if (form.type === 'EXTERNAL' && !form.idCard) { toast.warning('外聘讲师必须填写身份证号'); return; }
     if (form.idCard) { const idErr = validateIdCard(form.idCard); if (idErr) { toast.warning(idErr); return; } }
+    if (form.phone) { const phoneErr = validatePhone(form.phone); if (phoneErr) { toast.warning(phoneErr); return; } }
+    if (form.email) { const emailErr = validateEmail(form.email); if (emailErr) { toast.warning(emailErr); return; } }
     setSaving(true);
     try {
       await api.instructors.create({
@@ -98,11 +100,11 @@ export default function NewInstructorPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>电话</label>
-              <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="input w-full" placeholder="手机号" />
+              <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/[^\d]/g, '') })} className="input w-full" placeholder="手机号" maxLength={11} />
             </div>
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>邮箱</label>
-              <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="input w-full" placeholder="电子邮箱" />
+              <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input w-full" placeholder="电子邮箱" />
             </div>
           </div>
 

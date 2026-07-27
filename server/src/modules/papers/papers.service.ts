@@ -233,35 +233,83 @@ export class PapersService {
 
       // 收集该题型所有可用试题（不限难度）
       const allExcludeIds = [...(data.excludeQuestionIds || []), ...includeIds];
+      const runningExcludeIds = [...allExcludeIds]; // A1修复：累积排除已选题目，防止重复
       let totalFetched = 0;
 
-      for (const [difficulty, count] of Object.entries(countPerDifficulty)) {
-        if (count <= 0) continue;
-
-        const where: Prisma.QuestionWhereInput = {
-          subjectId: data.subjectId,
-          type: tc.questionType,
-          difficulty: difficulty as Difficulty,
-          status: 'PUBLISHED',
-          ...(data.sourceMix && data.sourceMix < 100
-            ? { OR: [{ isPublic: true }, { subjectId: data.subjectId }] }
-            : { subjectId: data.subjectId }
-          ),
-          ...(allExcludeIds.length ? { id: { notIn: allExcludeIds } } : {}),
-        };
-
-        const available = await this.prisma.question.findMany({
-          where, select: { id: true }, take: count * 3,
+      // ── 章节策略：EVEN 模式按章节均分抽题 ──
+      const useChapterEven = data.chapterStrategy === 'EVEN';
+      let chapterIds: number[] = [];
+      if (useChapterEven) {
+        const chapters = await this.prisma.chapter.findMany({
+          where: { subjectId: data.subjectId },
+          orderBy: { sortOrder: 'asc' },
+          select: { id: true },
         });
+        chapterIds = chapters.map(c => c.id);
+      }
 
-        const shuffled = available.sort(() => Math.random() - 0.5).slice(0, count);
-        for (const q of shuffled) {
-          selectedQuestions.push({
-            questionId: q.id, score: tc.scorePerQuestion,
-            typeSection: tc.questionType,
-          });
+      if (useChapterEven && chapterIds.length > 1) {
+        // EVEN 模式：对每个难度，将题量按章节均分
+        for (const [difficulty, count] of Object.entries(countPerDifficulty)) {
+          if (count <= 0) continue;
+          const perChapter = Math.floor(count / chapterIds.length);
+          let extra = count - perChapter * chapterIds.length;
+
+          for (const chId of chapterIds) {
+            const chCount = perChapter + (extra > 0 ? 1 : 0);
+            if (extra > 0) extra--;
+            if (chCount <= 0) continue;
+
+            const where: Prisma.QuestionWhereInput = {
+              subjectId: data.subjectId,
+              type: tc.questionType,
+              difficulty: difficulty as Difficulty,
+              status: 'PUBLISHED',
+              chapterId: chId,
+              ...(runningExcludeIds.length ? { id: { notIn: runningExcludeIds } } : {}),
+            };
+            const available = await this.prisma.question.findMany({
+              where, select: { id: true }, take: chCount * 3,
+            });
+            const shuffled = available.sort(() => Math.random() - 0.5).slice(0, chCount);
+            for (const q of shuffled) {
+              selectedQuestions.push({ questionId: q.id, score: tc.scorePerQuestion, typeSection: tc.questionType });
+              runningExcludeIds.push(q.id);
+            }
+            totalFetched += shuffled.length;
+          }
         }
-        totalFetched += shuffled.length;
+      } else {
+        // RANDOM 模式（默认）：不考虑章节
+        for (const [difficulty, count] of Object.entries(countPerDifficulty)) {
+          if (count <= 0) continue;
+
+          const where: Prisma.QuestionWhereInput = {
+            subjectId: data.subjectId,
+            type: tc.questionType,
+            difficulty: difficulty as Difficulty,
+            status: 'PUBLISHED',
+            ...(data.sourceMix && data.sourceMix < 100
+              ? { OR: [{ isPublic: true }, { subjectId: data.subjectId }] }
+              : { subjectId: data.subjectId }
+            ),
+            ...(runningExcludeIds.length ? { id: { notIn: runningExcludeIds } } : {}),
+          };
+
+          const available = await this.prisma.question.findMany({
+            where, select: { id: true }, take: count * 3,
+          });
+
+          const shuffled = available.sort(() => Math.random() - 0.5).slice(0, count);
+          for (const q of shuffled) {
+            selectedQuestions.push({
+              questionId: q.id, score: tc.scorePerQuestion,
+              typeSection: tc.questionType,
+            });
+            runningExcludeIds.push(q.id); // A1修复：累积排除
+          }
+          totalFetched += shuffled.length;
+        }
       }
 
       // 如果按难度分配后还有缺口（该难度没有足够试题），从该题型其他难度补足
@@ -291,6 +339,66 @@ export class PapersService {
 
     if (subtotalCheck !== totalScore) {
       throw new BadRequestException(`题型分值合计(${subtotalCheck})与总分(${totalScore})不一致`);
+    }
+
+    // Part 4: 内容级去重兜底 — 防止题库中存在内容高度相似的题目被同时选入
+    if (selectedQuestions.length > 1) {
+      const qIds = selectedQuestions.map(sq => sq.questionId);
+      const qContents = await this.prisma.question.findMany({
+        where: { id: { in: qIds } },
+        select: { id: true, content: true },
+      });
+      const contentMap = new Map(qContents.map(q => [q.id, q.content]));
+      const toRemove = new Set<number>();
+      const normalizedList: { id: number; norm: string }[] = [];
+
+      for (const sq of selectedQuestions) {
+        const raw = contentMap.get(sq.questionId) || '';
+        const norm = raw.replace(/[\s　]+/g, '').toLowerCase();
+        let isDupe = false;
+        for (const existing of normalizedList) {
+          // 简单 Jaccard bigram 相似度
+          if (norm.length > 10 && existing.norm.length > 10) {
+            const setA = new Set<string>();
+            const setB = new Set<string>();
+            for (let i = 0; i < norm.length - 1; i++) setA.add(norm.slice(i, i + 2));
+            for (let i = 0; i < existing.norm.length - 1; i++) setB.add(existing.norm.slice(i, i + 2));
+            let inter = 0;
+            for (const item of setA) { if (setB.has(item)) inter++; }
+            const union = setA.size + setB.size - inter;
+            if (union > 0 && inter / union > 0.9) { isDupe = true; break; }
+          }
+        }
+        if (isDupe) {
+          toRemove.add(sq.questionId);
+        } else {
+          normalizedList.push({ id: sq.questionId, norm });
+        }
+      }
+
+      if (toRemove.size > 0) {
+        console.warn(`[组卷去重] 移除 ${toRemove.size} 道内容重复题目`);
+        // 移除重复题并尝试补题
+        for (const dupeId of toRemove) {
+          const idx = selectedQuestions.findIndex(sq => sq.questionId === dupeId);
+          if (idx >= 0) {
+            const removed = selectedQuestions.splice(idx, 1)[0];
+            // 尝试从同题型中补一道
+            const fallback = await this.prisma.question.findFirst({
+              where: {
+                subjectId: data.subjectId,
+                type: removed.typeSection as any,
+                status: 'PUBLISHED',
+                id: { notIn: [...selectedQuestions.map(sq => sq.questionId), ...toRemove] },
+              },
+              select: { id: true },
+            });
+            if (fallback) {
+              selectedQuestions.push({ questionId: fallback.id, score: removed.score, typeSection: removed.typeSection });
+            }
+          }
+        }
+      }
     }
 
     const paper = await this.prisma.paper.create({
@@ -343,7 +451,28 @@ export class PapersService {
       });
     }
 
-    return paper;
+    // 计算章节分布
+    const qIds = selectedQuestions.map(sq => sq.questionId);
+    const qWithChapter = await this.prisma.question.findMany({
+      where: { id: { in: qIds } },
+      select: { chapterId: true },
+    });
+    const chapterCountMap: Record<number, number> = {};
+    for (const q of qWithChapter) {
+      if (q.chapterId) chapterCountMap[q.chapterId] = (chapterCountMap[q.chapterId] || 0) + 1;
+    }
+    const chapterIdsUsed = Object.keys(chapterCountMap).map(Number);
+    const chapterNames = chapterIdsUsed.length > 0
+      ? await this.prisma.chapter.findMany({ where: { id: { in: chapterIdsUsed } }, select: { id: true, name: true } })
+      : [];
+    const nameMap = new Map(chapterNames.map(c => [c.id, c.name]));
+    const chapterDistribution = chapterIdsUsed.map(id => ({
+      chapterId: id,
+      chapterName: nameMap.get(id) || '未知章节',
+      count: chapterCountMap[id],
+    }));
+
+    return { ...paper, chapterDistribution };
   }
 
   async finalize(id: number) {

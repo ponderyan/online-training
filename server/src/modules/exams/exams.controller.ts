@@ -9,7 +9,7 @@ export class ExamsController {
   constructor(private service: ExamsService, private systemConfig: SystemConfigService) {}
 
   @Get()
-  @RequirePermission(Permissions.EXAM_VIEW)
+  @RequirePermission(Permissions.EXAM_RESULT_VIEW)
   findAll(
     @Req() req: any,
     @Query('page') page?: string,

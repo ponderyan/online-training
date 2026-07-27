@@ -234,22 +234,19 @@ function GeneratePageContent() {
   const scoreValid = totalFromTypes() === totalScore;
   const totalQ = () => enabledTypes.filter(t => typeConfigs[t]?.count > 0).reduce((s, t) => s + typeConfigs[t].count, 0);
 
-  const adjustDifficulty = (idx: number) => {
-    setDifficulty(prev => {
-      const keys = Object.keys(prev);
-      const current = prev[keys[idx]];
-      const maxOthers = 100 - (Object.keys(prev).length - 1) * 5;
-      const delta = current >= maxOthers ? -5 : 5;
-      const newVal = Math.min(Math.max(current + delta, 5), maxOthers);
-      const totalOthers = Object.values(prev).reduce((s, v, i) => s + (i === idx ? 0 : v), 0);
-      const newOthers = (100 - newVal) / (keys.length - 1);
-      return Object.fromEntries(keys.map((k, i) =>
-        i === idx ? [k, newVal] : [k, Math.round(newOthers)]
-      ));
-    });
+  const setDifficultyValue = (key: string, val: number) => {
+    const clamped = Math.min(Math.max(Math.round(val) || 0, 0), 100);
+    setDifficulty(prev => ({ ...prev, [key]: clamped }));
   };
+  const difficultyTotal = Object.values(difficulty).reduce((s, v) => s + v, 0);
+  const DIFF_PRESETS = [
+    { label: '均匀', value: { EASY: 25, MEDIUM_EASY: 25, MEDIUM_HARD: 25, HARD: 25 } },
+    { label: '偏易', value: { EASY: 40, MEDIUM_EASY: 30, MEDIUM_HARD: 20, HARD: 10 } },
+    { label: '偏难', value: { EASY: 10, MEDIUM_EASY: 20, MEDIUM_HARD: 30, HARD: 40 } },
+  ];
 
   const handleGenerate = async () => {
+    if (difficultyTotal !== 100) { setError(`难度比例合计 ${difficultyTotal}% ≠ 100%，请调整`); return; }
     if (!scoreValid) { setError(`题型总分 ${totalFromTypes()} ≠ 试卷总分 ${totalScore}`); return; }
     // 必选题数量检查
     for (const [type, minCount] of Object.entries(lockedCounts)) {
@@ -466,30 +463,48 @@ function GeneratePageContent() {
 
           {/* 难度配置 */}
           <div className="mb-4">
-            <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>
-              难度比例配置 <span style={{ color: 'var(--ink-300' }}>（点击调整）</span>
-            </label>
-            <div className="flex gap-1.5 h-9">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-medium" style={{ color: 'var(--ink-500)' }}>
+                难度比例配置
+              </label>
+              <div className="flex gap-1.5">
+                {DIFF_PRESETS.map(p => (
+                  <button key={p.label} onClick={() => setDifficulty(p.value)}
+                    className="text-xs px-2 py-0.5 rounded border border-solid cursor-pointer hover:opacity-70 transition-opacity"
+                    style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-500)', background: 'var(--paper)' }}>{p.label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-1.5 h-9 mb-2">
               {DIFFS.map((d, i) => (
-                <div key={d} onClick={() => adjustDifficulty(i)}
-                  className="flex items-center justify-center text-white text-xs font-semibold rounded cursor-pointer hover:brightness-110 transition-all"
+                <div key={d}
+                  className="flex items-center justify-center text-white text-xs font-semibold rounded transition-all"
                   style={{
-                    flex: difficulty[d],
+                    flex: Math.max(difficulty[d], 1),
                     backgroundColor: DIFF_COLORS[i],
                     height: 22 + difficulty[d] * 0.3,
-                    minWidth: '40px',
+                    minWidth: '36px',
+                    opacity: difficulty[d] === 0 ? 0.35 : 1,
                   }}>
                   {DIFF_LABELS[i]} {difficulty[d]}%
                 </div>
               ))}
             </div>
-            <div className="flex gap-4 mt-2">
-              {DIFF_LABELS.map((l, i) => (
-                <span key={l} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ink-400)' }}>
-                  <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: DIFF_COLORS[i] }} />
-                  {l}
-                </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              {DIFFS.map((d, i) => (
+                <div key={d} className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded flex-shrink-0" style={{ backgroundColor: DIFF_COLORS[i] }} />
+                  <span className="text-xs" style={{ color: 'var(--ink-500)' }}>{DIFF_LABELS[i]}</span>
+                  <input type="number" min={0} max={100} value={difficulty[d]}
+                    onChange={e => setDifficultyValue(d, Number(e.target.value))}
+                    className="w-14 text-xs text-center rounded border border-solid py-0.5"
+                    style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-700)', background: 'var(--paper)' }} />
+                  <span className="text-xs" style={{ color: 'var(--ink-400)' }}>%</span>
+                </div>
               ))}
+              <span className="text-xs font-semibold ml-1" style={{ color: difficultyTotal === 100 ? 'var(--cyan)' : 'var(--verm)' }}>
+                合计 {difficultyTotal}%{difficultyTotal !== 100 && '（须=100%）'}
+              </span>
             </div>
           </div>
 

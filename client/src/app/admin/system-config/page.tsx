@@ -19,6 +19,8 @@ type DirtyMap = Record<string, string>;
 const TABS = [
   { key: 'training', label: '培训配置' },
   { key: 'exam', label: '考试配置' },
+  { key: 'question', label: '出题配置' },
+  { key: 'general', label: '题库策略' },
   { key: 'notification', label: '通知配置' },
 ];
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
+import { validatePhone, validateEmail } from '@/lib/validators';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -74,6 +75,8 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    if (form.phone) { const phoneErr = validatePhone(form.phone); if (phoneErr) { toast.warning(phoneErr); return; } }
+    if (form.email) { const emailErr = validateEmail(form.email); if (emailErr) { toast.warning(emailErr); return; } }
     setSaving(true);
     try {
       await fetch('/api/user/profile', { method: 'PUT', headers, body: JSON.stringify(form) });
@@ -153,8 +156,13 @@ export default function ProfilePage() {
               <textarea value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                 className="input text-sm w-full" rows={3} />
             ) : (
-              <input value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                className="input text-sm w-full" />
+              <input value={value} onChange={e => {
+                let v = e.target.value;
+                if (f.key === 'phone') v = v.replace(/[^\d]/g, '');
+                if (f.key === 'email') v = v.replace(/[^a-zA-Z0-9._%+@\-]/g, '');
+                setForm({ ...form, [f.key]: v });
+              }}
+                className="input text-sm w-full" maxLength={f.key === 'phone' ? 11 : undefined} />
             )}
           </div>
         ) : (

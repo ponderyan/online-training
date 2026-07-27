@@ -684,6 +684,14 @@ async function main() {
     { key: 'notif_cert_expiry_enabled', value: 'true', desc: '证书到期提醒开关', group: 'notification', inputType: 'boolean', options: null },
     { key: 'notif_cert_expiry_days', value: '60', desc: '到期前提醒天数', group: 'notification', inputType: 'number', options: null },
     { key: 'notif_approval_enabled', value: 'true', desc: '审批待办提醒开关', group: 'notification', inputType: 'boolean', options: null },
+
+    // ── 出题配置 ──
+    { key: 'difficulty_def_easy', value: '识记：教材原文直接可答，无需推理', desc: '难度EASY判定标准', group: 'question', inputType: 'text', options: null },
+    { key: 'difficulty_def_medium_easy', value: '理解：原文的归纳、改写、同义替换', desc: '难度MEDIUM_EASY判定标准', group: 'question', inputType: 'text', options: null },
+    { key: 'difficulty_def_medium_hard', value: '应用：综合2+知识点，或应用到具体情境', desc: '难度MEDIUM_HARD判定标准', group: 'question', inputType: 'text', options: null },
+    { key: 'difficulty_def_hard', value: '分析评价：新情境下的诊断/决策，教材无直接答案', desc: '难度HARD判定标准', group: 'question', inputType: 'text', options: null },
+    { key: 'ai_require_explanation', value: 'true', desc: 'AI出题是否强制要求解析', group: 'question', inputType: 'boolean', options: null },
+    { key: 'ai_default_temperature', value: '0.3', desc: 'AI出题默认温度参数', group: 'question', inputType: 'number', options: null },
   ];
   for (const cfg of configDefaults) {
     await prisma.systemConfig.upsert({

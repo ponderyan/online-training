@@ -486,7 +486,7 @@ function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => vo
               出题要求 <span style={{ color: 'var(--verm)' }}>*必填</span>
             </label>
             <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
-              placeholder={'请详细描述出题要求…'}
+              placeholder={'补充特殊要求（可选），如：侧重第三章、减少概念定义题、60%书上原话…'}
               className="input textarea" rows={5} />
           </div>
           <div>
@@ -597,7 +597,7 @@ function ManualEntryModal({ subjects, onClose }: { subjects: any[]; onClose: () 
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>出题要求 <span className="text-xs" style={{ color: 'var(--ink-400)' }}>（可选）</span></label>
             <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
-              placeholder={'示例：题型——单选题30道…'} className="input textarea" rows={3} />
+              placeholder={'补充特殊要求（可选），如：侧重第三章、减少概念定义题…'} className="input textarea" rows={3} />
           </div>
           {progress && (
             <div className="text-sm text-center py-2" style={{
