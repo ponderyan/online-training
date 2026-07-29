@@ -480,6 +480,36 @@ export class QuestionsService {
     return { total: questions.length, successCount, failCount: questions.length - successCount, results };
   }
 
+  /** 批量更新状态 */
+  async batchUpdateStatus(ids: number[], status: string, userOrgId?: number | null, userRoles?: string[]) {
+    if (!ids || ids.length === 0) throw new BadRequestException('ids不能为空');
+    const validStatuses = ['DRAFT', 'PUBLISHED', 'DISABLED', 'ARCHIVED'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`无效状态：${status}（可选：${validStatuses.join('/')}）`);
+    }
+    // 非SUPER_ADMIN只能操作自己组织的题目
+    const where: any = { id: { in: ids } };
+    if (userRoles && !userRoles.includes('SUPER_ADMIN') && userOrgId) {
+      where.orgId = { in: [userOrgId, null] };
+    }
+    const result = await this.prisma.question.updateMany({ where, data: { status: status as any } });
+    return { updated: result.count };
+  }
+
+  /** 批量更新难度 */
+  async batchUpdateDifficulty(ids: number[], difficulty: string, userOrgId?: number | null, userRoles?: string[]) {
+    if (!ids || ids.length === 0) throw new BadRequestException('ids不能为空');
+    if (!QuestionsService.VALID_DIFFICULTIES.includes(difficulty)) {
+      throw new BadRequestException(`无效难度：${difficulty}（可选：${QuestionsService.VALID_DIFFICULTIES.join('/')}）`);
+    }
+    const where: any = { id: { in: ids } };
+    if (userRoles && !userRoles.includes('SUPER_ADMIN') && userOrgId) {
+      where.orgId = { in: [userOrgId, null] };
+    }
+    const result = await this.prisma.question.updateMany({ where, data: { difficulty: difficulty as any } });
+    return { updated: result.count };
+  }
+
   // ═══════════════════════════════════════════
   //  练习答案（学员端）
   // ═══════════════════════════════════════════

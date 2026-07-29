@@ -76,7 +76,7 @@ async function main() {
       'stats:view',
     ],
     ORG_ADMIN: [
-      'system:config', 'systemConfig:view', 'systemConfig:manage', 'system:logs', 'system:dictionary',
+      'system:logs',
       'question:create', 'question:edit', 'question:delete', 'question:import', 'question:audit',
       'paper:view', 'paper:generate', 'paper:edit', 'paper:publish', 'paper:download', 'paper:answer_sheet', 'template:manage',
       'exam:create', 'exam:edit', 'exam:delete', 'exam:assign', 'exam:view',

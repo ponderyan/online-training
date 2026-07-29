@@ -190,6 +190,22 @@ export class QuestionsController {
     return this.service.batchCreate(data.questions, userOrgId);
   }
 
+  @Post('batch/status')
+  @RequirePermission(Permissions.QUESTION_EDIT)
+  async batchUpdateStatus(@Body() data: { ids: number[]; status: string }, @Req() req: any) {
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+    return this.service.batchUpdateStatus(data.ids, data.status, userOrgId, userRoles);
+  }
+
+  @Post('batch/difficulty')
+  @RequirePermission(Permissions.QUESTION_EDIT)
+  async batchUpdateDifficulty(@Body() data: { ids: number[]; difficulty: string }, @Req() req: any) {
+    const userOrgId = req.user?.orgId ?? null;
+    const userRoles: string[] = req.user?.roles || [];
+    return this.service.batchUpdateDifficulty(data.ids, data.difficulty, userOrgId, userRoles);
+  }
+
   @Post('ai-generate')
   async aiGeneratePlaceholder() {
     return { success: true, message: 'AI 智能出题功能开发中，敬请期待' };

@@ -199,6 +199,23 @@ export class OfflineExamService {
       },
     });
 
+    // 首次录入也写审计日志
+    if (!existing) {
+      await this.prisma.scoreAuditLog.create({
+        data: {
+          examId,
+          sessionId,
+          studentId: session.studentId,
+          action: 'SCORE_ENTRY',
+          fieldName: 'totalScore',
+          oldValue: null,
+          newValue: totalScore,
+          operatorId: data.enteredBy,
+          reason: JSON.stringify({ scoreByType: data.scoreByType, graderName: data.graderName }),
+        },
+      }).catch(() => {});
+    }
+
     // 同步更新 ExamSession
     await this.prisma.examSession.update({
       where: { id: sessionId },

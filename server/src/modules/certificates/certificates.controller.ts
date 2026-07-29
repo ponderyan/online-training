@@ -58,6 +58,9 @@ export class CertificatesController {
     @Query('code') verificationCode: string,
     @Query('sig') signature?: string,
   ) {
+    if (!certificateNo || !verificationCode) {
+      return { valid: false, message: '缺少必要参数：no（证书编号）和 code（验证码）' };
+    }
     const result = await this.service.verifyCertificate(certificateNo, verificationCode);
     // 如果有 sig 参数，执行 HMAC 验签
     if (signature && result.valid) {

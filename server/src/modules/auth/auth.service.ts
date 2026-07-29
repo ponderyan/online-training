@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -96,6 +96,10 @@ export class AuthService {
   }
 
   async register(data: { username: string; displayName: string; password: string; phone?: string; email?: string }) {
+    // 参数校验
+    if (!data.username || !data.password || !data.displayName) {
+      throw new BadRequestException('缺少必要参数：username, password, displayName');
+    }
     // 检查是否允许公开注册
     const setting = await this.prisma.siteSetting.findFirst();
     if (setting && !setting.publicRegistration) {

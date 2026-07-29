@@ -531,6 +531,7 @@ export const api = {
     update: (id: number, data: any) => request<any>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/courses/${id}`, { method: 'DELETE' }),
     toggleStatus: (id: number) => request(`/courses/${id}/toggle-status`, { method: 'PUT' }),
+    syncVideoLinks: (id: number, videoCourseIds: number[]) => request(`/courses/${id}/video-links`, { method: 'PUT', body: JSON.stringify({ videoCourseIds }) }),
   },
 
   // ── Phase 2: 视频课程（独立实体） ──

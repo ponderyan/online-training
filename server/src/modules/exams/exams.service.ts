@@ -110,6 +110,8 @@ export class ExamsService {
     publishAt?: string;
     examMode?: string;
     locations?: any;
+    lateEntryMinutes?: number | null;
+    earlyExitMinutes?: number | null;
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
     if (!paper) throw new NotFoundException('试卷不存在');
@@ -148,6 +150,8 @@ export class ExamsService {
         publishAt: data.publishAt ? new Date(data.publishAt) : null,
         examMode: (data.examMode as any) || 'ONLINE',
         locations: isOffline ? (data.locations ?? null) : null,
+        lateEntryMinutes: data.lateEntryMinutes !== undefined ? data.lateEntryMinutes : null,
+        earlyExitMinutes: data.earlyExitMinutes !== undefined ? data.earlyExitMinutes : null,
         status: 'DRAFT',
         totalStudents: students.length,
         createdBy: data.createdBy,

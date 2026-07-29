@@ -44,7 +44,7 @@ export default function CourseDetailPage() {
   const openLinkModal = async () => {
     // 加载所有已发布视频课程
     try {
-      const data = await api.videoCourses.list({ pageSize: '200', status: 'PUBLISHED' });
+      const data = await api.videoCourses.list({ pageSize: 200, status: 'PUBLISHED' });
       setAllVideos(data.items || []);
     } catch { setAllVideos([]); }
     // 当前已关联的
