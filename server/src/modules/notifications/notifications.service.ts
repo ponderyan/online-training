@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationType } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
 
@@ -46,7 +47,7 @@ const RECIPIENT_PREVIEW = 3;
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private systemConfig: SystemConfigService) {}
 
   // transporter 单例 + 邮件配置缓存（避免每次发信都新建 transporter、重查 5 行配置）
   private transporterCache: any = null;
@@ -235,10 +236,7 @@ export class NotificationsService {
     if (this.emailConfig && now - this.emailConfigAt < EMAIL_CONFIG_TTL_MS) {
       return this.emailConfig;
     }
-    const configs = await this.prisma.systemConfig.findMany({
-      where: { key: { in: EMAIL_CONFIG_KEYS } },
-    });
-    this.emailConfig = new Map(configs.map(c => [c.key, c.value]));
+    this.emailConfig = await this.systemConfig.getConfigs(EMAIL_CONFIG_KEYS);
     this.emailConfigAt = now;
     return this.emailConfig;
   }
@@ -285,8 +283,7 @@ export class NotificationsService {
 
   private async isSmsEnabled(): Promise<boolean> {
     try {
-      const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'sms_enabled' } });
-      return cfg?.value === 'true';
+      return await this.systemConfig.getBoolean('sms_enabled');
     } catch { return false; }
   }
 

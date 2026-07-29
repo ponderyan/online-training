@@ -84,4 +84,29 @@ export class CoursesService {
     const newStatus = course.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     return this.prisma.course.update({ where: { id }, data: { status: newStatus } });
   }
+
+  /** 从课程侧同步关联视频（全量覆盖） */
+  async syncVideoLinks(courseId: number, videoCourseIds: number[]) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) throw new NotFoundException('课程不存在');
+
+    // 全量替换：先删后建
+    await this.prisma.videoCourseCourse.deleteMany({ where: { courseId } });
+    if (videoCourseIds.length > 0) {
+      await this.prisma.videoCourseCourse.createMany({
+        data: videoCourseIds.map(videoCourseId => ({ courseId, videoCourseId })),
+      });
+    }
+
+    // 返回最新关联
+    return this.prisma.videoCourseCourse.findMany({
+      where: { courseId },
+      include: {
+        videoCourse: {
+          select: { id: true, name: true, duration: true, hours: true, type: true, status: true },
+        },
+      },
+    });
+  }
+
 }

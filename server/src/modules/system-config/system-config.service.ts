@@ -5,7 +5,10 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class SystemConfigService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
-  /** 启动时自动注册考试默认配置（幂等，不覆盖已有值） */
+  /**
+   * 启动时自动注册考试默认配置（幂等，不覆盖已有值）。
+   * 注：完整配置由 prisma/seed.ts 统一注册，此处仅做兜底补充。
+   */
   async onModuleInit() {
     const examDefaults = [
       { key: 'exam_default_late_entry_minutes', value: '30', desc: '默认迟到禁入时间（分钟），0=不限制', group: 'exam', inputType: 'number' },
@@ -107,13 +110,14 @@ export class SystemConfigService implements OnModuleInit {
   }
 
   /** 批量同步/注册配置（供 seed 脚本用） */
-  async sync(configs: { key: string; value: string; desc?: string; group?: string; inputType?: string; options?: string }[]) {
+  async sync(configs: { key: string; value: string; desc?: string; description?: string; group?: string; inputType?: string; options?: string }[]) {
     let count = 0;
     for (const cfg of configs) {
+      const desc = cfg.desc || cfg.description;
       await this.prisma.systemConfig.upsert({
         where: { key: cfg.key },
-        update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
-        create: cfg,
+        update: { value: cfg.value, desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
+        create: { key: cfg.key, value: cfg.value, desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
       });
       count++;
     }
@@ -125,6 +129,15 @@ export class SystemConfigService implements OnModuleInit {
   async getConfig(key: string): Promise<string | null> {
     const row = await this.prisma.systemConfig.findUnique({ where: { key } });
     return row?.value || null;
+  }
+
+  /** 批量获取配置值 */
+  async getConfigs(keys: string[]): Promise<Map<string, string>> {
+    const rows = await this.prisma.systemConfig.findMany({
+      where: { key: { in: keys } },
+      select: { key: true, value: true },
+    });
+    return new Map(rows.map(r => [r.key, r.value]));
   }
 
   async getBoolean(key: string): Promise<boolean> {

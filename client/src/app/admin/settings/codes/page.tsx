@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import Link from 'next/link';
 
 interface Abbreviation {
   id: number;
@@ -13,18 +14,10 @@ interface Abbreviation {
   sortOrder: number;
 }
 
-interface CodeRules {
-  separator: string;
-  autoGenerate: boolean;
-  includeLevel: boolean;
-}
-
 export default function OrgCodesSettingsPage() {
   const toast = useToast();
-  const [rules, setRules] = useState<CodeRules | null>(null);
   const [abbreviations, setAbbreviations] = useState<Abbreviation[]>([]);
   const [orgs, setOrgs] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
 
   // 词典编辑
   const [newKeyword, setNewKeyword] = useState('');
@@ -41,29 +34,16 @@ export default function OrgCodesSettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [r, a, o] = await Promise.all([
-        api.orgCodes.getRules(),
+      const [a, o] = await Promise.all([
         api.orgCodes.getAbbreviations(),
         api.organizations.getTree(),
       ]);
-      setRules(r);
       setAbbreviations(a);
       setOrgs(Array.isArray(o) ? o : []);
     } catch {}
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const saveRules = async () => {
-    if (!rules) return;
-    setSaving(true);
-    try {
-      const updated = await api.orgCodes.updateRules(rules);
-      setRules(updated);
-      toast.success('编码规则已保存');
-    } catch (e: any) { toast.error('保存失败：' + e.message); }
-    setSaving(false);
-  };
 
   const addAbbreviation = async () => {
     if (!newKeyword || !newAbbr) { toast.warning('关键词和缩写不能为空'); return; }
@@ -115,53 +95,40 @@ export default function OrgCodesSettingsPage() {
     <AppLayout>
       <div className="mb-6">
         <h1 className="page-title">🔤 组织编码管理</h1>
-        <p className="page-subtitle">编码规则配置 · 缩写词典维护 · 编码总览</p>
+        <p className="page-subtitle">缩写词典维护 · 编码预览 · 编码总览</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── 左栏：编码规则 ── */}
+        {/* ── 左栏：编码预览 + 配置入口 ── */}
         <div className="card p-5 space-y-4">
-          <h2 className="text-sm font-bold" style={{ color: 'var(--ink-600)' }}>编码规则</h2>
-          {rules ? (
-            <>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>层级分隔符</label>
-                <input value={rules.separator} onChange={e => setRules({ ...rules, separator: e.target.value })}
-                  className="input" style={{ width: 80 }} maxLength={2} />
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>如父=ITSS，子=CX → ITSS{rules.separator}CX</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={rules.autoGenerate} onChange={e => setRules({ ...rules, autoGenerate: e.target.checked })} id="chk-auto" />
-                <label htmlFor="chk-auto" className="text-xs" style={{ color: 'var(--ink-500)' }}>创建组织时自动生成编码</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={rules.includeLevel} onChange={e => setRules({ ...rules, includeLevel: e.target.checked })} id="chk-level" />
-                <label htmlFor="chk-level" className="text-xs" style={{ color: 'var(--ink-500)' }}>编码体现层级（父编码+子缩写）</label>
-              </div>
-              <button onClick={saveRules} disabled={saving} className="btn btn-fox btn-sm w-full">
-                {saving ? '保存中…' : '💾 保存规则'}
-              </button>
-            </>
-          ) : <p className="text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</p>}
-
-          {/* 预览工具 */}
-          <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-            <h3 className="text-xs font-bold mb-2" style={{ color: 'var(--ink-500)' }}>编码预览</h3>
-            <select value={previewParentId || ''} onChange={e => setPreviewParentId(e.target.value ? Number(e.target.value) : null)}
-              className="input text-xs mb-2" style={{ width: '100%' }}>
-              <option value="">无父组织（顶级）</option>
-              {allOrgs.map(o => <option key={o.id} value={o.id}>{'  '.repeat(o.depth)}{o.code} - {o.name}</option>)}
-            </select>
-            <div className="flex gap-2">
-              <input value={previewName} onChange={e => setPreviewName(e.target.value)} placeholder="输入组织名称"
-                className="input text-xs flex-1" onKeyDown={e => e.key === 'Enter' && doPreview()} />
-              <button onClick={doPreview} className="btn btn-outline btn-sm">预览</button>
+          <h2 className="text-sm font-bold" style={{ color: 'var(--ink-600)' }}>编码预览</h2>
+          
+          <select value={previewParentId || ''} onChange={e => setPreviewParentId(e.target.value ? Number(e.target.value) : null)}
+            className="input text-xs mb-2" style={{ width: '100%' }}>
+            <option value="">无父组织（顶级）</option>
+            {allOrgs.map(o => <option key={o.id} value={o.id}>{'  '.repeat(o.depth)}{o.code} - {o.name}</option>)}
+          </select>
+          <div className="flex gap-2">
+            <input value={previewName} onChange={e => setPreviewName(e.target.value)} placeholder="输入组织名称"
+              className="input text-xs flex-1" onKeyDown={e => e.key === 'Enter' && doPreview()} />
+            <button onClick={doPreview} className="btn btn-outline btn-sm">预览</button>
+          </div>
+          {previewResult && (
+            <div className="mt-2 p-2 rounded text-sm font-mono font-bold" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+              {previewResult}
             </div>
-            {previewResult && (
-              <div className="mt-2 p-2 rounded text-sm font-mono font-bold" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
-                {previewResult}
-              </div>
-            )}
+          )}
+
+          {/* 配置入口 */}
+          <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+            <p className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>编码规则配置（分隔符、自动生成、层级体现）：</p>
+            <Link 
+              href="/admin/system-config"
+              className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--fox)', background: 'var(--fox-pale)' }}
+            >
+              ⚙️ 前往配置中心 → 组织编码
+            </Link>
           </div>
         </div>
 

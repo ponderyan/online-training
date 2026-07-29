@@ -44,6 +44,7 @@ export default function QuestionsPage() {
   const [filterSubject, setFilterSubject] = useState('');
   const [filterMaterial, setFilterMaterial] = useState('');
   const [filterMatChapter, setFilterMatChapter] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [matChapters, setMatChapters] = useState<any[]>([]);
@@ -53,7 +54,7 @@ export default function QuestionsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [viewQuestion, setViewQuestion] = useState<any>(null);
   const [editQuestion, setEditQuestion] = useState<any>(null);
-  const [editingLoading, setEditingLoading] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [bankPolicy, setBankPolicy] = useState<{ org_bank_visibility: string; allow_org_own_bank?: boolean } | null>(null);
   const router = useRouter();
@@ -110,6 +111,7 @@ export default function QuestionsPage() {
     if (filterSubject) params.subjectId = filterSubject;
     if (filterMaterial) params.materialId = filterMaterial;
     if (filterMatChapter) params.chapterId = filterMatChapter;
+    if (filterStatus) params.status = filterStatus;
 
     try {
       const data = await api.questions.list(params);
@@ -120,7 +122,7 @@ export default function QuestionsPage() {
       setError(e.message || '加载试题列表失败');
     }
     setLoading(false);
-  }, [page, pageSize, debouncedKeyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter]);
+  }, [page, pageSize, debouncedKeyword, filterType, filterDifficulty, filterSubject, filterMaterial, filterMatChapter, filterStatus]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -191,15 +193,14 @@ export default function QuestionsPage() {
   };
 
   const openEditModal = async (q: any) => {
-    setEditingLoading(true);
+    setEditingId(q.id);
     try {
-      // 获取完整数据（含选项、答案、解析）
       const full = await api.questions.get(q.id);
       setEditQuestion(full);
     } catch {
       setEditQuestion(q);
     }
-    setEditingLoading(false);
+    setEditingId(null);
   };
 
   const showReferencedPapers = async (questionId: number) => {
@@ -301,6 +302,12 @@ export default function QuestionsPage() {
           className="input select" style={{ width: '100px' }}>
           <option value="">全部难度</option>
           {Object.entries(DIFF_LABELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+          className="input select" style={{ width: '100px' }}>
+          <option value="">全部状态</option>
+          <option value="PUBLISHED">启用</option>
+          <option value="ARCHIVED">已停用</option>
         </select>
         <select value={filterMaterial} onChange={e => { setFilterMaterial(e.target.value); setPage(1); }}
           className="input select" style={{ width: '140px' }}>
@@ -419,8 +426,8 @@ export default function QuestionsPage() {
                         className="btn btn-xs btn-ghost">详情</button>
                       <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
                         className="btn btn-xs btn-ghost"
-                        disabled={isViewOnly}
-                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingLoading ? '…' : '编辑'}</button>
+                        disabled={isViewOnly || editingId === q.id}
+                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingId === q.id ? '…' : '编辑'}</button>
                       {q.status === 'PUBLISHED' ? (
                         <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
                           className="btn btn-xs" style={{ color: 'var(--verm)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
@@ -449,12 +456,40 @@ export default function QuestionsPage() {
 
       {/* ── 选题操作栏 ── */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-center gap-4 mt-4 p-3 rounded-lg animate-fadeSlide"
+        <div className="flex items-center justify-center gap-3 mt-4 p-3 rounded-lg animate-fadeSlide flex-wrap"
           style={{ background: 'var(--fox-glow)' }}>
           <span className="text-sm font-medium" style={{ color: 'var(--fox-dark)' }}>
             已选 <strong>{selectedIds.size}</strong> 道试题
           </span>
           <button onClick={goGenerateWithSelected} className="btn btn-fox btn-sm">选题组卷 →</button>
+          <select
+            onChange={async (e) => {
+              const val = e.target.value;
+              e.target.value = '';
+              if (!val) return;
+              const ids = Array.from(selectedIds);
+              try {
+                if (val === 'archive' || val === 'publish') {
+                  const status = val === 'archive' ? 'ARCHIVED' : 'PUBLISHED';
+                  await Promise.all(ids.map(id => api.questions.update(id, { status })));
+                  toast.success(`已${val === 'archive' ? '停用' : '启用'} ${ids.length} 道试题`);
+                } else {
+                  await Promise.all(ids.map(id => api.questions.update(id, { difficulty: val })));
+                  toast.success(`已修改 ${ids.length} 道试题难度`);
+                }
+                clearSelection();
+                load();
+              } catch (err: any) { toast.error('批量操作失败：' + err.message); }
+            }}
+            className="input select btn-sm" style={{ width: '130px', fontSize: '12px' }}>
+            <option value="">批量操作…</option>
+            <option value="archive">批量停用</option>
+            <option value="publish">批量启用</option>
+            <option value="EASY">难度→易</option>
+            <option value="MEDIUM_EASY">难度→较易</option>
+            <option value="MEDIUM_HARD">难度→较难</option>
+            <option value="HARD">难度→难</option>
+          </select>
           <button onClick={clearSelection} className="btn btn-ghost btn-xs">取消选择</button>
         </div>
       )}

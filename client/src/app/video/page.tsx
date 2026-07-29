@@ -126,7 +126,7 @@ export default function VideoListPage() {
             {filtered.map(v => {
               const isPublic = v.type === 'PUBLIC';
               const isCompleted = v.progress?.completed;
-              const pct = v.progress ? Math.round((v.progress.progress || 0) * 100) : 0;
+              const pct = v.progress ? Math.min(100, Math.round(v.progress.progress || 0)) : 0;
               return (
                 <Link key={v.id} href={`/video/${v.id}`}
                   className="card overflow-hidden transition-all hover:shadow-md group"

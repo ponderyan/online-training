@@ -34,4 +34,14 @@ export class CoursesController {
 
   @Put(':id/toggle-status') @RequirePermission(P.COURSE_DELETE)
   toggleStatus(@Param('id', ParseIntPipe) id: number) { return this.service.toggleStatus(id); }
+
+  @Put(':id/video-links')
+  @RequirePermission(P.COURSE_EDIT)
+  syncVideoLinks(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { videoCourseIds: number[] },
+  ) {
+    return this.service.syncVideoLinks(id, body.videoCourseIds || []);
+  }
+
 }

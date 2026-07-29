@@ -38,7 +38,7 @@ const BoltIcon = ({ className }: { className?: string }) => (
 
 // ── 角色快捷登录（开发演示用） ──
 const QUICK_ROLES = [
-  { username: 'admin',        password: 'admin_temp', label: '管理员' },
+  { username: 'admin',        password: '123456',     label: '管理员' },
   { username: 'org_admin',    password: '123456',     label: '机构管理' },
   { username: 'exam_officer', password: '123456',     label: '考务员' },
   { username: 'lecturer01',   password: '123456',     label: '讲师' },

@@ -25,6 +25,7 @@ function GeneratePageContent() {
   const [totalScore, setTotalScore] = useState(100);
   const [duration, setDuration] = useState(90);
   const [isOpenBook, setIsOpenBook] = useState(false);
+  const [paperCount, setPaperCount] = useState(1);
   const [chapterStrategy, setChapterStrategy] = useState('EVEN');
 
   const allTypes = Object.keys(TYPE_NAMES);
@@ -270,7 +271,7 @@ function GeneratePageContent() {
     setGenerating(true);
     try {
       const payload: any = {
-        name: paperName, subjectId, totalScore, durationMinutes: duration, isOpenBook,
+        name: paperName, subjectId, totalScore, durationMinutes: duration, isOpenBook, count: paperCount,
         createdBy: user.id, chapterStrategy, sourceMix,
         difficultyDistribution: difficulty,
         includeQuestionIds: includeIds.length > 0 ? includeIds : undefined,
@@ -282,10 +283,14 @@ function GeneratePageContent() {
         })),
       };
       const result = await api.papers.generate(payload);
-      // 生成后直接跳转到可编辑的试卷详情页
       setIncludeIds([]);
       localStorage.removeItem('selectedQuestionIds');
-      router.push(`/papers/${result.id}`);
+      if (result.batch) {
+        toast.success(`已生成 ${result.count} 套平行卷`);
+        router.push('/papers');
+      } else {
+        router.push(`/papers/${result.id}`);
+      }
     } catch (e: any) {
       setError(e.message);
     } finally { setGenerating(false); }
@@ -340,8 +345,8 @@ function GeneratePageContent() {
             </div>
           </div>
 
-          {/* 分值 + 时间 + 开闭卷 */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          {/* 分值 + 时间 + 开闭卷 + 平行卷数 */}
+          <div className="grid grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>总分值</label>
               <input value={String(totalScore)} onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; setTotalScore(v); }} className="input" inputMode="numeric" />
@@ -354,6 +359,12 @@ function GeneratePageContent() {
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>开卷/闭卷</label>
               <select value={isOpenBook ? 'open' : 'closed'} onChange={e => setIsOpenBook(e.target.value === 'open')} className="input select">
                 <option value="closed">闭卷</option><option value="open">开卷</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>平行卷数</label>
+              <select value={String(paperCount)} onChange={e => setPaperCount(Number(e.target.value))} className="input select">
+                <option value="1">1 套</option><option value="2">2 套（A/B卷）</option><option value="3">3 套</option><option value="4">4 套</option><option value="5">5 套</option>
               </select>
             </div>
           </div>

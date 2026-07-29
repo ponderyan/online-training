@@ -14,6 +14,10 @@ import { Permissions as P } from '../../common/permissions.constants.js';
 
 const UPLOAD_DIR = path.resolve('uploads/videos');
 
+/**
+ * @deprecated Phase 1b 遗留模块，请迁移到 VideoCourse（api/video-courses）。
+ * 新视频统一使用 VideoCourse 管理，此模块仅为兼容保留。
+ */
 @Controller('api/courses/:courseId/videos')
 export class CourseVideosController {
   constructor(private service: CourseVideosService) {}

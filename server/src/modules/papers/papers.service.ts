@@ -20,12 +20,24 @@ export class PapersService {
     private systemConfig: SystemConfigService,
   ) {}
 
-  async findAll(params: { page?: number; pageSize?: number; userOrgId?: number | null; userRoles?: string[] }) {
+  /** 获取用户可见的组织ID列表（自身 + 所有子孙） */
+  private async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: userOrgId } });
+    if (!org?.path) return [userOrgId];
+    const prefix = org.path.endsWith('/') ? org.path : org.path + '/';
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: prefix }, id: { not: userOrgId } },
+      select: { id: true },
+    });
+    return [userOrgId, ...descendants.map(d => d.id)];
+  }
+
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; subjectId?: number; filterOrgId?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
-    // ★ orgId 隔离
+    // ★ orgId 隔离（组织树继承：可见自身+子孙组织的试卷）
     const where: any = {};
     const userOrgId = params.userOrgId ?? null;
     const userRoles = params.userRoles ?? [];
@@ -33,8 +45,20 @@ export class PapersService {
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'hidden') where.orgId = null;
     } else if (userOrgId) {
-      where.orgId = userOrgId;
+      const visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
+      where.orgId = { in: visibleOrgIds };
     }
+
+    // ★ 服务端筛选
+    if (params.keyword) {
+      where.OR = [
+        { name: { contains: params.keyword } },
+        { paperNumber: { contains: params.keyword } },
+      ];
+    }
+    if (params.status) where.status = params.status;
+    if (params.subjectId) where.subjectId = params.subjectId;
+    if (params.filterOrgId) where.orgId = params.filterOrgId;
 
     const [items, total] = await Promise.all([
       this.prisma.paper.findMany({
@@ -73,15 +97,31 @@ export class PapersService {
     });
     if (!paper) throw new NotFoundException(`Paper ${id} not found`);
 
-    // ★ orgId 隔离：非 SUPER_ADMIN 只能访问自己机构的
+    // ★ orgId 隔离：非 SUPER_ADMIN 可访问自身及子孙组织的试卷
     if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
       const uOrgId = userOrgId ?? null;
-      if (uOrgId === null || paper.orgId !== uOrgId) {
+      if (uOrgId === null) {
+        throw new NotFoundException(`Paper ${id} not found`);
+      }
+      const visibleOrgIds = await this.getVisibleOrgIds(uOrgId);
+      if (paper.orgId !== null && !visibleOrgIds.includes(paper.orgId)) {
         throw new NotFoundException(`Paper ${id} not found`);
       }
     }
 
-    return paper;
+    // 计算章节分布
+    const qIds = (paper.questions || []).map((pq: any) => pq.question?.chapterId).filter(Boolean);
+    let chapterDistribution: any[] = [];
+    if (qIds.length > 0) {
+      const chapterCountMap: Record<number, number> = {};
+      for (const chId of qIds) { chapterCountMap[chId] = (chapterCountMap[chId] || 0) + 1; }
+      const chIds = Object.keys(chapterCountMap).map(Number);
+      const chapters = await this.prisma.chapter.findMany({ where: { id: { in: chIds } }, select: { id: true, name: true } });
+      const nameMap = new Map(chapters.map(c => [c.id, c.name]));
+      chapterDistribution = chIds.map(cid => ({ chapterId: cid, chapterName: nameMap.get(cid) || '未知章节', count: chapterCountMap[cid] }));
+    }
+
+    return { ...paper, chapterDistribution };
   }
 
   async create(data: {
@@ -523,6 +563,51 @@ export class PapersService {
     });
   }
 
+  /** 提交审题：DRAFT -> PENDING_REVIEW */
+  async submitForReview(id: number) {
+    const paper = await this.findOne(id);
+    if (paper.status !== 'DRAFT') throw new BadRequestException('仅草稿试卷可提交审题');
+    const qCount = await this.prisma.paperQuestion.count({ where: { paperId: id } });
+    if (qCount === 0) throw new BadRequestException('试卷没有试题，无法提交审题');
+    return this.prisma.paper.update({
+      where: { id },
+      data: { status: 'PENDING_REVIEW' },
+    });
+  }
+
+  /** 审题通过：PENDING_REVIEW -> FINALIZED（含快照） */
+  async approveReview(id: number) {
+    const paper = await this.findOne(id);
+    if (paper.status !== 'PENDING_REVIEW') throw new BadRequestException('仅待审试卷可审批通过');
+
+    // 定稿快照
+    const paperQuestions = await this.prisma.paperQuestion.findMany({
+      where: { paperId: id },
+      include: { question: { include: { options: { orderBy: { sortOrder: 'asc' } }, blanks: { orderBy: { blankIndex: 'asc' } }, subQuestions: { orderBy: { sortOrder: 'asc' } } } } },
+    });
+    for (const pq of paperQuestions) {
+      await this.prisma.paperQuestion.update({
+        where: { id: pq.id },
+        data: { snapshot: { content: pq.question.content, analysis: pq.question.analysis, type: pq.question.type, options: pq.question.options, blanks: pq.question.blanks, subQuestions: pq.question.subQuestions } },
+      });
+    }
+
+    return this.prisma.paper.update({
+      where: { id },
+      data: { status: 'FINALIZED', finalizedAt: new Date() },
+    });
+  }
+
+  /** 审题驳回：PENDING_REVIEW -> DRAFT */
+  async rejectReview(id: number, reason?: string) {
+    const paper = await this.findOne(id);
+    if (paper.status !== 'PENDING_REVIEW') throw new BadRequestException('仅待审试卷可驳回');
+    return this.prisma.paper.update({
+      where: { id },
+      data: { status: 'DRAFT' },
+    });
+  }
+
   async uploadWord(id: number, file: Express.Multer.File) {
     const paper = await this.findOne(id);
     if (paper.status === 'DRAFT') throw new BadRequestException('Draft papers cannot generate PDF');
@@ -547,20 +632,34 @@ export class PapersService {
 
   async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const paper = await this.findOne(id, userOrgId, userRoles);
-    // 非 SUPER_ADMIN 只能删自己机构的
+    // 非 SUPER_ADMIN 只能删自身及子孙组织的试卷
     if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
       const uOrgId = userOrgId ?? null;
-      if (uOrgId === null || paper.orgId !== uOrgId) {
+      if (uOrgId === null) {
         throw new NotFoundException(`Paper ${id} not found`);
       }
+      const visibleOrgIds = await this.getVisibleOrgIds(uOrgId);
+      if (paper.orgId !== null && !visibleOrgIds.includes(paper.orgId)) {
+        throw new NotFoundException(`Paper ${id} not found`);
+      }
+    }
+    // 检查是否被考试引用
+    const examCount = await this.prisma.exam.count({ where: { paperId: id } });
+    if (examCount > 0) {
+      throw new BadRequestException(`该试卷已被 ${examCount} 场考试引用，无法删除。请先解除考试关联。`);
     }
     return this.prisma.paper.delete({ where: { id } });
   }
 
   async removeQuestion(paperId: number, pqId: number) {
+    const paper = await this.prisma.paper.findUnique({ where: { id: paperId } });
+    if (!paper) throw new NotFoundException('试卷不存在');
+    if (paper.status !== 'DRAFT') throw new BadRequestException('仅草稿试卷可编辑试题');
     const pq = await this.prisma.paperQuestion.findUnique({ where: { id: pqId } });
     if (!pq || pq.paperId !== paperId) throw new NotFoundException('试卷试题不存在');
     await this.prisma.paperQuestion.delete({ where: { id: pqId } });
+    // 减少试题使用计数
+    await this.prisma.question.update({ where: { id: pq.questionId }, data: { usageCount: { decrement: 1 } } }).catch(() => {});
     return { success: true };
   }
 
@@ -599,10 +698,17 @@ export class PapersService {
     const paper = await this.findOne(paperId);
     if (paper.status !== 'DRAFT') throw new BadRequestException('仅草稿试卷可编辑');
 
+    const oldQuestionId = pq.questionId;
     await this.prisma.paperQuestion.update({
       where: { id: pqId },
       data: { questionId: newQuestionId },
     });
+
+    // 修正使用计数：旧题-1，新题+1
+    if (oldQuestionId !== newQuestionId) {
+      await this.prisma.question.update({ where: { id: oldQuestionId }, data: { usageCount: { decrement: 1 } } }).catch(() => {});
+      await this.prisma.question.update({ where: { id: newQuestionId }, data: { usageCount: { increment: 1 } } }).catch(() => {});
+    }
 
     return this.findOne(paperId);
   }
@@ -674,8 +780,10 @@ export class PapersService {
     try {
       execSync('soffice --headless --convert-to pdf --outdir ' + tmpDir + ' ' + htmlPath, { timeout: 30000 });
       return await readFile(pdfPath);
+    } catch (e: any) {
+      throw new BadRequestException('PDF 导出失败：服务器未安装 LibreOffice 或转换超时。请使用 Word 导出代替。');
     } finally {
-      execSync('rm -rf ' + tmpDir, { timeout: 5000 });
+      try { execSync('rm -rf ' + tmpDir, { timeout: 5000 }); } catch {}
     }
   }
 
@@ -852,13 +960,95 @@ export class PapersService {
   //  答题卡生成
   // ═══════════════════════════════════════════════
 
-  async generateAnswerSheetDocx(id: number): Promise<Buffer> {
+  // ═══ 批量操作 & 归档 ═══
+
+  async archive(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const paper = await this.findOne(id, userOrgId, userRoles);
+    if (paper.status === 'ARCHIVED') throw new BadRequestException('试卷已处于归档状态');
+    return this.prisma.paper.update({ where: { id }, data: { status: 'ARCHIVED' } });
+  }
+
+  async restore(id: number, userOrgId?: number | null, userRoles?: string[]) {
+    const paper = await this.findOne(id, userOrgId, userRoles);
+    if (paper.status !== 'ARCHIVED') throw new BadRequestException('仅归档试卷可恢复');
+    return this.prisma.paper.update({ where: { id }, data: { status: 'DRAFT' } });
+  }
+
+  async batchUpdateStatus(ids: number[], status: string, userOrgId?: number | null, userRoles?: string[]) {
+    if (!ids.length) throw new BadRequestException('请选择至少一套试卷');
+    const validStatuses = ['FINALIZED', 'OFFICIAL', 'ARCHIVED'];
+    if (!validStatuses.includes(status)) throw new BadRequestException('无效的目标状态');
+
+    // 校验权限：非SUPER只能操作可见范围内的
+    let visibleOrgIds: number[] | null = null;
+    if (userRoles && !userRoles.includes('SUPER_ADMIN') && userOrgId) {
+      visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
+    }
+
+    const where: any = { id: { in: ids } };
+    if (visibleOrgIds) where.orgId = { in: visibleOrgIds };
+
+    // 定稿前校验：必须有试题
+    if (status === 'FINALIZED') {
+      const papers = await this.prisma.paper.findMany({
+        where: { ...where, status: 'DRAFT' },
+        include: { _count: { select: { questions: true } } },
+      });
+      const noQuestions = papers.filter(p => p._count.questions === 0);
+      if (noQuestions.length > 0) {
+        throw new BadRequestException(`以下试卷无试题，无法定稿：${noQuestions.map(p => p.name).join('、')}`);
+      }
+    }
+
+    const result = await this.prisma.paper.updateMany({ where, data: { status: status as any } });
+    return { updated: result.count };
+  }
+
+  async batchDelete(ids: number[], userOrgId?: number | null, userRoles?: string[]) {
+    if (!ids.length) throw new BadRequestException('请选择至少一套试卷');
+
+    let visibleOrgIds: number[] | null = null;
+    if (userRoles && !userRoles.includes('SUPER_ADMIN') && userOrgId) {
+      visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
+    }
+
+    const where: any = { id: { in: ids } };
+    if (visibleOrgIds) where.orgId = { in: visibleOrgIds };
+
+    // 检查考试引用
+    const referenced = await this.prisma.exam.findMany({
+      where: { paperId: { in: ids } },
+      select: { paperId: true, title: true },
+    });
+    if (referenced.length > 0) {
+      const refPaperIds = [...new Set(referenced.map(r => r.paperId))];
+      const papers = await this.prisma.paper.findMany({ where: { id: { in: refPaperIds } }, select: { name: true } });
+      throw new BadRequestException(`以下试卷被考试引用，无法删除：${papers.map(p => p.name).join('、')}`);
+    }
+
+    const result = await this.prisma.paper.deleteMany({ where });
+    return { deleted: result.count };
+  }
+
+    async generateAnswerSheetDocx(id: number): Promise<Buffer> {
     const paper = await this.findOne(id);
-    const groups = this.groupQuestions(paper);
-    const typeOrder = ['SINGLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+
+    // 按 question.type 动态分组（而非 typeSection，因为 typeSection 值不统一）
+    const typeOrder = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+    const typeNames: Record<string, string> = {
+      SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
+      FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例分析题',
+    };
+    const typeGroups: Record<string, { items: any[]; totalScore: number; scorePerQ: number }> = {};
+    for (const pq of paper.questions || []) {
+      const qType = pq.question?.type || pq.typeSection || 'OTHER';
+      if (!typeGroups[qType]) typeGroups[qType] = { items: [], totalScore: 0, scorePerQ: pq.score };
+      typeGroups[qType].items.push(pq);
+      typeGroups[qType].totalScore += pq.score;
+    }
 
     // Helper functions
-    const p = (text: string, opts?: { bold?: boolean; size?: number; align?: 'center' | 'left' | 'right'; space?: number; spacing?: { before?: number; after?: number } }) => {
+    const p = (text: string, opts?: { bold?: boolean; size?: number; align?: 'center' | 'left' | 'right'; spacing?: { before?: number; after?: number } }) => {
       const alignmentMap = { center: AlignmentType.CENTER, left: AlignmentType.LEFT, right: AlignmentType.RIGHT };
       return new Paragraph({
         alignment: opts?.align ? alignmentMap[opts.align] : AlignmentType.LEFT,
@@ -873,26 +1063,7 @@ export class PapersService {
       });
     };
 
-    const boldRun = (text: string, size = 10) => new TextRun({ text, bold: true, size: size * 2, font: { name: 'SimSun', eastAsia: 'SimSun' } });
     const run = (text: string, size = 10) => new TextRun({ text, size: size * 2, font: { name: 'SimSun', eastAsia: 'SimSun' } });
-    const blankLine = () => new Paragraph({
-      spacing: { before: 20, after: 20 },
-      children: [run('__________________________________', 11)],
-    });
-
-    const makeCell = (text: string, opts?: { bold?: boolean; width?: number; align?: 'center' | 'left'; bg?: string }) => new TableCell({
-      children: [new Paragraph({
-        alignment: opts?.align === 'center' ? AlignmentType.CENTER : AlignmentType.LEFT,
-        children: [new TextRun({ text, bold: opts?.bold, size: 20, font: { name: 'SimSun', eastAsia: 'SimSun' } })],
-      })],
-      width: opts?.width ? { size: opts.width, type: WidthType.DXA } : undefined,
-      shading: opts?.bg ? { fill: opts.bg, type: ShadingType.CLEAR } : undefined,
-    });
-
-    const emptyCell = (opts?: { width?: number }) => new TableCell({
-      children: [new Paragraph({ children: [new TextRun({ text: '', size: 20 })] })],
-      width: opts?.width ? { size: opts.width, type: WidthType.DXA } : undefined,
-    });
 
     const gridNumCell = (num: number) => new TableCell({
       children: [new Paragraph({
@@ -900,7 +1071,7 @@ export class PapersService {
         children: [new TextRun({ text: String(num), size: 18, font: { name: 'SimSun', eastAsia: 'SimSun' } })],
       })],
       shading: { fill: 'F5F5F5', type: ShadingType.CLEAR },
-      width: { size: 1000, type: WidthType.DXA },
+      width: { size: 900, type: WidthType.DXA },
     });
 
     const gridAnsCell = () => new TableCell({
@@ -909,7 +1080,7 @@ export class PapersService {
         spacing: { before: 60, after: 60 },
         children: [new TextRun({ text: '', size: 20 })],
       })],
-      width: { size: 1000, type: WidthType.DXA },
+      width: { size: 900, type: WidthType.DXA },
     });
 
     const children: (Paragraph | Table)[] = [];
@@ -917,27 +1088,25 @@ export class PapersService {
     // === 密封线 (top) ===
     children.push(p('┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  密 封 线  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈', { size: 9, align: 'center', spacing: { after: 200 } }));
 
-    // === Title Header ===
-    children.push(p('数智化转型成熟度及数智化转型使能(DT+)人才培育体系', { size: 11, align: 'center', spacing: { after: 20 } }));
-    children.push(p(`管理师（DTM）考试答题卡${paper.isOpenBook ? '（开卷）' : ''}`, { size: 14, bold: true, align: 'center', spacing: { after: 40 } }));
-    children.push(p(`（编号：${paper.paperNumber || '—'}）`, { size: 9, align: 'center', spacing: { after: 200 } }));
+    // === Title Header（动态使用试卷名称） ===
+    children.push(p(paper.name || '考试答题卡', { size: 14, bold: true, align: 'center', spacing: { after: 20 } }));
+    children.push(p(`答题卡${paper.isOpenBook ? '（开卷）' : '（闭卷）'}`, { size: 12, bold: true, align: 'center', spacing: { after: 40 } }));
+    children.push(p(`（编号：${paper.paperNumber || '—'}  总分：${paper.totalScore}分  时长：${paper.durationMinutes || '—'}分钟）`, { size: 9, align: 'center', spacing: { after: 200 } }));
 
     // === 判卷官须知 ===
     children.push(p('判卷官须知', { size: 9, bold: true, spacing: { before: 100, after: 40 } }));
     children.push(p('1. 答题卡统一密封不得拆开，统一红笔阅卷；', { size: 9 }));
     children.push(p('2. 主观题判分时，须划出得分点并标明相应得数；', { size: 9 }));
-    children.push(p('3. 各题得分请统一填写在表1中，并签字确认；', { size: 9 }));
-    children.push(p('4. 必要时，ITSS分会须组织专家对成绩进行复核。', { size: 9, spacing: { after: 160 } }));
+    children.push(p('3. 各题得分请统一填写在成绩汇总表中，并签字确认；', { size: 9 }));
+    children.push(p('4. 必要时，须组织专家对成绩进行复核。', { size: 9, spacing: { after: 160 } }));
 
-    // === 表1: 成绩汇总表 ===
-    children.push(p('《成绩表》        表1', { size: 10, bold: true, align: 'center', spacing: { after: 60 } }));
+    // === 成绩汇总表（动态列） ===
+    children.push(p('《成绩汇总表》', { size: 10, bold: true, align: 'center', spacing: { after: 60 } }));
 
-    const scoreHeaders = [
-      '题型', '单选题', '判断题', '填空题', '简答题', '案例分析题', '总分'
-    ];
-
-    // 固定宽度分配（单位：dxa，约1/1440英寸）
-    const scoreWidths = [1200, 1600, 1400, 1400, 1400, 1800, 1200];
+    const presentTypes = typeOrder.filter(t => typeGroups[t] && typeGroups[t].items.length > 0);
+    const scoreHeaders = ['题型', ...presentTypes.map(t => typeNames[t] || t), '总分'];
+    const colW = Math.floor(9000 / scoreHeaders.length);
+    const scoreWidths = scoreHeaders.map(() => colW);
 
     const scoreHeadCell = (text: string, i: number) => new TableCell({
       children: [new Paragraph({
@@ -948,20 +1117,45 @@ export class PapersService {
       width: { size: scoreWidths[i], type: WidthType.DXA },
     });
 
+    const scoreValCell = (text: string, i: number) => new TableCell({
+      children: [new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text, size: 18, font: { name: 'SimSun', eastAsia: 'SimSun' } })],
+      })],
+      width: { size: scoreWidths[i], type: WidthType.DXA },
+    });
+
     const scoreEmptyCell = (i: number) => new TableCell({
       children: [new Paragraph({ children: [new TextRun({ text: '', size: 20 })] })],
       width: { size: scoreWidths[i], type: WidthType.DXA },
     });
 
+    // 表头行
     const scoreHeaderRow = new TableRow({
       children: scoreHeaders.map((h, i) => scoreHeadCell(h, i)),
       tableHeader: true,
     });
-
-    const scoreEmptyRow = new TableRow({
+    // 题数行
+    const countRow = new TableRow({
+      children: [
+        scoreValCell('题数', 0),
+        ...presentTypes.map((t, idx) => scoreValCell(String(typeGroups[t].items.length), idx + 1)),
+        scoreValCell(String(paper.questions?.length || 0), scoreHeaders.length - 1),
+      ],
+    });
+    // 满分行
+    const fullScoreRow = new TableRow({
+      children: [
+        scoreValCell('满分', 0),
+        ...presentTypes.map((t, idx) => scoreValCell(String(typeGroups[t].totalScore), idx + 1)),
+        scoreValCell(String(paper.totalScore), scoreHeaders.length - 1),
+      ],
+    });
+    // 得分行（空）
+    const scoreRow = new TableRow({
       children: scoreHeaders.map((_, i) => scoreEmptyCell(i)),
     });
-
+    // 阅卷人签字行
     const signRow = new TableRow({
       children: [
         new TableCell({
@@ -976,7 +1170,7 @@ export class PapersService {
     });
 
     children.push(new Table({
-      rows: [scoreHeaderRow, scoreEmptyRow, scoreEmptyRow, signRow],
+      rows: [scoreHeaderRow, countRow, fullScoreRow, scoreRow, signRow],
       width: { size: 100, type: WidthType.PERCENTAGE },
     }));
 
@@ -994,111 +1188,63 @@ export class PapersService {
     // === 密封线 ===
     children.push(p('┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  密 封 线  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈', { size: 9, align: 'center', spacing: { before: 200, after: 200 } }));
 
-    // === 单选区 (表2) ===
-    const singleChoice = groups['SINGLE_CHOICE'];
-    const singleCount = singleChoice?.items?.length || 0;
-    if (singleCount > 0) {
-      children.push(p(`单选题（每题${singleChoice.scorePerQ}分，共${singleCount}题，共${singleChoice.totalScore}分）        表2`, { size: 10, bold: true, spacing: { after: 80 } }));
+    // === 客观题答题区（单选/多选/判断）用网格 ===
+    let tableNum = 1;
+    const choiceTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'];
+    for (const ct of choiceTypes) {
+      const group = typeGroups[ct];
+      if (!group || group.items.length === 0) continue;
+      const count = group.items.length;
+      const typeName = typeNames[ct] || ct;
+      const hint = ct === 'MULTIPLE_CHOICE' ? '（多选、少选、错选均不得分）' : ct === 'TRUE_FALSE' ? '（请填写√或×）' : '';
+      children.push(p(`${typeName}（每题${group.scorePerQ}分，共${count}题，共${group.totalScore}分）${hint}        表${++tableNum}`, { size: 10, bold: true, spacing: { after: 80 } }));
 
-      // Create answer grid: 10 cols per row, with auto row count
-      const gridNumRow = (start: number) => new TableRow({
-        children: Array.from({ length: 10 }, (_, i) => gridNumCell(start + i)),
-      });
-
-      const gridAnswerRow = () => new TableRow({
-        children: Array.from({ length: 10 }, () => gridAnsCell()),
-      });
-
+      const cols = ct === 'TRUE_FALSE' ? Math.min(5, count) : 10;
+      const rowCount = Math.ceil(count / cols);
       const rows: TableRow[] = [];
-      for (let r = 0; r * 10 < singleCount; r++) {
-        const start = r * 10 + 1;
-        rows.push(gridNumRow(start));
-        rows.push(gridAnswerRow());
-      }
-
-      children.push(new Table({
-        rows,
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      }));
-      children.push(p('', { spacing: { after: 120 } }));
-    }
-
-    // === 判断题区 (表3) ===
-    const tf = groups['TRUE_FALSE'];
-    const tfCount = tf?.items?.length || 0;
-    if (tfCount > 0) {
-      children.push(p(`判断题（每题${tf.scorePerQ}分，共${tfCount}题，共${tf.totalScore}分  请填写"√"或"×"）        表3`, { size: 10, bold: true, spacing: { after: 40 } }));
-
-      const tfCols = Math.min(5, tfCount);
-      const tfRows = Math.ceil(tfCount / tfCols);
-      const tfCellWidth = Math.floor(9000 / tfCols);
-
-      const tfNumCell = (num: number) => new TableCell({
-        children: [new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 100, after: 100 },
-          children: [new TextRun({ text: String(num), size: 18, font: { name: 'SimSun', eastAsia: 'SimSun' }, bold: true })],
-        })],
-        width: { size: tfCellWidth, type: WidthType.DXA },
-      });
-      const tfAnsCell = () => new TableCell({
-        children: [new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 60, after: 60 },
-          children: [new TextRun({ text: '', size: 20 })],
-        })],
-        width: { size: tfCellWidth, type: WidthType.DXA },
-      });
-
-      const tfRowsData: TableRow[] = [];
-      for (let r = 0; r < tfRows; r++) {
-        const start = r * tfCols + 1;
-        const count = Math.min(tfCols, tfCount - start + 1);
-        tfRowsData.push(new TableRow({
-          children: Array.from({ length: count }, (_, i) => tfNumCell(start + i)),
+      for (let r = 0; r < rowCount; r++) {
+        const start = r * cols + 1;
+        const numCells = Math.min(cols, count - start + 1);
+        rows.push(new TableRow({
+          children: Array.from({ length: numCells }, (_, i) => gridNumCell(start + i)),
         }));
-        tfRowsData.push(new TableRow({
-          children: Array.from({ length: count }, () => tfAnsCell()),
+        rows.push(new TableRow({
+          children: Array.from({ length: numCells }, () => gridAnsCell()),
         }));
       }
 
-      children.push(new Table({
-        rows: tfRowsData,
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      }));
+      children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
       children.push(p('', { spacing: { after: 120 } }));
     }
 
-    // === 填空题区 (表4) ===
-    const fill = groups['FILL_BLANK'];
-    const fillCount = fill?.items?.length || 0;
-    let blankTotal = 0;
-    if (fillCount > 0) {
-      // Count total blanks
+    // === 填空题区 ===
+    const fill = typeGroups['FILL_BLANK'];
+    if (fill && fill.items.length > 0) {
+      let blankTotal = 0;
       for (const item of fill.items) {
         const blanks = item.question?.blanks || [];
         blankTotal += blanks.length || 1;
       }
-      children.push(p(`填空题（每空${fill.scorePerQ}分，共${blankTotal}空，共${fill.totalScore}分）        表4`, { size: 10, bold: true, spacing: { after: 40 } }));
-
+      children.push(p(`填空题（每空${fill.scorePerQ}分，共${blankTotal}空，共${fill.totalScore}分）        表${++tableNum}`, { size: 10, bold: true, spacing: { after: 40 } }));
       for (let i = 1; i <= blankTotal; i++) {
         children.push(p(`${i}. ____________________________________________`, { size: 10, spacing: { before: 12, after: 12 } }));
       }
       children.push(p('', { spacing: { after: 120 } }));
     }
 
-    // === 密封线 ===
-    children.push(p('┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  密 封 线  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈', { size: 9, align: 'center', spacing: { before: 200, after: 200 } }));
+    // === 密封线（主观题前） ===
+    const hasSubjective = (typeGroups['SHORT_ANSWER']?.items?.length || 0) > 0 || (typeGroups['CASE_STUDY']?.items?.length || 0) > 0;
+    if (hasSubjective) {
+      children.push(p('┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  密 封 线  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈', { size: 9, align: 'center', spacing: { before: 200, after: 200 } }));
+    }
 
     // === 简答题区 ===
-    const shortAnswer = groups['SHORT_ANSWER'];
-    const saCount = shortAnswer?.items?.length || 0;
-    if (saCount > 0) {
-      children.push(p(`简答题（每题${shortAnswer.scorePerQ}分，共${saCount}题，共${shortAnswer.totalScore}分）`, { size: 10, bold: true, spacing: { after: 40 } }));
-
+    const shortAnswer = typeGroups['SHORT_ANSWER'];
+    if (shortAnswer && shortAnswer.items.length > 0) {
+      const saCount = shortAnswer.items.length;
+      children.push(p(`简答题（每题${shortAnswer.scorePerQ}分，共${saCount}题，共${shortAnswer.totalScore}分）        表${++tableNum}`, { size: 10, bold: true, spacing: { after: 40 } }));
       for (let i = 1; i <= saCount; i++) {
         children.push(p(`简答题${i}：`, { size: 10, bold: true, spacing: { before: 60, after: 20 } }));
-        // 5 points → ~6 lines of space
         const lines = Math.max(4, shortAnswer.scorePerQ);
         for (let l = 0; l < lines; l++) {
           children.push(new Paragraph({
@@ -1112,14 +1258,15 @@ export class PapersService {
     }
 
     // === 案例题区 ===
-    const caseStudy = groups['CASE_STUDY'];
-    const csCount = caseStudy?.items?.length || 0;
-    if (csCount > 0) {
-      children.push(p(`案例分析（每题${caseStudy.scorePerQ}分，共${csCount}题，共${caseStudy.totalScore}分）`, { size: 10, bold: true, spacing: { after: 40 } }));
-
+    const caseStudy = typeGroups['CASE_STUDY'];
+    if (caseStudy && caseStudy.items.length > 0) {
+      const csCount = caseStudy.items.length;
+      children.push(p(`案例分析题（每题${caseStudy.scorePerQ}分，共${csCount}题，共${caseStudy.totalScore}分）        表${++tableNum}`, { size: 10, bold: true, spacing: { after: 40 } }));
       for (let i = 1; i <= csCount; i++) {
-        children.push(p(`案例分析${i}：`, { size: 10, bold: true, spacing: { before: 60, after: 20 } }));
-        // 15 points → more lines
+        // 显示子题数量提示
+        const subCount = caseStudy.items[i - 1]?.question?.subQuestions?.length || 0;
+        const subHint = subCount > 0 ? `（含${subCount}小题）` : '';
+        children.push(p(`案例分析${i}${subHint}：`, { size: 10, bold: true, spacing: { before: 60, after: 20 } }));
         const lines = Math.max(8, Math.round(caseStudy.scorePerQ * 0.6));
         for (let l = 0; l < lines; l++) {
           children.push(new Paragraph({

@@ -1,9 +1,10 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Injectable()
 export class OrgCodesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private systemConfig: SystemConfigService) {}
 
   // ═══════════════════════════════════════════
   //  缩写词典 CRUD
@@ -33,26 +34,27 @@ export class OrgCodesService {
   // ═══════════════════════════════════════════
 
   async getCodeRules() {
-    const configs = await this.prisma.systemConfig.findMany({
-      where: { key: { startsWith: 'org_code_' } },
-    });
-    const rules: Record<string, string> = {};
-    for (const c of configs) rules[c.key] = c.value;
+    const configs = await this.systemConfig.getConfigs([
+      'org_code_separator',
+      'org_code_auto_generate',
+      'org_code_include_level',
+    ]);
     return {
-      separator: rules['org_code_separator'] || '-',
-      autoGenerate: rules['org_code_auto_generate'] === 'true',
-      includeLevel: rules['org_code_include_level'] === 'true',
+      separator: configs.get('org_code_separator') || '-',
+      autoGenerate: configs.get('org_code_auto_generate') === 'true',
+      includeLevel: configs.get('org_code_include_level') === 'true',
     };
   }
 
   async updateCodeRules(data: { separator?: string; autoGenerate?: boolean; includeLevel?: boolean }) {
-    const updates: { key: string; value: string }[] = [];
-    if (data.separator !== undefined) updates.push({ key: 'org_code_separator', value: data.separator });
-    if (data.autoGenerate !== undefined) updates.push({ key: 'org_code_auto_generate', value: String(data.autoGenerate) });
-    if (data.includeLevel !== undefined) updates.push({ key: 'org_code_include_level', value: String(data.includeLevel) });
-
-    for (const u of updates) {
-      await this.prisma.systemConfig.update({ where: { key: u.key }, data: { value: u.value } });
+    if (data.separator !== undefined) {
+      await this.systemConfig.setConfig('org_code_separator', data.separator);
+    }
+    if (data.autoGenerate !== undefined) {
+      await this.systemConfig.setConfig('org_code_auto_generate', String(data.autoGenerate));
+    }
+    if (data.includeLevel !== undefined) {
+      await this.systemConfig.setConfig('org_code_include_level', String(data.includeLevel));
     }
     return this.getCodeRules();
   }

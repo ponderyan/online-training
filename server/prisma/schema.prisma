@@ -42,8 +42,10 @@ enum QuestionStatus {
 
 enum PaperStatus {
   DRAFT
+  PENDING_REVIEW
   FINALIZED
   OFFICIAL
+  ARCHIVED
 }
 
 enum ChapterStrategy {
@@ -1665,6 +1667,7 @@ model VideoCourse {
   originalFileName      String?  @map("original_file_name") @db.VarChar(500) // 上传时的原始文件名
   coverUrl              String?  @map("cover_url") @db.VarChar(500) // 封面图 URL
   duration              Int      @default(0) // 视频时长（秒）
+  requiredPct           Float    @default(80) @map("required_pct") // 看完多少比例算完成（%）
   type                  String   @default("PUBLIC") @db.VarChar(20) // PUBLIC | SPECIALIZED
   isContinuingEducation Boolean  @default(false) @map("is_continuing_education") // 是否计入继续教育学分
   sortOrder             Int      @default(0) @map("sort_order")
@@ -1675,6 +1678,7 @@ model VideoCourse {
   courseLinks VideoCourseCourse[]
   logs        VideoCourseLog[]
   progresses  VideoProgress[] // 学员播放进度
+  quizzes     VideoQuiz[]     // 弹题验证
 
   @@index([type])
   @@map("video_courses")
@@ -1708,6 +1712,22 @@ model VideoCourseLog {
 
   @@index([videoCourseId])
   @@map("video_course_logs")
+}
+
+// 视频弹题验证
+model VideoQuiz {
+  id            Int         @id @default(autoincrement())
+  videoCourseId Int         @map("video_course_id")
+  timePoint     Int         @map("time_point") // 触发时间（秒）
+  question      String      @db.Text           // 题目
+  options       String      @db.Text           // JSON 数组 ["A","B","C","D"]
+  correctIndex  Int         @map("correct_index") // 正确答案下标
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  videoCourse   VideoCourse @relation(fields: [videoCourseId], references: [id], onDelete: Cascade)
+
+  @@index([videoCourseId])
+  @@map("video_quizzes")
 }
 
 // 学时类型字典

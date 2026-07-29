@@ -664,8 +664,8 @@ async function main() {
   // ── SystemConfig 默认值 ──
   const configDefaults = [
     // ── 题库策略（已有，加 group/type）──
-    { key: 'allow_org_own_bank', value: 'false', desc: '是否允许机构自建题库', group: 'general', inputType: 'boolean', options: null },
-    { key: 'org_bank_visibility', value: 'view_only', desc: '协会对机构题库可见性', group: 'general', inputType: 'select', options: '["hidden","view_only","full_access"]' },
+    { key: 'allow_org_own_bank', value: 'false', desc: '是否允许机构自建题库', group: 'bank', inputType: 'boolean', options: null },
+    { key: 'org_bank_visibility', value: 'view_only', desc: '协会对机构题库可见性', group: 'bank', inputType: 'select', options: '["hidden","view_only","full_access"]' },
 
     // ── 培训配置 ──
     { key: 'training_yearly_hour_limit', value: '90', desc: '年度学时上限', group: 'training', inputType: 'number', options: null },
@@ -692,6 +692,13 @@ async function main() {
     { key: 'difficulty_def_hard', value: '分析评价：新情境下的诊断/决策，教材无直接答案', desc: '难度HARD判定标准', group: 'question', inputType: 'text', options: null },
     { key: 'ai_require_explanation', value: 'true', desc: 'AI出题是否强制要求解析', group: 'question', inputType: 'boolean', options: null },
     { key: 'ai_default_temperature', value: '0.3', desc: 'AI出题默认温度参数', group: 'question', inputType: 'number', options: null },
+    // ── 证书策略 ──
+    { key: 'cert_org_self_issue', value: 'false', desc: '机构能否自行发证', group: 'cert', inputType: 'boolean', options: null },
+    { key: 'cert_approval_required', value: 'true', desc: '发证是否需要审批', group: 'cert', inputType: 'boolean', options: null },
+    { key: 'cert_seal_mode', value: 'platform', desc: '证书印章模式', group: 'cert', inputType: 'select', options: '["platform","org","both"]' },
+    // ── 系统参数（原 settings 页面 localStorage 迁移） ──
+    { key: 'question_cooling_days', value: '30', desc: '试题冷却阈值（天内不重复出现）', group: 'question', inputType: 'number', options: null },
+    { key: 'paper_default_prefix', value: 'DT+', desc: '试卷默认编号前缀', group: 'exam', inputType: 'text', options: null },
   ];
   for (const cfg of configDefaults) {
     await prisma.systemConfig.upsert({
@@ -704,11 +711,11 @@ async function main() {
 
   // ── 消息中心配置 ──
   const msgConfigs = [
-    { key: 'email_smtp_host', value: '', desc: 'SMTP服务器地址', group: 'email', inputType: 'string', options: null },
+    { key: 'email_smtp_host', value: '', desc: 'SMTP服务器地址', group: 'email', inputType: 'text', options: null },
     { key: 'email_smtp_port', value: '587', desc: 'SMTP端口', group: 'email', inputType: 'number', options: null },
-    { key: 'email_user', value: '', desc: 'SMTP用户名', group: 'email', inputType: 'string', options: null },
+    { key: 'email_user', value: '', desc: 'SMTP用户名', group: 'email', inputType: 'text', options: null },
     { key: 'email_pass', value: '', desc: 'SMTP密码', group: 'email', inputType: 'password', options: null },
-    { key: 'email_from', value: 'noreply@foxlearn.cn', desc: '发件人地址', group: 'email', inputType: 'string', options: null },
+    { key: 'email_from', value: 'noreply@foxlearn.cn', desc: '发件人地址', group: 'email', inputType: 'text', options: null },
     { key: 'sms_enabled', value: 'false', desc: '是否启用短信', group: 'sms', inputType: 'boolean', options: null },
   ];
   for (const cfg of msgConfigs) {
@@ -722,9 +729,9 @@ async function main() {
 
   // ── 组织编码规则配置（Phase 2）──
   const orgCodeConfigs = [
-    { key: 'org_code_separator', value: '-', desc: '组织编码层级分隔符', group: 'general', inputType: 'text', options: null },
-    { key: 'org_code_auto_generate', value: 'true', desc: '创建组织时自动生成编码', group: 'general', inputType: 'boolean', options: null },
-    { key: 'org_code_include_level', value: 'true', desc: '编码是否体现层级（父编码+子缩写）', group: 'general', inputType: 'boolean', options: null },
+    { key: 'org_code_separator', value: '-', desc: '组织编码层级分隔符', group: 'org', inputType: 'text', options: null },
+    { key: 'org_code_auto_generate', value: 'true', desc: '创建组织时自动生成编码', group: 'org', inputType: 'boolean', options: null },
+    { key: 'org_code_include_level', value: 'true', desc: '编码是否体现层级（父编码+子缩写）', group: 'org', inputType: 'boolean', options: null },
   ];
   for (const cfg of orgCodeConfigs) {
     await prisma.systemConfig.upsert({
@@ -734,6 +741,21 @@ async function main() {
     });
   }
   console.log(`✅ 组织编码配置: ${orgCodeConfigs.length} 项`);
+
+
+  // ── 审计日志配置 ──
+  const auditConfigs = [
+    { key: 'audit_retention_days', value: '730', desc: '审计日志保留天数', group: 'audit', inputType: 'number', options: null },
+    { key: 'audit_auto_cleanup_enabled', value: 'true', desc: '是否启用审计日志自动清理', group: 'audit', inputType: 'boolean', options: null },
+  ];
+  for (const cfg of auditConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: cfg.key },
+      update: { value: cfg.value, desc: cfg.desc, group: cfg.group, inputType: cfg.inputType, options: cfg.options },
+      create: cfg,
+    });
+  }
+  console.log(`✅ 审计日志配置: ${auditConfigs.length} 项`);
 
   // ── 组织编码缩写词典（Phase 2）──
   const abbreviations = [

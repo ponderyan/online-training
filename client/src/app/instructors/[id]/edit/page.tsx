@@ -79,15 +79,22 @@ export default function EditInstructorPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>职称</label>
-              <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input w-full" />
+              <select value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input select w-full">
+                <option value="">请选择</option>
+                <option value="初级工程师">初级工程师</option>
+                <option value="中级工程师">中级工程师</option>
+                <option value="副高级工程师">副高级工程师</option>
+                <option value="正高级工程师">正高级工程师</option>
+                <option value="其他">其他</option>
+              </select>
             </div>
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>级别</label>
               <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value })} className="input select w-full">
-                <option value="JUNIOR">初级</option>
-                <option value="MIDDLE">中级</option>
-                <option value="SENIOR">高级</option>
-                <option value="EXPERT">专家</option>
+                <option value="JUNIOR">初级讲师</option>
+                <option value="MIDDLE">中级讲师</option>
+                <option value="SENIOR">高级讲师</option>
+                <option value="EXPERT">资深讲师</option>
               </select>
             </div>
           </div>

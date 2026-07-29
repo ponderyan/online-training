@@ -41,6 +41,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/agencies', label: '招生机构', icon: '🏢', perm: 'agency:view' },
       { path: '/admin/agency-students', label: '机构学员', icon: '👥', perm: 'agency:view:students' },
       { path: '/admin/learning-hours', label: '学时管理', icon: '⏱', perm: 'learningHour:manage' },
+      { path: '/admin/learning-hour-types', label: '学时类型', icon: '📋', perm: 'learningHour:manage' },
     ],
   },
   {
@@ -80,11 +81,9 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: '系统管理',
     items: [
       { path: '/admin/organizations', label: '组织管理', icon: '🏢', perm: 'org:view' },
-      { path: '/settings', label: '系统设置', icon: '⚙️', perm: 'system:config' },
       { path: '/admin/settings/branding', label: '品牌设置', icon: '🎨', perm: 'system:config' },
       { path: '/admin/system-config', label: '配置中心', icon: '⚙️', perm: 'systemConfig:view' },
       { path: '/admin/ai-configs', label: 'AI 配置', icon: '🤖', perm: 'aiConfig:view' },
-      { path: '/admin/learning-hour-types', label: '学时类型', icon: '📋', perm: 'learningHour:manage' },
       { path: '/admin/messages', label: '消息中心', icon: '📢', perm: 'notice:manage' },
       { path: '/admin/knowledge', label: '知识库管理', icon: '📚', perm: 'aiConfig:view' },
       { path: '/admin/data', label: '数据管理', icon: '📦', perm: 'system:config' },
@@ -146,6 +145,7 @@ const AGENCY_ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/agency-students', label: '学员管理', icon: '👥', perm: 'agency:view:students' },
       { path: '/agencies/radar', label: '招生雷达', icon: '📊', perm: 'agency:view' },
       { path: '/admin/learning-hours', label: '学时管理', icon: '⏱', perm: 'learningHour:manage' },
+      { path: '/admin/learning-hour-types', label: '学时类型', icon: '📋', perm: 'learningHour:manage' },
     ],
   },
 ];

@@ -41,13 +41,14 @@ export class VideoCoursesService {
     return matchingSchedules.length > 0;
   }
 
-  async findAll(params: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string }) {
+  async findAll(params: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string; courseId?: number }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
     if (params.type) where.type = params.type;
     if (params.status) where.status = params.status;
     if (params.keyword) where.name = { contains: params.keyword };
+    if (params.courseId) where.courseLinks = { some: { courseId: params.courseId } };
 
     const [items, total] = await Promise.all([
       this.prisma.videoCourse.findMany({
@@ -82,9 +83,8 @@ export class VideoCoursesService {
 
   async create(data: any, userId: number) {
     const { courseIds, ...rest } = data;
-    // 公开课默认已发布，专项课默认草稿
-    if (rest.type === 'PUBLIC' && !rest.status) rest.status = 'PUBLISHED';
-    if (rest.type === 'SPECIALIZED' && !rest.status) rest.status = 'DRAFT';
+    // 默认保存为草稿，用户可主动选择上架
+    if (!rest.status) rest.status = 'DRAFT';
     // Build clean data: include all fields but drop null values for nullable fields
     // so Prisma uses defaults for non-nullable fields with defaults
     const cleanData: any = {};
@@ -178,7 +178,7 @@ export class VideoCoursesService {
   }
 
   async reportProgress(videoId: number, studentId: number, dto: { progress: number; lastPosition: number; completed?: boolean }) {
-    const { progress, lastPosition, completed } = dto;
+    const { progress, lastPosition } = dto;
     const existing = await this.prisma.videoProgress.findUnique({
       where: { videoId_studentId: { videoId, studentId } },
     });
@@ -186,9 +186,14 @@ export class VideoCoursesService {
     if (existing && progress > existing.progress + 20 && progress < 100) {
       return existing; // 静默忽略异常跳跃，返回上次进度
     }
+    // 使用视频自身的完成阈值判断
+    const video = await this.prisma.videoCourse.findUnique({ where: { id: videoId }, select: { requiredPct: true } });
+    const threshold = video?.requiredPct || 80;
+    const completed = progress >= threshold;
+
     const record = await this.prisma.videoProgress.upsert({
       where: { videoId_studentId: { videoId, studentId } },
-      create: { videoId, studentId, progress, lastPosition, completed: completed || false, completedAt: completed ? new Date() : null },
+      create: { videoId, studentId, progress, lastPosition, completed, completedAt: completed ? new Date() : null },
       update: { progress, lastPosition, ...(completed ? { completed: true, completedAt: new Date() } : {}) },
     });
     // Trigger learning hours on first completion
@@ -268,6 +273,73 @@ export class VideoCoursesService {
     };
   }
 
+  // ── 学习行为统计 ──
+  async getLearningStats() {
+    const [totalVideos, totalStudents, progressRecords, completedRecords, hourResult] = await Promise.all([
+      this.prisma.videoCourse.count({ where: { status: 'PUBLISHED' } }),
+      this.prisma.videoProgress.groupBy({ by: ['studentId'], _count: true }),
+      this.prisma.videoProgress.findMany({ select: { videoId: true, studentId: true, progress: true, completed: true, lastPosition: true } }),
+      this.prisma.videoProgress.count({ where: { completed: true } }),
+      this.prisma.learningHourRecord.aggregate({ where: { source: 'VIDEO' }, _sum: { hours: true } }),
+    ]);
+
+    // 每个视频的统计
+    const videoStats = await this.prisma.videoCourse.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { id: true, name: true, duration: true, _count: { select: { progresses: true } } },
+    });
+
+    const perVideo = videoStats.map(v => {
+      const vProgress = progressRecords.filter(p => p.videoId === v.id);
+      const vCompleted = vProgress.filter(p => p.completed).length;
+      const avgProgress = vProgress.length > 0
+        ? Math.round(vProgress.reduce((sum, p) => sum + p.progress, 0) / vProgress.length)
+        : 0;
+      return {
+        id: v.id, name: v.name, duration: v.duration,
+        viewers: vProgress.length,
+        completions: vCompleted,
+        completionRate: vProgress.length > 0 ? Math.round((vCompleted / vProgress.length) * 100) : 0,
+        avgProgress,
+      };
+    });
+
+    return {
+      overview: {
+        totalVideos,
+        totalStudents: totalStudents.length,
+        totalProgressRecords: progressRecords.length,
+        totalCompletions: completedRecords,
+        totalHours: Math.round((hourResult._sum.hours || 0) * 100) / 100,
+      },
+      perVideo,
+    };
+  }
+
+  // ── 弹题验证 ──
+  async getQuizzes(videoCourseId: number) {
+    return this.prisma.videoQuiz.findMany({
+      where: { videoCourseId },
+      orderBy: { timePoint: 'asc' },
+    });
+  }
+
+  async addQuiz(videoCourseId: number, data: { timePoint: number; question: string; options: string[]; correctIndex: number }) {
+    return this.prisma.videoQuiz.create({
+      data: {
+        videoCourseId,
+        timePoint: data.timePoint,
+        question: data.question,
+        options: JSON.stringify(data.options),
+        correctIndex: data.correctIndex,
+      },
+    });
+  }
+
+  async deleteQuiz(quizId: number) {
+    return this.prisma.videoQuiz.delete({ where: { id: quizId } });
+  }
+
   async publish(id: number, userId: number) {
     const video = await this.findOne(id);
     if (video.status === 'PUBLISHED') return video;
@@ -283,7 +355,7 @@ export class VideoCoursesService {
 
   async unpublish(id: number, userId: number) {
     const video = await this.findOne(id);
-    if (video.status === 'DRAFT' || video.status === 'UNPUBLISHED') return video;
+    if (video.status === 'UNPUBLISHED') return video;
     const updated = await this.prisma.videoCourse.update({
       where: { id },
       data: { status: 'UNPUBLISHED' },

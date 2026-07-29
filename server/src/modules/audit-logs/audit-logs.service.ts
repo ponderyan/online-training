@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Injectable()
 export class AuditLogsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private systemConfig: SystemConfigService) {}
 
   async findAll(params: {
     page?: number; pageSize?: number;
@@ -82,14 +83,13 @@ export class AuditLogsService {
 
   /** 获取归档配置（保留天数 + 是否自动清理 + 统计） */
   async getArchiveConfig() {
-    const [retentionCfg, enabledCfg, stats] = await Promise.all([
-      this.prisma.systemConfig.findUnique({ where: { key: 'audit_retention_days' } }),
-      this.prisma.systemConfig.findUnique({ where: { key: 'audit_auto_cleanup_enabled' } }),
+    const [configs, stats] = await Promise.all([
+      this.systemConfig.getConfigs(['audit_retention_days', 'audit_auto_cleanup_enabled']),
       this.getStats(),
     ]);
     return {
-      retentionDays: retentionCfg ? parseInt(retentionCfg.value, 10) || 730 : 730,
-      autoCleanupEnabled: enabledCfg ? enabledCfg.value === 'true' : true,
+      retentionDays: parseInt(configs.get('audit_retention_days') || '730', 10) || 730,
+      autoCleanupEnabled: configs.get('audit_auto_cleanup_enabled') !== 'false',
       stats,
     };
   }

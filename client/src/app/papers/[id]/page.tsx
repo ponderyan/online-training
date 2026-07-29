@@ -31,7 +31,7 @@ export default function PaperDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAnswer, setShowAnswer] = useState(false);
-  const [deletePaperTarget, setDeletePaperTarget] = useState<boolean | null>(false);
+  const [deletePaperTarget, setDeletePaperTarget] = useState<boolean | null>(null);
   const [showPickModal, setShowPickModal] = useState(false);
   const [availableQuestions, setAvailableQuestions] = useState<any[]>([]);
   const [pickingSection, setPickingSection] = useState('');
@@ -55,6 +55,7 @@ export default function PaperDetailPage() {
     switch (s) {
       case 'OFFICIAL': return '正式考卷';
       case 'FINALIZED': return '已定稿';
+      case 'PENDING_REVIEW': return '待审核';
       default: return '草稿';
     }
   };
@@ -96,6 +97,34 @@ export default function PaperDetailPage() {
     load();
   };
 
+  const handleSubmitReview = async () => {
+    if (!paper) return;
+    try {
+      await api.papers.submitReview(paper.id);
+      toast.success('已提交审题');
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleApproveReview = async () => {
+    if (!paper) return;
+    try {
+      await api.papers.approveReview(paper.id);
+      toast.success('审题通过，试卷已定稿');
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleRejectReview = async () => {
+    if (!paper) return;
+    const reason = prompt('请输入驳回原因（可选）：');
+    try {
+      await api.papers.rejectReview(paper.id, reason || undefined);
+      toast.success('已驳回，试卷回到草稿状态');
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const handlePaperDeleteWithReason = async (reason: string) => {
     if (!paper) return;
     await api.papers.delete(paper.id);
@@ -103,9 +132,10 @@ export default function PaperDetailPage() {
     router.push('/papers');
   };
 
+  const getToken = () => localStorage.getItem('token') || '';
   const handleDownload = (format: 'word' | 'pdf') => {
     const a = document.createElement('a');
-    a.href = `/api/papers/${paperId}/export-${format}`;
+    a.href = `/api/papers/${paperId}/export-${format}?token=${getToken()}`;
     a.click();
   };
 
@@ -175,6 +205,7 @@ export default function PaperDetailPage() {
 
   const canEdit = paper?.status === 'DRAFT';
   const canFinalize = paper?.status === 'DRAFT';
+  const canReview = paper?.status === 'PENDING_REVIEW';
   const canPromote = paper?.status === 'FINALIZED';
 
   if (loading) {
@@ -210,7 +241,7 @@ export default function PaperDetailPage() {
           {!canEdit && (
             <>
               <button onClick={() => handleDownload('word')} className="btn btn-outline btn-sm">下载试卷</button>
-              <button onClick={() => { const a = document.createElement('a'); a.href = `/api/papers/${paperId}/export-answer-sheet`; a.click(); }}
+              <button onClick={() => { const a = document.createElement('a'); a.href = `/api/papers/${paperId}/export-answer-sheet?token=${getToken()}`; a.click(); }}
                 className="btn btn-fox btn-sm">答题卡</button>
               <button onClick={() => handleDownload('pdf')} className="btn btn-outline btn-sm">PDF</button>
             </>
@@ -218,8 +249,14 @@ export default function PaperDetailPage() {
           {canEdit && (
             <>
               <button onClick={() => router.push(`/generate?copyFrom=${paper.id}`)} className="btn btn-outline btn-sm">修改配置</button>
-              <button onClick={() => router.push('/papers')} className="btn btn-outline btn-sm">← 返回列表</button>
-              <button onClick={handleFinalize} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>定稿并冻结</button>
+              <button onClick={handleSubmitReview} className="btn btn-sm" style={{ background: 'var(--gold)', color: '#fff' }}>提交审题</button>
+              <button onClick={handleFinalize} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>直接定稿</button>
+            </>
+          )}
+          {canReview && (
+            <>
+              <button onClick={handleApproveReview} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>✓ 审题通过</button>
+              <button onClick={handleRejectReview} className="btn btn-outline btn-sm" style={{ color: 'var(--verm)', borderColor: 'var(--verm)' }}>✗ 驳回</button>
             </>
           )}
           {canPromote && (
@@ -237,7 +274,7 @@ export default function PaperDetailPage() {
           <div>
             <h1 className="page-title">{paper.name}</h1>
             <div className="flex items-center flex-wrap gap-3 mt-2 text-sm" style={{ color: 'var(--ink-400)' }}>
-              <span className={`tag ${paper.status === 'OFFICIAL' ? 'tag-verm' : paper.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'}`}>
+              <span className={`tag ${paper.status === 'OFFICIAL' ? 'tag-verm' : paper.status === 'FINALIZED' ? 'tag-cyan' : paper.status === 'PENDING_REVIEW' ? 'tag-gold' : 'tag-ink'}`}>
                 {statusLabel(paper.status)}
               </span>
               <span>{paper.paperNumber}</span>
@@ -249,9 +286,27 @@ export default function PaperDetailPage() {
             {canEdit && (
               <span className="text-xs mt-1 inline-block" style={{ color: 'var(--fox)' }}>✏️ 草稿状态，可编辑试题</span>
             )}
+            {canReview && (
+              <span className="text-xs mt-1 inline-block" style={{ color: 'var(--gold-dark)' }}>⏳ 待审核状态，等待审题人确认</span>
+            )}
           </div>
         </div>
       </div>
+
+      {/* 章节覆盖分布 */}
+      {paper.chapterDistribution?.length > 0 && (
+        <div className="card p-5 mb-5">
+          <h3 className="section-title mb-3">📊 章节覆盖分布</h3>
+          <div className="flex flex-wrap gap-3">
+            {paper.chapterDistribution.map((ch: any) => (
+              <div key={ch.chapterId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                <span style={{ color: 'var(--ink-600)' }}>{ch.chapterName}</span>
+                <span className="font-bold" style={{ color: 'var(--fox)' }}>{ch.count}题</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 数量/分值校验提示 */}
       {canEdit && (() => {
@@ -458,8 +513,9 @@ export default function PaperDetailPage() {
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--fox-glow)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'var(--paper)'}>
                       <p className="line-clamp-2" style={{ color: 'var(--ink-700)' }}>{q.content}</p>
-                      <div className="flex gap-2 mt-1">
+                      <div className="flex gap-3 mt-1">
                         <span className="text-xs" style={{ color: 'var(--ink-300)' }}>难度：{DIFF_LABELS[q.difficulty] || q.difficulty}</span>
+                        <span className="text-xs" style={{ color: (q.usageCount || 0) >= 5 ? 'var(--verm)' : 'var(--ink-300)' }}>已使用 {q.usageCount || 0} 次{(q.usageCount || 0) >= 5 ? ' ⚠' : ''}</span>
                       </div>
                     </div>
                   ))}

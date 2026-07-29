@@ -21,17 +21,27 @@ export default function PapersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAnswer, setShowAnswer] = useState<any>(null);
+  const [moreMenu, setMoreMenu] = useState<number | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterOrg, setFilterOrg] = useState('');
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
 
   const load = async (p: number = page) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.papers.list(p);
-      let items = data.items || [];
-      if (keyword) items = items.filter((i: any) => i.name?.includes(keyword) || i.paperNumber?.includes(keyword));
-      setPapers(items);
+      const params = new URLSearchParams({ page: String(p) });
+      if (keyword) params.set('keyword', keyword);
+      if (filterStatus) params.set('status', filterStatus);
+      if (filterSubject) params.set('subjectId', filterSubject);
+      if (filterOrg) params.set('orgId', filterOrg);
+      const data = await api.papers.list(params.toString());
+      setPapers(data.items || []);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
@@ -42,7 +52,7 @@ export default function PapersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(1); }, []);
+  useEffect(() => { load(1); api.subjects.listActive().then(setSubjects).catch(() => {}); fetch('/api/organizations', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then(r => r.json()).then(d => setOrgs(Array.isArray(d) ? d : d.items || [])).catch(() => {}); }, []);
 
   const goPage = (p: number) => { if (p >= 1 && p <= totalPages) load(p); };
 
@@ -50,6 +60,8 @@ export default function PapersPage() {
     switch (s) {
       case 'OFFICIAL': return '正式考卷';
       case 'FINALIZED': return '已定稿';
+      case 'PENDING_REVIEW': return '待审核';
+      case 'ARCHIVED': return '已归档';
       default: return '草稿';
     }
   };
@@ -73,15 +85,16 @@ export default function PapersPage() {
     catch { setShowAnswer(p); }
   };
 
+  const getToken = () => localStorage.getItem('token') || '';
   const handleDownload = (paperId: number, format: 'word' | 'pdf') => {
     const a = document.createElement('a');
-    a.href = `/api/papers/${paperId}/export-${format}`;
+    a.href = `/api/papers/${paperId}/export-${format}?token=${getToken()}`;
     a.click();
   };
 
   const handleAnswerSheet = (paperId: number) => {
     const a = document.createElement('a');
-    a.href = `/api/papers/${paperId}/export-answer-sheet`;
+    a.href = `/api/papers/${paperId}/export-answer-sheet?token=${getToken()}`;
     a.download = `answer-sheet-${paperId}.docx`;
     a.click();
   };
@@ -98,21 +111,49 @@ export default function PapersPage() {
     }
   };
 
+  const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleSelectAll = () => setSelectedIds(prev => prev.length === papers.length ? [] : papers.map(p => p.id));
+
+  const handleBatchStatus = async (status: string) => {
+    if (!selectedIds.length) return;
+    try {
+      const res = await api.papers.batchStatus(selectedIds, status);
+      toast.success(`已更新 ${res.updated} 套试卷`);
+      setSelectedIds([]);
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleBatchDelete = async () => {
+    if (!selectedIds.length) return;
+    if (!confirm(`确认删除选中的 ${selectedIds.length} 套试卷？此操作不可恢复。`)) return;
+    try {
+      const res = await api.papers.batchDelete(selectedIds);
+      toast.success(`已删除 ${res.deleted} 套试卷`);
+      setSelectedIds([]);
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleArchive = async (id: number) => {
+    try { await api.papers.archive(id); toast.success('已归档'); load(); } catch (e: any) { toast.error(e.message); }
+  };
+  const handleRestore = async (id: number) => {
+    try { await api.papers.restore(id); toast.success('已恢复为草稿'); load(); } catch (e: any) { toast.error(e.message); }
+  };
+
   const draftCount = papers.filter(p => p.status === 'DRAFT').length;
+  const reviewCount = papers.filter(p => p.status === 'PENDING_REVIEW').length;
   const finalizedCount = papers.filter(p => p.status === 'FINALIZED').length;
   const officialCount = papers.filter(p => p.status === 'OFFICIAL').length;
 
   return (
     <AppLayout>
-      <div className="flex items-start justify-between mb-7">
-      <input value={keyword} onChange={e => setKeyword(e.target.value)}
-        placeholder="🔍 搜索试卷名称/编号…" className="input" style={{ maxWidth: 320 }}
-        onKeyDown={e => e.key === 'Enter' && load()} />
-
+      <div className="flex items-start justify-between mb-5">
         <div>
           <h1 className="page-title">🦊 试卷管理</h1>
           <p className="page-subtitle">
-            草稿 {draftCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
+            草稿 {draftCount} · 待审 {reviewCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
             {totalPages > 1 && <span className="ml-3 text-xs opacity-50">第 {page}/{totalPages} 页</span>}
           </p>
         </div>
@@ -120,6 +161,44 @@ export default function PapersPage() {
           <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">+ 小狐狸，组个卷</button>
         </div>
       </div>
+
+      {/* 筛选栏 */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <input value={keyword} onChange={e => setKeyword(e.target.value)}
+          placeholder="🔍 搜索名称/编号…" className="input" style={{ maxWidth: 220 }}
+          onKeyDown={e => e.key === 'Enter' && load(1)} />
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); }} className="input" style={{ maxWidth: 130 }}>
+          <option value="">全部状态</option>
+          <option value="DRAFT">草稿</option>
+          <option value="PENDING_REVIEW">待审核</option>
+          <option value="FINALIZED">已定稿</option>
+          <option value="OFFICIAL">正式考卷</option>
+          <option value="ARCHIVED">已归档</option>
+        </select>
+        <select value={filterSubject} onChange={e => { setFilterSubject(e.target.value); }} className="input" style={{ maxWidth: 160 }}>
+          <option value="">全部科目</option>
+          {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); }} className="input" style={{ maxWidth: 160 }}>
+          <option value="">全部组织</option>
+          {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+        <button onClick={() => load(1)} className="btn btn-outline btn-xs">筛选</button>
+        {(keyword || filterStatus || filterSubject || filterOrg) && (
+          <button onClick={() => { setKeyword(''); setFilterStatus(''); setFilterSubject(''); setFilterOrg(''); setTimeout(() => load(1), 0); }} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>清除</button>
+        )}
+      </div>
+
+      {/* 批量操作栏 */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg" style={{ background: 'var(--fox-glow)', border: '1px solid var(--fox)' }}>
+          <span className="text-xs font-medium" style={{ color: 'var(--fox-dark)' }}>已选 {selectedIds.length} 套</span>
+          <button onClick={() => handleBatchStatus('FINALIZED')} className="btn btn-xs btn-outline">批量定稿</button>
+          <button onClick={() => handleBatchStatus('ARCHIVED')} className="btn btn-xs btn-outline">批量归档</button>
+          <button onClick={handleBatchDelete} className="btn btn-xs" style={{ color: 'var(--verm)', borderColor: 'var(--verm)' }}>批量删除</button>
+          <button onClick={() => setSelectedIds([])} className="btn btn-xs btn-ghost">取消选择</button>
+        </div>
+      )}
 
       {loading ? (
         <SkeletonCardGrid count={6} />
@@ -134,12 +213,18 @@ export default function PapersPage() {
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
           {papers.map((p: any) => (
-            <div key={p.id} className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--fox)]">
+            <div key={p.id} className="card p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--fox)]" style={selectedIds.includes(p.id) ? { borderColor: 'var(--fox)', boxShadow: '0 0 0 2px var(--fox-glow)' } : {}}>
               <div className="flex justify-between items-start gap-3 mb-3">
-                <h3 className="font-serif font-bold text-sm leading-snug" style={{ color: 'var(--ink-800)' }}>{p.name}</h3>
+                <div className="flex items-start gap-2">
+                  <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => toggleSelect(p.id)}
+                    className="mt-1 w-3.5 h-3.5 accent-[var(--fox)] cursor-pointer flex-shrink-0" />
+                  <h3 className="font-serif font-bold text-sm leading-snug" style={{ color: 'var(--ink-800)' }}>{p.name}</h3>
+                </div>
                 <span className={`tag ${
                   p.status === 'OFFICIAL' ? 'tag-verm' :
-                  p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
+                  p.status === 'FINALIZED' ? 'tag-cyan' :
+                  p.status === 'PENDING_REVIEW' ? 'tag-gold' :
+                  p.status === 'ARCHIVED' ? 'tag-ink' : 'tag-ink'
                 }`}>{statusLabel(p.status)}</span>
                 {p.orgId && (
                   <span className="tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px', marginLeft: '4px' }}>
@@ -156,22 +241,35 @@ export default function PapersPage() {
                 <span>{p.totalScore}分 · {p._count?.questions || 0}题</span>
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
                 <button onClick={() => router.push(`/papers/${p.id}`)} className="btn btn-ink btn-xs">查看</button>
-                {p.status === 'DRAFT' && (
-                  <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-outline btn-xs">修改配置</button>
-                )}
-                <button onClick={() => openAnswer(p)} className="btn btn-outline btn-xs">答案</button>
-                <button onClick={() => handleDownload(p.id, 'word')} className="btn btn-outline btn-xs">试卷</button>
                 <button onClick={() => handleAnswerSheet(p.id)} className="btn btn-fox btn-xs">答题卡</button>
-                <button onClick={() => handleDownload(p.id, 'pdf')} className="btn btn-outline btn-xs">PDF</button>
-                {p.status === 'FINALIZED' && (
-                  <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } }} className="btn btn-outline btn-xs" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
-                )}
-                <button onClick={() => router.push(`/generate?copyFrom=${p.id}`)} className="btn btn-ghost btn-xs">复制</button>
-                <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
+                <button onClick={() => openAnswer(p)} className="btn btn-outline btn-xs">答案</button>
+                <div className="relative">
+                  <button onClick={() => setMoreMenu(moreMenu === p.id ? null : p.id)} className="btn btn-ghost btn-xs">⋯ 更多</button>
+                  {moreMenu === p.id && (
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs" style={{ background: 'white', borderColor: 'var(--ink-200)' }}
+                      onMouseLeave={() => setMoreMenu(null)}>
+                      <button onClick={() => { handleDownload(p.id, 'word'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载试卷 Word</button>
+                      <button onClick={() => { handleDownload(p.id, 'pdf'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载 PDF</button>
+                      {p.status === 'DRAFT' && (
+                        <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">修改配置</button>
+                      )}
+                      {p.status === 'FINALIZED' && (
+                        <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
+                      )}
+                      <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">复制组卷</button>
+                      {p.status !== 'ARCHIVED' && (
+                        <button onClick={() => { handleArchive(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--ink-400)' }}>归档</button>
+                      )}
+                      {p.status === 'ARCHIVED' && (
+                        <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--cyan)' }}>恢复为草稿</button>
+                      )}
+                      <hr className="my-1" style={{ borderColor: 'var(--ink-100)' }} />
+                      <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--verm)' }}>删除</button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {(p.status === 'FINALIZED' || p.status === 'OFFICIAL') && (

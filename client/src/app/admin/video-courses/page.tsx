@@ -7,7 +7,7 @@ import { useToast } from '@/components/Toast';
 
 const TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
 const TYPE_COLORS: Record<string, string> = { PUBLIC: '#00897b', SPECIALIZED: '#1565c0' };
-const STATUS_NAMES: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已发布', UNPUBLISHED: '已下架' };
+const STATUS_NAMES: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已上架', UNPUBLISHED: '已下架' };
 const STATUS_COLORS: Record<string, string> = { DRAFT: '#8b8174', PUBLISHED: '#2e7d32', UNPUBLISHED: '#e53935' };
 
 const assetUrl = (path: string) =>
@@ -35,6 +35,8 @@ export default function VideoCoursesPage() {
   const [filterType, setFilterType] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
+  const [filterCourses, setFilterCourses] = useState<any[]>([]);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,7 +45,7 @@ export default function VideoCoursesPage() {
   const [form, setForm] = useState<any>({
     name: '', description: '', instructorName: '', instructorLevel: '',
     hours: '', url: '', coverUrl: '', duration: '', type: 'PUBLIC',
-    isContinuingEducation: false, courseIds: [] as number[],
+    isContinuingEducation: false, requiredPct: '80', courseIds: [] as number[],
   });
   const [saving, setSaving] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -70,13 +72,18 @@ export default function VideoCoursesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await api.videoCourses.list({ pageSize: 50, type: filterType || undefined, keyword: searchKeyword || undefined, status: filterStatus || undefined });
+      const data = await api.videoCourses.list({ pageSize: 50, type: filterType || undefined, keyword: searchKeyword || undefined, status: filterStatus || undefined, courseId: filterCourse ? Number(filterCourse) : undefined });
       setVideos(data.items || []);
       setTotal(data.total || 0);
     } catch {}
     setLoading(false);
   };
-  useEffect(() => { load(); }, [filterType, filterStatus]);
+  useEffect(() => { load(); }, [filterType, filterStatus, filterCourse]);
+
+  // 加载课程列表用于筛选
+  useEffect(() => {
+    api.courses.list({ pageSize: '200' }).then((data: any) => setFilterCourses(data.items || [])).catch(() => {});
+  }, []);
 
   const doSearch = () => { load(); };
 
@@ -86,7 +93,7 @@ export default function VideoCoursesPage() {
       setCourses(data.items || []);
     } catch {}
     setEditId(null);
-    setForm({ name: '', description: '', instructorName: '', instructorLevel: '', hours: '', url: '', coverUrl: '', duration: '', type: 'PUBLIC', isContinuingEducation: false, courseIds: [] });
+    setForm({ name: '', description: '', instructorName: '', instructorLevel: '', hours: '', url: '', coverUrl: '', duration: '', type: 'PUBLIC', isContinuingEducation: false, requiredPct: '80', courseIds: [] });
     setUploadFile(null);
     setVideoUrlInput(''); setShowVideoUrlInput(false);
     setCoverUrlInput(''); setShowCoverUrlInput(false);
@@ -103,7 +110,7 @@ export default function VideoCoursesPage() {
       name: v.name, description: v.description || '', instructorName: v.instructorName || '',
       instructorLevel: v.instructorLevel || '', hours: v.hours?.toString() || '', status: v.status || 'DRAFT',
       url: v.url || '', coverUrl: v.coverUrl || '', duration: fmtDuration(v.duration) || '',
-      type: v.type, isContinuingEducation: v.isContinuingEducation || false,
+      type: v.type, isContinuingEducation: v.isContinuingEducation || false, requiredPct: (v.requiredPct || 80).toString(),
       courseIds: v.courseLinks?.map((cl: any) => cl.courseId) || [],
     });
     setModalOpen(true);
@@ -124,7 +131,7 @@ export default function VideoCoursesPage() {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (publishNow = false) => {
     if (!form.name) { toast.warning('请输入视频课程名称'); return; }
     setSaving(true);
     try {
@@ -154,15 +161,22 @@ export default function VideoCoursesPage() {
         name: form.name, description: form.description || undefined,
         instructorName: form.instructorName || undefined, instructorLevel: form.instructorLevel || undefined,
         hours: form.hours ? parseFloat(form.hours) : undefined,
+        requiredPct: form.requiredPct ? parseFloat(form.requiredPct) : 80,
         url, coverUrl: form.coverUrl || undefined, duration: form.duration ? parseDuration(form.duration) : undefined,
         originalFileName,
         type: form.type, isContinuingEducation: form.isContinuingEducation,
         courseIds: form.type === 'SPECIALIZED' ? form.courseIds : [],
       };
+      let savedId = editId;
       if (editId) {
         await api.videoCourses.update(editId, payload);
       } else {
-        await api.videoCourses.create(payload);
+        const created = await api.videoCourses.create(payload);
+        savedId = created.id;
+      }
+      // 保存并上架
+      if (publishNow && savedId) {
+        await fetch(`/api/video-courses/${savedId}/publish`, { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
       }
       setModalOpen(false);
       setUploadFile(null);
@@ -213,8 +227,13 @@ export default function VideoCoursesPage() {
           className="input select" style={{ maxWidth: 100 }}>
           <option value="">全部状态</option>
           <option value="DRAFT">草稿</option>
-          <option value="PUBLISHED">已发布</option>
+          <option value="PUBLISHED">已上架</option>
           <option value="UNPUBLISHED">已下架</option>
+        </select>
+        <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+          className="input select" style={{ maxWidth: 160 }}>
+          <option value="">全部课程</option>
+          {filterCourses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
@@ -232,7 +251,7 @@ export default function VideoCoursesPage() {
             <tbody>
               {videos.map((v: any) => (
                 <tr key={v.id} onDoubleClick={() => setPreviewVideo(v)} className="group cursor-pointer">
-                  <td>
+                  <td className="relative group/row">
                     <div className="flex items-center gap-2">
                       {v.coverUrl ? (
                         <img src={assetUrl(v.coverUrl)} alt="" className="rounded flex-shrink-0" style={{ width: 40, height: 27, objectFit: 'cover' }} />
@@ -243,6 +262,16 @@ export default function VideoCoursesPage() {
                         <div className="text-sm font-medium">{v.name}</div>
                         {v.hours ? <div className="text-xs" style={{ color: 'var(--ink-300)' }}>{v.hours}h {v.duration ? `· ${fmtDuration(v.duration)}` : ''}</div> : ''}
                       </div>
+                    </div>
+                    {/* hover 浮动信息 */}
+                    <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs" style={{ background: 'white', borderColor: 'var(--ink-200)' }}>
+                      <p className="font-semibold text-sm mb-1">{v.name}</p>
+                      {v.description && <p className="mb-1.5" style={{ color: 'var(--ink-400)' }}>{v.description.length > 80 ? v.description.slice(0, 80) + '…' : v.description}</p>}
+                      <div className="flex gap-4" style={{ color: 'var(--ink-400)' }}>
+                        <span>讲师：{v.instructorName || '—'}</span>
+                        {v.instructorLevel && <span>职称：{v.instructorLevel}</span>}
+                      </div>
+                      {v.courseLinks?.length > 0 && <p className="mt-1" style={{ color: 'var(--ink-300)' }}>关联课程：{v.courseLinks.map((cl: any) => cl.course?.name).join('、')}</p>}
                     </div>
                   </td>
                   <td>
@@ -282,7 +311,7 @@ export default function VideoCoursesPage() {
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>发布</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>上架</button>
                       )}
                       {v.status === 'PUBLISHED' && (
                         <button onClick={async () => {
@@ -295,7 +324,7 @@ export default function VideoCoursesPage() {
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>重新发布</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>重新上架</button>
                       )}
                       <button onClick={() => openEdit(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-500)' }}>修改</button>
                       <button onClick={() => openLogs(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>日志</button>
@@ -338,8 +367,15 @@ export default function VideoCoursesPage() {
                   <input value={form.instructorName} onChange={e => setForm({ ...form, instructorName: e.target.value })} className="input w-full" placeholder="自由填写" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>讲师级别</label>
-                  <input value={form.instructorLevel} onChange={e => setForm({ ...form, instructorLevel: e.target.value })} className="input w-full" placeholder="例如：高级讲师 / 专家" />
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>职称</label>
+                  <select value={form.instructorLevel} onChange={e => setForm({ ...form, instructorLevel: e.target.value })} className="input select w-full">
+                    <option value="">请选择</option>
+                    <option value="初级工程师">初级工程师</option>
+                    <option value="中级工程师">中级工程师</option>
+                    <option value="副高级工程师">副高级工程师</option>
+                    <option value="正高级工程师">正高级工程师</option>
+                    <option value="其他">其他</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -349,7 +385,7 @@ export default function VideoCoursesPage() {
                 </div>
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>视频时长</label>
-                  <input value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className="input w-full" placeholder="HH:MM:SS 或 MM:SS" />
+                  <input value={form.duration} readOnly className="input w-full" style={{ background: 'var(--paper)', color: form.duration ? 'var(--ink-600)' : 'var(--ink-300)' }} placeholder="上传视频后自动提取" />
                 </div>
               </div>
               {/* 视频文件 — 渐进式交互 */}
@@ -358,7 +394,28 @@ export default function VideoCoursesPage() {
                   视频文件 <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>（MP4/AVI/MKV 等，最大 500MB）</span>
                 </label>
                 <input ref={videoFileRef} type="file" accept="video/*" style={{ display: 'none' }}
-                  onChange={e => { setUploadFile(e.target.files?.[0] || null); setForm((prev: any) => ({ ...prev, url: '' })); }} />
+                  onChange={e => {
+                    const file = e.target.files?.[0] || null;
+                    setUploadFile(file);
+                    setForm((prev: any) => ({ ...prev, url: '' }));
+                    // 自动提取视频时长
+                    if (file) {
+                      const tmpVideo = document.createElement('video');
+                      tmpVideo.preload = 'metadata';
+                      tmpVideo.onloadedmetadata = () => {
+                        const sec = Math.round(tmpVideo.duration);
+                        const h = Math.floor(sec / 3600);
+                        const m = Math.floor((sec % 3600) / 60);
+                        const s = sec % 60;
+                        const formatted = h > 0
+                          ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+                          : `${m}:${String(s).padStart(2,'0')}`;
+                        setForm((prev: any) => ({ ...prev, duration: formatted }));
+                        URL.revokeObjectURL(tmpVideo.src);
+                      };
+                      tmpVideo.src = URL.createObjectURL(file);
+                    }
+                  }} />
                 {uploadingVideo ? (
                   <p className="text-xs" style={{ color: 'var(--fox)' }}>正在上传视频…</p>
                 ) : uploadFile ? (
@@ -500,7 +557,8 @@ export default function VideoCoursesPage() {
               )}
 
               <div className="flex gap-3 pt-3">
-                <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">{saving ? '保存中…' : '保存'}</button>
+                <button onClick={() => handleSave(false)} disabled={saving} className="btn btn-outline btn-sm">{saving ? '保存中…' : '保存草稿'}</button>
+                <button onClick={() => handleSave(true)} disabled={saving} className="btn btn-fox btn-sm">{saving ? '保存中…' : '保存并上架'}</button>
                 <button onClick={() => setModalOpen(false)} className="btn btn-outline btn-sm">取消</button>
               </div>
             </div>

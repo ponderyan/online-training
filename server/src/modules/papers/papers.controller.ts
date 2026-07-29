@@ -12,10 +12,14 @@ export class PapersController {
 
   @Get()
   @RequirePermission(Permissions.PAPER_EDIT)
-  findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+  findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string, @Query('orgId') orgId?: string) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
+      keyword: keyword || undefined,
+      status: status || undefined,
+      subjectId: subjectId ? parseInt(subjectId) : undefined,
+      filterOrgId: orgId ? parseInt(orgId) : undefined,
       userOrgId: req.user?.orgId ?? null,
       userRoles: req.user?.roles,
     });
@@ -57,7 +61,24 @@ export class PapersController {
       const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
       if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法组卷');
     }
-    return this.service.generate({ ...data, createdBy: userId, orgId: userOrgId });
+    // 平行卷：count > 1 时生成多套
+    const count = Math.min(Math.max(parseInt(data.count) || 1, 1), 5);
+    if (count === 1) {
+      return this.service.generate({ ...data, createdBy: userId, orgId: userOrgId });
+    }
+    const results: any[] = [];
+    for (let i = 0; i < count; i++) {
+      const paper = await this.service.generate({
+        ...data,
+        name: `${data.name}（${String.fromCharCode(65 + i)}卷）`,
+        createdBy: userId,
+        orgId: userOrgId,
+        // 每套卷排除前几套已选的题，确保不重复
+        excludeQuestionIds: [...(data.excludeQuestionIds || []), ...results.flatMap(r => (r.questions || []).map((q: any) => q.questionId))],
+      });
+      results.push(paper);
+    }
+    return { batch: true, count: results.length, papers: results };
   }
 
   @Put(':id/finalize')
@@ -68,6 +89,18 @@ export class PapersController {
   @RequirePermission(Permissions.PAPER_PUBLISH)
   promote(@Param('id', ParseIntPipe) id: number) { return this.service.promoteToOfficial(id); }
 
+  @Put(':id/submit-review')
+  @RequirePermission(Permissions.PAPER_EDIT)
+  submitReview(@Param('id', ParseIntPipe) id: number) { return this.service.submitForReview(id); }
+
+  @Put(':id/approve-review')
+  @RequirePermission(Permissions.PAPER_PUBLISH)
+  approveReview(@Param('id', ParseIntPipe) id: number) { return this.service.approveReview(id); }
+
+  @Put(':id/reject-review')
+  @RequirePermission(Permissions.PAPER_PUBLISH)
+  rejectReview(@Param('id', ParseIntPipe) id: number, @Body() body: { reason?: string }) { return this.service.rejectReview(id, body?.reason); }
+
   @Post(':id/upload-word')
   @RequirePermission(Permissions.PAPER_EDIT)
   @UseInterceptors(FileInterceptor('file'))
@@ -77,11 +110,19 @@ export class PapersController {
 
   @Get(':id/export-word')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
-  async exportWord(@Param('id', ParseIntPipe) id: number) { return this.service.generateExportHtml(id); }
+  async exportWord(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    const docx = await this.service.generateExportDocx(id);
+    res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="paper-${id}.docx"`, 'Content-Length': docx.length });
+    res.end(docx);
+  }
 
   @Get(':id/export-answer-sheet')
   @RequirePermission(Permissions.PAPER_ANSWER_SHEET)
-  async exportAnswerSheet(@Param('id', ParseIntPipe) id: number) { return this.service.generateAnswerSheetDocx(id); }
+  async exportAnswerSheet(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    const docx = await this.service.generateAnswerSheetDocx(id);
+    res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="answer-sheet-${id}.docx"`, 'Content-Length': docx.length });
+    res.end(docx);
+  }
 
   @Get(':id/export-pdf')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
@@ -113,5 +154,31 @@ export class PapersController {
   @RequirePermission(Permissions.PAPER_EDIT)
   replaceQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number, @Body() data: { questionId: number }) {
     return this.service.replaceQuestion(id, pqId, data.questionId);
+  }
+
+  // ═══ 归档 & 批量操作 ═══
+
+  @Post(':id/archive')
+  @RequirePermission(Permissions.PAPER_EDIT)
+  archive(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.archive(id, req.user?.orgId ?? null, req.user?.roles);
+  }
+
+  @Post(':id/restore')
+  @RequirePermission(Permissions.PAPER_EDIT)
+  restore(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.restore(id, req.user?.orgId ?? null, req.user?.roles);
+  }
+
+  @Post('batch/status')
+  @RequirePermission(Permissions.PAPER_EDIT)
+  batchStatus(@Body() body: { ids: number[]; status: string }, @Req() req: any) {
+    return this.service.batchUpdateStatus(body.ids, body.status, req.user?.orgId ?? null, req.user?.roles);
+  }
+
+  @Post('batch/delete')
+  @RequirePermission(Permissions.PAPER_EDIT)
+  batchDelete(@Body() body: { ids: number[] }, @Req() req: any) {
+    return this.service.batchDelete(body.ids, req.user?.orgId ?? null, req.user?.roles);
   }
 }

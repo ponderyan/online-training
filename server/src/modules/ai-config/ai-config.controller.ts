@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Req } from '@nestjs/common';
 import { AiConfigService } from './ai-config.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -8,7 +8,7 @@ export class AiConfigController {
   constructor(private service: AiConfigService) {}
 
   @Get() @RequirePermission(Permissions.SYSTEM_CONFIG) findAll() { return this.service.findAll(); }
-  @Post() @RequirePermission(Permissions.SYSTEM_CONFIG) create(@Body() data: any) { return this.service.create(data); }
+  @Post() @RequirePermission(Permissions.SYSTEM_CONFIG) create(@Body() data: any, @Req() req: any) { return this.service.create({ ...data, createdBy: req.user?.sub || req.user?.id }); }
   @Put(':id') @RequirePermission(Permissions.SYSTEM_CONFIG) update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
   @Delete(':id') @RequirePermission(Permissions.SYSTEM_CONFIG) remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
 

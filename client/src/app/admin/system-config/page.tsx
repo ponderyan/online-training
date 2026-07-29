@@ -8,7 +8,7 @@ interface SystemConfigItem {
   key: string;
   group: string;
   desc: string;
-  inputType: 'number' | 'boolean' | 'select' | 'text';
+  inputType: 'number' | 'boolean' | 'select' | 'text' | 'password';
   value: string;
   options?: string;
   sort_order?: number;
@@ -16,13 +16,21 @@ interface SystemConfigItem {
 
 type DirtyMap = Record<string, string>;
 
-const TABS = [
-  { key: 'training', label: '培训配置' },
-  { key: 'exam', label: '考试配置' },
-  { key: 'question', label: '出题配置' },
-  { key: 'general', label: '题库策略' },
-  { key: 'notification', label: '通知配置' },
-];
+/** 分组显示名映射（未列出的 group 直接显示 key） */
+const GROUP_LABELS: Record<string, string> = {
+  training: '培训配置',
+  exam: '考试配置',
+  question: '出题配置',
+  bank: '题库策略',
+  cert: '证书策略',
+  org: '组织编码',
+  audit: '审计日志',
+  notification: '通知配置',
+  email: '邮件配置',
+  sms: '短信配置',
+};
+/** 分组排序（未列出的排最后） */
+const GROUP_ORDER = ['training', 'exam', 'question', 'bank', 'cert', 'org', 'audit', 'notification', 'email', 'sms'];
 
 const FOX = '#e87a30';
 const INK_300 = '#999';
@@ -34,7 +42,7 @@ export default function SystemConfigPage() {
   const [configs, setConfigs] = useState<Record<string, SystemConfigItem[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('training');
+  const [activeTab, setActiveTab] = useState('');
   const [dirty, setDirty] = useState<DirtyMap>({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -59,6 +67,23 @@ export default function SystemConfigPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // 动态生成 tabs（从 API 返回的分组 key 推导）
+  const tabs = Object.keys(configs)
+    .filter(k => (configs[k] || []).length > 0)
+    .sort((a, b) => {
+      const ia = GROUP_ORDER.indexOf(a);
+      const ib = GROUP_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    })
+    .map(k => ({ key: k, label: GROUP_LABELS[k] || k }));
+
+  // 确保 activeTab 有效
+  useEffect(() => {
+    if (tabs.length > 0 && (!activeTab || !tabs.find(t => t.key === activeTab))) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [configs, activeTab]);
+
   const setValue = (key: string, value: string) => {
     // Find the original value from configs
     const original = Object.values(configs).flat().find((c: SystemConfigItem) => c.key === key)?.value ?? '';
@@ -80,11 +105,14 @@ export default function SystemConfigPage() {
     }
     setSaving(true);
     try {
-      for (const [key, value] of items) {
-        await api.systemConfig.update(key, value);
+      const res = await api.systemConfig.batchUpdate(items.map(([key, value]) => ({ key, value })));
+      if (res.failCount > 0) {
+        showToast(`部分保存失败（${res.successCount}成功/${res.failCount}失败）`);
+      } else {
+        showToast('保存成功');
       }
-      setDirty({});
-      showToast('保存成功');
+      // 刷新数据
+      await load();
     } catch (e: any) {
       showToast('保存失败：' + (e?.message || '未知错误'));
     }
@@ -152,6 +180,17 @@ export default function SystemConfigPage() {
           </select>
         );
       }
+      case 'password':
+        return (
+          <input
+            type="password"
+            value={val}
+            onChange={e => setValue(item.key, e.target.value)}
+            className="input w-[240px]"
+            style={{ fontSize: '13px' }}
+            placeholder="••••••••"
+          />
+        );
       default:
         return (
           <input
@@ -201,7 +240,7 @@ export default function SystemConfigPage() {
         <div>
           {/* Tab Bar */}
           <div className="flex gap-1 mb-5" style={{ borderBottom: '1px solid var(--ink-200)' }}>
-            {TABS.map(tab => {
+            {tabs.map(tab => {
               const isActive = activeTab === tab.key;
               return (
                 <button

@@ -14,33 +14,7 @@ export class SystemConfigController {
     return this.service.getAll();
   }
 
-  /** 获取某分组的配置 */
-  @Get(':group')
-  @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
-  async getByGroup(@Param('group') group: string) {
-    return this.service.getByGroup(group);
-  }
-
-  /** 更新单个配置值 */
-  @Patch(':key')
-  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
-  async update(
-    @Param('key') key: string,
-    @Body() data: { value: string },
-    @Req() req: any,
-  ) {
-    const operatorId = req.user?.sub || req.user?.id;
-    return this.service.update(key, data.value, operatorId);
-  }
-
-  /** 批量同步配置（给 seed 脚本用） */
-  @Post('sync')
-  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
-  async sync(@Body() data: { configs: any[] }) {
-    return this.service.sync(data.configs);
-  }
-
-  // ── 向下兼容：原有 bank-policy 路由 ──
+  // ── 具体路由必须在 :group 参数路由之前 ──
 
   @Get('bank-policy')
   @RequirePermission(Permissions.BANK_POLICY_VIEW)
@@ -67,8 +41,6 @@ export class SystemConfigController {
     }
     return this.getBankPolicy();
   }
-
-  // ── 证书策略 ──
 
   @Get('cert-policy')
   @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
@@ -106,5 +78,54 @@ export class SystemConfigController {
       await this.service.setConfig('cert_seal_mode', data.cert_seal_mode, '证书印章模式');
     }
     return this.getCertPolicy();
+  }
+
+  // ── 参数路由 ──
+
+  /** 获取某分组的配置 */
+  @Get(':group')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_VIEW)
+  async getByGroup(@Param('group') group: string) {
+    return this.service.getByGroup(group);
+  }
+
+  /** 更新单个配置值 */
+  @Patch(':key')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async update(
+    @Param('key') key: string,
+    @Body() data: { value: string },
+    @Req() req: any,
+  ) {
+    const operatorId = req.user?.sub || req.user?.id;
+    return this.service.update(key, data.value, operatorId);
+  }
+
+  /** 批量同步配置（给 seed 脚本用） */
+  @Post('sync')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async sync(@Body() data: { configs: any[] }) {
+    return this.service.sync(data.configs);
+  }
+
+  /** 批量更新配置值（前端配置中心保存用） */
+  @Post('batch-update')
+  @RequirePermission(Permissions.SYSTEM_CONFIG_MANAGE)
+  async batchUpdate(
+    @Body() data: { items: { key: string; value: string }[] },
+    @Req() req: any,
+  ) {
+    const operatorId = req.user?.sub || req.user?.id;
+    const results: { key: string; success: boolean; error?: string }[] = [];
+    for (const item of data.items) {
+      try {
+        await this.service.update(item.key, item.value, operatorId);
+        results.push({ key: item.key, success: true });
+      } catch (e: any) {
+        results.push({ key: item.key, success: false, error: e.message });
+      }
+    }
+    const failCount = results.filter(r => !r.success).length;
+    return { total: data.items.length, successCount: data.items.length - failCount, failCount, results };
   }
 }

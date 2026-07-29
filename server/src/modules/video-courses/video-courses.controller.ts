@@ -24,12 +24,21 @@ export class VideoCoursesController {
     @Query('type') type?: string,
     @Query('keyword') keyword?: string,
     @Query('status') status?: string,
+    @Query('courseId') courseId?: string,
   ) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
       type, keyword, status,
+      courseId: courseId ? parseInt(courseId) : undefined,
     });
+  }
+
+  // ── 管理端：学习行为统计（必须在 :id 之前声明）──
+  @Get('stats/learning')
+  @RequirePermission(P.COURSE_VIEW)
+  getLearningStats() {
+    return this.service.getLearningStats();
   }
 
   // ── 学员端：可见视频列表 + 学时统计（必须在 :id 之前声明）──
@@ -124,6 +133,25 @@ export class VideoCoursesController {
   @RequirePermission(P.COURSE_VIEW)
   getLogs(@Param('id', ParseIntPipe) id: number) {
     return this.service.getLogs(id);
+  }
+
+  // ── 弹题验证 ──
+  @Get(':id/quizzes')
+  @RequirePermission(P.COURSE_VIEW)
+  getQuizzes(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getQuizzes(id);
+  }
+
+  @Post(':id/quizzes')
+  @RequirePermission(P.COURSE_EDIT)
+  addQuiz(@Param('id', ParseIntPipe) id: number, @Body() data: { timePoint: number; question: string; options: string[]; correctIndex: number }) {
+    return this.service.addQuiz(id, data);
+  }
+
+  @Delete('quizzes/:quizId')
+  @RequirePermission(P.COURSE_EDIT)
+  deleteQuiz(@Param('quizId', ParseIntPipe) quizId: number) {
+    return this.service.deleteQuiz(quizId);
   }
 
   // ── 学员端：视频播放流 ──

@@ -148,7 +148,7 @@ export const api = {
   },
 
   papers: {
-    list: (page = 1) => request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/papers?page=${page}`),
+    list: (params: string | number = 1) => request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/papers?${typeof params === 'number' ? `page=${params}` : params}`),
     get: (id: number) => request<any>(`/papers/${id}`),
     generate: (data: any) => request<any>('/papers/generate', { method: 'POST', body: JSON.stringify(data) }),
     removeQuestion: (paperId: number, pqId: number) => request(`/papers/${paperId}/questions/${pqId}`, { method: 'DELETE' }),
@@ -158,7 +158,14 @@ export const api = {
       request<any>(`/papers/${paperId}/questions/${pqId}/replace`, { method: 'POST', body: JSON.stringify({ newQuestionId }) }),
     finalize: (id: number) => request<any>(`/papers/${id}/finalize`, { method: 'PUT' }),
     promote: (id: number) => request<any>(`/papers/${id}/promote`, { method: 'PUT' }),
+    submitReview: (id: number) => request<any>(`/papers/${id}/submit-review`, { method: 'PUT' }),
+    approveReview: (id: number) => request<any>(`/papers/${id}/approve-review`, { method: 'PUT' }),
+    rejectReview: (id: number, reason?: string) => request<any>(`/papers/${id}/reject-review`, { method: 'PUT', body: JSON.stringify({ reason }) }),
     delete: (id: number) => request(`/papers/${id}`, { method: 'DELETE' }),
+    archive: (id: number) => request<any>(`/papers/${id}/archive`, { method: 'POST' }),
+    restore: (id: number) => request<any>(`/papers/${id}/restore`, { method: 'POST' }),
+    batchStatus: (ids: number[], status: string) => request<any>('/papers/batch/status', { method: 'POST', body: JSON.stringify({ ids, status }) }),
+    batchDelete: (ids: number[]) => request<any>('/papers/batch/delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   },
 
   exams: {
@@ -528,13 +535,14 @@ export const api = {
 
   // ── Phase 2: 视频课程（独立实体） ──
   videoCourses: {
-    list: (params?: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string }) => {
+    list: (params?: { page?: number; pageSize?: number; type?: string; keyword?: string; status?: string; courseId?: number }) => {
       const qp: Record<string, string> = {};
       if (params?.page) qp.page = params.page.toString();
       if (params?.pageSize) qp.pageSize = params.pageSize.toString();
       if (params?.type) qp.type = params.type;
       if (params?.status) qp.status = params.status;
       if (params?.keyword) qp.keyword = params.keyword;
+      if (params?.courseId) qp.courseId = params.courseId.toString();
       const qs = Object.keys(qp).length ? '?' + new URLSearchParams(qp).toString() : '';
       return request<{ items: any[]; total: number; page: number; pageSize: number; totalPages: number }>(`/video-courses${qs}`);
     },
@@ -547,6 +555,10 @@ export const api = {
     getProgress: (id: number) => request<any>(`/video-courses/${id}/progress`),
     reportProgress: (id: number, data: { progress: number; lastPosition: number; completed?: boolean }) =>
       request<any>(`/video-courses/${id}/progress`, { method: 'POST', body: JSON.stringify(data) }),
+    getQuizzes: (id: number) => request<any[]>(`/video-courses/${id}/quizzes`),
+    addQuiz: (id: number, data: { timePoint: number; question: string; options: string[]; correctIndex: number }) =>
+      request<any>(`/video-courses/${id}/quizzes`, { method: 'POST', body: JSON.stringify(data) }),
+    deleteQuiz: (quizId: number) => request(`/video-courses/quizzes/${quizId}`, { method: 'DELETE' }),
   },
 
   // ── Phase 1b: 课程视频（即将废弃） ──
@@ -957,6 +969,9 @@ export const api = {
     getByGroup: (group: string) => request<any[]>(`/system-config/${group}`),
     update: (key: string, value: string) => request<any>(`/system-config/${key}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
+    }),
+    batchUpdate: (items: { key: string; value: string }[]) => request<any>('/system-config/batch-update', {
+      method: 'POST', body: JSON.stringify({ items }),
     }),
   },
 };

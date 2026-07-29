@@ -224,7 +224,11 @@ export class QuestionsService {
 
   async update(id: number, data: {
     content?: string; difficulty?: string; analysis?: string; status?: string;
-    chapterId?: number;
+    chapterId?: number; subjectId?: number; type?: string;
+    options?: { label: string; content: string; isCorrect: boolean }[];
+    blanks?: { answer: string }[];
+    subQuestions?: { content: string; answer?: string; score?: number }[];
+    tagIds?: number[];
   }, userOrgId?: number | null, userRoles?: string[]) {
     const q = await this.findOne(id, userOrgId, userRoles);
 
@@ -234,7 +238,61 @@ export class QuestionsService {
       if (!ok) throw new ForbiddenException('无权修改此题目');
     }
 
-    return this.prisma.question.update({ where: { id }, data: data as any });
+    // 枚举校验
+    if (data.difficulty && !QuestionsService.VALID_DIFFICULTIES.includes(data.difficulty)) {
+      throw new BadRequestException(`无效难度：${data.difficulty}（可选：${QuestionsService.VALID_DIFFICULTIES.join('/')}）`);
+    }
+    if (data.type && !QuestionsService.VALID_TYPES.includes(data.type)) {
+      throw new BadRequestException(`无效题型：${data.type}（可选：${QuestionsService.VALID_TYPES.join('/')}）`);
+    }
+
+    const { options, blanks, subQuestions, tagIds, ...scalarData } = data;
+
+    // 构建更新 payload
+    const updateData: any = { ...scalarData };
+
+    // 选项：先删后建
+    if (options !== undefined) {
+      await this.prisma.questionOption.deleteMany({ where: { questionId: id } });
+      if (options.length > 0) {
+        updateData.options = { create: options.map((o, i) => ({ ...o, sortOrder: i })) };
+      }
+    }
+
+    // 填空：先删后建
+    if (blanks !== undefined) {
+      await this.prisma.questionBlank.deleteMany({ where: { questionId: id } });
+      if (blanks.length > 0) {
+        updateData.blanks = { create: blanks.map((b, i) => ({ ...b, blankIndex: i, sortOrder: i })) };
+      }
+    }
+
+    // 子题：先删后建
+    if (subQuestions !== undefined) {
+      await this.prisma.questionSubQuestion.deleteMany({ where: { questionId: id } });
+      if (subQuestions.length > 0) {
+        updateData.subQuestions = { create: subQuestions.map((s, i) => ({ ...s, sortOrder: i })) };
+      }
+    }
+
+    // 标签：先删后建
+    if (tagIds !== undefined) {
+      await this.prisma.questionTag.deleteMany({ where: { questionId: id } });
+      if (tagIds.length > 0) {
+        updateData.tags = { create: tagIds.map(tagId => ({ tagId })) };
+      }
+    }
+
+    return this.prisma.question.update({
+      where: { id },
+      data: updateData,
+      include: {
+        options: { orderBy: { sortOrder: 'asc' } },
+        blanks: { orderBy: { blankIndex: 'asc' } },
+        subQuestions: { orderBy: { sortOrder: 'asc' } },
+        tags: { include: { tag: true } },
+      },
+    });
   }
 
   async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {
