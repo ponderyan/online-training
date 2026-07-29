@@ -30,6 +30,13 @@ export const EXAM_STATUS_COLORS: Record<string, string> = {
   SCORE_PUBLISHED: '#059669',
 };
 
+/** 考试模式筛选选项 */
+export const EXAM_MODE_OPTIONS = [
+  { value: '', label: '全部模式' },
+  { value: 'ONLINE', label: '🖥️ 线上' },
+  { value: 'OFFLINE', label: '✍️ 线下' },
+];
+
 /** 考试列表筛选选项 */
 export const EXAM_STATUS_OPTIONS = [
   { value: '', label: '全部状态' },

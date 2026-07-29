@@ -1,6 +1,6 @@
 'use client';
 
-import { EXAM_STATUS_OPTIONS, EXAM_STATUS_COLORS, EXAM_STATUS_LABELS } from '@/lib/exam-constants';
+import { EXAM_STATUS_OPTIONS, EXAM_STATUS_COLORS, EXAM_STATUS_LABELS, EXAM_MODE_OPTIONS } from '@/lib/exam-constants';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,7 @@ export default function ExamList() {
   const [keyword, setKeyword] = useState('');
   const debouncedKeyword = useDebounce(keyword);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterMode, setFilterMode] = useState('');
 
   const load = async (p = 1) => {
     setLoading(true);
@@ -36,6 +37,7 @@ export default function ExamList() {
       const params: Record<string, string> = { page: String(p), pageSize: '20' };
       if (debouncedKeyword) params.keyword = debouncedKeyword;
       if (filterStatus) params.status = filterStatus;
+      if (filterMode) params.examMode = filterMode;
       const data = await api.exams.list(params as any);
       setExams(data.items || []);
       setTotal(data.total);
@@ -47,7 +49,9 @@ export default function ExamList() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // ★ 筛选条件变化时重新加载（修复 onChange 直接调 load 导致的闭包过期问题）
+  // 首次挂载时也会执行一次，完成初始加载
+  useEffect(() => { load(1); }, [debouncedKeyword, filterStatus, filterMode]);
 
   return (
     <AppLayout>
@@ -63,11 +67,14 @@ export default function ExamList() {
 
       <div className="flex gap-3 mb-5">
         <input value={keyword} onChange={e => setKeyword(e.target.value)}
-          placeholder="🔍 搜索考试标题…" className="input" style={{ maxWidth: 320 }}
-          onKeyDown={e => e.key === 'Enter' && load()} />
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); load(1); }}
+          placeholder="🔍 搜索考试标题…" className="input" style={{ maxWidth: 320 }} />
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="input select" style={{ maxWidth: 140 }}>
           {EXAM_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select value={filterMode} onChange={e => setFilterMode(e.target.value)}
+          className="input select" style={{ maxWidth: 130 }}>
+          {EXAM_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
