@@ -598,19 +598,20 @@ export class OfflineExamService {
       throw new BadRequestException('没有需要补考的学员（全部已通过）');
     }
 
-    // 检查是否已有补考（只允许一次）
+    // 检查是否已有补考（只允许一次，通过 originalExamId 关联查询）
     const existingRetake = await this.prisma.exam.findFirst({
-      where: { examMode: 'OFFLINE', title: { contains: exam.title + '（补考）' } },
+      where: { originalExamId: examId },
     });
     if (existingRetake) {
       throw new BadRequestException('该考试已创建过补考，补考仅有一次机会');
     }
 
-    // 创建补考考试
+    // 创建补考考试（关联原考试ID）
     const retakeExam = await this.prisma.exam.create({
       data: {
         title: exam.title + '（补考）',
         paperId: exam.paperId,
+        originalExamId: examId,
         startTime: new Date(data.startTime),
         endTime: new Date(data.endTime),
         durationMinutes: data.durationMinutes || exam.durationMinutes,
@@ -647,7 +648,7 @@ export class OfflineExamService {
       where: { examId, isPassed: false },
     });
     const retakeExam = await this.prisma.exam.findFirst({
-      where: { examMode: 'OFFLINE', title: { contains: '（补考）' }, paperId: (await this.prisma.exam.findUnique({ where: { id: examId } }))?.paperId },
+      where: { originalExamId: examId },
     });
     return { failedCount, retakeExam: retakeExam ? { id: retakeExam.id, title: retakeExam.title, status: retakeExam.status } : null };
   }

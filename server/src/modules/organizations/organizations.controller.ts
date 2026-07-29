@@ -70,9 +70,9 @@ export class OrganizationsController {
   @RequirePermission(P.ORG_EDIT)
   migrateStudents(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: { targetOrgId: number; moveHours?: boolean; moveExams?: boolean },
+    @Body() data: { targetOrgId: number },
   ) {
-    return this.service.migrateStudents(id, data.targetOrgId, { moveHours: data.moveHours, moveExams: data.moveExams });
+    return this.service.migrateStudents(id, data.targetOrgId);
   }
 
   /** 证书图片上传（logo / 印章） */

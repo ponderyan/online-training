@@ -309,10 +309,10 @@ export class OrganizationsService {
   /**
    * 迁移学员：将该组织下所有学员用户的 orgId 更新为目标组织
    * - 学时记录 / 考试记录通过 studentId 关联 User，User.orgId 变更后自动归属新组织
-   * - moveHours / moveExams 选项保留兼容（数据本身随用户迁移，此处仅做计数返回）
    * - 防止迁移到自身或子孙组织
+   * TODO Phase 2: 支持 moveHours/moveExams 选项迁移历史数据归属
    */
-  async migrateStudents(id: number, targetOrgId: number, options?: { moveHours?: boolean; moveExams?: boolean }) {
+  async migrateStudents(id: number, targetOrgId: number) {
     const org = await this.findOne(id);
     if (id === targetOrgId) throw new BadRequestException('不能迁移到自身组织');
     const target = await this.findOne(targetOrgId);
@@ -350,8 +350,6 @@ export class OrganizationsService {
     return {
       migrated: result.count,
       targetOrgName: target.name,
-      moveHours: options?.moveHours ?? false,
-      moveExams: options?.moveExams ?? false,
     };
   }
 

@@ -294,6 +294,22 @@ export class CertificatesService {
     }
   }
 
+  /** 将本地文件路径转为 base64 data URL（供 Puppeteer 渲染） */
+  private async toDataUrl(filePath: string): Promise<string | null> {
+    try {
+      // 只处理本地上传路径
+      if (!filePath.startsWith('/uploads/')) return filePath; // 外部URL直接用
+      const absPath = path.resolve(import.meta.dirname, '..', '..', '..', filePath.slice(1));
+      const buf = await fs.readFile(absPath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+      const mime = mimeMap[ext] || 'image/png';
+      return `data:${mime};base64,${buf.toString('base64')}`;
+    } catch {
+      return null; // 文件不存在时静默失败
+    }
+  }
+
   /** 生成证书 PDF */
   async generatePdf(id: number): Promise<Buffer> {
     const cert = await this.prisma.certificate.findUnique({
@@ -319,11 +335,14 @@ export class CertificatesService {
     // 动态签发单位
     const issuerName = cert.issuerName || cert.org?.certIssuerName || cert.org?.name || 'FoxLearn 狐学';
     const footerText = cert.org?.certFooterText || '本证书最终解释权归 ' + issuerName + ' 所有 · 扫描二维码可在线验证';
-    const logoHtml = cert.org?.certLogoUrl
-      ? '<img src="' + escapeHtml(cert.org.certLogoUrl) + '" style="height:36px;margin-bottom:4px;" alt="logo" />'
+    // 将本地图片转 base64（Puppeteer setContent 无法加载相对路径）
+    const logoSrc = cert.org?.certLogoUrl ? await this.toDataUrl(cert.org.certLogoUrl) : null;
+    const sealSrc = (!cert.org?.useFoxLearnSeal && cert.org?.sealUrl) ? await this.toDataUrl(cert.org.sealUrl) : null;
+    const logoHtml = logoSrc
+      ? '<img src="' + logoSrc + '" style="height:36px;margin-bottom:4px;" alt="logo" />'
       : '';
-    const sealHtml = (!cert.org?.useFoxLearnSeal && cert.org?.sealUrl)
-      ? '<img src="' + escapeHtml(cert.org.sealUrl) + '" style="width:80px;height:80px;opacity:0.85;" alt="seal" />'
+    const sealHtml = sealSrc
+      ? '<img src="' + sealSrc + '" style="width:80px;height:80px;opacity:0.85;" alt="seal" />'
       : '';
 
     html = html

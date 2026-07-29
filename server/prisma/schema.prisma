@@ -1066,6 +1066,7 @@ model Exam {
   examMode   ExamMode @default(ONLINE) @map("exam_mode")   // ONLINE | OFFLINE
   locations  Json?    @map("locations")                     // 多考场信息 JSON
   seatLayout Json?    @map("seat_layout")                   // 座位布局配置
+  originalExamId Int? @map("original_exam_id")              // 补考关联的原考试ID
 
   createdBy Int      @map("created_by")
 
@@ -1213,6 +1214,14 @@ model ScoreAuditLog {
 }
 
 // 证书
+enum CertApprovalStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
 model Certificate {
   id            Int       @id @default(autoincrement())
   examSessionId Int       @map("exam_session_id")
@@ -1226,8 +1235,7 @@ model Certificate {
   revokeReason  String?   @map("revoke_reason") @db.Text
 
   // ── Phase A: 审批流程 ──
-  approvalStatus   String             @default("APPROVED") @map("approval_status") @db.VarChar(20)
-  // DRAFT / PENDING / APPROVED / REJECTED / REVOKED
+  approvalStatus   CertApprovalStatus @default(APPROVED) @map("approval_status")
   approvedBy       Int?               @map("approved_by")
   approvedAt       DateTime?          @map("approved_at")
   rejectReason     String?            @map("reject_reason") @db.Text
