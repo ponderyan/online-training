@@ -5,7 +5,19 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; role?: string }) {
+  /** 获取用户可见的组织ID列表（自身 + 所有子孙） */
+  private async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: userOrgId } });
+    if (!org?.path) return [userOrgId];
+    const prefix = org.path.endsWith('/') ? org.path : org.path + '/';
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: prefix }, id: { not: userOrgId } },
+      select: { id: true },
+    });
+    return [userOrgId, ...descendants.map(d => d.id)];
+  }
+
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; role?: string; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
@@ -18,6 +30,13 @@ export class UsersService {
     }
     if (params.role) {
       where.roleAssignments = { some: { role: { code: params.role } } };
+    }
+
+    // ★ orgId 隔离：非 SUPER_ADMIN 可见自身+子孙组织的用户
+    const isSuperAdmin = params.userRoles?.includes('SUPER_ADMIN');
+    if (!isSuperAdmin && params.userOrgId) {
+      const visibleOrgIds = await this.getVisibleOrgIds(params.userOrgId);
+      where.orgId = { in: visibleOrgIds };
     }
 
     const [items, total] = await Promise.all([

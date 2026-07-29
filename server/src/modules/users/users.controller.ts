@@ -14,11 +14,14 @@ export class UsersController {
     @Query('pageSize') pageSize?: string,
     @Query('keyword') keyword?: string,
     @Query('role') role?: string,
+    @Req() req?: any,
   ) {
     return this.service.findAll({
       page: page ? parseInt(page) : 1,
       pageSize: pageSize ? parseInt(pageSize) : 20,
       keyword, role,
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
   }
 

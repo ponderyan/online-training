@@ -46,7 +46,10 @@ export class PapersService {
       if (visibility === 'hidden') where.orgId = null;
     } else if (userOrgId) {
       const visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
-      where.orgId = { in: visibleOrgIds };
+      // 可见自身+子孙组织 + 系统级（orgId=null）
+      where.AND = [
+        { OR: [{ orgId: { in: visibleOrgIds } }, { orgId: null }] },
+      ];
     }
 
     // ★ 服务端筛选

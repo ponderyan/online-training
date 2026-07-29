@@ -12,6 +12,18 @@ export class ExamsService {
     private notificationService: NotificationsService,
   ) {}
 
+  /** 获取用户可见的组织ID列表（自身 + 所有子孙） */
+  private async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: userOrgId } });
+    if (!org?.path) return [userOrgId];
+    const prefix = org.path.endsWith('/') ? org.path : org.path + '/';
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: prefix }, id: { not: userOrgId } },
+      select: { id: true },
+    });
+    return [userOrgId, ...descendants.map(d => d.id)];
+  }
+
   // ═══════════════════════════════════════════
   //  场次管理（教务端）
   // ═══════════════════════════════════════════
@@ -26,14 +38,18 @@ export class ExamsService {
     if (params.programId) where.programId = params.programId;
     if (params.examMode) where.examMode = params.examMode;
 
-    // ★ orgId 隔离
+    // ★ orgId 隔离（组织树继承：可见自身+子孙 + 系统级orgId=null）
     const uOrgId = params.userOrgId ?? null;
     const uRoles = params.userRoles ?? [];
     if (uRoles.includes('SUPER_ADMIN')) {
       const visibility = await this.systemConfig.getConfig('org_bank_visibility');
       if (visibility === 'hidden') where.orgId = null;
     } else if (uOrgId) {
-      where.orgId = uOrgId;
+      const visibleOrgIds = await this.getVisibleOrgIds(uOrgId);
+      where.OR = [
+        { orgId: { in: visibleOrgIds } },
+        { orgId: null },
+      ];
     }
 
     const [items, total] = await Promise.all([
@@ -66,11 +82,15 @@ export class ExamsService {
     });
     if (!exam) throw new NotFoundException('考试不存在');
 
-    // ★ orgId 隔离：非 SUPER_ADMIN 只能访问自己机构的
+    // ★ orgId 隔离：非 SUPER_ADMIN 可访问自身+子孙组织 + 系统级(null)的考试
     if (userRoles && userRoles.length > 0 && !userRoles.includes('SUPER_ADMIN')) {
       const uOrgId = userOrgId ?? null;
-      if (uOrgId === null || exam.orgId !== uOrgId) {
-        throw new NotFoundException('考试不存在');
+      if (exam.orgId !== null) {
+        if (uOrgId === null) throw new NotFoundException('考试不存在');
+        const visibleOrgIds = await this.getVisibleOrgIds(uOrgId);
+        if (!visibleOrgIds.includes(exam.orgId)) {
+          throw new NotFoundException('考试不存在');
+        }
       }
     }
 

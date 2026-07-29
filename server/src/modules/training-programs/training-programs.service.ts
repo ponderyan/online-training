@@ -5,6 +5,18 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class TrainingProgramsService {
   constructor(private prisma: PrismaService) {}
 
+  /** 获取用户可见的组织ID列表（自身 + 所有子孙） */
+  private async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: userOrgId } });
+    if (!org?.path) return [userOrgId];
+    const prefix = org.path.endsWith('/') ? org.path : org.path + '/';
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: prefix }, id: { not: userOrgId } },
+      select: { id: true },
+    });
+    return [userOrgId, ...descendants.map(d => d.id)];
+  }
+
   private async generateCode(): Promise<string> {
     const year = new Date().getFullYear().toString();
     const last = await this.prisma.trainingProgram.findFirst({
@@ -26,10 +38,14 @@ export class TrainingProgramsService {
     if (params.keyword) where.name = { contains: params.keyword };
     if (params.status) where.status = params.status;
     if (params.subjectId) where.subjectId = params.subjectId;
-    // orgId 隔离：非 SUPER_ADMIN 只能看本机构 + 无归属的培训班
+    // orgId 隔离：非 SUPER_ADMIN 可见自身+子孙组织 + 无归属（系统级）的培训班
     const isSuperAdmin = params.userRoles?.includes('SUPER_ADMIN');
     if (!isSuperAdmin && params.userOrgId) {
-      where.orgId = { in: [params.userOrgId, null] };
+      const visibleOrgIds = await this.getVisibleOrgIds(params.userOrgId);
+      where.OR = [
+        { orgId: { in: visibleOrgIds } },
+        { orgId: null },
+      ];
     }
 
     const [items, total] = await Promise.all([

@@ -37,8 +37,11 @@ export class QuestionsService {
       // view_only / full_access → 可见
       return true;
     }
-    // 其他角色：必须 orgId 匹配
-    return userOrgId !== null && record.orgId === userOrgId;
+    // 其他角色：orgId=null（系统级）可见，或 orgId 在可见树中
+    if (record.orgId === null) return true;
+    if (userOrgId === null) return false;
+    const visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
+    return visibleOrgIds.includes(record.orgId);
   }
 
   /**
@@ -61,6 +64,18 @@ export class QuestionsService {
     }
     // 其他角色：必须 orgId 匹配
     return userOrgId !== null && record.orgId === userOrgId;
+  }
+
+  /** 获取用户可见的组织ID列表（自身 + 所有子孙） */
+  private async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: userOrgId } });
+    if (!org?.path) return [userOrgId];
+    const prefix = org.path.endsWith('/') ? org.path : org.path + '/';
+    const descendants = await this.prisma.organization.findMany({
+      where: { path: { startsWith: prefix }, id: { not: userOrgId } },
+      select: { id: true },
+    });
+    return [userOrgId, ...descendants.map(d => d.id)];
   }
 
   // ═══════════════════════════════════════════
@@ -99,7 +114,7 @@ export class QuestionsService {
       where.id = { in: ids };
     }
 
-    // ★ orgId 隔离
+    // ★ orgId 隔离（组织树继承：可见自身+子孙组织的试题 + 系统级orgId=null）
     const userOrgId = params.userOrgId ?? null;
     const userRoles = params.userRoles ?? [];
     if (userRoles.includes('SUPER_ADMIN')) {
@@ -109,8 +124,12 @@ export class QuestionsService {
         where.orgId = null;
       }  // view_only / full_access → 不限制
     } else if (userOrgId) {
-      // 机构角色 → 只看自己的
-      where.orgId = userOrgId;
+      // 机构角色 → 可见自身+子孙组织 + 系统级（orgId=null）
+      const visibleOrgIds = await this.getVisibleOrgIds(userOrgId);
+      where.OR = [
+        { orgId: { in: visibleOrgIds } },
+        { orgId: null },
+      ];
     }
     // 没有角色（公共查询等）→ 不限制
 
