@@ -524,7 +524,7 @@ export class GradingController {
   /** 成绩确认/锁存 → 自动为通过的学员发证 */
   @Post(':examId/confirm')
   @RequirePermission(Permissions.GRADING_PUBLISH)
-  async confirmScores(@Param('examId', ParseIntPipe) examId: number) {
+  async confirmScores(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
     const result = await this.prisma.examSession.updateMany({
       where: { examId, scoringStatus: 'PUBLISHED' },
       data: { scoringStatus: 'CONFIRMED', confirmedAt: new Date() },
@@ -558,7 +558,7 @@ export class GradingController {
       });
       if (!app) { certSkipped++; continue; }
       try {
-        await this.certService.issueSingleCertificate(s.id, s.studentId);
+        await this.certService.issueSingleCertificate(s.id, s.studentId, { userOrgId: req.user?.orgId ?? null, userRoles: req.user?.roles || [] });
         await this.prisma.certificateApplication.update({
           where: { id: app.id },
           data: { status: 'APPROVED' },
