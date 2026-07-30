@@ -415,8 +415,8 @@ export default function AdminDashboard() {
       : 0;
   const passRateTrend = calcTrend(avgSecond, avgFirst);
 
-  // Hours trend: compare approved vs total
-  const hoursTrend = calcTrend(approvedRate, 50);
+  // Hours trend: 基于审批率绝对值判断
+  const hoursTrend = approvedRate >= 80 ? 'up' : approvedRate >= 50 ? 'flat' : 'down';
 
   // Cert trend: compare this month vs last month
   const monthly = data.certOverview?.monthlyBreakdown ?? [];
@@ -432,8 +432,8 @@ export default function AdminDashboard() {
     totalStudents > 0
       ? (activeStudents / totalStudents) * 100
       : 0;
-  const activityRatePrev = 50; // rough baseline
-  const activityTrend = calcTrend(activityRate, activityRatePrev);
+  // 活跃率 >= 60% 视为良好
+  const activityTrend = activityRate >= 60 ? 'up' : activityRate >= 30 ? 'flat' : 'down';
 
   // ── Render ──
   return (
@@ -500,10 +500,10 @@ export default function AdminDashboard() {
               trend={hoursTrend}
               trendLabel={
                 hoursTrend === 'up'
-                  ? '较基准上升'
+                  ? '审批率良好'
                   : hoursTrend === 'down'
-                    ? '较基准下降'
-                    : '与基准持平'
+                    ? '审批率偏低'
+                    : '审批率正常'
               }
             />
             <KpiCard

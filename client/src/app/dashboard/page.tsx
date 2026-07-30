@@ -64,10 +64,11 @@ export default function Dashboard() {
       setActiveRole(adminRoles[0] || 'STUDENT');
     }
 
-    if (pureStudent) {
-      // 纯学员：请求学员数据
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // 学员数据（纯学员或多角色含学员）
+    if (pureStudent || roles.includes('STUDENT')) {
       const examsReq = fetch('/api/student/exams', { headers }).then(r => r.json()).catch(() => []);
       const certsReq = fetch('/api/certificates/my', { headers }).then(r => (r.ok ? r.json() : [])).catch(() => []);
       Promise.all([examsReq, certsReq]).then(([data, certs]: any) => {
@@ -78,21 +79,25 @@ export default function Dashboard() {
         const completed = list.filter((e: any) => e.submittedAt).length;
         const certList = Array.isArray(certs) ? certs : [];
         setStudentStats({ active, pending, completed, total: list.length, certificateCount: certList.length });
-      }).catch(() => {}).finally(() => setLoading(false));
+      }).catch(() => {});
+    }
+
+    // 管理端统计数据
+    if (!pureStudent) {
+      fetch('/api/dashboard/stats', { headers })
+        .then(r => r.json()).then((data: any) => { setStats(data); })
+        .catch(() => {}).finally(() => setLoading(false));
     } else {
-      // 管理角色：请求统计数据
-      fetch('/api/dashboard/stats', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).then(r => r.json()).then((data: any) => {
-        setStats(data);
-      }).catch(() => {}).finally(() => setLoading(false));
+      // 纯学员等学员数据加载完
+      Promise.resolve().finally(() => setTimeout(() => setLoading(false), 300));
     }
   }, []);
 
   const roles: string[] = user?.roles || (user?.role ? [user.role] : []);
   const pureStudent = isPureStudent(roles);
   const adminRoles = getAdminRoles(roles);
-  const showRoleSwitcher = adminRoles.length > 1;
+  const hasStudentRole = roles.includes('STUDENT');
+  const showRoleSwitcher = adminRoles.length > 1 || (hasStudentRole && adminRoles.length >= 1);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -116,7 +121,7 @@ export default function Dashboard() {
   };
 
   const renderDashboard = () => {
-    if (pureStudent) {
+    if (pureStudent || activeRole === 'STUDENT') {
       return <StudentDashboard user={user} studentExams={studentExams} studentStats={studentStats} loading={loading} />;
     }
     if (!stats && loading) {
@@ -160,6 +165,18 @@ export default function Dashboard() {
               {ROLE_LABELS[r] || r}
             </button>
           ))}
+          {hasStudentRole && (
+            <button
+              onClick={() => setActiveRole('STUDENT')}
+              className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all border-none cursor-pointer ${
+                activeRole === 'STUDENT'
+                  ? 'bg-[var(--fox)] text-white shadow-sm'
+                  : 'bg-transparent text-[var(--ink-500)] hover:text-[var(--ink-700)] hover:bg-[var(--paper-bright)]'
+              }`}
+            >
+              🎓 学员
+            </button>
+          )}
         </div>
       )}
 

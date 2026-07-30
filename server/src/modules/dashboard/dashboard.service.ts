@@ -27,13 +27,13 @@ export class DashboardService {
         orgIds
           ? this.prisma.user.count({ where: { orgId: { in: orgIds }, isActive: true, roleAssignments: { some: { role: { code: 'STUDENT' } } } } })
           : this.getUserCountByRole('STUDENT'),
-        this.prisma.instructor.count({ where: { status: 'ACTIVE' } }),
+        this.prisma.instructor.count({ where: { status: 'ACTIVE', ...(orgIds ? { user: { orgId: { in: orgIds } } } : {}) } }),
         this.prisma.examSession.count({
           where: { status: 'SUBMITTED', scoringStatus: { in: ['PENDING', 'GRADING'] },
             ...(orgIds ? { exam: { orgId: { in: orgIds } } } : {}) },
         }),
-        this.prisma.scoreAppeal.count({ where: { status: 'PENDING' } }),
-        this.prisma.certificateApplication.count({ where: { status: 'PENDING' } }),
+        this.prisma.scoreAppeal.count({ where: { status: 'PENDING', ...(orgIds ? { exam: { orgId: { in: orgIds } } } : {}) } }),
+        this.prisma.certificateApplication.count({ where: { status: 'PENDING', ...(orgIds ? { session: { exam: { orgId: { in: orgIds } } } } : {}) } }),
         this.prisma.trainingProgram.findMany({
           where: { ...orgFilter },
           orderBy: { createdAt: 'desc' }, take: 5,
