@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 import { ExamsModule } from './modules/exams/exams.module.js';
 import { SubjectsModule } from './modules/subjects/subjects.module.js';
 import { ChaptersModule } from './modules/chapters/chapters.module.js';
@@ -49,6 +50,7 @@ import { ExamAccessModule } from './common/services/exam-access.module.js';
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    HealthModule,
     ExamAccessModule,
     AuthModule,
     SubjectsModule,
