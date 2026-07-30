@@ -4,14 +4,11 @@ import { LearningHourCertificatesService } from './learning-hour-certificates.se
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/learning-hour-certificates')
 export class LearningHourCertificatesController {
-  constructor(private service: LearningHourCertificatesService) {}
-
-  // ═══════════════════════════════════════════════════════
-  // 命名路由（具体路径优先，避免被参数化路由截获）
-  // ═══════════════════════════════════════════════════════
+  constructor(private service: LearningHourCertificatesService, private resourceAccess: ResourceAccessService) {}
 
   /** 申请学时证明（学员自服务） */
   @Post('apply')
@@ -55,6 +52,7 @@ export class LearningHourCertificatesController {
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Req() req?: any,
   ) {
     return this.service.findAll({
       studentId: studentId ? parseInt(studentId) : undefined,
@@ -62,19 +60,19 @@ export class LearningHourCertificatesController {
       status,
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 20,
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
   }
-
-  // ═══════════════════════════════════════════════════════
-  // 参数化路由（放在命名路由之后）
-  // ═══════════════════════════════════════════════════════
 
   /** 下载学时证明 PDF */
   @Get(':id/pdf')
   async downloadPdf(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
     @Res() res: Response,
   ) {
+    await this.resourceAccess.assertLhcAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const pdf = await this.service.generatePdf(id);
     res.set({
       'Content-Type': 'application/pdf',
@@ -92,6 +90,7 @@ export class LearningHourCertificatesController {
     @Body() body: { action: 'approve' | 'reject'; note?: string },
     @Req() req: any,
   ) {
+    await this.resourceAccess.assertLhcAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const reviewerId = req.user?.id || req.user?.sub;
     if (!reviewerId) throw new UnauthorizedException('请先登录');
     return this.service.review(id, body.action, reviewerId, body.note);
@@ -105,6 +104,7 @@ export class LearningHourCertificatesController {
     @Body() body: { reason: string },
     @Req() req: any,
   ) {
+    await this.resourceAccess.assertLhcAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const reviewerId = req.user?.id || req.user?.sub;
     if (!reviewerId) throw new UnauthorizedException('请先登录');
     if (!body.reason) throw new BadRequestException('吊销原因不能为空');
@@ -114,7 +114,8 @@ export class LearningHourCertificatesController {
   /** 获取单个学时证明详情 */
   @Get(':id')
   @RequirePermission(P.LEARNING_HOUR_MANAGE)
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertLhcAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.findOne(id);
   }
 }

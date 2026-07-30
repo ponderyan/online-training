@@ -5,10 +5,11 @@ import { PapersService } from './papers.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/papers')
 export class PapersController {
-  constructor(private service: PapersService, private systemConfig: SystemConfigService) {}
+  constructor(private service: PapersService, private systemConfig: SystemConfigService, private resourceAccess: ResourceAccessService) {}
 
   @Get()
   @RequirePermission(Permissions.PAPER_EDIT)
@@ -43,7 +44,6 @@ export class PapersController {
     const userId = req.user?.sub || req.user?.id;
     const userOrgId = req.user?.orgId ?? null;
     const userRoles: string[] = req.user?.roles || [];
-    // 机构角色组卷 → 检查 allow_org_own_bank 开关
     if (userOrgId && !userRoles.includes('SUPER_ADMIN')) {
       const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
       if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法组卷');
@@ -61,7 +61,6 @@ export class PapersController {
       const allow = await this.systemConfig.getBoolean('allow_org_own_bank');
       if (!allow) throw new ForbiddenException('当前系统不允许机构自建题库，无法组卷');
     }
-    // 平行卷：count > 1 时生成多套
     const count = Math.min(Math.max(parseInt(data.count) || 1, 1), 5);
     if (count === 1) {
       return this.service.generate({ ...data, createdBy: userId, orgId: userOrgId });
@@ -73,7 +72,6 @@ export class PapersController {
         name: `${data.name}（${String.fromCharCode(65 + i)}卷）`,
         createdBy: userId,
         orgId: userOrgId,
-        // 每套卷排除前几套已选的题，确保不重复
         excludeQuestionIds: [...(data.excludeQuestionIds || []), ...results.flatMap(r => (r.questions || []).map((q: any) => q.questionId))],
       });
       results.push(paper);
@@ -83,34 +81,51 @@ export class PapersController {
 
   @Put(':id/finalize')
   @RequirePermission(Permissions.PAPER_PUBLISH)
-  finalize(@Param('id', ParseIntPipe) id: number) { return this.service.finalize(id); }
+  async finalize(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.finalize(id);
+  }
 
   @Put(':id/promote')
   @RequirePermission(Permissions.PAPER_PUBLISH)
-  promote(@Param('id', ParseIntPipe) id: number) { return this.service.promoteToOfficial(id); }
+  async promote(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.promoteToOfficial(id);
+  }
 
   @Put(':id/submit-review')
   @RequirePermission(Permissions.PAPER_EDIT)
-  submitReview(@Param('id', ParseIntPipe) id: number) { return this.service.submitForReview(id); }
+  async submitReview(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.submitForReview(id);
+  }
 
   @Put(':id/approve-review')
   @RequirePermission(Permissions.PAPER_PUBLISH)
-  approveReview(@Param('id', ParseIntPipe) id: number) { return this.service.approveReview(id); }
+  async approveReview(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.approveReview(id);
+  }
 
   @Put(':id/reject-review')
   @RequirePermission(Permissions.PAPER_PUBLISH)
-  rejectReview(@Param('id', ParseIntPipe) id: number, @Body() body: { reason?: string }) { return this.service.rejectReview(id, body?.reason); }
+  async rejectReview(@Param('id', ParseIntPipe) id: number, @Body() body: { reason?: string }, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.rejectReview(id, body?.reason);
+  }
 
   @Post(':id/upload-word')
   @RequirePermission(Permissions.PAPER_EDIT)
   @UseInterceptors(FileInterceptor('file'))
-  uploadWord(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: Express.Multer.File) {
+  async uploadWord(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.uploadWord(id, file);
   }
 
   @Get(':id/export-word')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
-  async exportWord(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+  async exportWord(@Req() req: any, @Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const docx = await this.service.generateExportDocx(id);
     res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="paper-${id}.docx"`, 'Content-Length': docx.length });
     res.end(docx);
@@ -118,7 +133,8 @@ export class PapersController {
 
   @Get(':id/export-answer-sheet')
   @RequirePermission(Permissions.PAPER_ANSWER_SHEET)
-  async exportAnswerSheet(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+  async exportAnswerSheet(@Req() req: any, @Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const docx = await this.service.generateAnswerSheetDocx(id);
     res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="answer-sheet-${id}.docx"`, 'Content-Length': docx.length });
     res.end(docx);
@@ -126,7 +142,8 @@ export class PapersController {
 
   @Get(':id/export-pdf')
   @RequirePermission(Permissions.PAPER_DOWNLOAD)
-  async exportPdf(@Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+  async exportPdf(@Req() req: any, @Res() res: Response, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const pdf = await this.service.generateExportPdf(id);
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="paper-${id}.pdf"`, 'Content-Length': pdf.length });
     res.end(pdf);
@@ -140,19 +157,22 @@ export class PapersController {
 
   @Delete(':id/questions/:pqId')
   @RequirePermission(Permissions.PAPER_EDIT)
-  removeQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number) {
+  async removeQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.removeQuestion(id, pqId);
   }
 
   @Post(':id/questions')
   @RequirePermission(Permissions.PAPER_EDIT)
-  addQuestion(@Param('id', ParseIntPipe) id: number, @Body() data: { questionId: number; score: number; typeSection: string }) {
+  async addQuestion(@Param('id', ParseIntPipe) id: number, @Body() data: { questionId: number; score: number; typeSection: string }, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.addQuestion(id, data);
   }
 
   @Post(':id/questions/:pqId/replace')
   @RequirePermission(Permissions.PAPER_EDIT)
-  replaceQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number, @Body() data: { questionId: number }) {
+  async replaceQuestion(@Param('id', ParseIntPipe) id: number, @Param('pqId', ParseIntPipe) pqId: number, @Body() data: { questionId: number }, @Req() req: any) {
+    await this.resourceAccess.assertPaperAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.replaceQuestion(id, pqId, data.questionId);
   }
 

@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/grading-assignments')
 export class GradingAssignmentController {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationsService,
+    private examAccess: ExamAccessService,
   ) {}
 
   /**
@@ -39,8 +41,10 @@ export class GradingAssignmentController {
   @RequirePermission(Permissions.GRADING_MANUAL)
   async getAssignments(
     @Param('examId', ParseIntPipe) examId: number,
+    @Req() req: any,
     @Query('graderId') graderId?: string,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const where: any = { examId };
     if (graderId) where.graderId = parseInt(graderId);
 
@@ -79,7 +83,9 @@ export class GradingAssignmentController {
       sessionIds?: number[];      // 不传/空=全学员
       paperQuestionIds?: number[]; // 不传/空=全题型
     },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     // P2-3: 校验 graderId 合法性
     const grader = await this.prisma.user.findUnique({
       where: { id: data.graderId },
@@ -147,7 +153,9 @@ export class GradingAssignmentController {
   async clearAssignments(
     @Param('examId', ParseIntPipe) examId: number,
     @Body() data: { graderId: number },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     await this.prisma.gradingAssignment.deleteMany({
       where: { examId, graderId: data.graderId },
     });
@@ -161,9 +169,12 @@ export class GradingAssignmentController {
   @Put(':examId/:assignmentId')
   @RequirePermission(Permissions.GRADING_MANUAL)
   async updateAssignment(
+    @Param('examId', ParseIntPipe) examId: number,
     @Param('assignmentId', ParseIntPipe) assignmentId: number,
     @Body() data: { graderId?: number; paperQuestionId?: number; status?: string },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.prisma.gradingAssignment.update({ where: { id: assignmentId }, data });
   }
 
@@ -173,7 +184,8 @@ export class GradingAssignmentController {
    */
   @Delete(':examId/:assignmentId')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  async deleteAssignment(@Param('assignmentId', ParseIntPipe) assignmentId: number) {
+  async deleteAssignment(@Param('examId', ParseIntPipe) examId: number, @Param('assignmentId', ParseIntPipe) assignmentId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.prisma.gradingAssignment.delete({ where: { id: assignmentId } });
   }
 }

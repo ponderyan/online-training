@@ -3,10 +3,11 @@ import { ExamsService } from './exams.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/exams')
 export class ExamsController {
-  constructor(private service: ExamsService, private systemConfig: SystemConfigService) {}
+  constructor(private service: ExamsService, private systemConfig: SystemConfigService, private examAccess: ExamAccessService) {}
 
   @Get()
   @RequirePermission(Permissions.EXAM_RESULT_VIEW)
@@ -91,28 +92,33 @@ export class ExamsController {
 
   @Get(':id/students')
   @RequirePermission(Permissions.EXAM_RESULT_VIEW)
-  getStudents(@Param('id', ParseIntPipe) id: number) {
+  async getStudents(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.examAccess.assertAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getStudents(id);
   }
 
   @Post(':id/add-students')
   @RequirePermission(Permissions.EXAM_ASSIGN)
-  addStudents(
+  async addStudents(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { studentIds: number[] },
+    @Req() req: any,
   ) {
-    return this.service.addStudents(id, data.studentIds);
+    await this.examAccess.assertAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.addStudents(id, data.studentIds, req.user?.orgId ?? null, req.user?.roles);
   }
 
   @Get(':id/grading-progress')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  getGradingProgress(@Param('id', ParseIntPipe) id: number) {
+  async getGradingProgress(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.examAccess.assertAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getGradingProgress(id);
   }
 
   @Get(':id/sessions/status-summary')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  getSessionStatusSummary(@Param('id', ParseIntPipe) id: number) {
+  async getSessionStatusSummary(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.examAccess.assertAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getSessionStatusSummary(id);
   }
 }

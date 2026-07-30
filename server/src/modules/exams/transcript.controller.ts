@@ -1,16 +1,18 @@
-import { Controller, Get, Param, ParseIntPipe, Query, Res } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, Res, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/exams')
 export class TranscriptController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private examAccess: ExamAccessService) {}
 
   @Get(':examId/transcript')
   @RequirePermission(Permissions.TRANSCRIPT_VIEW)
-  async getTranscript(@Param('examId', ParseIntPipe) examId: number) {
+  async getTranscript(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: { paper: { include: { questions: { include: { question: { select: { type: true } } }, orderBy: { sortOrder: 'asc' } } } } },

@@ -6,15 +6,17 @@ import { RequirePermission } from '../../common/decorators/require-permission.de
 import { Permissions, ROLE_PERMISSIONS } from '../../common/permissions.constants.js';
 import { requestContext } from '../../common/utils/request-context.js';
 import { SUBJECTIVE_TYPES, recalculateSessionScore, getPassingScore } from '../../common/grading.utils.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/grading')
 export class GradingController {
-  constructor(private prisma: PrismaService, private certService: CertificatesService, private notificationService: NotificationsService) {}
+  constructor(private prisma: PrismaService, private certService: CertificatesService, private notificationService: NotificationsService, private examAccess: ExamAccessService) {}
 
   /** 获取某场考试的所有待阅卷学员（按分派隔离） */
   @Get(':examId')
   @RequirePermission(Permissions.GRADING_MANUAL)
   async getGradingList(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
@@ -96,6 +98,7 @@ export class GradingController {
     @Param('pqId', ParseIntPipe) pqId: number,
     @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     // 获取题目信息
     const pq = await this.prisma.paperQuestion.findUnique({
       where: { id: pqId },
@@ -181,7 +184,8 @@ export class GradingController {
   /** ★ 每题统计分析：平均分、得分率、分布 */
   @Get(':examId/question-stats')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  async getQuestionStats(@Param('examId', ParseIntPipe) examId: number) {
+  async getQuestionStats(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: { paper: { include: { questions: { include: { question: true } } } } },
@@ -253,7 +257,9 @@ export class GradingController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('pqId', ParseIntPipe) pqId: number,
     @Body() data: { rubric: { description: string; points: number; type: 'add' | 'deduct' }[] },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const pq = await this.prisma.paperQuestion.findUnique({ where: { id: pqId } });
     if (!pq) return { error: '题目不存在' };
     // 验证 rubric 格式
@@ -275,6 +281,7 @@ export class GradingController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const [session, paper] = await Promise.all([
       this.prisma.examSession.findUnique({
         where: { examId_studentId: { examId, studentId } },
@@ -361,10 +368,12 @@ export class GradingController {
   @Put(':examId/:studentId/:answerId')
   @RequirePermission(Permissions.GRADING_MANUAL)
   async gradeAnswer(
+    @Param('examId', ParseIntPipe) examId: number,
     @Param('answerId', ParseIntPipe) answerId: number,
     @Body() data: { score: number; graderNote?: string },
     @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const answer = await this.prisma.examAnswer.findUnique({ where: { id: answerId } });
     if (!answer) return { error: '答案不存在' };
 
@@ -436,7 +445,8 @@ export class GradingController {
   /** 成绩发布 */
   @Post(':examId/publish')
   @RequirePermission(Permissions.GRADING_PUBLISH)
-  async publishResults(@Param('examId', ParseIntPipe) examId: number) {
+  async publishResults(@Param('examId', ParseIntPipe) examId: number, @Req() req?: any) {
+    if (req?.user) await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     // 获取该场考试的主观题列表
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
@@ -525,6 +535,7 @@ export class GradingController {
   @Post(':examId/confirm')
   @RequirePermission(Permissions.GRADING_PUBLISH)
   async confirmScores(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const result = await this.prisma.examSession.updateMany({
       where: { examId, scoringStatus: 'PUBLISHED' },
       data: { scoringStatus: 'CONFIRMED', confirmedAt: new Date() },
@@ -587,7 +598,8 @@ export class GradingController {
   /** 解锁成绩 */
   @Post(':examId/unlock')
   @RequirePermission(Permissions.GRADING_PUBLISH)
-  async unlockScores(@Param('examId', ParseIntPipe) examId: number, @Body() data: { reason: string; operatorId: number; operatorName: string }) {
+  async unlockScores(@Param('examId', ParseIntPipe) examId: number, @Body() data: { reason: string; operatorId: number; operatorName: string }, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     const result = await this.prisma.examSession.updateMany({
@@ -622,7 +634,9 @@ export class GradingController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Body() data: { adjustedScore: number; reason: string; operatorId: number; operatorName: string },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     const session = await this.prisma.examSession.findUnique({

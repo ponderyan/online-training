@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
@@ -7,13 +8,20 @@ export class LearningHoursService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationsService,
+    private resourceAccess: ResourceAccessService,
   ) {}
 
-  async findAll(params?: { studentId?: number; status?: string; programId?: number }) {
+  async findAll(params?: { studentId?: number; status?: string; programId?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const where: any = {};
     if (params?.studentId) where.studentId = params.studentId;
     if (params?.status) where.status = params.status;
     if (params?.programId) where.programId = params.programId;
+    // org filter: non-SUPER sees only visible orgs students
+    const lhRoles = params?.userRoles ?? [];
+    if (!lhRoles.includes('SUPER_ADMIN') && (params?.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params!.userOrgId!);
+      where.student = { orgId: { in: visIds } };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.learningHourRecord.findMany({
@@ -149,10 +157,16 @@ export class LearningHoursService {
     }));
   }
 
-  async getPendingHours(programId?: number, source?: string) {
+  async getPendingHours(programId?: number, source?: string, userOrgId?: number | null, userRoles?: string[]) {
     const where: any = { status: 'PENDING' };
     if (programId) where.programId = programId;
     if (source) where.source = source;
+    // org filter pending
+    const pRoles = userRoles ?? [];
+    if (!pRoles.includes('SUPER_ADMIN') && (userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(userOrgId!);
+      where.student = { orgId: { in: visIds } };
+    }
     return this.prisma.learningHourRecord.findMany({
       where,
       include: {

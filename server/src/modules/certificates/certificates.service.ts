@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import * as crypto from 'crypto';
@@ -14,6 +15,7 @@ export class CertificatesService {
     private prisma: PrismaService,
     private notificationService: NotificationsService,
     private systemConfig: SystemConfigService,
+    private resourceAccess: ResourceAccessService,
   ) {
     fs.mkdir(this.certDir, { recursive: true }).catch(() => {});
   }
@@ -246,9 +248,17 @@ export class CertificatesService {
     studentId?: number;
     page: number;
     limit: number;
+    userOrgId?: number | null;
+    userRoles?: string[];
   }) {
     const where: any = {};
     if (params.examSessionId) where.examSessionId = params.examSessionId;
+    // org filter for listCertificates
+    const certRoles = params.userRoles ?? [];
+    if (!certRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
+    }
     if (params.studentId) where.studentId = params.studentId;
 
     const [items, total] = await Promise.all([
@@ -390,8 +400,14 @@ export class CertificatesService {
 
   // ═══ 证书申请审批 ═══
 
-  async listApplications(params: { status?: string; page?: number; limit?: number }) {
+  async listApplications(params: { status?: string; page?: number; limit?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const where: any = {};
+    // org filter for listApplications
+    const appRoles = params.userRoles ?? [];
+    if (!appRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
+    }
     if (params.status) where.status = params.status;
     const page = params.page || 1;
     const limit = params.limit || 20;

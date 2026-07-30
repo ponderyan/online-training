@@ -2,15 +2,17 @@ import { Controller, Get, Post, Param, Body, ParseIntPipe, Query, Req } from '@n
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 import { recalculateSessionScore } from '../../common/grading.utils.js';
 
 @Controller('api/grading-reviews')
 export class ReviewController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private examAccess: ExamAccessService) {}
 
   @Get(':examId')
   @RequirePermission(Permissions.GRADING_MANUAL)
-  async getReviews(@Param('examId', ParseIntPipe) examId: number, @Query('status') status?: string) {
+  async getReviews(@Param('examId', ParseIntPipe) examId: number, @Req() req: any, @Query('status') status?: string) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const where: any = { examId };
     if (status) where.status = status;
     const items = await this.prisma.gradingReview.findMany({ where, orderBy: { createdAt: 'desc' } });
@@ -26,7 +28,9 @@ export class ReviewController {
   async requestReview(
     @Param('examId', ParseIntPipe) examId: number,
     @Body() data: { answerId: number; sessionId: number; reason: string; originalScore: number },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const existing = await this.prisma.gradingReview.findFirst({ where: { answerId: data.answerId, status: { in: ['PENDING', 'IN_REVIEW'] } } });
     if (existing) return { error: '该答案已有待处理的复核' };
     return this.prisma.gradingReview.create({
@@ -37,9 +41,12 @@ export class ReviewController {
   @Post(':examId/:reviewId/resolve')
   @RequirePermission(Permissions.GRADING_MANUAL)
   async resolveReview(
+    @Param('examId', ParseIntPipe) examId: number,
     @Param('reviewId', ParseIntPipe) reviewId: number,
     @Body() data: { reviewedScore?: number; reviewerNote?: string; action: 'RESOLVED' | 'DISMISSED' },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const review = await this.prisma.gradingReview.findUnique({ where: { id: reviewId } });
     if (!review) return { error: '复核不存在' };
 

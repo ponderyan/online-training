@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Injectable()
 export class InstructorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private resourceAccess: ResourceAccessService) {}
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; level?: string; type?: string; workUnit?: string }) {
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; level?: string; type?: string; workUnit?: string; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
     const where: any = {};
@@ -14,6 +15,12 @@ export class InstructorsService {
     if (params.level) where.level = params.level;
     if (params.type) where.type = params.type;
     if (params.workUnit) where.workUnit = { contains: params.workUnit };
+    // org filter: Instructor -> User.orgId
+    const iRoles = params.userRoles ?? [];
+    if (!iRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.user = { orgId: { in: visIds } };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.instructor.findMany({

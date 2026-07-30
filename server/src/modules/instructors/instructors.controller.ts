@@ -1,14 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
 import { InstructorsService } from './instructors.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/instructors')
 export class InstructorsController {
-  constructor(private service: InstructorsService) {}
+  constructor(private service: InstructorsService, private resourceAccess: ResourceAccessService) {}
 
   @Get() @RequirePermission(P.INSTRUCTOR_VIEW)
-  findAll(
+  findAll(@Req() req: any,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('keyword') keyword?: string,
@@ -21,6 +22,8 @@ export class InstructorsController {
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
       keyword, status, level, type, workUnit,
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
   }
 

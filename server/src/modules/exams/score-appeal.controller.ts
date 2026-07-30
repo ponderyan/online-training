@@ -4,6 +4,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/exams')
 export class ScoreAppealController {
@@ -11,6 +12,7 @@ export class ScoreAppealController {
     private service: ScoreAppealService,
     private notificationService: NotificationsService,
     private prisma: PrismaService,
+    private examAccess: ExamAccessService,
   ) {}
 
   /** 学员提交申诉 */
@@ -54,8 +56,10 @@ export class ScoreAppealController {
   @RequirePermission(Permissions.GRADING_MANUAL)
   async findByExam(
     @Param('examId', ParseIntPipe) examId: number,
+    @Req() req: any,
     @Query('status') status?: string,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.findByExam(examId, status);
   }
 
@@ -71,7 +75,11 @@ export class ScoreAppealController {
   async review(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { status: string; newScore?: number; reviewNote?: string; reviewerId: number },
+    @Req() req: any,
   ) {
+    // 通过申诉记录关联的 examId 校验组织归属
+    const appeal = await this.prisma.scoreAppeal.findUnique({ where: { id }, select: { examId: true } });
+    if (appeal) await this.examAccess.assertAccess(appeal.examId, req.user?.orgId ?? null, req.user?.roles);
     const result = await this.service.review(id, data, data.reviewerId);
 
     // ← 通知学员申诉结果

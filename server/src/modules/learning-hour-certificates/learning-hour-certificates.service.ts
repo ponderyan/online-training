@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 import * as crypto from 'crypto';
 
 interface PaginationParams {
@@ -11,11 +12,13 @@ interface FindAllParams extends PaginationParams {
   studentId?: number;
   programId?: number;
   status?: string;
+  userOrgId?: number | null;
+  userRoles?: string[];
 }
 
 @Injectable()
 export class LearningHourCertificatesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private resourceAccess: ResourceAccessService) {}
 
   /**
    * 生成证书编号
@@ -181,6 +184,12 @@ export class LearningHourCertificatesService {
     if (params.studentId) where.studentId = params.studentId;
     if (params.programId) where.programId = params.programId;
     if (params.status) where.approvalStatus = params.status;
+    // org filter lhc
+    const lhcRoles = params.userRoles ?? [];
+    if (!lhcRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.learningHourCertificate.findMany({

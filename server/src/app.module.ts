@@ -43,11 +43,13 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
 import { KnowledgePointsModule } from './modules/knowledge-points/knowledge-points.module.js';
 import { StatsModule } from './modules/stats/stats.module.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
+import { ExamAccessModule } from './common/services/exam-access.module.js';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    ExamAccessModule,
     AuthModule,
     SubjectsModule,
     ChaptersModule,

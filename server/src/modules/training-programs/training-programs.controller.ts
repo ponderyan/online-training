@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/training-programs')
 export class TrainingProgramsController {
@@ -20,6 +21,7 @@ export class TrainingProgramsController {
     private evidenceService: EvidenceService,
     private attendanceService: AttendanceService,
     private prisma: PrismaService,
+    private resourceAccess: ResourceAccessService,
   ) {}
 
   @Get()
@@ -27,31 +29,58 @@ export class TrainingProgramsController {
   findAll(@Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string, @Req() req?: any) {
     return this.service.findAll({ page: page ? parseInt(page) : undefined, pageSize: pageSize ? parseInt(pageSize) : undefined, keyword, status, subjectId: subjectId ? parseInt(subjectId) : undefined, userOrgId: req?.user?.orgId ?? null, userRoles: req?.user?.roles });
   }
+
   @Get(':id')
   @RequirePermission(P.PROGRAM_VIEW)
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.findOne(id);
+  }
+
   @Post() @RequirePermission(P.PROGRAM_CREATE)
   create(@Body() data: any, @Req() req?: any) { return this.service.create(data, req?.user?.orgId ?? null); }
+
   @Put(':id') @RequirePermission(P.PROGRAM_EDIT)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: any) { return this.service.update(id, data); }
+  async update(@Param('id', ParseIntPipe) id: number, @Body() data: any, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.update(id, data);
+  }
+
   @Delete(':id') @RequirePermission(P.PROGRAM_DELETE)
-  delete(@Param('id', ParseIntPipe) id: number) { return this.service.delete(id); }
+  async delete(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.delete(id);
+  }
+
   @Put(':id/status') @RequirePermission(P.PROGRAM_EDIT)
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() data: { status: string; reason?: string }, @Req() req: any) {
+  async updateStatus(@Param('id', ParseIntPipe) id: number, @Body() data: { status: string; reason?: string }, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const userId = req.user?.sub || req.user?.id;
     if (!userId) throw new UnauthorizedException();
     return this.service.updateStatus(id, data.status, userId, data.reason);
   }
+
   @Post(':id/enroll') @RequirePermission(P.PROGRAM_ENROLL)
-  enroll(@Param('id', ParseIntPipe) id: number, @Body() data: { studentIds: number[]; agencyId?: number }) { return this.service.enrollStudents(id, data.studentIds, data.agencyId); }
+  async enroll(@Param('id', ParseIntPipe) id: number, @Body() data: { studentIds: number[]; agencyId?: number }, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.enrollStudents(id, data.studentIds, data.agencyId);
+  }
+
   @Get(':id/schedules') @RequirePermission(P.SCHEDULE_VIEW)
-  getSchedules(@Param('id', ParseIntPipe) id: number) { return this.schedulesService.findByProgram(id); }
+  async getSchedules(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.schedulesService.findByProgram(id);
+  }
 
   @Get(':id/available-actions') @RequirePermission(P.PROGRAM_VIEW)
-  getAvailableActions(@Param('id', ParseIntPipe) id: number) { return this.service.getAvailableActions(id); }
+  async getAvailableActions(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.getAvailableActions(id);
+  }
 
   @Get(':id/status-logs') @RequirePermission(P.PROGRAM_VIEW)
-  getStatusLogs(@Param('id', ParseIntPipe) id: number) {
+  async getStatusLogs(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.prisma.programStatusLog.findMany({
       where: { programId: id }, orderBy: { createdAt: 'desc' },
       include: { operator: { select: { id: true, displayName: true } } },
@@ -60,7 +89,8 @@ export class TrainingProgramsController {
 
   // ── Phase B: 签到表 ──
   @Get(':id/generate-signin-sheet') @RequirePermission(P.PROGRAM_VIEW)
-  async generateSignin(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+  async generateSignin(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Res() res: Response) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const { buffer, fileName } = await this.evidenceService.generateSigninSheet(id);
     res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`, 'Content-Length': buffer.length });
     res.end(buffer);
@@ -69,15 +99,20 @@ export class TrainingProgramsController {
   @Post(':id/evidences') @RequirePermission(P.PROGRAM_EDIT)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadEvidence(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: any, @Body() body: any, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const userId = req.user?.sub || req.user?.id || 1;
     return this.evidenceService.upload(id, file, body.evidenceType, body.notes, userId);
   }
 
   @Get(':id/evidences') @RequirePermission(P.PROGRAM_VIEW)
-  getEvidences(@Param('id', ParseIntPipe) id: number) { return this.evidenceService.findByProgram(id); }
+  async getEvidences(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.evidenceService.findByProgram(id);
+  }
 
   @Get(':id/evidences/:evidenceId/file') @RequirePermission(P.PROGRAM_VIEW)
-  async downloadEvidence(@Param('id', ParseIntPipe) programId: number, @Param('evidenceId', ParseIntPipe) evidenceId: number, @Res() res: Response) {
+  async downloadEvidence(@Param('id', ParseIntPipe) programId: number, @Param('evidenceId', ParseIntPipe) evidenceId: number, @Req() req: any, @Res() res: Response) {
+    await this.resourceAccess.assertProgramAccess(programId, req.user?.orgId ?? null, req.user?.roles);
     const evidence = await this.evidenceService.findById(evidenceId);
     if (!evidence || evidence.programId !== programId) throw new NotFoundException('文件不存在');
     const fileExists = await import('fs').then(fs => fs.existsSync(evidence.fileUrl));
@@ -88,21 +123,29 @@ export class TrainingProgramsController {
   }
 
   @Delete(':id/evidences/:evidenceId') @RequirePermission(P.PROGRAM_EDIT)
-  deleteEvidence(@Param('evidenceId', ParseIntPipe) evidenceId: number) { return this.evidenceService.delete(evidenceId); }
+  async deleteEvidence(@Param('id', ParseIntPipe) programId: number, @Param('evidenceId', ParseIntPipe) evidenceId: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(programId, req.user?.orgId ?? null, req.user?.roles);
+    return this.evidenceService.delete(evidenceId);
+  }
 
   // ── Phase B: 出勤记录 ──
   @Get(':id/attendance') @RequirePermission(P.PROGRAM_VIEW)
-  getAttendance(@Param('id', ParseIntPipe) id: number) { return this.attendanceService.getByProgram(id); }
+  async getAttendance(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.attendanceService.getByProgram(id);
+  }
 
   @Put(':id/attendance/:studentId') @RequirePermission(P.PROGRAM_EDIT)
-  updateAttendance(@Param('id', ParseIntPipe) id: number, @Param('studentId', ParseIntPipe) studentId: number, @Body() data: any, @Req() req: any) {
+  async updateAttendance(@Param('id', ParseIntPipe) id: number, @Param('studentId', ParseIntPipe) studentId: number, @Body() data: any, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const userId = req.user?.sub || req.user?.id || 1;
     return this.attendanceService.update(id, studentId, data, userId);
   }
 
   // Phase 1d: 全链审计
   @Get(':id/audit-chain') @RequirePermission(P.PROGRAM_VIEW)
-  async getAuditChain(@Param('id', ParseIntPipe) id: number) {
+  async getAuditChain(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const [program, evidences, attendanceList, filingRecords, certificates] = await Promise.all([
       this.prisma.trainingProgram.findUnique({ where: { id } }),
       this.prisma.businessEvidence.findMany({ where: { programId: id, evidenceType: 'ATTENDANCE_SHEET' }, orderBy: { createdAt: 'desc' } }),
@@ -130,7 +173,8 @@ export class TrainingProgramsController {
 
   @Get(':id/dashboard')
   @RequirePermission(P.PROGRAM_VIEW)
-  getDashboard(@Param('id', ParseIntPipe) id: number) {
+  async getDashboard(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getDashboard(id);
   }
 
@@ -140,56 +184,78 @@ export class TrainingProgramsController {
 
   @Get(':id/batches')
   @RequirePermission(P.PROGRAM_VIEW)
-  findBatches(@Param('id', ParseIntPipe) id: number) {
+  async findBatches(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.batchesService.findByProgram(id);
   }
 
   @Post(':id/batches')
   @RequirePermission(P.PROGRAM_CREATE)
-  createBatch(
+  async createBatch(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { name: string; headTeacherId?: number; startedAt?: string; endedAt?: string; description?: string; note?: string },
-  ) { return this.batchesService.create(id, data); }
+    @Req() req: any,
+  ) {
+    await this.resourceAccess.assertProgramAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    return this.batchesService.create(id, data);
+  }
 
   @Get('batches/:batchId')
   @RequirePermission(P.PROGRAM_VIEW)
-  findBatch(@Param('batchId', ParseIntPipe) batchId: number) {
+  async findBatch(@Param('batchId', ParseIntPipe) batchId: number, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.findOne(batchId);
   }
 
   @Put('batches/:batchId')
   @RequirePermission(P.PROGRAM_EDIT)
-  updateBatch(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: any) {
+  async updateBatch(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: any, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.update(batchId, data);
   }
 
   @Delete('batches/:batchId')
   @RequirePermission(P.PROGRAM_DELETE)
-  deleteBatch(@Param('batchId', ParseIntPipe) batchId: number) {
+  async deleteBatch(@Param('batchId', ParseIntPipe) batchId: number, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.remove(batchId);
   }
 
   @Put('batches/:batchId/head-teacher')
   @RequirePermission(P.PROGRAM_EDIT)
-  setBatchHeadTeacher(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: { headTeacherId: number | null }) {
+  async setBatchHeadTeacher(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: { headTeacherId: number | null }, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.setHeadTeacher(batchId, data.headTeacherId);
   }
 
   @Get('batches/:batchId/members')
   @RequirePermission(P.PROGRAM_VIEW)
-  getBatchMembers(@Param('batchId', ParseIntPipe) batchId: number) {
+  async getBatchMembers(@Param('batchId', ParseIntPipe) batchId: number, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.getMembers(batchId);
   }
 
   @Post('batches/:batchId/members')
   @RequirePermission(P.PROGRAM_ENROLL)
-  addBatchMembers(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: { userIds: number[] }) {
+  async addBatchMembers(@Param('batchId', ParseIntPipe) batchId: number, @Body() data: { userIds: number[] }, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.addMembers(batchId, data.userIds);
   }
 
   @Delete('batches/:batchId/members/:userId')
   @RequirePermission(P.PROGRAM_ENROLL)
-  removeBatchMember(@Param('batchId', ParseIntPipe) batchId: number, @Param('userId', ParseIntPipe) userId: number) {
+  async removeBatchMember(@Param('batchId', ParseIntPipe) batchId: number, @Param('userId', ParseIntPipe) userId: number, @Req() req: any) {
+    await this.assertBatchAccess(batchId, req);
     return this.batchesService.removeMember(batchId, userId);
+  }
+
+  // ─── 内部：通过 batchId 反查 programId 做组织校验 ───
+  private async assertBatchAccess(batchId: number, req: any) {
+    const batch = await this.prisma.programBatch.findUnique({
+      where: { id: batchId },
+      select: { programId: true },
+    });
+    if (!batch) throw new NotFoundException('批次不存在');
+    await this.resourceAccess.assertProgramAccess(batch.programId, req.user?.orgId ?? null, req.user?.roles);
   }
 }

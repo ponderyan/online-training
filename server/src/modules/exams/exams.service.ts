@@ -297,8 +297,23 @@ export class ExamsService {
     return sessions;
   }
 
-  async addStudents(examId: number, studentIds: number[]) {
-    const exam = await this.findOne(examId);
+  async addStudents(examId: number, studentIds: number[], userOrgId?: number | null, userRoles?: string[]) {
+    const exam = await this.findOne(examId, userOrgId, userRoles);
+
+    // ★ 跨组织校验：非超管只能分配可见组织内的学员（或无组织学员）
+    const roles = userRoles ?? [];
+    if (!roles.includes('SUPER_ADMIN') && (userOrgId ?? null) !== null) {
+      const visibleOrgIds = await this.getVisibleOrgIds(userOrgId!);
+      const students = await this.prisma.user.findMany({
+        where: { id: { in: studentIds } },
+        select: { id: true, orgId: true },
+      });
+      const invalid = students.filter(s => s.orgId !== null && !visibleOrgIds.includes(s.orgId));
+      if (invalid.length > 0) {
+        throw new ForbiddenException(`不能分配其他组织的学员（${invalid.length} 名学员不属于你的可见组织范围）`);
+      }
+    }
+
     const existing = await this.prisma.examSession.findMany({
       where: { examId, studentId: { in: studentIds } },
       select: { studentId: true },

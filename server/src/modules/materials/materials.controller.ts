@@ -4,10 +4,11 @@ import { extname } from 'path';
 import { MaterialsService } from './materials.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/materials')
 export class MaterialsController {
-  constructor(private service: MaterialsService) {}
+  constructor(private service: MaterialsService, private resourceAccess: ResourceAccessService) {}
 
   @Get()
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
@@ -35,13 +36,15 @@ export class MaterialsController {
 
   @Get(':id')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertMaterialAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.findOne(id);
   }
 
   @Get(':id/stats')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
-  getStats(@Param('id', ParseIntPipe) id: number) {
+  async getStats(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertMaterialAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getStats(id);
   }
 
@@ -222,7 +225,8 @@ export class MaterialsController {
 
   @Delete(':id')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertMaterialAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.delete(id);
   }
 }

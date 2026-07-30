@@ -5,10 +5,11 @@ import { CertificatesService } from './certificates.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/certificates')
 export class CertificatesController {
-  constructor(private service: CertificatesService) {}
+  constructor(private service: CertificatesService, private resourceAccess: ResourceAccessService) {}
 
   // ═══════════════════════════════════════════════════════
   // 命名路由（具体路径优先，避免被参数化路由截获）
@@ -17,8 +18,8 @@ export class CertificatesController {
   /** 证书申请列表 */
   @Get('applications')
   @RequirePermission(Permissions.CERT_ISSUE)
-  async listApplications(@Query('status') status?: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.service.listApplications({ status, page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 });
+  async listApplications(@Query('status') status?: string, @Query('page') page?: string, @Query('limit') limit?: string, @Req() req?: any) {
+    return this.service.listApplications({ status, page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20, userOrgId: req?.user?.orgId ?? null, userRoles: req?.user?.roles });
   }
 
   /** 批量审批申请 */
@@ -62,7 +63,6 @@ export class CertificatesController {
       return { valid: false, message: '缺少必要参数：no（证书编号）和 code（验证码）' };
     }
     const result = await this.service.verifyCertificate(certificateNo, verificationCode);
-    // 如果有 sig 参数，执行 HMAC 验签
     if (signature && result.valid) {
       const { verifyCertificateQrData } = await import('./cert-verify-utils.js');
       (result as any).signatureValid = verifyCertificateQrData(certificateNo, verificationCode, signature);
@@ -92,12 +92,15 @@ export class CertificatesController {
     @Query('studentId') studentId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Req() req?: any,
   ) {
     return this.service.listCertificates({
       examSessionId: examSessionId ? parseInt(examSessionId) : undefined,
       studentId: studentId ? parseInt(studentId) : undefined,
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 20,
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
   }
 
@@ -121,7 +124,9 @@ export class CertificatesController {
   async revoke(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { reason: string; operatorId?: number },
+    @Req() req: any,
   ) {
+    await this.resourceAccess.assertCertificateAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.revokeCertificate(id, data.reason, data.operatorId);
@@ -130,7 +135,8 @@ export class CertificatesController {
   /** 证书追溯链 */
   @Get(':id/traces')
   @RequirePermission(Permissions.CERT_VIEW)
-  async getTraces(@Param('id', ParseIntPipe) id: number) {
+  async getTraces(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    await this.resourceAccess.assertCertificateAccess(id, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getTraces(id);
   }
 
@@ -139,8 +145,10 @@ export class CertificatesController {
   @RequirePermission(Permissions.CERT_VIEW)
   async downloadPdf(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
     @Res() res: Response,
   ) {
+    await this.resourceAccess.assertCertificateAccess(id, req.user?.orgId ?? null, req.user?.roles);
     const pdf = await this.service.generatePdf(id);
     res.set({
       'Content-Type': 'application/pdf',

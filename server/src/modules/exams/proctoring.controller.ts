@@ -1,16 +1,18 @@
-import { Controller, Get, Put, Param, Body, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Put, Param, Body, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { ProctoringService } from './proctoring.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
 import { requestContext } from '../../common/utils/request-context.js';
+import { ExamAccessService } from '../../common/services/exam-access.service.js';
 
 @Controller('api/exams/:examId/proctoring')
 export class ProctoringController {
-  constructor(private service: ProctoringService) {}
+  constructor(private service: ProctoringService, private examAccess: ExamAccessService) {}
 
   @Get('overview')
   @RequirePermission(Permissions.PROCTOR_VIEW)
-  async getOverview(@Param('examId', ParseIntPipe) examId: number) {
+  async getOverview(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getOverview(examId);
   }
 
@@ -18,11 +20,13 @@ export class ProctoringController {
   @RequirePermission(Permissions.PROCTOR_VIEW)
   async getSessions(
     @Param('examId', ParseIntPipe) examId: number,
+    @Req() req: any,
     @Query('status') status?: string,
     @Query('keyword') keyword?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getSessions(examId, {
       status, keyword,
       page: page ? parseInt(page) : 1,
@@ -35,7 +39,9 @@ export class ProctoringController {
   async getSessionDetail(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getSessionDetail(examId, sessionId);
   }
 
@@ -45,16 +51,20 @@ export class ProctoringController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() data: { message: string; operatorName: string },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.warn(examId, sessionId, data.message, data.operatorName);
   }
 
   @Get('sessions/:sessionId/messages')
   @RequirePermission(Permissions.PROCTOR_VIEW)
-  getMessages(
+  async getMessages(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getMessages(examId, sessionId);
   }
 
@@ -64,7 +74,9 @@ export class ProctoringController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() data: { reason: string; operatorName: string },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.forceSubmit(examId, sessionId, data.reason, data.operatorName);
@@ -76,7 +88,9 @@ export class ProctoringController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() data: { extraSeconds: number; reason: string; operatorName: string },
+    @Req() req: any,
   ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.extendTime(examId, sessionId, data.extraSeconds, data.reason, data.operatorName);
