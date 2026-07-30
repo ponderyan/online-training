@@ -138,14 +138,14 @@ export class PapersService {
     const subject = await this.prisma.subject.findUnique({ where: { id: data.subjectId } });
     if (!subject) throw new NotFoundException('科目不存在');
 
-    const seq = subject.paperNumberSeq;
+    // 原子递增避免并发竞态
+    const updatedSubject = await this.prisma.subject.update({
+      where: { id: data.subjectId },
+      data: { paperNumberSeq: { increment: 1 } },
+    });
+    const seq = updatedSubject.paperNumberSeq - 1;
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const paperNumber = `DT+${subject.code}-${dateStr}-${String(seq).padStart(3, '0')}`;
-
-    await this.prisma.subject.update({
-      where: { id: data.subjectId },
-      data: { paperNumberSeq: seq + 1 },
-    });
 
     return this.prisma.paper.create({
       data: {
@@ -203,14 +203,14 @@ export class PapersService {
     const subject = await this.prisma.subject.findUnique({ where: { id: data.subjectId } });
     if (!subject) throw new NotFoundException('Subject not found');
 
-    const seq = subject.paperNumberSeq;
+    // 原子递增避免并发竞态
+    const updatedSubject = await this.prisma.subject.update({
+      where: { id: data.subjectId },
+      data: { paperNumberSeq: { increment: 1 } },
+    });
+    const seq = updatedSubject.paperNumberSeq - 1;
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const paperNumber = `DT+${subject.code}-${dateStr}-${String(seq).padStart(3, '0')}`;
-
-    await this.prisma.subject.update({
-      where: { id: data.subjectId },
-      data: { paperNumberSeq: seq + 1 },
-    });
 
     const selectedQuestions: { questionId: number; score: number; typeSection: string }[] = [];
     let sortOrder = 0;

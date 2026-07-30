@@ -100,12 +100,16 @@ export class TrainingProgramsService {
   async create(data: any, userOrgId?: number | null) {
     data.code = await this.generateCode();
     if (!data.createdBy) data.createdBy = 1; // default to admin
+    if (!data.courseName) data.courseName = data.name; // 默认用培训班名称
     if (userOrgId && !data.orgId) data.orgId = userOrgId;
     // 日期字段转换（前端可能传 "YYYY-MM-DD" 格式）
     if (data.startDate) data.startDate = new Date(data.startDate);
     if (data.endDate) data.endDate = new Date(data.endDate);
     if (data.enrollStart) data.enrollStart = new Date(data.enrollStart);
     if (data.enrollEnd) data.enrollEnd = new Date(data.enrollEnd);
+    // 必填字段默认值
+    if (!data.enrollStart) data.enrollStart = new Date();
+    if (!data.enrollEnd) data.enrollEnd = data.startDate || new Date();
     return this.prisma.trainingProgram.create({ data });
   }
 

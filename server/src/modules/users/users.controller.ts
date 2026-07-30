@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions as P } from '../../common/permissions.constants.js';
@@ -23,6 +23,20 @@ export class UsersController {
       userOrgId: req?.user?.orgId ?? null,
       userRoles: req?.user?.roles,
     });
+  }
+
+  @Post()
+  @RequirePermission(P.STUDENT_CREATE)
+  async create(@Body() data: {
+    username: string;
+    password: string;
+    displayName: string;
+    phone?: string;
+    email?: string;
+    orgId?: number;
+    roles?: string[];
+  }, @Req() req: any) {
+    return this.service.adminCreate(data, req.user?.orgId ?? null);
   }
 
   @Get(':id')

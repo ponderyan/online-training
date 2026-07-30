@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -112,5 +113,47 @@ export class UsersService {
     }
 
     return result;
+  }
+
+  /** 管理员创建用户（可指定角色和组织） */
+  async adminCreate(data: {
+    username: string;
+    password: string;
+    displayName: string;
+    phone?: string;
+    email?: string;
+    orgId?: number;
+    roles?: string[];
+  }, callerOrgId?: number | null) {
+    if (!data.username || !data.password || !data.displayName) {
+      throw new BadRequestException('缺少必要参数：username, password, displayName');
+    }
+    const existing = await this.prisma.user.findUnique({ where: { username: data.username } });
+    if (existing) throw new ConflictException('用户名已存在');
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        username: data.username,
+        displayName: data.displayName,
+        passwordHash,
+        orgId: data.orgId ?? callerOrgId ?? null,
+        phone: data.phone || null,
+        email: data.email || null,
+        isActive: true,
+      },
+    });
+
+    // 分配角色（默认 STUDENT）
+    const roleCodes = data.roles?.length ? data.roles : ['STUDENT'];
+    const roles = await this.prisma.role.findMany({ where: { code: { in: roleCodes } } });
+    for (const role of roles) {
+      await this.prisma.userRoleAssignment.create({
+        data: { userId: user.id, roleId: role.id },
+      });
+    }
+
+    const { passwordHash: _, ...result } = user;
+    return { ...result, roles: roleCodes };
   }
 }
