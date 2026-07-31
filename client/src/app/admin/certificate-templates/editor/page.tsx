@@ -84,6 +84,10 @@ export default function CertificateTemplateEditor() {
   const [saving, setSaving] = useState(false);
   const [scale, setScale] = useState(0.65);
   const [rightPanel, setRightPanel] = useState<'props' | 'layers'>('props');
+  const [showPreviewVars, setShowPreviewVars] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(300);
+  const [dragging, setDragging] = useState(false);
+  const [splitHover, setSplitHover] = useState(false);
   const [templateName, setTemplateName] = useState('未命名模板');
   const [renderMode, setRenderMode] = useState<RenderMode>('preview');
   const [exportDpi, setExportDpi] = useState(150);
@@ -92,6 +96,7 @@ export default function CertificateTemplateEditor() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
   const moveableRef = useRef<Moveable>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   // ── 缩放控制 ──
   const zoomIn = useCallback(() => setScale(s => clampScale(s + 0.1)), []);
@@ -160,6 +165,27 @@ export default function CertificateTemplateEditor() {
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
+
+  // ── 右栏宽度拖拽 ──
+  useEffect(() => {
+    if (!dragging) return;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (e: MouseEvent) => {
+      const rect = bodyRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPanelWidth(Math.min(480, Math.max(240, Math.round(rect.right - e.clientX))));
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [dragging]);
 
   // ── 元素操作 ──
   const addElement = (type: 'text' | 'rect' | 'variable-text' | 'divider' | 'image' | 'qrcode' | 'seal' | 'barcode') => {
@@ -350,10 +376,12 @@ export default function CertificateTemplateEditor() {
   useEffect(() => { setMoveableTarget(getTargetEl()); }, [selectedId, canvas.elements.length, getTargetEl]);
 
   return (
-    <AppLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#f8f8f8' }}>
+    <AppLayout fullBleed>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8f8f8' }}>
         {/* ═══ 顶栏 ═══ */}
-        <div style={{ padding: '6px 12px', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: 6, background: '#fff', fontSize: 13 }}>
+        <div style={{ padding: '6px 12px', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, background: '#fff', fontSize: 13 }}>
+          <button onClick={() => router.push('/admin/certificate-templates')} title="返回模板列表" style={{ ...toolBtnStyle, display: 'inline-flex', alignItems: 'center', gap: 3 }}>← 返回</button>
+          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
           <input value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ border: 'none', fontSize: 14, fontWeight: 600, width: 180, outline: 'none' }} />
           <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
           <button onClick={undo} disabled={!canUndo} title="撤销 (⌘Z)" style={toolBtnStyle}>↩</button>
@@ -402,7 +430,7 @@ export default function CertificateTemplateEditor() {
         </div>
 
         {/* ═══ 主体 ═══ */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div ref={bodyRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* 画布区 */}
           <div ref={canvasAreaRef} style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: '#e0e0e0' }}>
             {showPreview ? (
@@ -469,8 +497,18 @@ export default function CertificateTemplateEditor() {
             )}
           </div>
 
+          {/* 可拖拽分割线（调整右栏宽度，双击复位） */}
+          <div
+            onMouseDown={() => setDragging(true)}
+            onMouseEnter={() => setSplitHover(true)}
+            onMouseLeave={() => setSplitHover(false)}
+            onDoubleClick={() => setPanelWidth(300)}
+            title="拖拽调整宽度，双击复位"
+            style={{ width: 5, flexShrink: 0, cursor: 'col-resize', borderLeft: '1px solid #e0e0e0', background: dragging ? 'var(--color-fox)' : splitHover ? 'rgba(232,122,48,0.35)' : 'transparent', transition: dragging ? 'none' : 'background .15s' }}
+          />
+
           {/* ═══ 右侧面板 ═══ */}
-          <div style={{ width: 280, borderLeft: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', background: '#fff' }}>
+          <div style={{ width: panelWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
             {/* Tab 切换 */}
             <div style={{ display: 'flex', borderBottom: '1px solid #e0e0e0' }}>
               <button onClick={() => setRightPanel('props')} style={tabStyle(rightPanel === 'props')}>属性</button>
@@ -485,14 +523,19 @@ export default function CertificateTemplateEditor() {
               )}
             </div>
 
-            {/* 预览数据 */}
-            <div style={{ borderTop: '1px solid #e0e0e0', padding: 10, fontSize: 12 }}>
-              <h4 style={{ margin: '0 0 6px', fontSize: 12, color: '#666' }}>预览变量</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <PropRow label="姓名"><input value={previewData.studentName || ''} onChange={e => setPreviewData(d => ({ ...d, studentName: e.target.value }))} style={inputStyle} /></PropRow>
-                <PropRow label="课程"><input value={previewData.courseName || ''} onChange={e => setPreviewData(d => ({ ...d, courseName: e.target.value }))} style={inputStyle} /></PropRow>
-                <PropRow label="日期"><input value={previewData.issueDate || ''} onChange={e => setPreviewData(d => ({ ...d, issueDate: e.target.value }))} style={inputStyle} /></PropRow>
-              </div>
+            {/* 预览数据（可折叠，默认收起以释放属性/图层空间） */}
+            <div style={{ borderTop: '1px solid #e0e0e0', fontSize: 12 }}>
+              <button onClick={() => setShowPreviewVars(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
+                <span>🧪 预览变量</span>
+                <span style={{ color: '#bbb', fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
+              </button>
+              {showPreviewVars && (
+                <div style={{ padding: '0 10px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <PropRow label="姓名"><input value={previewData.studentName || ''} onChange={e => setPreviewData(d => ({ ...d, studentName: e.target.value }))} style={inputStyle} /></PropRow>
+                  <PropRow label="课程"><input value={previewData.courseName || ''} onChange={e => setPreviewData(d => ({ ...d, courseName: e.target.value }))} style={inputStyle} /></PropRow>
+                  <PropRow label="日期"><input value={previewData.issueDate || ''} onChange={e => setPreviewData(d => ({ ...d, issueDate: e.target.value }))} style={inputStyle} /></PropRow>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -538,7 +581,7 @@ function renderElementPreview(el: CanvasElement) {
 function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasElement; updateProp: (k: string, v: any) => void; onToggleLayer: (id: string) => void }) {
   const p = el.props as any;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <PropRow label="名称"><input value={el.name || ''} onChange={e => updateProp('name', e.target.value)} style={inputStyle} /></PropRow>
       <PropRow label="图层">
         <button onClick={() => onToggleLayer(el.id)} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid ' + (el.layer === 'design' ? '#ff9800' : '#4caf50'), borderRadius: 3, background: el.layer === 'design' ? '#fff3e0' : '#e8f5e9', cursor: 'pointer' }}>

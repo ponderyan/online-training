@@ -6,7 +6,7 @@ import Sidebar from './sidebar';
 import ErrorBoundary from './error-boundary';
 import NotificationBell from './notification-bell';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -82,11 +82,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <NotificationBell user={user} />
         </header>
         {/* Main content */}
-        <main className="main-content flex-1 overflow-y-auto min-h-0 p-6 md:p-8 xl:p-10">
-          <div className="max-w-7xl mx-auto">
+        {fullBleed ? (
+          <main className="flex-1 min-h-0 relative overflow-hidden">
             <ErrorBoundary>{children}</ErrorBoundary>
-          </div>
-        </main>
+          </main>
+        ) : (
+          <main className="main-content flex-1 overflow-y-auto min-h-0 p-6 md:p-8 xl:p-10">
+            <div className="max-w-7xl mx-auto">
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );
