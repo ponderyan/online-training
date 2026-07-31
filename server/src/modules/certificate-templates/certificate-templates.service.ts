@@ -12,23 +12,44 @@ export class CertificateTemplatesService {
   // ═══════════════════════════════════════════
 
   /** 列表（org 隔离：SUPER_ADMIN 看全部，org 用户看本 org + 平台级） */
-  async findAll(userOrgId: number | null, isSuperAdmin: boolean, filters?: { type?: string; isActive?: boolean }) {
+  async findAll(userOrgId: number | null, isSuperAdmin: boolean, filters?: { type?: string; isActive?: boolean; search?: string; sortBy?: string }) {
     const where: any = {};
     if (!isSuperAdmin && userOrgId) {
       where.OR = [{ orgId: userOrgId }, { orgId: null }];
     }
     if (filters?.type) where.type = filters.type;
     if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+    if (filters?.search) {
+      const kw = filters.search.trim();
+      where.AND = [{ OR: [{ name: { contains: kw } }, { description: { contains: kw } }] }];
+    }
 
-    return this.prisma.certificateTemplate.findMany({
+    // 排序
+    let orderBy: any;
+    switch (filters?.sortBy) {
+      case 'name': orderBy = [{ name: 'asc' }]; break;
+      case 'createdAt': orderBy = [{ createdAt: 'desc' }]; break;
+      case 'updatedAt': orderBy = [{ updatedAt: 'desc' }]; break;
+      default: orderBy = [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { updatedAt: 'desc' }];
+    }
+
+    const rows = await this.prisma.certificateTemplate.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      orderBy,
       select: {
         id: true, name: true, type: true, description: true,
         thumbnail: true, isDefault: true, isActive: true,
         orgId: true, createdBy: true, createdAt: true, updatedAt: true,
       },
     });
+
+    // join 创建者姓名
+    const userIds = [...new Set(rows.map(r => r.createdBy).filter(Boolean))];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, displayName: true, username: true } })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u.displayName || u.username]));
+    return rows.map(r => ({ ...r, creatorName: userMap.get(r.createdBy) || `用户#${r.createdBy}` }));
   }
 
   /** 详情 */
@@ -196,7 +217,9 @@ export class CertificateTemplatesService {
     });
     try {
       const page = await browser.newPage();
-      await page.setViewport({ width: canvas.width, height: canvas.height, deviceScaleFactor: 2 });
+      // 缩略图目标宽度 ~600px，按比例缩放以降低 base64 体积（卡片展示足够）
+      const dsf = Math.min(1, 600 / canvas.width);
+      await page.setViewport({ width: canvas.width, height: canvas.height, deviceScaleFactor: dsf });
       await page.setContent(html, { waitUntil: 'load' });
       const png = await page.screenshot({
         type: 'png',

@@ -15,12 +15,14 @@ export class CertificateTemplatesController {
 
   @Get()
   @RequirePermission(Permissions.TEMPLATE_MANAGE)
-  findAll(@Req() req: any, @Query('type') type?: string, @Query('isActive') isActive?: string) {
+  findAll(@Req() req: any, @Query('type') type?: string, @Query('isActive') isActive?: string, @Query('search') search?: string, @Query('sortBy') sortBy?: string) {
     const orgId = req.user?.orgId || null;
     const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
     return this.service.findAll(orgId, isSuperAdmin, {
       type,
       isActive: isActive !== undefined ? isActive === 'true' : undefined,
+      search,
+      sortBy,
     });
   }
 
@@ -97,6 +99,13 @@ export class CertificateTemplatesController {
     const orgId = req.user?.orgId || null;
     const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
     return this.service.setDefault(id, orgId, isSuperAdmin);
+  }
+
+  @Post(':id/regenerate-thumbnail')
+  @RequirePermission(Permissions.TEMPLATE_MANAGE)
+  async regenerateThumbnail(@Param('id', ParseIntPipe) id: number) {
+    await this.service.regenerateThumbnail(id);
+    return { success: true };
   }
 
   // ═══════════════════════════════════════════

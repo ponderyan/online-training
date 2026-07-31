@@ -2210,7 +2210,7 @@ model CertificateTemplate {
   description String?  @db.Text                  // 描述
   type        String   @default("COMPLETION") @db.VarChar(30) // COMPLETION | HOURS | CUSTOM
   canvasJson  Json                               // 画布定义（CanvasDef）
-  thumbnail   String?  @db.VarChar(500)          // 缩略图 URL
+  thumbnail   String?  @db.LongText              // 缩略图 base64 data URL
   version     Int      @default(2)                 // 模板格式版本
   isDefault   Boolean  @default(false) @map("is_default") // 组织默认模板
   isActive    Boolean  @default(true) @map("is_active")
