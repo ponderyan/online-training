@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
+import { TEMPLATE_PRESETS, type TemplatePreset } from '@/lib/canvas-renderer/template-presets';
+import { renderCanvasToHtml } from '@/lib/canvas-renderer/renderer';
+import type { TemplateData } from '@/lib/canvas-renderer/types';
 
 interface TemplateItem {
   id: number;
@@ -18,6 +21,12 @@ interface TemplateItem {
   createdAt: string;
   updatedAt: string;
 }
+
+const PRESET_PREVIEW_DATA: TemplateData = {
+  studentName: '张三', courseName: '人工智能应用', certificateNo: 'CERT-2026-001',
+  issueDate: '2026-07-31', orgName: '示例机构', totalHours: 48,
+  startDate: '2026-01-01', endDate: '2026-06-30', idCardMasked: '110***1234',
+};
 
 const TYPE_LABELS: Record<string, string> = {
   COMPLETION: '结业证书',
@@ -37,6 +46,8 @@ export default function CertificateTemplatesPage() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('');
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [creatingPreset, setCreatingPreset] = useState('');
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -99,6 +110,28 @@ export default function CertificateTemplatesPage() {
     router.push('/admin/certificate-templates/editor');
   };
 
+  const handleCreateFromPreset = async (preset: TemplatePreset) => {
+    setCreatingPreset(preset.key);
+    try {
+      const res = await fetch('/api/certificate-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({
+          name: preset.name,
+          type: preset.key === 'hours' ? 'HOURS' : 'COMPLETION',
+          description: preset.description,
+          canvasJson: preset.canvas,
+        }),
+      });
+      if (!res.ok) throw new Error('创建失败');
+      const saved = await res.json();
+      toast.success('已从模板创建');
+      router.push(`/admin/certificate-templates/editor?id=${saved.id}`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally { setCreatingPreset(''); }
+  };
+
   return (
     <AppLayout>
       <div style={{ padding: 24 }}>
@@ -116,8 +149,11 @@ export default function CertificateTemplatesPage() {
             <option value="HOURS">学时证明</option>
             <option value="CUSTOM">自定义</option>
           </select>
-          <button onClick={handleCreate} className="btn btn-sm" style={{ background: '#e87d30', color: '#fff', padding: '8px 16px', borderRadius: 6 }}>
-            + 新建模板
+          <button onClick={() => setShowPresetModal(true)} className="btn btn-sm" style={{ background: '#fff', color: '#e87d30', border: '1px solid #e87d30', padding: '8px 16px', borderRadius: 6, marginRight: 8, cursor: 'pointer' }}>
+            📋 从模板创建
+          </button>
+          <button onClick={handleCreate} className="btn btn-sm" style={{ background: '#e87d30', color: '#fff', padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer' }}>
+            + 空白新建
           </button>
         </div>
 
@@ -200,6 +236,58 @@ export default function CertificateTemplatesPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ═══ 从模板创建弹窗 ═══ */}
+        {showPresetModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: '#fff', borderRadius: 12, width: 860, maxWidth: '92vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: 17 }}>从模板创建</h3>
+                <span style={{ marginLeft: 10, fontSize: 12, color: '#999' }}>选择一个内置版式，快速开始设计</span>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => setShowPresetModal(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999' }}>✕</button>
+              </div>
+              <div style={{ padding: 20, overflow: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+                  {/* 空白模板 */}
+                  <div
+                    onClick={handleCreate}
+                    style={{ border: '2px dashed #d0d0d0', borderRadius: 10, padding: 0, cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.15s', background: '#fafafa' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#e87d30')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#d0d0d0')}
+                  >
+                    <div style={{ height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, color: '#ccc' }}>＋</div>
+                    <div style={{ padding: '10px 14px', borderTop: '1px solid #eee' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>空白模板</div>
+                      <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>从零开始自由设计</div>
+                    </div>
+                  </div>
+                  {/* 内置预设 */}
+                  {TEMPLATE_PRESETS.map(preset => (
+                    <div
+                      key={preset.key}
+                      onClick={() => !creatingPreset && handleCreateFromPreset(preset)}
+                      style={{ border: '1px solid #e0e0e0', borderRadius: 10, cursor: creatingPreset ? 'wait' : 'pointer', overflow: 'hidden', transition: 'box-shadow 0.15s, transform 0.15s', opacity: creatingPreset && creatingPreset !== preset.key ? 0.5 : 1, background: '#fff' }}
+                      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+                    >
+                      <div style={{ height: 130, overflow: 'hidden', position: 'relative', background: '#eee', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                        <div style={{ transform: 'scale(0.21)', transformOrigin: 'top center', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(preset.canvas, PRESET_PREVIEW_DATA) }} />
+                        {creatingPreset === preset.key && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#e87d30' }}>创建中…</div>
+                        )}
+                      </div>
+                      <div style={{ padding: '10px 14px', borderTop: `3px solid ${preset.accent}` }}>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{preset.name}</div>
+                        <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{preset.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

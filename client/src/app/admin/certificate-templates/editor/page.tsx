@@ -37,6 +37,7 @@ const AVAILABLE_VARS = [
 
 let idCounter = 200;
 function genId() { return `el_${++idCounter}_${Date.now().toString(36)}`; }
+const clampScale = (s: number) => Math.min(2, Math.max(0.2, Math.round(s * 100) / 100));
 
 // ── Undo/Redo Hook ──
 function useHistory<T>(initial: T) {
@@ -89,7 +90,18 @@ export default function CertificateTemplateEditor() {
   const bgFileRef = useRef<HTMLInputElement>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
   const moveableRef = useRef<Moveable>(null);
+
+  // ── 缩放控制 ──
+  const zoomIn = useCallback(() => setScale(s => clampScale(s + 0.1)), []);
+  const zoomOut = useCallback(() => setScale(s => clampScale(s - 0.1)), []);
+  const zoomFit = useCallback(() => {
+    const el = canvasAreaRef.current;
+    if (!el) { setScale(0.65); return; }
+    const pad = 60;
+    setScale(clampScale(Math.min((el.clientWidth - pad) / canvas.width, (el.clientHeight - pad) / canvas.height)));
+  }, [canvas.width, canvas.height]);
 
   // ── 加载已有模板 ──
   useEffect(() => {
@@ -112,10 +124,42 @@ export default function CertificateTemplateEditor() {
           deleteSelected();
         }
       }
+      // 缩放快捷键
+      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomIn(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === '-') { e.preventDefault(); zoomOut(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === '0') { e.preventDefault(); zoomFit(); }
+      // 方向键微调（Shift=10px）
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && selectedId
+          && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        const d = e.shiftKey ? 10 : 1;
+        setCanvas(prev => ({ ...prev, elements: prev.elements.map(el => {
+          if (el.id !== selectedId) return el;
+          if (e.key === 'ArrowUp') return { ...el, y: el.y - d } as CanvasElement;
+          if (e.key === 'ArrowDown') return { ...el, y: el.y + d } as CanvasElement;
+          if (e.key === 'ArrowLeft') return { ...el, x: el.x - d } as CanvasElement;
+          if (e.key === 'ArrowRight') return { ...el, x: el.x + d } as CanvasElement;
+          return el;
+        }) }));
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedId, undo, redo]);
+  }, [selectedId, undo, redo, zoomIn, zoomOut, zoomFit]);
+
+  // ── Ctrl/Cmd + 滚轮缩放 ──
+  useEffect(() => {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        setScale(s => clampScale(s + (e.deltaY < 0 ? 0.08 : -0.08)));
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   // ── 元素操作 ──
   const addElement = (type: 'text' | 'rect' | 'variable-text' | 'divider' | 'image' | 'qrcode' | 'seal' | 'barcode') => {
@@ -268,6 +312,34 @@ export default function CertificateTemplateEditor() {
     }));
   };
 
+  // ── 对齐到画布 ──
+  const alignToCanvas = (align: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom') => {
+    if (!selectedId) return;
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.map(el => {
+        if (el.id !== selectedId) return el;
+        switch (align) {
+          case 'left': return { ...el, x: 0 } as CanvasElement;
+          case 'centerH': return { ...el, x: Math.round((prev.width - el.width) / 2) } as CanvasElement;
+          case 'right': return { ...el, x: prev.width - el.width } as CanvasElement;
+          case 'top': return { ...el, y: 0 } as CanvasElement;
+          case 'centerV': return { ...el, y: Math.round((prev.height - el.height) / 2) } as CanvasElement;
+          case 'bottom': return { ...el, y: prev.height - el.height } as CanvasElement;
+          default: return el;
+        }
+      }),
+    }));
+  };
+
+
+  // ── 吸附参考线（其他元素 DOM 节点） ──
+  const elementGuidelines = useMemo(() => {
+    if (!canvasRef.current || !selectedId) return [];
+    return Array.from(canvasRef.current.querySelectorAll('[data-el-id]'))
+      .filter(n => n.getAttribute('data-el-id') !== selectedId) as HTMLElement[];
+  }, [selectedId, canvas.elements]);
+
   // ── Moveable target ref ──
   const getTargetEl = useCallback((): HTMLElement | null => {
     if (!selectedId || !canvasRef.current) return null;
@@ -294,9 +366,21 @@ export default function CertificateTemplateEditor() {
           <button onClick={() => addElement('image')} style={toolBtnStyle}>🖼 图</button>
           <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
           <button onClick={deleteSelected} disabled={!selectedId} style={{ ...toolBtnStyle, color: selectedId ? '#d32f2f' : '#ccc' }}>🗑</button>
+          {selectedId && <>
+            <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+            <span style={{ fontSize: 10, color: '#999' }}>对齐</span>
+            <button onClick={() => alignToCanvas('left')} style={toolBtnStyle} title="左对齐">⇤</button>
+            <button onClick={() => alignToCanvas('centerH')} style={toolBtnStyle} title="水平居中">⇔</button>
+            <button onClick={() => alignToCanvas('right')} style={toolBtnStyle} title="右对齐">⇥</button>
+            <button onClick={() => alignToCanvas('top')} style={toolBtnStyle} title="顶对齐">⤒</button>
+            <button onClick={() => alignToCanvas('centerV')} style={toolBtnStyle} title="垂直居中">⇕</button>
+            <button onClick={() => alignToCanvas('bottom')} style={toolBtnStyle} title="底对齐">⤓</button>
+          </>}
           <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 11, color: '#999' }}>{(scale * 100).toFixed(0)}%</span>
-          <input type="range" min="0.3" max="1.2" step="0.05" value={scale} onChange={e => setScale(Number(e.target.value))} style={{ width: 80 }} />
+          <button onClick={zoomOut} style={toolBtnStyle} title="缩小 (⌘-)">−</button>
+          <span style={{ fontSize: 11, color: '#666', width: 40, textAlign: 'center', cursor: 'pointer' }} onClick={zoomFit} title="点击适应窗口 (⌘0)">{(scale * 100).toFixed(0)}%</span>
+          <button onClick={zoomIn} style={toolBtnStyle} title="放大 (⌘+)">＋</button>
+          <button onClick={zoomFit} style={toolBtnStyle} title="适应窗口 (⌘0)">⤢</button>
           <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
           <button onClick={() => bgFileRef.current?.click()} style={toolBtnStyle} title="上传底版图片">🖼 底版</button>
           <input ref={bgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBgUpload} />
@@ -320,7 +404,7 @@ export default function CertificateTemplateEditor() {
         {/* ═══ 主体 ═══ */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* 画布区 */}
-          <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: '#e0e0e0' }}>
+          <div ref={canvasAreaRef} style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: '#e0e0e0' }}>
             {showPreview ? (
               <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(canvas, previewData, { mode: renderMode }) }} />
             ) : (
@@ -358,6 +442,13 @@ export default function CertificateTemplateEditor() {
                     draggable={true}
                     resizable={true}
                     rotatable={true}
+                    snappable={true}
+                    snapThreshold={6}
+                    isDisplaySnapDigit={true}
+                    elementGuidelines={elementGuidelines}
+                    verticalGuidelines={[0, canvas.width / 2, canvas.width]}
+                    horizontalGuidelines={[0, canvas.height / 2, canvas.height]}
+                    bounds={{ left: 0, top: 0, right: canvas.width, bottom: canvas.height }}
                     edge={false}
                     throttleDrag={1}
                     throttleResize={1}
