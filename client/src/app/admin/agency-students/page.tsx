@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { validatePhone } from '@/lib/validators';
 
 export default function AgencyStudentsPage() {
   const router = useRouter();
@@ -370,7 +371,8 @@ export default function AgencyStudentsPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>
-                <input value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})}
+                <input value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value.replace(/[^\d]/g, '')})}
+                  maxLength={11}
                   className="input" placeholder="如 13800138000" />
               </div>
               <div>
@@ -387,6 +389,8 @@ export default function AgencyStudentsPage() {
               <button onClick={() => setShowMemberModal(false)} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={async () => {
                 if (!memberForm.displayName || !memberForm.username) { toast.warning('姓名和用户名为必填'); return; }
+                const phoneErr = validatePhone(memberForm.phone);
+                if (phoneErr) { toast.warning(phoneErr); return; }
                 setMemberSaving(true);
                 try {
                   await api.enrollmentAgencies.createMember(selectedAgencyId!, memberForm);
