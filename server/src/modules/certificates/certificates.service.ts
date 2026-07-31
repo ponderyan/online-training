@@ -1,5 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CertificateTemplatesService } from '../certificate-templates/certificate-templates.service.js';
+import { renderCanvasToDocument } from '../certificate-templates/renderer/canvas-renderer.js';
+import type { CanvasDef, TemplateData } from '../certificate-templates/renderer/canvas-types.js';
 import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
@@ -16,6 +19,7 @@ export class CertificatesService {
     private notificationService: NotificationsService,
     private systemConfig: SystemConfigService,
     private resourceAccess: ResourceAccessService,
+    private certTemplatesService: CertificateTemplatesService,
   ) {
     fs.mkdir(this.certDir, { recursive: true }).catch(() => {});
   }
@@ -327,6 +331,37 @@ export class CertificatesService {
       include: { org: { select: { certIssuerName: true, certLogoUrl: true, certFooterText: true, sealUrl: true, useFoxLearnSeal: true, name: true } } },
     });
     if (!cert) throw new NotFoundException('证书不存在');
+
+    // ── Phase 2: 检查组织默认模板（平滑过渡） ──
+    const orgDefaultTemplate = await this.prisma.certificateTemplate.findFirst({
+      where: { orgId: cert.orgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
+    });
+    if (orgDefaultTemplate) {
+      const canvas = orgDefaultTemplate.canvasJson as unknown as CanvasDef;
+      const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
+      // 查询学员身份证
+      const studentUser = await this.prisma.user.findUnique({
+        where: { id: cert.studentId },
+        select: { idCard: true },
+      });
+      const rawIdCard = studentUser?.idCard || '';
+      const maskedIdCard = rawIdCard.length >= 10
+        ? rawIdCard.slice(0, 3) + '***' + rawIdCard.slice(-4)
+        : rawIdCard;
+
+      const templateData: TemplateData = {
+        studentName: cert.studentName,
+        courseName: cert.courseName,
+        certificateNo: cert.certificateNo,
+        issueDate: cert.issueDate.toISOString().slice(0, 10),
+        orgName: cert.org?.name || '',
+        idCard: rawIdCard,
+        idCardMasked: maskedIdCard,
+        verificationCode: cert.verificationCode.slice(0, 8).toUpperCase(),
+        qrDataUrl,
+      };
+      return this.certTemplatesService.renderPdf(canvas, templateData);
+    }
 
     // 读取模板文件
     const templatePath = path.resolve(

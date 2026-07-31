@@ -64,6 +64,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/filing', label: '开班备案', icon: '🏛️', perm: 'program:view' },
       { path: '/certificates', label: '证书管理', icon: '🎓', perm: 'cert:view' },
       { path: '/certificates/applications', label: '证书审批', icon: '📋', perm: 'cert:application_view' },
+      { path: '/admin/certificate-templates', label: '证书模板', icon: '🎨', perm: 'template:manage' },
       { path: '/evaluations', label: '评价管理', icon: '⭐', perm: 'evaluation:view' },
       { path: '/admin/learning-hours-review', label: '学时审核', icon: '⏱', perm: 'learningHour:approve' },
       { path: '/admin/learning-hour-certificates', label: '学时证明', icon: '📜', perm: 'learningHour:manage' },

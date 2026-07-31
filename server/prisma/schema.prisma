@@ -96,6 +96,7 @@ model Organization {
   certLogoUrl    String?  @map("cert_logo_url") @db.VarChar(500)    // 证书 logo
   certFooterText String?  @map("cert_footer_text") @db.VarChar(500) // 证书底部说明
   certificates   Certificate[]
+  certificateTemplates CertificateTemplate[]
 
   @@index([parentId])
   @@map("organizations")
@@ -2196,4 +2197,36 @@ model OrgAbbreviation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("org_abbreviation")
+}
+
+
+// ═══════════════════════════════════════════
+// 证书模板（Phase 2 - 可视化设计器）
+// ═══════════════════════════════════════════
+
+model CertificateTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(200)          // 模板名称
+  description String?  @db.Text                  // 描述
+  type        String   @default("COMPLETION") @db.VarChar(30) // COMPLETION | HOURS | CUSTOM
+  canvasJson  Json                               // 画布定义（CanvasDef）
+  thumbnail   String?  @db.VarChar(500)          // 缩略图 URL
+  version     Int      @default(2)                 // 模板格式版本
+  isDefault   Boolean  @default(false) @map("is_default") // 组织默认模板
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  // ── 机构归属 ──
+  orgId       Int?     @map("org_id")
+  org         Organization? @relation(fields: [orgId], references: [id])
+
+  // ── 审计 ──
+  createdBy   Int      @map("created_by")
+  updatedBy   Int?     @map("updated_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([orgId])
+  @@index([type])
+  @@map("certificate_templates")
 }
