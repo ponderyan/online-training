@@ -59,11 +59,11 @@ export default function LearningCenterPage() {
             <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>视频课程</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: '#00897b' }}>{data.stats.completedVideos}</div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>{data.stats.completedVideos}</div>
             <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: '#1565c0' }}>{data.stats.totalHours}</div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{data.stats.totalHours}</div>
             <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>累计学时（小时）</div>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function LearningCenterPage() {
                       <h3 className="font-medium text-sm truncate">{v.name}</h3>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{pct}%</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: '#e87a3018', color: '#e87a30' }}>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
                           继续学习 →
                         </span>
                       </div>
@@ -176,7 +176,7 @@ export default function LearningCenterPage() {
                     <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'rgba(0,0,0,0.2)' }}>
                       <div className="h-full" style={{
                         width: `${completed ? 100 : pct}%`,
-                        background: completed ? '#2e7d32' : 'var(--fox)',
+                        background: completed ? 'var(--sage)' : 'var(--fox)',
                       }} />
                     </div>
                   )}
@@ -192,11 +192,11 @@ export default function LearningCenterPage() {
                     </span>
                   </div>
                   {completed ? (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#2e7d3218', color: '#2e7d32' }}>✅ 已完成</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ 已完成</span>
                   ) : pct > 0 ? (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中 {pct}%</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中 {pct}%</span>
                   ) : (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: '#00897b18', color: '#00897b' }}>未开始</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--cyan-glow)', color: 'var(--info)' }}>未开始</span>
                   )}
                   <span className="block mt-2 text-xs font-medium" style={{ color: 'var(--fox)' }}>
                     {completed ? '复习查看 →' : pct > 0 ? '继续学习 →' : '开始学习 →'}

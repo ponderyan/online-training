@@ -82,7 +82,7 @@ export default function VideoListPage() {
                 <div className="text-[10px]" style={{ color: 'var(--ink-400)' }}>可学课程</div>
               </div>
               <div className="card px-4 py-3 text-center">
-                <div className="text-xl font-bold" style={{ color: '#2e7d32' }}>{stats.completedVideos ?? 0}</div>
+                <div className="text-xl font-bold" style={{ color: 'var(--sage)' }}>{stats.completedVideos ?? 0}</div>
                 <div className="text-[10px]" style={{ color: 'var(--ink-400)' }}>已完成</div>
               </div>
               <div className="card px-4 py-3 text-center">

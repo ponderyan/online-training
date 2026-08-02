@@ -265,7 +265,7 @@ export default function ProfilePage() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📋 基本信息</h2>
-              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>编辑模式</span>}
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {basicFields.map(f => renderField(f))}
@@ -306,7 +306,7 @@ export default function ProfilePage() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📞 联系信息</h2>
-              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>编辑模式</span>}
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {contactFields.map(f => renderField(f))}
@@ -352,7 +352,7 @@ export default function ProfilePage() {
                   <div className="h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
                     <div className="h-full rounded-full transition-all" style={{
                       width: `${Math.min(100, newPwd.length * 16)}%`,
-                      background: newPwd.length < 6 ? '#ef4444' : newPwd.length < 10 ? '#f59e0b' : '#2e7d32',
+                      background: newPwd.length < 6 ? 'var(--error)' : newPwd.length < 10 ? 'var(--warning)' : 'var(--sage)',
                     }} />
                   </div>
                   <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
               )}
 
               <button onClick={handleChangePwd} className="btn btn-fox btn-sm">确认修改</button>
-              {pwdMsg && <p className="text-xs mt-2" style={{ color: pwdMsg.includes('✅') ? '#2e7d32' : '#ef4444' }}>{pwdMsg}</p>}
+              {pwdMsg && <p className="text-xs mt-2" style={{ color: pwdMsg.includes('✅') ? 'var(--sage)' : 'var(--error)' }}>{pwdMsg}</p>}
 
               {/* Login info */}
               <div className="pt-5 mt-5 border-t grid grid-cols-2 gap-3 text-xs" style={{ borderColor: 'var(--ink-50)', color: 'var(--ink-400)' }}>

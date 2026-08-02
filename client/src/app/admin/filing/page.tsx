@@ -10,7 +10,7 @@ const STATUS_NAMES: Record<string, string> = {
   PENDING: '待审核', APPROVED: '已通过', REJECTED: '已驳回',
 };
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#e87a30', APPROVED: '#2e7d32', REJECTED: '#e53935',
+  PENDING: 'var(--fox)', APPROVED: 'var(--sage)', REJECTED: 'var(--error)',
 };
 
 export default function FilingPage() {
@@ -147,9 +147,9 @@ export default function FilingPage() {
                 <>
                   <div className="flex gap-2 pt-3">
                     <button onClick={() => setAction('APPROVED')} className="btn btn-sm flex-1"
-                      style={{ background: action === 'APPROVED' ? '#2e7d32' : 'var(--paper-dark)', color: action === 'APPROVED' ? 'white' : 'var(--ink-400)' }}>✅ 通过</button>
+                      style={{ background: action === 'APPROVED' ? 'var(--sage)' : 'var(--paper-dark)', color: action === 'APPROVED' ? 'white' : 'var(--ink-400)' }}>✅ 通过</button>
                     <button onClick={() => setAction('REJECTED')} className="btn btn-sm flex-1"
-                      style={{ background: action === 'REJECTED' ? '#e53935' : 'var(--paper-dark)', color: action === 'REJECTED' ? 'white' : 'var(--ink-400)' }}>❌ 驳回</button>
+                      style={{ background: action === 'REJECTED' ? 'var(--error)' : 'var(--paper-dark)', color: action === 'REJECTED' ? 'white' : 'var(--ink-400)' }}>❌ 驳回</button>
                   </div>
                   {action === 'REJECTED' && (
                     <div><label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>驳回原因 *</label>

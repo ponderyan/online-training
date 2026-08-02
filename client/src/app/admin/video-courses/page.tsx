@@ -6,9 +6,9 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 
 const TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
-const TYPE_COLORS: Record<string, string> = { PUBLIC: '#00897b', SPECIALIZED: '#1565c0' };
+const TYPE_COLORS: Record<string, string> = { PUBLIC: 'var(--info)', SPECIALIZED: 'var(--blue)' };
 const STATUS_NAMES: Record<string, string> = { DRAFT: '草稿', PUBLISHED: '已上架', UNPUBLISHED: '已下架' };
-const STATUS_COLORS: Record<string, string> = { DRAFT: '#8b8174', PUBLISHED: '#2e7d32', UNPUBLISHED: '#e53935' };
+const STATUS_COLORS: Record<string, string> = { DRAFT: 'var(--ink-300)', PUBLISHED: 'var(--sage)', UNPUBLISHED: 'var(--error)' };
 
 const assetUrl = (path: string) =>
   process.env.NODE_ENV === 'production' ? path : `http://localhost:3001${path}`;
@@ -276,26 +276,26 @@ export default function VideoCoursesPage() {
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${TYPE_COLORS[v.type] || '#888'}18`, color: TYPE_COLORS[v.type] || '#888' }}>{TYPE_NAMES[v.type] || v.type}</span>
-                      {v.isContinuingEducation && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#2e7d3218', color: '#2e7d32' }}>继续教育</span>}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${TYPE_COLORS[v.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>{TYPE_NAMES[v.type] || v.type}</span>
+                      {v.isContinuingEducation && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>继续教育</span>}
                     </div>
                   </td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{v.instructorName || '—'}{v.instructorLevel ? ` (${v.instructorLevel})` : ''}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{v.duration ? fmtDuration(v.duration) : '—'}</td>
                   <td>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: (STATUS_COLORS[v.status] || '#888') + '18', color: STATUS_COLORS[v.status] || '#888' }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: (STATUS_COLORS[v.status] || 'var(--neutral-400)') + '18', color: STATUS_COLORS[v.status] || 'var(--neutral-400)' }}>
                       {STATUS_NAMES[v.status] || v.status || 'DRAFT'}
                     </span>
                   </td>
                   <td>
                     {v.url ? (
                       v.url.startsWith('http') ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#1565c018', color: '#1565c0' }}>🔗 外部链接</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(21,101,192,0.09)', color: 'var(--blue)' }}>🔗 外部链接</span>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#2e7d3218', color: '#2e7d32' }}>✅ 已上传</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ 已上传</span>
                       )
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#8b817418', color: '#8b8174' }}>⏳ 待上传</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--ink-300)' }}>⏳ 待上传</span>
                     )}
                   </td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
@@ -311,20 +311,20 @@ export default function VideoCoursesPage() {
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>上架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--sage)' }}>上架</button>
                       )}
                       {v.status === 'PUBLISHED' && (
                         <button onClick={async () => {
                           if (!confirm('下架后学员端将无法观看此视频，确定下架吗？')) return;
                           await fetch('/api/video-courses/' + v.id + '/unpublish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>下架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>下架</button>
                       )}
                       {v.status === 'UNPUBLISHED' && (
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#2e7d32' }}>重新上架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--sage)' }}>重新上架</button>
                       )}
                       <button onClick={() => openEdit(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-500)' }}>修改</button>
                       <button onClick={() => openLogs(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>日志</button>
@@ -334,7 +334,7 @@ export default function VideoCoursesPage() {
                           await fetch('/api/video-courses/' + v.id + '/unpublish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).catch(() => {});
                         }
                         if (confirm('确定删除该视频课程吗？')) { await api.videoCourses.delete(v.id); load(); }
-                      }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                      }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                       <span className="text-[10px] ml-1 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0" style={{ color: 'var(--ink-300)' }}>双击预览</span>
                     </div>
                   </td>
@@ -579,16 +579,16 @@ export default function VideoCoursesPage() {
                 <div>
                   <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>类型</span>
                   <span className="tag mt-1" style={{
-                    background: detailVideo.type === 'PUBLIC' ? '#00897b18' : '#1565c018',
-                    color: detailVideo.type === 'PUBLIC' ? '#00897b' : '#1565c0',
+                    background: detailVideo.type === 'PUBLIC' ? 'var(--cyan-glow)' : 'rgba(21,101,192,0.09)',
+                    color: detailVideo.type === 'PUBLIC' ? 'var(--info)' : 'var(--blue)',
                     fontSize: '10px',
                   }}>{detailVideo.type === 'PUBLIC' ? '公共课' : '专项课'}</span>
                 </div>
                 <div>
                   <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>继续教育学时</span>
                   <span className="tag mt-1" style={{
-                    background: detailVideo.isContinuingEducation ? '#2e7d3218' : '#8b817418',
-                    color: detailVideo.isContinuingEducation ? '#2e7d32' : '#8b8174',
+                    background: detailVideo.isContinuingEducation ? 'var(--sage-glow)' : 'var(--fox-glow)',
+                    color: detailVideo.isContinuingEducation ? 'var(--sage)' : 'var(--ink-300)',
                     fontSize: '10px',
                   }}>{detailVideo.isContinuingEducation ? '是' : '否'}</span>
                 </div>
@@ -612,7 +612,7 @@ export default function VideoCoursesPage() {
                   <span className="text-xs block mb-1" style={{ color: 'var(--ink-300)' }}>关联课程</span>
                   <div className="flex flex-wrap gap-1">
                     {detailVideo.courseLinks.map((cl: any) => (
-                      <span key={cl.id} className="tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '10px' }}>
+                      <span key={cl.id} className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>
                         {cl.course?.name || '课程#' + cl.courseId}
                       </span>
                     ))}
@@ -652,13 +652,13 @@ export default function VideoCoursesPage() {
       {/* Preview Modal */}
       {previewVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPreviewVideo(null)}>
-          <div className="rounded-xl overflow-hidden w-full max-w-3xl" style={{ background: '#000' }}
+          <div className="rounded-xl overflow-hidden w-full max-w-3xl" style={{ background: 'var(--ink-900)' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3" style={{ background: '#111' }}>
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-white truncate block">{previewVideo.name}</span>
                 {previewVideo.description && (
-                  <span className="text-xs mt-0.5 block" style={{ color: '#aaa' }}>{previewVideo.description}</span>
+                  <span className="text-xs mt-0.5 block" style={{ color: 'var(--neutral-300)' }}>{previewVideo.description}</span>
                 )}
               </div>
               <button onClick={() => setPreviewVideo(null)} className="text-white/60 hover:text-white bg-transparent border-none cursor-pointer text-lg ml-3 flex-shrink-0">✕</button>

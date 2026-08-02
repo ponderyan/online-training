@@ -7,11 +7,11 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  PENDING: { text: '待审批', color: '#e87a30' },
-  AUTO_APPROVED: { text: '已通过（自动）', color: '#2e7d32' },
-  APPROVED: { text: '已通过', color: '#2e7d32' },
-  REJECTED: { text: '已驳回', color: '#ef4444' },
-  REVOKED: { text: '已撤销', color: '#6b7280' },
+  PENDING: { text: '待审批', color: 'var(--fox)' },
+  AUTO_APPROVED: { text: '已通过（自动）', color: 'var(--sage)' },
+  APPROVED: { text: '已通过', color: 'var(--sage)' },
+  REJECTED: { text: '已驳回', color: 'var(--error)' },
+  REVOKED: { text: '已撤销', color: 'var(--neutral-500)' },
 };
 
 export default function LearningHourCertificates() {
@@ -148,7 +148,7 @@ export default function LearningHourCertificates() {
             </thead>
             <tbody>
               {items.map(item => {
-                const st = STATUS_MAP[item.approvalStatus] || { text: item.approvalStatus, color: '#6b7280' };
+                const st = STATUS_MAP[item.approvalStatus] || { text: item.approvalStatus, color: 'var(--neutral-500)' };
                 return (
                   <tr key={item.id}>
                     <td><input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="accent-[var(--fox)]" /></td>
@@ -180,7 +180,7 @@ export default function LearningHourCertificates() {
                             <a href={`/api/learning-hour-certificates/${item.id}/pdf`} target="_blank"
                               className="btn btn-ghost btn-xs" style={{ color: 'var(--cyan)' }}>📥 PDF</a>
                             <button onClick={() => setRevokeItem(item)}
-                              className="btn btn-ghost btn-xs" style={{ color: '#6b7280' }}>撤销</button>
+                              className="btn btn-ghost btn-xs" style={{ color: 'var(--neutral-500)' }}>撤销</button>
                           </>
                         )}
                         {item.approvalStatus === 'PENDING' && (
@@ -214,8 +214,8 @@ export default function LearningHourCertificates() {
                 <div>
                   <span className="block" style={{ color: 'var(--ink-400)' }}>状态</span>
                   <span className="tag" style={{
-                    background: (STATUS_MAP[detailItem.approvalStatus]?.color || '#6b7280') + '18',
-                    color: STATUS_MAP[detailItem.approvalStatus]?.color || '#6b7280',
+                    background: (STATUS_MAP[detailItem.approvalStatus]?.color || 'var(--neutral-500)') + '18',
+                    color: STATUS_MAP[detailItem.approvalStatus]?.color || 'var(--neutral-500)',
                     fontSize: '10px',
                   }}>{STATUS_MAP[detailItem.approvalStatus]?.text || detailItem.approvalStatus}</span>
                 </div>
@@ -296,12 +296,12 @@ export default function LearningHourCertificates() {
               <button onClick={() => setReviewItem(null)} className="btn btn-outline btn-sm flex-1">取消</button>
               <button onClick={() => { setReviewAction('reject'); handleReview(); }}
                 disabled={processing}
-                className="btn btn-sm" style={{ background: '#ef4444', color: 'white', opacity: processing ? 0.5 : 1 }}>
+                className="btn btn-sm" style={{ background: 'var(--error)', color: 'white', opacity: processing ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '驳回'}
               </button>
               <button onClick={() => { setReviewAction('approve'); handleReview(); }}
                 disabled={processing}
-                className="btn btn-sm" style={{ background: '#2e7d32', color: 'white', opacity: processing ? 0.5 : 1 }}>
+                className="btn btn-sm" style={{ background: 'var(--sage)', color: 'white', opacity: processing ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '通过'}
               </button>
             </div>
@@ -330,7 +330,7 @@ export default function LearningHourCertificates() {
             <div className="modal-footer">
               <button onClick={() => { setRevokeItem(null); setRevokeReason(''); }} className="btn btn-outline btn-sm">取消</button>
               <button onClick={handleRevoke} disabled={!revokeReason.trim() || processing}
-                className="btn btn-sm" style={{ background: '#6b7280', color: 'white', opacity: (!revokeReason.trim() || processing) ? 0.5 : 1 }}>
+                className="btn btn-sm" style={{ background: 'var(--neutral-500)', color: 'white', opacity: (!revokeReason.trim() || processing) ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '确认撤销'}
               </button>
             </div>

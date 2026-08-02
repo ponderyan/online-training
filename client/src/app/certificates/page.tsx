@@ -20,7 +20,7 @@ const STATUS_NAMES: Record<string, string> = {
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   ACTIVE: { bg: 'var(--cyan-glow)', color: 'var(--cyan)' },
   APPROVED: { bg: 'var(--cyan-glow)', color: 'var(--cyan)' },
-  PENDING: { bg: '#fff3e0', color: '#e65100' },
+  PENDING: { bg: 'var(--fox-pale)', color: 'var(--fox-dark)' },
   REJECTED: { bg: 'var(--verm-glow)', color: 'var(--verm)' },
   REVOKED: { bg: 'var(--verm-glow)', color: 'var(--verm)' },
 };

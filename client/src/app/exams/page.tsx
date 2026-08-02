@@ -110,7 +110,7 @@ export default function ExamList() {
                   <div className="flex items-center gap-2">
                     {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && (
                       <span onClick={e => { e.stopPropagation(); router.push(`/proctoring/${exam.id}`); }}
-                        className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: '#fef3e7', color: '#e53935' }}>
+                        className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: 'var(--fox-pale2)', color: 'var(--error)' }}>
                         🎥 监考
                       </span>
                     )}

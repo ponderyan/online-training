@@ -7,7 +7,7 @@ import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const STATUS_LABEL: Record<string, { text: string; color: string }> = {
-  PENDING: { text: '待审批', color: '#d97706' },
+  PENDING: { text: '待审批', color: 'var(--warning)' },
   APPROVED: { text: '已批准', color: 'var(--cyan)' },
   REJECTED: { text: '已驳回', color: 'var(--verm)' },
 };

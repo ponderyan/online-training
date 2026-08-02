@@ -6,7 +6,7 @@ import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = { INTERNAL: '内部讲师', EXTERNAL: '外聘讲师' };
-const TYPE_COLORS: Record<string, string> = { INTERNAL: '#1565c0', EXTERNAL: '#e87a30' };
+const TYPE_COLORS: Record<string, string> = { INTERNAL: 'var(--blue)', EXTERNAL: 'var(--fox)' };
 const LEVEL_NAMES: Record<string, string> = { JUNIOR: '初级', MIDDLE: '中级', SENIOR: '高级', EXPERT: '专家' };
 
 export default function InstructorDetail() {
@@ -39,7 +39,7 @@ export default function InstructorDetail() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-lg font-bold" style={{ color: 'var(--ink-700)' }}>{inst.realName}</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${TYPE_COLORS[inst.type] || '#888'}18`, color: TYPE_COLORS[inst.type] || '#888' }}>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${TYPE_COLORS[inst.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
                 {TYPE_NAMES[inst.type] || inst.type}
               </span>
               {inst.instructorNo && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>#{inst.instructorNo}</span>}
@@ -73,9 +73,9 @@ export default function InstructorDetail() {
         <div className="grid grid-cols-4 gap-4 mb-5">
           {[
             { value: stats.totalSchedules, label: '累计授课', color: 'var(--fox)' },
-            { value: stats.totalHours, label: '累计课时', color: '#2e7d32' },
-            { value: stats.avgInstructorRating ? stats.avgInstructorRating.toFixed(1) + '⭐' : '—', label: '讲师评分', color: '#f59e0b' },
-            { value: stats.schedules?.length || 0, label: '课程数', color: '#1565c0' },
+            { value: stats.totalHours, label: '累计课时', color: 'var(--sage)' },
+            { value: stats.avgInstructorRating ? stats.avgInstructorRating.toFixed(1) + '⭐' : '—', label: '讲师评分', color: 'var(--warning)' },
+            { value: stats.schedules?.length || 0, label: '课程数', color: 'var(--blue)' },
           ].map((s, i) => (
             <div key={i} className="card p-4 text-center">
               <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>

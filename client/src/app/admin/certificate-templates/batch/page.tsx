@@ -173,8 +173,8 @@ export default function BatchGeneratePage() {
           {['加载模板', '上传数据', '字段映射', '预览确认', '生成中', '完成'].map((s, i) => (
             <span key={i} style={{
               padding: '3px 10px', borderRadius: 12,
-              background: ['load', 'upload', 'mapping', 'preview', 'generating', 'done'].indexOf(step) >= i ? '#e87d30' : '#eee',
-              color: ['load', 'upload', 'mapping', 'preview', 'generating', 'done'].indexOf(step) >= i ? '#fff' : '#999',
+              background: ['load', 'upload', 'mapping', 'preview', 'generating', 'done'].indexOf(step) >= i ? 'var(--fox)' : 'var(--neutral-100)',
+              color: ['load', 'upload', 'mapping', 'preview', 'generating', 'done'].indexOf(step) >= i ? '#fff' : 'var(--neutral-400)',
             }}>{i + 1}. {s}</span>
           ))}
         </div>
@@ -182,9 +182,9 @@ export default function BatchGeneratePage() {
         {/* Step: 加载模板 */}
         {step === 'load' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: '#666', marginBottom: 12 }}>模板 ID: {templateId || '未指定'}</p>
+            <p style={{ color: 'var(--neutral-500)', marginBottom: 12 }}>模板 ID: {templateId || '未指定'}</p>
             <button onClick={loadTemplate} style={btnPrimary}>加载模板</button>
-            {!templateId && <p style={{ color: '#d32f2f', fontSize: 12, marginTop: 8 }}>请从模板列表页点击"批量生成"进入</p>}
+            {!templateId && <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>请从模板列表页点击"批量生成"进入</p>}
           </div>
         )}
 
@@ -195,9 +195,9 @@ export default function BatchGeneratePage() {
             <button onClick={() => fileRef.current?.click()} style={btnPrimary}>📂 上传 Excel 文件</button>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleFileUpload} />
             <div style={{ marginTop: 12 }}>
-              <button onClick={downloadTemplate} style={{ ...btnPrimary, background: '#666' }}>⬇ 下载导入模板</button>
+              <button onClick={downloadTemplate} style={{ ...btnPrimary, background: 'var(--neutral-500)' }}>⬇ 下载导入模板</button>
             </div>
-            <p style={{ fontSize: 11, color: '#999', marginTop: 8 }}>支持 .xlsx / .xls / .csv，单次上限 200 条</p>
+            <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>支持 .xlsx / .xls / .csv，单次上限 200 条</p>
           </div>
         )}
 
@@ -205,10 +205,10 @@ export default function BatchGeneratePage() {
         {step === 'mapping' && (
           <div>
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>字段映射（Excel 列 → 模板变量）</h3>
-            <p style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>共 {rows.length} 条数据，Excel 列：{headers.join(', ')}</p>
+            <p style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 12 }}>共 {rows.length} 条数据，Excel 列：{headers.join(', ')}</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f5f5f5' }}>
+                <tr style={{ background: 'var(--neutral-50)' }}>
                   <th style={thStyle}>模板变量</th>
                   <th style={thStyle}>对应 Excel 列</th>
                 </tr>
@@ -216,7 +216,7 @@ export default function BatchGeneratePage() {
               <tbody>
                 {VAR_FIELDS.map(f => (
                   <tr key={f.key} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={tdStyle}><code style={{ background: '#e3f2fd', padding: '1px 4px', borderRadius: 3 }}>{'{{' + f.key + '}}'}</code> {f.label}</td>
+                    <td style={tdStyle}><code style={{ background: 'var(--blue-pale)', padding: '1px 4px', borderRadius: 3 }}>{'{{' + f.key + '}}'}</code> {f.label}</td>
                     <td style={tdStyle}>
                       <select value={mapping[f.key] || ''} onChange={e => setMapping(m => ({ ...m, [f.key]: e.target.value }))} style={{ padding: '3px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3 }}>
                         <option value="">（不映射）</option>
@@ -240,7 +240,7 @@ export default function BatchGeneratePage() {
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>预览前 3 条数据</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
               <thead>
-                <tr style={{ background: '#f5f5f5' }}>
+                <tr style={{ background: 'var(--neutral-50)' }}>
                   {Object.keys(mappedPreview[0] || {}).filter(k => mappedPreview[0][k]).map(k => <th key={k} style={thStyle}>{k}</th>)}
                 </tr>
               </thead>
@@ -270,7 +270,7 @@ export default function BatchGeneratePage() {
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={handleGenerate} style={{ ...btnPrimary, background: '#4caf50' }}>🚀 开始生成（{rows.length} 份）</button>
+              <button onClick={handleGenerate} style={{ ...btnPrimary, background: 'var(--sage-light)' }}>🚀 开始生成（{rows.length} 份）</button>
               <button onClick={() => setStep('mapping')} style={btnSecondary}>返回映射</button>
             </div>
           </div>
@@ -280,18 +280,18 @@ export default function BatchGeneratePage() {
         {step === 'generating' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
             <p style={{ fontSize: 14, marginBottom: 12 }}>正在生成 {rows.length} 份证书 PDF...</p>
-            <div style={{ width: 300, height: 8, background: '#eee', borderRadius: 4, margin: '0 auto', overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', background: '#e87d30', transition: 'width 0.3s' }} />
+            <div style={{ width: 300, height: 8, background: 'var(--neutral-100)', borderRadius: 4, margin: '0 auto', overflow: 'hidden' }}>
+              <div style={{ width: `${progress}%`, height: '100%', background: 'var(--fox)', transition: 'width 0.3s' }} />
             </div>
-            <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>请稍候，生成完成后自动下载 ZIP</p>
+            <p style={{ fontSize: 12, color: 'var(--neutral-400)', marginTop: 8 }}>请稍候，生成完成后自动下载 ZIP</p>
           </div>
         )}
 
         {/* Step: 完成 */}
         {step === 'done' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ fontSize: 16, color: '#4caf50', marginBottom: 12 }}>✅ 批量生成完成！</p>
-            <p style={{ fontSize: 13, color: '#666' }}>共 {rows.length} 份证书已打包为 ZIP 下载</p>
+            <p style={{ fontSize: 16, color: 'var(--sage-light)', marginBottom: 12 }}>✅ 批量生成完成！</p>
+            <p style={{ fontSize: 13, color: 'var(--neutral-500)' }}>共 {rows.length} 份证书已打包为 ZIP 下载</p>
             <div style={{ marginTop: 16 }}>
               <button onClick={() => { setStep('upload'); setRows([]); }} style={btnPrimary}>继续生成</button>
             </div>
@@ -302,7 +302,7 @@ export default function BatchGeneratePage() {
   );
 }
 
-const btnPrimary: React.CSSProperties = { padding: '8px 20px', background: '#e87d30', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
-const btnSecondary: React.CSSProperties = { padding: '8px 20px', background: '#f5f5f5', color: '#333', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
+const btnPrimary: React.CSSProperties = { padding: '8px 20px', background: 'var(--fox)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
+const btnSecondary: React.CSSProperties = { padding: '8px 20px', background: 'var(--neutral-50)', color: 'var(--neutral-700)', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
 const thStyle: React.CSSProperties = { padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid #ddd' };
 const tdStyle: React.CSSProperties = { padding: '6px 10px' };

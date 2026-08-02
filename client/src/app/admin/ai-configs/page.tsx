@@ -128,19 +128,19 @@ export default function AiConfigsPage() {
               {configs.map((c: any) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
-                  <td><span className="tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '10px' }}>{PROVIDER_NAMES[c.provider] || c.provider}</span></td>
+                  <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{PROVIDER_NAMES[c.provider] || c.provider}</span></td>
                   <td className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{c.modelVersion || '—'}</td>
                   <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{c.apiBaseUrl || '—'}</td>
                   <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{maskKey(c.apiKey)}</td>
                   <td>
-                    <span className="tag" style={{ background: c.isActive ? '#2e7d3218' : '#8b817418', color: c.isActive ? '#2e7d32' : '#8b8174', fontSize: '10px' }}>
+                    <span className="tag" style={{ background: c.isActive ? 'var(--sage-glow)' : 'var(--fox-glow)', color: c.isActive ? 'var(--sage)' : 'var(--ink-300)', fontSize: '10px' }}>
                       {c.isActive ? '活跃' : '停用'}
                     </span>
                   </td>
                   <td>
                     <div className="flex gap-2">
                       <button onClick={() => openEdit(c)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                      <button onClick={() => handleDelete(c.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                      <button onClick={() => handleDelete(c.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                     </div>
                   </td>
                 </tr>
@@ -204,8 +204,8 @@ export default function AiConfigsPage() {
 
               {testResult && (
                 <div className="text-sm p-2 rounded" style={{
-                  background: testResult.startsWith('✅') ? '#2e7d3218' : '#e5393518',
-                  color: testResult.startsWith('✅') ? '#2e7d32' : '#e53935',
+                  background: testResult.startsWith('✅') ? 'var(--sage-glow)' : 'var(--verm-glow)',
+                  color: testResult.startsWith('✅') ? 'var(--sage)' : 'var(--error)',
                 }}>{testResult}</div>
               )}
 

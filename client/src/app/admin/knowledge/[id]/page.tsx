@@ -188,7 +188,7 @@ export default function KnowledgeDocumentDetailPage() {
                 {c.knowledgePoints?.length > 0 && (
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {c.knowledgePoints.slice(0, 3).map((kp: any) => (
-                      <span key={kp.id} className="tag" style={{ fontSize: '9px', background: '#e8f5e9', color: '#2e7d32' }}>
+                      <span key={kp.id} className="tag" style={{ fontSize: '9px', background: 'var(--success-pale)', color: 'var(--sage)' }}>
                         {kp.knowledgePoint?.name}
                       </span>
                     ))}
@@ -217,7 +217,7 @@ export default function KnowledgeDocumentDetailPage() {
                   <button onClick={() => { loadKpTree(); setShowKpPicker(true); }} className="btn btn-outline btn-sm">🏷️ 知识点</button>
                   <button onClick={handleMerge} className="btn btn-outline btn-sm">⬆️ 合并</button>
                   <button onClick={handleSplit} className="btn btn-outline btn-sm">✂️ 拆分</button>
-                  <button onClick={handleDeleteChunk} className="btn btn-outline btn-sm" style={{ color: '#e53935' }}>🗑️</button>
+                  <button onClick={handleDeleteChunk} className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>🗑️</button>
                 </div>
               </div>
               <textarea
@@ -257,7 +257,7 @@ export default function KnowledgeDocumentDetailPage() {
                 <input type="number" value={overlap} onChange={e => setOverlap(parseInt(e.target.value) || 50)}
                   className="input mt-1 w-full" min={0} max={200} />
               </div>
-              <p className="text-xs" style={{ color: '#e53935' }}>⚠️ 重新分块将删除所有现有块及知识点标注</p>
+              <p className="text-xs" style={{ color: 'var(--error)' }}>⚠️ 重新分块将删除所有现有块及知识点标注</p>
             </div>
             <div className="flex justify-end gap-2 mt-5">
               <button onClick={() => setShowRebuild(false)} className="btn btn-outline btn-sm">取消</button>

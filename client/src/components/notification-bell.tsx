@@ -113,7 +113,7 @@ export default function NotificationBell({ user }: { user: any }) {
         🔔
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
-            style={{ background: '#e53935', minWidth: 18, height: 18, fontSize: 10, lineHeight: '18px' }}>
+            style={{ background: 'var(--error)', minWidth: 18, height: 18, fontSize: 10, lineHeight: '18px' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}

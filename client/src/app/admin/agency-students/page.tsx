@@ -212,7 +212,7 @@ export default function AgencyStudentsPage() {
                           <td className="text-xs">{s.studentNumber || '—'}</td>
                           <td className="flex gap-1">
                             <button onClick={() => router.push(`/students/${s.id}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>详情</button>
-                            <button onClick={() => openSubmitModal(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e87a30' }}>申报学时</button>
+                            <button onClick={() => openSubmitModal(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>申报学时</button>
                           </td>
                         </tr>
                       ))}
@@ -277,7 +277,7 @@ export default function AgencyStudentsPage() {
                                   api.enrollmentAgencies.removeMember(selectedAgencyId!, m.id).then(() => {
                                     api.enrollmentAgencies.listMembers(selectedAgencyId!).then(setMembers);
                                   }).catch((e: any) => toast.error('操作失败：' + e.message));
-                                }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>移除</button>
+                                }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>移除</button>
                               </td>
                             </tr>
                           ))}

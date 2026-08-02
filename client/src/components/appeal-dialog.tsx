@@ -41,7 +41,7 @@ export default function AppealDialog({ examId, isOpen, onClose, onSubmitted }: A
         <textarea value={reason} onChange={e => { setReason(e.target.value); setError(''); }}
           rows={5} maxLength={500} placeholder="输入申诉理由…（至少3个字，最多500字）"
           className="input w-full" />
-        {error && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{error}</p>}
+        {error && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{error}</p>}
         <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium"
             style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-500)' }}>取消</button>

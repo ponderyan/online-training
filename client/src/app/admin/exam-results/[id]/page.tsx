@@ -68,9 +68,9 @@ export default function AdminExamResultsPage() {
                   <tr key={s.studentId}>
                     <td className="font-medium">{s.studentName}</td>
                     <td>{s.finalScore != null ? `${s.finalScore}分` : '—'}</td>
-                    <td>{s.isPassed ? <span style={{ color: '#2e7d32' }}>✅ 通过</span> : <span style={{ color: '#ef4444' }}>❌ 未通过</span>}</td>
-                    <td><span className="text-xs px-2 py-0.5 rounded" style={{ background: s.scoringStatus === 'PUBLISHED' ? '#2e7d3218' : '#8b817418', color: s.scoringStatus === 'PUBLISHED' ? '#2e7d32' : '#8b8174' }}>{s.scoringStatus}</span></td>
-                    <td>{s.appealStatus ? <span style={{ color: s.appealStatus === 'PENDING' ? '#e65100' : '#2e7d32' }}>{s.appealStatus === 'PENDING' ? '🔴 待处理' : '✅ 已处理'}</span> : '—'}</td>
+                    <td>{s.isPassed ? <span style={{ color: 'var(--sage)' }}>✅ 通过</span> : <span style={{ color: 'var(--error)' }}>❌ 未通过</span>}</td>
+                    <td><span className="text-xs px-2 py-0.5 rounded" style={{ background: s.scoringStatus === 'PUBLISHED' ? 'var(--sage-glow)' : 'var(--fox-glow)', color: s.scoringStatus === 'PUBLISHED' ? 'var(--sage)' : 'var(--ink-300)' }}>{s.scoringStatus}</span></td>
+                    <td>{s.appealStatus ? <span style={{ color: s.appealStatus === 'PENDING' ? 'var(--fox-dark)' : 'var(--sage)' }}>{s.appealStatus === 'PENDING' ? '🔴 待处理' : '✅ 已处理'}</span> : '—'}</td>
                     <td><button onClick={() => router.push(`/admin/exam-results/${examId}/student/${s.studentId}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button></td>
                   </tr>
                 ))}

@@ -55,11 +55,11 @@ export default function AdminStudentResultPage() {
               {result.answers.map((a: any, i: number) => (
                 <div key={i} className="card p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: a.isCorrect ? '#2e7d3218' : '#ef444418', color: a.isCorrect ? '#2e7d32' : '#ef4444' }}>{a.isCorrect ? '✅' : '❌'} {a.score ?? '?'}/{a.maxScore}分</span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: a.isCorrect ? 'var(--sage-glow)' : 'var(--verm-glow)', color: a.isCorrect ? 'var(--sage)' : 'var(--error)' }}>{a.isCorrect ? '✅' : '❌'} {a.score ?? '?'}/{a.maxScore}分</span>
                     <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{a.type}</span>
                   </div>
                   <p className="text-sm mb-2" style={{ color: 'var(--ink-700)' }}>{a.content}</p>
-                  {a.options?.map((o: any) => (<div key={o.id} className="text-xs py-0.5" style={{ color: o.isCorrect ? '#2e7d32' : 'var(--ink-400)' }}>{o.label}. {o.content} {o.isCorrect ? '✓' : ''}</div>))}
+                  {a.options?.map((o: any) => (<div key={o.id} className="text-xs py-0.5" style={{ color: o.isCorrect ? 'var(--sage)' : 'var(--ink-400)' }}>{o.label}. {o.content} {o.isCorrect ? '✓' : ''}</div>))}
                   <div className="text-xs mt-2" style={{ color: 'var(--ink-400)' }}>你的答案：{JSON.stringify(a.yourAnswer)} · 正确答案：{JSON.stringify(a.correctAnswer)}</div>
                   {a.analysis && <div className="text-xs mt-1 p-2 rounded" style={{ background: 'var(--paper)', color: 'var(--ink-500)' }}>解析：{a.analysis}</div>}
                 </div>
@@ -77,10 +77,10 @@ export default function AdminStudentResultPage() {
                   <div className="mb-3"><label className="text-xs mb-1 block">处理备注</label><textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} className="input" rows={2} /></div>
                   <div className="flex gap-2">
                     <button onClick={() => handleResolve(ap.id, 'APPROVED')} className="btn btn-fox btn-sm">✅ 已处理，更新分数</button>
-                    <button onClick={() => handleResolve(ap.id, 'REJECTED')} className="btn btn-outline btn-sm" style={{ color: '#ef4444' }}>❌ 驳回</button>
+                    <button onClick={() => handleResolve(ap.id, 'REJECTED')} className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>❌ 驳回</button>
                   </div>
                 </>
-              ) : <p className="text-sm p-3 rounded" style={{ background: ap.status === 'APPROVED' ? '#e8f5e9' : '#fef2f2' }}>状态：{ap.status === 'APPROVED' ? '✅ 已处理' : '❌ 驳回'}</p>}
+              ) : <p className="text-sm p-3 rounded" style={{ background: ap.status === 'APPROVED' ? 'var(--success-pale)' : 'var(--error-pale)' }}>状态：{ap.status === 'APPROVED' ? '✅ 已处理' : '❌ 驳回'}</p>}
             </div>
           ))}
         </>

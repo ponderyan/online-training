@@ -102,7 +102,7 @@ const PERM_TREE: { key: string; icon: string; children: { permission: string; na
   ]},
 ];
 
-const PRESET_COLORS = ['#ef4444', '#e87a30', '#1565c0', '#f59e0b', '#2e7d32', '#7b1fa2', '#0ea5e9', '#ec4899'];
+const PRESET_COLORS = ['var(--error)', 'var(--fox)', 'var(--blue)', 'var(--warning)', 'var(--sage)', 'var(--purple)', 'var(--info-light)', '#ec4899'];
 
 export default function PermissionsPage() {
   const toast = useToast();
@@ -135,7 +135,7 @@ export default function PermissionsPage() {
   // Role modal states
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editRoleData, setEditRoleData] = useState<any>(null);
-  const [roleForm, setRoleForm] = useState({ name: '', code: '', description: '', color: '#0ea5e9', copyFromRoleId: 0 });
+  const [roleForm, setRoleForm] = useState({ name: '', code: '', description: '', color: 'var(--info-light)', copyFromRoleId: 0 });
 
   // Reason confirm modals
   const [deleteRoleTarget, setDeleteRoleTarget] = useState<number | null>(null);
@@ -339,7 +339,7 @@ export default function PermissionsPage() {
         <div className="w-56 flex-shrink-0 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-sm" style={{ color: 'var(--ink-700)' }}>🔐 角色</h2>
-            <button onClick={() => { setShowRoleModal(true); setEditRoleData(null); setRoleForm({ name: '', code: '', description: '', color: '#0ea5e9', copyFromRoleId: 0 }); }}
+            <button onClick={() => { setShowRoleModal(true); setEditRoleData(null); setRoleForm({ name: '', code: '', description: '', color: 'var(--info-light)', copyFromRoleId: 0 }); }}
               className="btn btn-fox btn-xs">+ 新建</button>
           </div>
           <div className="flex-1 space-y-1 overflow-y-auto pr-2">
@@ -347,7 +347,7 @@ export default function PermissionsPage() {
               const role = roles.find((r: any) => r.id === row.roleId);
               const isSelected = row.roleId === selectedRoleId;
               const grantedCount = row.permissions?.filter((p: any) => p.granted).length || 0;
-              const color = row.color || '#888';
+              const color = row.color || 'var(--neutral-400)';
               return (
                 <div key={row.roleId}
                   className="px-3 py-2.5 rounded-lg transition-all cursor-pointer"
@@ -371,7 +371,7 @@ export default function PermissionsPage() {
                     <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
                       {role?.userCount ?? 0} 人 · {grantedCount} 权限
                     </span>
-                    <button onClick={e => { e.stopPropagation(); setEditRoleData(role); setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || '#0ea5e9', copyFromRoleId: 0 }); setShowRoleModal(true); }}
+                    <button onClick={e => { e.stopPropagation(); setEditRoleData(role); setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || 'var(--info-light)', copyFromRoleId: 0 }); setShowRoleModal(true); }}
                       className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>
                       ✏️
                     </button>
@@ -389,7 +389,7 @@ export default function PermissionsPage() {
               {/* Role header + Tabs */}
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ background: selectedRow.color || '#888' }} />
+                  <div className="w-4 h-4 rounded-full" style={{ background: selectedRow.color || 'var(--neutral-400)' }} />
                   <h2 className="font-bold text-base" style={{ color: 'var(--ink-700)' }}>{selectedRole.name || selectedRole.code}</h2>
                   <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{selectedRole.isSystem ? '系统角色' : '自定义角色'}</span>
                 </div>
@@ -470,8 +470,8 @@ export default function PermissionsPage() {
                                     <label key={child.permission}
                                       className="flex items-center gap-1.5 px-2.5 py-1 rounded cursor-pointer text-xs transition-all"
                                       style={{
-                                        background: granted ? `${selectedRow.color || '#e87a30'}18` : 'var(--paper)',
-                                        border: `1px solid ${granted ? (selectedRow.color || '#e87a30') : 'var(--ink-100)'}`,
+                                        background: granted ? `${selectedRow.color || 'var(--fox)'}18` : 'var(--paper)',
+                                        border: `1px solid ${granted ? (selectedRow.color || 'var(--fox)') : 'var(--ink-100)'}`,
                                         color: granted ? (selectedRow.color || 'var(--fox-dark)') : 'var(--ink-400)',
                                       }}>
                                       <input type="checkbox" checked={!!granted}
@@ -573,7 +573,7 @@ export default function PermissionsPage() {
                   {PRESET_COLORS.map(c => (
                     <button key={c} onClick={() => setRoleForm({...roleForm, color: c})}
                       className="w-7 h-7 rounded-full border-2 transition-all cursor-pointer"
-                      style={{ background: c, borderColor: roleForm.color === c ? '#333' : 'transparent' }} />
+                      style={{ background: c, borderColor: roleForm.color === c ? 'var(--neutral-700)' : 'transparent' }} />
                   ))}
                 </div>
               </div>
@@ -630,7 +630,7 @@ export default function PermissionsPage() {
                       <div className="text-[11px]" style={{ color: 'var(--ink-300)' }}>{u.orgName}</div>
                     </div>
                     {u.hasRole ? (
-                      <span className="text-[11px] px-2 py-1 rounded" style={{ color: '#2e7d32', background: '#2e7d3218' }}>✓ 已是该角色</span>
+                      <span className="text-[11px] px-2 py-1 rounded" style={{ color: 'var(--sage)', background: 'var(--sage-glow)' }}>✓ 已是该角色</span>
                     ) : (
                       <button onClick={() => addMember(u.id)} disabled={addMemberSavingId === u.id}
                         className="btn btn-fox btn-xs">{addMemberSavingId === u.id ? '添加中…' : '添加'}</button>

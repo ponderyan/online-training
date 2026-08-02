@@ -164,7 +164,7 @@ export default function MyCertificatesPage() {
     const palette: Record<string, { bg: string; color: string }> = {
       active: { bg: 'var(--cyan-glow)', color: 'var(--cyan)' },
       revoked: { bg: 'var(--verm-glow)', color: 'var(--verm)' },
-      pending: { bg: '#fff3e0', color: '#e65100' },
+      pending: { bg: 'var(--fox-pale)', color: 'var(--fox-dark)' },
       rejected: { bg: 'var(--verm-glow)', color: 'var(--verm)' },
     };
     const s = palette[card.status] || palette.active;

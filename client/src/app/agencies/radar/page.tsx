@@ -26,10 +26,10 @@ interface RadarData {
 }
 
 // ── 常量 ──
-const FOX = '#e87a30';
-const INK_300 = '#999';
-const INK_400 = '#777';
-const INK_600 = '#444';
+const FOX = 'var(--fox)';
+const INK_300 = 'var(--neutral-400)';
+const INK_400 = 'var(--neutral-400)';
+const INK_600 = 'var(--neutral-600)';
 const INK_100 = '#e8e2da';
 
 const DIMENSION_CONFIG = [
@@ -58,9 +58,9 @@ const CARD_STYLE = { background: 'var(--paper)', border: '1px solid var(--ink-20
 // ── 工具 ──
 function scoreColor(v: number | null): string {
   if (v === null) return INK_300;
-  if (v >= 80) return '#2e7d32';
+  if (v >= 80) return 'var(--sage)';
   if (v >= 50) return FOX;
-  return '#e53935';
+  return 'var(--error)';
 }
 
 function shortPct(v: number | null): string {
@@ -272,7 +272,7 @@ export default function AgencyRadarPage() {
 
       {error && (
         <div className="card p-8 text-center max-w-md mx-auto" style={CARD_STYLE}>
-          <div className="text-sm" style={{ color: '#e53935' }}>加载失败</div>
+          <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
           <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
           <button onClick={loadData} className="btn btn-fox btn-xs mt-3">重试</button>
         </div>
@@ -384,11 +384,11 @@ export default function AgencyRadarPage() {
                   <div className="space-y-2">
                     {evaluations.map((ev, i) => (
                       <div key={i} className="p-3 rounded-lg text-xs" style={{
-                        background: ev.type === 'warn' ? '#e5393508' : ev.type === 'good' ? '#2e7d3208' : '#f9a82508',
+                        background: ev.type === 'warn' ? '#e5393508' : ev.type === 'good' ? 'var(--sage-glow)' : '#f9a82508',
                         border: `1px solid ${
-                          ev.type === 'warn' ? '#e5393544' : ev.type === 'good' ? '#2e7d3244' : '#f9a82544'
+                          ev.type === 'warn' ? '#e5393544' : ev.type === 'good' ? '#2e7d3244' : 'rgba(249,168,37,0.27)'
                         }`,
-                        color: ev.type === 'warn' ? '#e53935' : ev.type === 'good' ? '#2e7d32' : FOX,
+                        color: ev.type === 'warn' ? 'var(--error)' : ev.type === 'good' ? 'var(--sage)' : FOX,
                       }}>
                         {ev.text}
                       </div>

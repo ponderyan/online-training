@@ -67,6 +67,6 @@ export const STATUS_NAMES: Record<string, string> = {
   REVIEWING: '待审核', CERTIFYING: '发证中', COMPLETED: '已结业', CANCELLED: '已取消',
 };
 export const STATUS_COLORS: Record<string, string> = {
-  PREPARING: '#8b8174', ENROLLING: 'var(--cyan)', IN_PROGRESS: 'var(--fox)',
+  PREPARING: 'var(--ink-300)', ENROLLING: 'var(--cyan)', IN_PROGRESS: 'var(--fox)',
   REVIEWING: 'var(--fox)', CERTIFYING: 'var(--gold)', COMPLETED: 'var(--sage)', CANCELLED: 'var(--ink-300)',
 };

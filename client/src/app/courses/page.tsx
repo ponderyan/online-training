@@ -11,9 +11,9 @@ import { useToast } from '@/components/Toast';
 import { useDebounce } from '@/hooks/use-debounce';
 
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '启用', INACTIVE: '停用' };
-const STATUS_COLORS: Record<string, string> = { ACTIVE: '#00897b', INACTIVE: '#8b8174' };
+const STATUS_COLORS: Record<string, string> = { ACTIVE: 'var(--info)', INACTIVE: 'var(--ink-300)' };
 const TYPE_NAMES: Record<string, string> = { STANDARD: '标准课', CUSTOM: '定制课' };
-const TYPE_COLORS: Record<string, string> = { STANDARD: '#00897b', CUSTOM: '#1565c0' };
+const TYPE_COLORS: Record<string, string> = { STANDARD: 'var(--info)', CUSTOM: 'var(--blue)' };
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -123,7 +123,7 @@ export default function CoursesPage() {
                     <td className="font-medium">
                       <button onClick={() => router.push(`/courses/${c.id}`)}
                         className="group bg-transparent border-none cursor-pointer font-medium text-left flex items-center gap-1"
-                        style={{ color: '#2563eb' }}
+                        style={{ color: 'var(--blue)' }}
                         title="点击查看课程详情">
                         <span className="group-hover:underline">{c.name}</span>
                         <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs">→</span>
@@ -131,8 +131,8 @@ export default function CoursesPage() {
                     </td>
                     <td>
                       <span className="tag" style={{
-                        background: `${TYPE_COLORS[c.type] || '#888'}18`,
-                        color: TYPE_COLORS[c.type] || '#888', fontSize: '11px',
+                        background: `${TYPE_COLORS[c.type] || 'var(--neutral-400)'}18`,
+                        color: TYPE_COLORS[c.type] || 'var(--neutral-400)', fontSize: '11px',
                       }}>
                         {TYPE_NAMES[c.type] || c.type}
                       </span>
@@ -144,8 +144,8 @@ export default function CoursesPage() {
                     </td>
                     <td>
                       <span className="tag" style={{
-                        background: `${STATUS_COLORS[c.status] || '#888'}18`,
-                        color: STATUS_COLORS[c.status] || '#888',
+                        background: `${STATUS_COLORS[c.status] || 'var(--neutral-400)'}18`,
+                        color: STATUS_COLORS[c.status] || 'var(--neutral-400)',
                       }}>
                         {STATUS_NAMES[c.status] || c.status}
                       </span>
@@ -160,7 +160,7 @@ export default function CoursesPage() {
                           style={{ color: 'var(--fox)' }}>编辑</button>
                         <button onClick={() => handleToggleStatus(c)}
                           className="text-xs bg-transparent border-none cursor-pointer"
-                          style={{ color: c.status === 'ACTIVE' ? '#e53935' : '#00897b' }}>{c.status === 'ACTIVE' ? '停用' : '恢复'}</button>
+                          style={{ color: c.status === 'ACTIVE' ? 'var(--error)' : 'var(--info)' }}>{c.status === 'ACTIVE' ? '停用' : '恢复'}</button>
                       </div>
                     </td>
                   </tr>

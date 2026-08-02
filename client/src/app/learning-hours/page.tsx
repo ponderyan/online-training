@@ -77,14 +77,14 @@ export default function LearningHoursPage() {
   };
 
   const sourceLabel = (source: string) => {
-    if (source === 'VIDEO') return { icon: '📺', text: '视频', color: '#00897b', bg: '#00897b18' };
-    return { icon: '✏️', text: '申报', color: '#e87a30', bg: '#e87a3018' };
+    if (source === 'VIDEO') return { icon: '📺', text: '视频', color: 'var(--info)', bg: 'var(--cyan-glow)' };
+    return { icon: '✏️', text: '申报', color: 'var(--fox)', bg: 'var(--fox-glow)' };
   };
 
   const statusBadge = (status: string) => {
-    if (status === 'APPROVED' || status === 'AUTO_APPROVED') return <span className="text-xs" style={{ color: '#2e7d32' }}>✅ 已审核</span>;
-    if (status === 'REJECTED') return <span className="text-xs" style={{ color: '#ef4444' }}>❌ 已驳回</span>;
-    return <span className="text-xs" style={{ color: '#e87a30' }}>⏳ 待审核</span>;
+    if (status === 'APPROVED' || status === 'AUTO_APPROVED') return <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已审核</span>;
+    if (status === 'REJECTED') return <span className="text-xs" style={{ color: 'var(--error)' }}>❌ 已驳回</span>;
+    return <span className="text-xs" style={{ color: 'var(--fox)' }}>⏳ 待审核</span>;
   };
 
   return (
@@ -122,11 +122,11 @@ export default function LearningHoursPage() {
                   <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总学时（小时）</div>
                 </div>
                 <div className="card p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#00897b' }}>{stats.completedVideos}</div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>{stats.completedVideos}</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成视频</div>
                 </div>
                 <div className="card p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#1565c0' }}>{stats.programStats?.length || 0}</div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{stats.programStats?.length || 0}</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>关联培训班</div>
                 </div>
               </div>
@@ -168,9 +168,9 @@ export default function LearningHoursPage() {
                 <thead><tr><th>证明编号</th><th>培训班</th><th>总学时</th><th>状态</th><th>申请时间</th><th>操作</th></tr></thead>
                 <tbody>
                   {certificates.map((c: any) => {
-                    const statusStyle = c.approvalStatus === 'APPROVED' || c.approvalStatus === 'AUTO_APPROVED' ? { color: '#2e7d32', bg: '#2e7d3218' }
-                      : c.approvalStatus === 'REJECTED' ? { color: '#ef4444', bg: '#ef444418' }
-                      : { color: '#e87a30', bg: '#e87a3018' };
+                    const statusStyle = c.approvalStatus === 'APPROVED' || c.approvalStatus === 'AUTO_APPROVED' ? { color: 'var(--sage)', bg: 'var(--sage-glow)' }
+                      : c.approvalStatus === 'REJECTED' ? { color: 'var(--error)', bg: 'var(--verm-glow)' }
+                      : { color: 'var(--fox)', bg: 'var(--fox-glow)' };
                     return (
                       <tr key={c.id}>
                         <td className="font-mono text-xs">{c.certificateNo || '—'}</td>

@@ -84,11 +84,11 @@ interface LearningReport {
 
 // ── 常量 ──
 const LEVEL_COLORS: Record<string, string> = {
-  '优秀': '#2e7d32',
-  '良好': '#558b2f',
-  '一般': '#f59e0b',
-  '薄弱': '#ef4444',
-  '危险': '#dc2626',
+  '优秀': 'var(--sage)',
+  '良好': 'var(--sage)',
+  '一般': 'var(--warning)',
+  '薄弱': 'var(--error)',
+  '危险': 'var(--error)',
 };
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -100,7 +100,7 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const WEAK_GRADIENT = 'linear-gradient(90deg, #ef4444, #dc2626)';
-const PIE_COLORS = ['#e87a30', '#558b2f', '#00897b', '#f59e0b', '#8b8174', '#a67f2a'];
+const PIE_COLORS = ['var(--fox)', 'var(--sage)', 'var(--info)', 'var(--warning)', 'var(--ink-300)', 'var(--warning)'];
 
 const chartTooltipStyle = {
   background: 'var(--paper-dark)',
@@ -117,7 +117,7 @@ function truncate(str: string, len: number): string {
 
 // ── 各等级进度条颜色 ──
 function masteryBarColor(level: string): string {
-  return LEVEL_COLORS[level] || '#8b8174';
+  return LEVEL_COLORS[level] || 'var(--ink-300)';
 }
 
 // ── 自定义 Tooltip ──
@@ -365,9 +365,9 @@ export default function LearningReportPage() {
               {summary ? summary.passRate : 0}%
             </div>
             <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>通过 <strong style={{ color: '#2e7d32' }}>{summary?.passed || 0}</strong></span>
-              <span>未通过 <strong style={{ color: '#ef4444' }}>{summary?.failed || 0}</strong></span>
-              <span>待评分 <strong style={{ color: '#e87a30' }}>{summary?.pending || 0}</strong></span>
+              <span>通过 <strong style={{ color: 'var(--sage)' }}>{summary?.passed || 0}</strong></span>
+              <span>未通过 <strong style={{ color: 'var(--error)' }}>{summary?.failed || 0}</strong></span>
+              <span>待评分 <strong style={{ color: 'var(--fox)' }}>{summary?.pending || 0}</strong></span>
             </div>
           </div>
 
@@ -387,9 +387,9 @@ export default function LearningReportPage() {
               <span className="text-base font-normal ml-1" style={{ color: 'var(--ink-400)' }}>h</span>
             </div>
             <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>已审核 <strong style={{ color: '#2e7d32' }}>{summary?.approvedHours || 0}</strong></span>
-              <span>待审核 <strong style={{ color: '#e87a30' }}>{summary?.pendingHours || 0}</strong></span>
-              <span>已驳回 <strong style={{ color: '#ef4444' }}>{summary?.rejectedHours || 0}</strong></span>
+              <span>已审核 <strong style={{ color: 'var(--sage)' }}>{summary?.approvedHours || 0}</strong></span>
+              <span>待审核 <strong style={{ color: 'var(--fox)' }}>{summary?.pendingHours || 0}</strong></span>
+              <span>已驳回 <strong style={{ color: 'var(--error)' }}>{summary?.rejectedHours || 0}</strong></span>
             </div>
           </div>
 
@@ -409,7 +409,7 @@ export default function LearningReportPage() {
             </div>
             <div className="mt-2">
               <button onClick={() => router.push('/my-certificates')}
-                className="text-xs" style={{ color: '#e87a30', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                 查看全部证书 →
               </button>
             </div>
@@ -482,7 +482,7 @@ export default function LearningReportPage() {
                           <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--ink-700)' }}>
                             {label}
                           </div>
-                          <div style={{ color: '#e87a30', fontSize: 12 }}>
+                          <div style={{ color: 'var(--fox)', fontSize: 12 }}>
                             正确率: {data?.accuracy ?? 0}%
                           </div>
                           <div style={{ color: 'var(--ink-400)', fontSize: 12 }}>
@@ -507,16 +507,16 @@ export default function LearningReportPage() {
                     type="monotone"
                     dataKey="accuracy"
                     name="每日正确率"
-                    stroke="#e87a30"
+                    stroke="var(--fox)"
                     strokeWidth={2}
-                    dot={{ r: 4, fill: '#e87a30', strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: '#e87a30' }}
+                    dot={{ r: 4, fill: 'var(--fox)', strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: 'var(--fox)' }}
                   />
                   <Line
                     type="monotone"
                     dataKey={() => 60}
                     name="合格线 (60%)"
-                    stroke="#8b8174"
+                    stroke="var(--ink-300)"
                     strokeWidth={1.5}
                     strokeDasharray="5 5"
                     dot={false}
@@ -715,7 +715,7 @@ export default function LearningReportPage() {
                 ))}
                 <div className="text-center mt-2">
                   <button onClick={() => router.push('/practice')}
-                    className="text-xs" style={{ color: '#e87a30', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                     去练习巩固 →
                   </button>
                 </div>

@@ -51,7 +51,7 @@ export default function PipelineProgress({ status, hasChapters, totalQuestions, 
         const isCurrent = idx === current;
         const isFuture = idx > current;
         const dotColor = isDone ? 'var(--cyan)' : isCurrent ? 'var(--fox)' : 'var(--ink-200)';
-        const bgColor = isDone ? '#d4edda' : isCurrent ? 'var(--fox-glow)' : 'var(--paper-dark)';
+        const bgColor = isDone ? 'var(--success-pale)' : isCurrent ? 'var(--fox-glow)' : 'var(--paper-dark)';
 
         return (
           <div key={step.key} className="flex items-center">

@@ -7,10 +7,10 @@ import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = { STANDARD: '标准课', CUSTOM: '定制课' };
-const TYPE_COLORS: Record<string, string> = { STANDARD: '#00897b', CUSTOM: '#1565c0' };
+const TYPE_COLORS: Record<string, string> = { STANDARD: 'var(--info)', CUSTOM: 'var(--blue)' };
 
 const VC_TYPE_NAMES: Record<string, string> = { PUBLIC: '公共课', SPECIALIZED: '专项课' };
-const VC_TYPE_COLORS: Record<string, string> = { PUBLIC: '#7b1fa2', SPECIALIZED: '#e87a30' };
+const VC_TYPE_COLORS: Record<string, string> = { PUBLIC: 'var(--purple)', SPECIALIZED: 'var(--fox)' };
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -85,7 +85,7 @@ export default function CourseDetailPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="page-title mb-0">{course.name}</h1>
-            <span className="tag" style={{ background: `${TYPE_COLORS[course.type] || '#888'}18`, color: TYPE_COLORS[course.type] || '#888', fontSize: '11px' }}>
+            <span className="tag" style={{ background: `${TYPE_COLORS[course.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[course.type] || 'var(--neutral-400)', fontSize: '11px' }}>
               {TYPE_NAMES[course.type] || course.type}
             </span>
           </div>
@@ -129,14 +129,14 @@ export default function CourseDetailPage() {
                       {vc?.duration ? formatDuration(vc.duration) : '—'}
                       {vc?.hours ? ` · ${vc.hours} 学时` : ''}
                       {vc?.type && (
-                        <span className="ml-2 tag" style={{ background: `${VC_TYPE_COLORS[vc.type] || '#888'}18`, color: VC_TYPE_COLORS[vc.type] || '#888', fontSize: '10px' }}>
+                        <span className="ml-2 tag" style={{ background: `${VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)'}18`, color: VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)', fontSize: '10px' }}>
                           {VC_TYPE_NAMES[vc.type] || vc.type}
                         </span>
                       )}
                     </p>
                   </div>
                   {vc?.url && <span className="text-xs" style={{ color: 'var(--ink-300)' }}>已上传</span>}
-                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: vc?.status === 'PUBLISHED' ? '#2e7d3218' : '#e5393518', color: vc?.status === 'PUBLISHED' ? '#2e7d32' : '#e53935' }}>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: vc?.status === 'PUBLISHED' ? 'var(--sage-glow)' : 'var(--verm-glow)', color: vc?.status === 'PUBLISHED' ? 'var(--sage)' : 'var(--error)' }}>
                     {vc?.status === 'PUBLISHED' ? '已上架' : '已下架'}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export default function CourseDetailPage() {
                         <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
                           {v.duration ? formatDuration(v.duration) : '—'}
                           {v.hours ? ` · ${v.hours}学时` : ''}
-                          <span className="ml-2" style={{ color: VC_TYPE_COLORS[v.type] || '#888' }}>
+                          <span className="ml-2" style={{ color: VC_TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>
                             {VC_TYPE_NAMES[v.type] || v.type}
                           </span>
                         </p>

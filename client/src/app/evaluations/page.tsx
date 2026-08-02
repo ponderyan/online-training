@@ -100,7 +100,7 @@ export default function EvaluationsPage() {
             { label: '评价人数', value: stats.count, color: 'var(--ink-600)' },
             { label: '课程内容', value: `${renderStars(Math.round(stats.contentRating))} ${stats.contentRating}`, color: 'var(--fox)' },
             { label: '讲师教学', value: `${renderStars(Math.round(stats.instructorRating))} ${stats.instructorRating}`, color: 'var(--cyan)' },
-            { label: '组织服务', value: stats.organizationRating ? `${renderStars(Math.round(stats.organizationRating))} ${stats.organizationRating}` : '—', color: '#7b1fa2' },
+            { label: '组织服务', value: stats.organizationRating ? `${renderStars(Math.round(stats.organizationRating))} ${stats.organizationRating}` : '—', color: 'var(--purple)' },
             { label: '总体评分', value: `${renderStars(Math.round(stats.overallRating))} ${stats.overallRating}`, color: 'var(--sage)' },
           ].map((s, i) => (
             <div key={i} className="card p-4 text-center">
@@ -157,14 +157,14 @@ export default function EvaluationsPage() {
                   )}
                 </td>
                 <td className="text-center">
-                  <strong style={{ color: e.overallRating >= 4 ? '#2e7d32' : e.overallRating >= 3 ? '#f59e0b' : '#ef4444' }}>
+                  <strong style={{ color: e.overallRating >= 4 ? 'var(--sage)' : e.overallRating >= 3 ? 'var(--warning)' : 'var(--error)' }}>
                     {e.overallRating}/5
                   </strong>
                 </td>
                 <td className="text-xs max-w-[200px] truncate" style={{ color: 'var(--ink-400)' }}>{e.comment || '—'}</td>
                 {canManage && (
                   <td>
-                    <button onClick={() => handleDelete(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                    <button onClick={() => handleDelete(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                   </td>
                 )}
               </tr>

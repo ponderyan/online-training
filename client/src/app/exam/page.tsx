@@ -56,8 +56,8 @@ function formatDate(dateStr: string | null): string {
 const styles = {
   container: { maxWidth: '800px', margin: '0 auto', padding: '24px 16px 48px' } as const,
   section: { marginBottom: '40px' } as const,
-  sectionTitle: { fontSize: '16px', fontWeight: 600, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' } as const,
-  emptyText: { fontSize: '14px', color: '#94a3b8', padding: '32px 0', textAlign: 'center' } as const,
+  sectionTitle: { fontSize: '16px', fontWeight: 600, color: 'var(--neutral-800)', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' } as const,
+  emptyText: { fontSize: '14px', color: 'var(--neutral-400)', padding: '32px 0', textAlign: 'center' } as const,
 };
 
 export default function ExamList() {
@@ -145,10 +145,10 @@ export default function ExamList() {
                 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: '#fef3e7', color: '#e87a30', fontWeight: 600 }}>📝 考试中</span>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: 'var(--fox-pale2)', color: 'var(--fox)', fontWeight: 600 }}>📝 考试中</span>
                     </div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: 0 }}>
                       {exam.paperName}
                       {exam.accessType === 'UNIFIED'
                         ? ` · 📅 ${new Date(exam.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}-${new Date(exam.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
@@ -156,7 +156,7 @@ export default function ExamList() {
                     </p>
                   </div>
                   <Link href={`/exam/take/${exam.id}`} style={{
-                    padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                    padding: '8px 20px', borderRadius: '8px', background: 'var(--fox)', color: 'white',
                     fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
                   }}>{exam.accessType === 'UNIFIED' ? '返回考场 →' : '继续答题 →'}</Link>
                 </div>
@@ -173,19 +173,19 @@ export default function ExamList() {
                   opacity: ended ? 0.6 : 1,
                 }}>
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 2px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: '0 0 2px' }}>
                       ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 📅 {formatExamTime(exam.startTime)}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{exam.paperName}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--neutral-400)', margin: 0 }}>{exam.paperName}</p>
                   </div>
                   {notStarted ? (
-                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', color: 'var(--neutral-400)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
                   ) : ended ? (
-                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#fef2f2', color: '#ef4444', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--error-pale)', color: 'var(--error)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
                   ) : (
                     <Link href={`/exam/take/${exam.id}`} style={{
-                      padding: '8px 20px', borderRadius: '8px', background: '#e87a30', color: 'white',
+                      padding: '8px 20px', borderRadius: '8px', background: 'var(--fox)', color: 'white',
                       fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
                     }}>进入考试 →</Link>
                   )}
@@ -208,12 +208,12 @@ export default function ExamList() {
                 opacity: 0.8,
               }}>
                 <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>{exam.title}</h3>
-                  <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: 0 }}>
                     ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 截止 {new Date(exam.endTime).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <span style={{ padding: '6px 14px', borderRadius: '8px', background: '#fef2f2', color: '#dc2626', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+                <span style={{ padding: '6px 14px', borderRadius: '8px', background: 'var(--error-pale)', color: 'var(--error)', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
                   未参加
                 </span>
               </div>
@@ -231,10 +231,10 @@ export default function ExamList() {
               const isPublished = exam.scoringStatus === 'PUBLISHED' || exam.scoringStatus === 'ADJUSTED';
               const isPassed = exam.isPassed === true;
               const badge = !isPublished
-                ? { text: '⏸️ 待公布', bg: '#f8fafc', color: '#94a3b8' }
+                ? { text: '⏸️ 待公布', bg: '#f8fafc', color: 'var(--neutral-400)' }
                 : isPassed
-                ? { text: '✅ 通过', bg: '#f0fdf4', color: '#16a34a' }
-                : { text: '❌ 未通过', bg: '#fef2f2', color: '#dc2626' };
+                ? { text: '✅ 通过', bg: 'var(--success-pale)', color: 'var(--sage)' }
+                : { text: '❌ 未通过', bg: 'var(--error-pale)', color: 'var(--error)' };
 
               return (
                 <div key={exam.id} onClick={() => isPublished ? router.push(`/exam/result/${exam.id}`) : undefined}
@@ -249,17 +249,17 @@ export default function ExamList() {
                       {badge.text}
                     </span>
                     <div>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b' }}>{exam.title}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--neutral-800)' }}>{exam.title}</span>
                       {isPublished && (
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#e87a30', marginLeft: '12px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fox)', marginLeft: '12px' }}>
                           {exam.myFinalScore || exam.myScore}分
                         </span>
                       )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>{formatDate(exam.submittedAt)}</span>
-                    {isPublished && <span style={{ fontSize: '14px', color: '#94a3b8' }}>→</span>}
+                    <span style={{ fontSize: '12px', color: 'var(--neutral-400)' }}>{formatDate(exam.submittedAt)}</span>
+                    {isPublished && <span style={{ fontSize: '14px', color: 'var(--neutral-400)' }}>→</span>}
                   </div>
                 </div>
               );

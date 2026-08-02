@@ -44,9 +44,9 @@ export default function HoursTab({ programId }: { programId: string }) {
               <td className="font-medium text-sm">{s.displayName}</td>
               <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{s.studentNumber || '—'}</td>
               <td>{s.videoHours}</td><td>{s.offlineHours}</td>
-              <td>{s.pendingHours > 0 ? <span className="text-xs font-medium" style={{ color: '#e87a30' }}>{s.pendingHours}</span> : <span className="text-xs" style={{ color: 'var(--ink-300)' }}>0</span>}</td>
-              <td style={{ color: '#2e7d32' }}>{s.approvedHours}</td>
-              <td style={{ color: '#ef4444' }}>{s.rejectedHours}</td>
+              <td>{s.pendingHours > 0 ? <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{s.pendingHours}</span> : <span className="text-xs" style={{ color: 'var(--ink-300)' }}>0</span>}</td>
+              <td style={{ color: 'var(--sage)' }}>{s.approvedHours}</td>
+              <td style={{ color: 'var(--error)' }}>{s.rejectedHours}</td>
               <td className="font-bold" style={{ color: 'var(--fox)' }}>{s.totalHours}</td>
             </tr>
           ))}

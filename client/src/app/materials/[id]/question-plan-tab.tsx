@@ -297,7 +297,7 @@ export default function QuestionPlanTab({
                         }}>
                         <label className="flex items-center gap-1.5 cursor-pointer mb-1.5">
                           <input type="checkbox" checked={cfg._enabled} onChange={() => toggleConfig(idx)}
-                            className="cursor-pointer" style={{ accentColor: '#e87a30' }} />
+                            className="cursor-pointer" style={{ accentColor: 'var(--fox)' }} />
                           <span className="font-medium">{type.label}</span>
                         </label>
                         {cfg._enabled && (

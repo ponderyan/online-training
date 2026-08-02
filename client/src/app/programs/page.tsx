@@ -14,8 +14,8 @@ const STATUS_NAMES: Record<string, string> = {
   REVIEWING: '待审核', CERTIFYING: '发证中', COMPLETED: '已结业', CANCELLED: '已取消',
 };
 const STATUS_COLORS: Record<string, string> = {
-  PREPARING: '#8b8174', ENROLLING: '#00897b', IN_PROGRESS: '#e87a30',
-  REVIEWING: '#e87a30', CERTIFYING: '#7b1fa2', COMPLETED: '#2e7d32', CANCELLED: '#aaa',
+  PREPARING: 'var(--ink-300)', ENROLLING: 'var(--info)', IN_PROGRESS: 'var(--fox)',
+  REVIEWING: 'var(--fox)', CERTIFYING: 'var(--purple)', COMPLETED: 'var(--sage)', CANCELLED: 'var(--neutral-300)',
 };
 const STATUS_ORDER: string[] = ['PREPARING', 'ENROLLING', 'IN_PROGRESS', 'REVIEWING', 'CERTIFYING', 'COMPLETED', 'CANCELLED'];
 
@@ -90,7 +90,7 @@ export default function ProgramsPage() {
         <div className="flex gap-2 mb-5 flex-wrap">
           {STATUS_ORDER.filter(s => stats[s]).map(s => (
             <span key={s} className="text-xs font-medium px-3 py-1 rounded-full" style={{
-              background: `${STATUS_COLORS[s] || '#888'}18`, color: STATUS_COLORS[s] || '#888',
+              background: `${STATUS_COLORS[s] || 'var(--neutral-400)'}18`, color: STATUS_COLORS[s] || 'var(--neutral-400)',
             }}>
               {STATUS_NAMES[s]} {stats[s]}
             </span>
@@ -155,8 +155,8 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                   <span className="shrink-0 text-xs font-medium px-3 py-1 rounded-full ml-3" style={{
-                    background: `${STATUS_COLORS[p.status] || '#888'}18`,
-                    color: STATUS_COLORS[p.status] || '#888',
+                    background: `${STATUS_COLORS[p.status] || 'var(--neutral-400)'}18`,
+                    color: STATUS_COLORS[p.status] || 'var(--neutral-400)',
                   }}>{STATUS_NAMES[p.status] || p.status}</span>
                 </div>
               </div>

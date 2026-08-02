@@ -33,11 +33,11 @@ const PRESET_PREVIEW_DATA: TemplateData = {
 
 // 类型元信息：标签文字 + 柔和配色（与证书语义呼应）
 const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  COMPLETION: { label: '结业证书', color: '#1565c0', bg: '#e7f1fb' },
-  HOURS: { label: '学时证明', color: '#2e7d32', bg: '#e9f4ea' },
-  CUSTOM: { label: '自定义', color: '#7b1fa2', bg: '#f4eaf6' },
+  COMPLETION: { label: '结业证书', color: 'var(--blue)', bg: '#e7f1fb' },
+  HOURS: { label: '学时证明', color: 'var(--sage)', bg: '#e9f4ea' },
+  CUSTOM: { label: '自定义', color: 'var(--purple)', bg: '#f4eaf6' },
 };
-const typeMeta = (t: string) => TYPE_META[t] || { label: t, color: '#5a5348', bg: '#eee9df' };
+const typeMeta = (t: string) => TYPE_META[t] || { label: t, color: 'var(--ink-500)', bg: '#eee9df' };
 
 const SORT_OPTIONS = [
   { value: 'default', label: '默认排序' },
@@ -443,7 +443,7 @@ export default function CertificateTemplatesPage() {
                   {TEMPLATE_PRESETS.map(preset => (
                     <div key={preset.key} onClick={() => !creatingPreset && handleCreateFromPreset(preset)} className="ct-card"
                       style={{ cursor: creatingPreset ? 'wait' : 'pointer', opacity: creatingPreset && creatingPreset !== preset.key ? 0.5 : 1 }}>
-                      <div style={{ aspectRatio: '1123 / 794', overflow: 'hidden', position: 'relative', background: '#eee', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                      <div style={{ aspectRatio: '1123 / 794', overflow: 'hidden', position: 'relative', background: 'var(--neutral-100)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
                         <div style={{ transform: 'scale(0.21)', transformOrigin: 'top center', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(preset.canvas, PRESET_PREVIEW_DATA) }} />
                         {creatingPreset === preset.key && (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(250,246,239,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--color-fox-dark)' }}>创建中…</div>

@@ -36,17 +36,17 @@ export default class ErrorBoundary extends Component<Props, State> {
           minHeight: '60vh', padding: '40px', textAlign: 'center',
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🦊</div>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--neutral-800)', marginBottom: '8px' }}>
             页面出了点小问题
           </h2>
-          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', maxWidth: '400px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--neutral-500)', marginBottom: '24px', maxWidth: '400px' }}>
             {this.state.error?.message || '发生了未知错误'}
           </p>
           <button
             onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
             style={{
               padding: '10px 24px', borderRadius: '8px', border: 'none',
-              background: '#e87a30', color: 'white', fontSize: '14px',
+              background: 'var(--fox)', color: 'white', fontSize: '14px',
               fontWeight: 500, cursor: 'pointer',
             }}
           >

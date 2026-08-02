@@ -89,7 +89,7 @@ export default function LearningHoursReviewPage() {
       <div className="flex items-center gap-1 mb-4">
         <button onClick={() => { setTab('pending'); setSelected(new Set()); }}
           className="btn btn-sm" style={tab === 'pending' ? { background: 'var(--fox)', color: '#fff' } : { background: 'transparent', color: 'var(--ink-400)' }}>
-          待审核 {pendingHours.length > 0 && <span className="ml-1 inline-flex items-center justify-center rounded-full text-white text-[10px] w-4 h-4" style={{ background: '#ef4444' }}>{pendingHours.length}</span>}
+          待审核 {pendingHours.length > 0 && <span className="ml-1 inline-flex items-center justify-center rounded-full text-white text-[10px] w-4 h-4" style={{ background: 'var(--error)' }}>{pendingHours.length}</span>}
         </button>
         <button onClick={() => { setTab('reviewed'); setSelected(new Set()); }}
           className="btn btn-sm" style={tab === 'reviewed' ? { background: 'var(--fox)', color: '#fff' } : { background: 'transparent', color: 'var(--ink-400)' }}>
@@ -146,7 +146,7 @@ export default function LearningHoursReviewPage() {
               <button onClick={handleApprove} disabled={selected.size === 0}
                 className="btn btn-fox btn-sm">✅ 批量通过 ({selected.size})</button>
               <button onClick={() => setRejectModal(true)} disabled={selected.size === 0}
-                className="btn btn-outline btn-sm" style={{ color: '#ef4444' }}>❌ 批量驳回 ({selected.size})</button>
+                className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>❌ 批量驳回 ({selected.size})</button>
             </div>
           </>
         )
@@ -170,8 +170,8 @@ export default function LearningHoursReviewPage() {
                     <td className="text-sm font-medium">{h.hours}h</td>
                     <td>
                       {h.status === 'REJECTED'
-                        ? <span className="tag" style={{ background: '#ef444418', color: '#ef4444', fontSize: '10px' }}>❌ 驳回</span>
-                        : <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontSize: '10px' }}>✅ 通过</span>}
+                        ? <span className="tag" style={{ background: 'var(--verm-glow)', color: 'var(--error)', fontSize: '10px' }}>❌ 驳回</span>
+                        : <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontSize: '10px' }}>✅ 通过</span>}
                     </td>
                     <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
                       {h.reviewComment || '—'}
@@ -197,7 +197,7 @@ export default function LearningHoursReviewPage() {
               rows={3} className="input w-full" placeholder="请输入驳回原因…" />
             <div className="flex gap-2 mt-4">
               <button onClick={() => setRejectModal(false)} className="btn btn-outline btn-sm flex-1">取消</button>
-              <button onClick={handleReject} disabled={!rejectReason.trim()} className="btn btn-sm flex-1" style={{ background: '#ef4444', color: '#fff' }}>确认驳回</button>
+              <button onClick={handleReject} disabled={!rejectReason.trim()} className="btn btn-sm flex-1" style={{ background: 'var(--error)', color: '#fff' }}>确认驳回</button>
             </div>
           </div>
         </div>

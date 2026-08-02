@@ -28,7 +28,7 @@ const OWNERSHIP_LABELS: Record<string, string> = {
 const OWNERSHIP_COLORS: Record<string, string> = {
   OWN: '#059669',
   ANCESTOR: '#6366f1',
-  CHILD: '#d97706',
+  CHILD: 'var(--warning)',
 };
 
 export default function SubjectsAdminPage() {
@@ -153,7 +153,7 @@ export default function SubjectsAdminPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {s.name}
-                    {s.isSystem && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px]" style={{ background: '#fef3c7', color: '#92400e' }}>系统</span>}
+                    {s.isSystem && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'var(--warning-pale)', color: '#92400e' }}>系统</span>}
                   </td>
                   <td className="px-4 py-3 text-xs" style={{ color: 'var(--ink-400)' }}>
                     <div className="flex items-center gap-1.5">

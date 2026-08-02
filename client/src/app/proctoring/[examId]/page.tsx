@@ -153,10 +153,10 @@ export default function ProctoringDetail() {
       <div className="grid grid-cols-5 gap-3 mb-5">
         {[
           { label: '总考生', value: overview?.totalStudents || 0, color: 'var(--ink-600)' },
-          { label: '🟢 在线', value: overview?.onlineCount || 0, color: '#2e7d32' },
-          { label: '🔴 离线', value: overview?.offlineCount || 0, color: overview?.offlineCount > 0 ? '#e53935' : '#888' },
-          { label: '⚠️ 异常', value: overview?.abnormalCount || 0, color: (overview?.abnormalCount || 0) > 0 ? '#e87a30' : '#888' },
-          { label: '✅ 已交卷', value: overview?.submittedCount || 0, color: '#888' },
+          { label: '🟢 在线', value: overview?.onlineCount || 0, color: 'var(--sage)' },
+          { label: '🔴 离线', value: overview?.offlineCount || 0, color: overview?.offlineCount > 0 ? 'var(--error)' : 'var(--neutral-400)' },
+          { label: '⚠️ 异常', value: overview?.abnormalCount || 0, color: (overview?.abnormalCount || 0) > 0 ? 'var(--fox)' : 'var(--neutral-400)' },
+          { label: '✅ 已交卷', value: overview?.submittedCount || 0, color: 'var(--neutral-400)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center">
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -192,8 +192,8 @@ export default function ProctoringDetail() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-sm" style={{ color: 'var(--ink-700)' }}>{s.studentName}</span>
-                {s.online && <span className="w-2 h-2 rounded-full" style={{ background: '#2e7d32' }} title="在线" />}
-                {!s.online && s.status !== 'SUBMITTED' && <span className="w-2 h-2 rounded-full" style={{ background: '#e53935' }} title="离线" />}
+                {s.online && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--sage)' }} title="在线" />}
+                {!s.online && s.status !== 'SUBMITTED' && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--error)' }} title="离线" />}
                 {s.status === 'SUBMITTED' && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>✅ 已交卷</span>}
               </div>
               <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>
@@ -201,8 +201,8 @@ export default function ProctoringDetail() {
               </div>
             </div>
             <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--ink-400)' }}>
-              {s.tabSwitchCount > 0 && <span style={{ color: s.tabSwitchCount > 3 ? '#e53935' : 'var(--fox)' }}>🔄 {s.tabSwitchCount}次</span>}
-              {s.suspicionLevel > 0 && <span className="font-medium" style={{ color: s.suspicionLevel >= 3 ? '#e53935' : 'var(--fox)' }}>⚠️ {s.suspicionLevel}</span>}
+              {s.tabSwitchCount > 0 && <span style={{ color: s.tabSwitchCount > 3 ? 'var(--error)' : 'var(--fox)' }}>🔄 {s.tabSwitchCount}次</span>}
+              {s.suspicionLevel > 0 && <span className="font-medium" style={{ color: s.suspicionLevel >= 3 ? 'var(--error)' : 'var(--fox)' }}>⚠️ {s.suspicionLevel}</span>}
             </div>
             <span className="text-xs" style={{ color: 'var(--fox)' }}>查看 →</span>
           </div>
@@ -250,7 +250,7 @@ export default function ProctoringDetail() {
                   {selectedSession.tabSwitchTimeline?.length > 0 ? (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {selectedSession.tabSwitchTimeline.map((t: any, i: number) => (
-                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: '#fff5f5', color: '#c62828' }}>
+                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: 'var(--error-pale)', color: 'var(--error)' }}>
                           {new Date(t.time).toLocaleString('zh-CN')} — {t.action}
                         </div>
                       ))}
@@ -266,7 +266,7 @@ export default function ProctoringDetail() {
                   {selectedSession.proctorActions?.length > 0 ? (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {selectedSession.proctorActions.map((a: any, i: number) => (
-                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: '#f0f0f0' }}>
+                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: 'var(--neutral-100)' }}>
                           <span className="font-medium">{a.action}</span> — {a.message}
                           <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{new Date(a.timestamp).toLocaleString('zh-CN')} · {a.operatorName}</div>
                         </div>
@@ -284,7 +284,7 @@ export default function ProctoringDetail() {
                     <div className="space-y-1 max-h-40 overflow-y-auto">
                       {sessionMessages.map((m: any) => (
                         <div key={m.id} className="text-xs px-3 py-1.5 rounded" style={{
-                          background: m.messageType === 'WARN' ? '#fef2f2' : '#f0f7fa',
+                          background: m.messageType === 'WARN' ? 'var(--error-pale)' : 'var(--info-pale)',
                         }}>
                           <span className="font-medium">{m.messageType === 'WARN' ? '⚠️ 警告' : 'ℹ️ 消息'}</span> — {m.content}
                           <div className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--ink-300)' }}>
@@ -313,7 +313,7 @@ export default function ProctoringDetail() {
                       ⏱ 延长10分钟
                     </button>
                     <button onClick={() => setForceSubmitModal({ sessionId: selectedSession.sessionId })}
-                      className="btn w-full text-sm py-2" style={{ border: '1px solid #e53935', color: '#e53935' }}>
+                      className="btn w-full text-sm py-2" style={{ border: '1px solid #e53935', color: 'var(--error)' }}>
                       🛑 强制交卷
                     </button>
                   </div>
@@ -359,14 +359,14 @@ export default function ProctoringDetail() {
       {forceSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setForceSubmitModal(null)}>
           <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-sm mb-2" style={{ color: '#e53935' }}>🛑 强制交卷</h3>
+            <h3 className="font-semibold text-sm mb-2" style={{ color: 'var(--error)' }}>🛑 强制交卷</h3>
             <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>此操作将强制提交该考生的试卷，不可撤销。</p>
             <input value={forceSubmitReason} onChange={e => setForceSubmitReason(e.target.value)}
               className="input w-full mb-3" placeholder="强制交卷原因" />
             <input value={confirmText} onChange={e => setConfirmText(e.target.value)}
               className="input w-full mb-4" placeholder='输入"确认交卷"以确认' />
             <div className="flex gap-2">
-              <button onClick={handleForceSubmit} disabled={actionLoading || confirmText !== '确认交卷'} className="btn btn-sm flex-1 text-white" style={{ background: confirmText === '确认交卷' ? '#e53935' : '#ccc' }}>
+              <button onClick={handleForceSubmit} disabled={actionLoading || confirmText !== '确认交卷'} className="btn btn-sm flex-1 text-white" style={{ background: confirmText === '确认交卷' ? 'var(--error)' : 'var(--neutral-200)' }}>
                 {actionLoading ? '处理中…' : '确认强制交卷'}
               </button>
               <button onClick={() => setForceSubmitModal(null)} className="btn btn-outline btn-sm">取消</button>

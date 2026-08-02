@@ -76,9 +76,9 @@ export default function ProctoringHome() {
       <div className="grid grid-cols-5 gap-3 mb-6">
         {[
           { label: '考试总数', value: stats.all, icon: '📋', color: 'var(--ink-600)' },
-          { label: '进行中', value: stats.inProgress, icon: '🟢', color: '#2e7d32', highlight: stats.inProgress > 0 },
-          { label: '待开考', value: stats.active - stats.inProgress, icon: '📅', color: '#1565c0' },
-          { label: '已交卷', value: stats.submitted, icon: '✅', color: '#888' },
+          { label: '进行中', value: stats.inProgress, icon: '🟢', color: 'var(--sage)', highlight: stats.inProgress > 0 },
+          { label: '待开考', value: stats.active - stats.inProgress, icon: '📅', color: 'var(--blue)' },
+          { label: '已交卷', value: stats.submitted, icon: '✅', color: 'var(--neutral-400)' },
           { label: '总考生', value: stats.totalStudents, icon: '👥', color: 'var(--fox)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center" style={s.highlight ? { border: '2px solid #2e7d32' } : {}}>
@@ -106,7 +106,7 @@ export default function ProctoringHome() {
               </p>
             </div>
           </div>
-          <span className="text-xs animate-pulse" style={{ color: '#e53935' }}>● 实时</span>
+          <span className="text-xs animate-pulse" style={{ color: 'var(--error)' }}>● 实时</span>
         </div>
       )}
 
@@ -175,8 +175,8 @@ export default function ProctoringHome() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{
-                        background: isLive ? '#e87a3018' : isPending ? '#1565c018' : '#88888818',
-                        color: isLive ? 'var(--fox)' : isPending ? '#1565c0' : '#888',
+                        background: isLive ? 'var(--fox-glow)' : isPending ? 'rgba(21,101,192,0.09)' : '#88888818',
+                        color: isLive ? 'var(--fox)' : isPending ? 'var(--blue)' : 'var(--neutral-400)',
                       }}>
                         {isLive ? '🟢 进行中' : isPending ? '📅 待开考' : isDone ? '📋 已结束' : exam.status}
                       </span>
@@ -201,7 +201,7 @@ export default function ProctoringHome() {
                         <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
                           <div className="h-full rounded-full" style={{
                             width: `${Math.min(100, (submitted / total) * 100)}%`,
-                            background: submitted === total ? '#2e7d32' : 'var(--fox)',
+                            background: submitted === total ? 'var(--sage)' : 'var(--fox)',
                           }} />
                         </div>
                         <span className="text-[10px] font-mono" style={{ color: 'var(--ink-300)' }}>
@@ -213,7 +213,7 @@ export default function ProctoringHome() {
 
                   <div className="flex flex-col items-end gap-1 ml-4 flex-shrink-0">
                     {exam.abnormalCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: '#ef444418', color: '#ef4444' }}>
+                      <span className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>
                         ⚠️ {exam.abnormalCount} 异常
                       </span>
                     )}

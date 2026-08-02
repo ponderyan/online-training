@@ -50,10 +50,10 @@ export default function VerifyHoursPage() {
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'rgba(255,255,255,0.7)' }}>
         <FoxLogo size={32} />
-        <div className="font-serif font-bold text-lg tracking-wider" style={{ color: '#4a3f35' }}>
+        <div className="font-serif font-bold text-lg tracking-wider" style={{ color: 'var(--ink-600)' }}>
           {settings?.siteName || 'FoxLearn'}
         </div>
-        <span className="text-xs ml-auto" style={{ color: '#8b8174' }}>
+        <span className="text-xs ml-auto" style={{ color: 'var(--ink-300)' }}>
           学时证明验证平台
         </span>
       </header>
@@ -63,8 +63,8 @@ export default function VerifyHoursPage() {
           {/* Title */}
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">📜</div>
-            <h1 className="text-2xl font-serif font-bold" style={{ color: '#4a3f35' }}>学时证明验证</h1>
-            <p className="text-sm mt-1" style={{ color: '#8b8174' }}>
+            <h1 className="text-2xl font-serif font-bold" style={{ color: 'var(--ink-600)' }}>学时证明验证</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--ink-300)' }}>
               输入证明编号查询真伪
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function VerifyHoursPage() {
 
           {/* Loading */}
           {loading && (
-            <div className="text-center py-8" style={{ color: '#8b8174' }}>
+            <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>
               <span className="text-2xl">🦊</span>
               <p className="text-sm mt-2">正在查询…</p>
             </div>
@@ -97,31 +97,31 @@ export default function VerifyHoursPage() {
           {/* Error */}
           {error && !loading && (
             <div className="card p-6 text-center"
-              style={{ border: '2px solid #ef9a9a', background: '#ffebee' }}>
+              style={{ border: '2px solid #ef9a9a', background: 'var(--error-pale)' }}>
               <div className="text-4xl mb-2">❌</div>
-              <p className="text-sm font-medium" style={{ color: '#c62828' }}>验证失败</p>
-              <p className="text-xs mt-1" style={{ color: '#ef5350' }}>{error}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>验证失败</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--error-light)' }}>{error}</p>
             </div>
           )}
 
           {/* Valid result */}
           {isValid && !loading && (
             <div className="card p-6"
-              style={{ border: '2px solid #a5d6a7', background: '#e8f5e9' }}>
+              style={{ border: '2px solid #a5d6a7', background: 'var(--success-pale)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">✅</span>
-                <span className="text-sm font-semibold" style={{ color: '#2e7d32' }}>验证通过 - 真实有效</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--sage)' }}>验证通过 - 真实有效</span>
               </div>
 
               <div className="space-y-3 text-sm">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="block text-xs" style={{ color: '#558b2f' }}>学员姓名</span>
+                    <span className="block text-xs" style={{ color: 'var(--sage)' }}>学员姓名</span>
                     <span className="font-medium">{cert.studentName}</span>
                   </div>
                   {cert.idCardMasked && (
                     <div>
-                      <span className="block text-xs" style={{ color: '#558b2f' }}>证件号</span>
+                      <span className="block text-xs" style={{ color: 'var(--sage)' }}>证件号</span>
                       <span className="text-sm" style={{ color: 'var(--ink-400)' }}>
                         {cert.idCardMasked}
                       </span>
@@ -129,22 +129,22 @@ export default function VerifyHoursPage() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t" style={{ borderColor: '#a5d6a7' }}>
+                <div className="pt-2 border-t" style={{ borderColor: 'var(--sage-light)' }}>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="block text-xs" style={{ color: '#558b2f' }}>培训项目</span>
+                      <span className="block text-xs" style={{ color: 'var(--sage)' }}>培训项目</span>
                       <span>{cert.programName}</span>
                     </div>
                     <div>
-                      <span className="block text-xs" style={{ color: '#558b2f' }}>总学时</span>
-                      <span className="font-bold" style={{ color: '#2e7d32' }}>{cert.totalHours} 小时</span>
+                      <span className="block text-xs" style={{ color: 'var(--sage)' }}>总学时</span>
+                      <span className="font-bold" style={{ color: 'var(--sage)' }}>{cert.totalHours} 小时</span>
                     </div>
                   </div>
                 </div>
 
                 {cert.hoursDetail?.length > 0 && (
-                  <div className="pt-2 border-t" style={{ borderColor: '#a5d6a7' }}>
-                    <span className="block text-xs mb-1" style={{ color: '#558b2f' }}>学时明细</span>
+                  <div className="pt-2 border-t" style={{ borderColor: 'var(--sage-light)' }}>
+                    <span className="block text-xs mb-1" style={{ color: 'var(--sage)' }}>学时明细</span>
                     {cert.hoursDetail.map((d: any, i: number) => (
                       <div key={i} className="flex justify-between text-xs py-0.5">
                         <span>{d.typeName || d.source}</span>
@@ -154,26 +154,26 @@ export default function VerifyHoursPage() {
                   </div>
                 )}
 
-                <div className="pt-2 border-t" style={{ borderColor: '#a5d6a7' }}>
+                <div className="pt-2 border-t" style={{ borderColor: 'var(--sage-light)' }}>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="block" style={{ color: '#558b2f' }}>证明编号</span>
+                      <span className="block" style={{ color: 'var(--sage)' }}>证明编号</span>
                       <span className="font-mono">{cert.certificateNo}</span>
                     </div>
                     <div>
-                      <span className="block" style={{ color: '#558b2f' }}>颁发时间</span>
+                      <span className="block" style={{ color: 'var(--sage)' }}>颁发时间</span>
                       <span>{cert.approvedAt ? new Date(cert.approvedAt).toLocaleDateString('zh-CN') : '—'}</span>
                     </div>
                   </div>
                 </div>
 
                 {cert.contentHash && (
-                  <div className="pt-2 border-t flex items-center gap-1" style={{ borderColor: '#a5d6a7' }}>
-                    <span className="text-xs" style={{ color: '#558b2f' }}>🛡️ 内容指纹：</span>
+                  <div className="pt-2 border-t flex items-center gap-1" style={{ borderColor: 'var(--sage-light)' }}>
+                    <span className="text-xs" style={{ color: 'var(--sage)' }}>🛡️ 内容指纹：</span>
                     <span className="text-[10px] font-mono" style={{ color: '#689f38' }}>
                       {cert.contentHash.slice(0, 16)}...
                     </span>
-                    <span className="text-[10px]" style={{ color: '#558b2f' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--sage)' }}>
                       ✅ 印章内容未被篡改
                     </span>
                   </div>
@@ -185,23 +185,23 @@ export default function VerifyHoursPage() {
           {/* Revoked / Invalid result */}
           {result && !isValid && !loading && (
             <div className="card p-6 text-center"
-              style={{ border: '2px solid #ef9a9a', background: '#ffebee' }}>
+              style={{ border: '2px solid #ef9a9a', background: 'var(--error-pale)' }}>
               <div className="text-4xl mb-2">❌</div>
-              <p className="text-sm font-medium" style={{ color: '#c62828' }}>
+              <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>
                 {isRevoked ? '此证明已被撤销' : '证明无效'}
               </p>
               {cert.certificateNo && (
-                <p className="text-xs mt-2 font-mono" style={{ color: '#ef5350' }}>
+                <p className="text-xs mt-2 font-mono" style={{ color: 'var(--error-light)' }}>
                   编号：{cert.certificateNo}
                 </p>
               )}
               {cert.revokeReason && (
-                <p className="text-xs mt-2" style={{ color: '#ef5350' }}>
+                <p className="text-xs mt-2" style={{ color: 'var(--error-light)' }}>
                   撤销原因：{cert.revokeReason}
                 </p>
               )}
               {cert.revokedAt && (
-                <p className="text-xs mt-1" style={{ color: '#ef5350' }}>
+                <p className="text-xs mt-1" style={{ color: 'var(--error-light)' }}>
                   撤销时间：{new Date(cert.revokedAt).toLocaleString('zh-CN')}
                 </p>
               )}
@@ -212,7 +212,7 @@ export default function VerifyHoursPage() {
 
       {/* Footer */}
       <footer className="py-6 text-center">
-        <p className="text-xs" style={{ color: '#8b8174' }}>
+        <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
           🦊 FoxLearn 狐学 · 学时证明在线验证平台
         </p>
       </footer>

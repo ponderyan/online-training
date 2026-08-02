@@ -12,9 +12,9 @@ import { useDebounce } from '@/hooks/use-debounce';
 
 const LEVEL_NAMES: Record<string, string> = { JUNIOR: '初级', MIDDLE: '中级', SENIOR: '高级', EXPERT: '专家' };
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '正常', INACTIVE: '停用', SUSPENDED: '挂起' };
-const STATUS_COLORS: Record<string, string> = { ACTIVE: '#00897b', INACTIVE: '#8b8174', SUSPENDED: '#e87a30' };
+const STATUS_COLORS: Record<string, string> = { ACTIVE: 'var(--info)', INACTIVE: 'var(--ink-300)', SUSPENDED: 'var(--fox)' };
 const TYPE_NAMES: Record<string, string> = { INTERNAL: '内部讲师', EXTERNAL: '外聘讲师' };
-const TYPE_COLORS: Record<string, string> = { INTERNAL: '#1565c0', EXTERNAL: '#e87a30' };
+const TYPE_COLORS: Record<string, string> = { INTERNAL: 'var(--blue)', EXTERNAL: 'var(--fox)' };
 
 export default function InstructorsPage() {
   const router = useRouter();
@@ -114,18 +114,18 @@ export default function InstructorsPage() {
                   <td style={{ color: 'var(--ink-400)' }}>{inst.workUnit || '—'}</td>
                   <td>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ background: `${TYPE_COLORS[inst.type] || '#888'}18`, color: TYPE_COLORS[inst.type] || '#888' }}>
+                      style={{ background: `${TYPE_COLORS[inst.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
                       {TYPE_NAMES[inst.type] || inst.type}
                     </span>
                   </td>
                   <td>{inst.title || '—'}</td>
                   <td><span className="tag tag-cyan">{LEVEL_NAMES[inst.level] || inst.level}</span></td>
-                  <td><span className="tag" style={{ background: `${STATUS_COLORS[inst.status] || '#888'}18`, color: STATUS_COLORS[inst.status] || '#888' }}>{STATUS_NAMES[inst.status] || inst.status}</span></td>
+                  <td><span className="tag" style={{ background: `${STATUS_COLORS[inst.status] || 'var(--neutral-400)'}18`, color: STATUS_COLORS[inst.status] || 'var(--neutral-400)' }}>{STATUS_NAMES[inst.status] || inst.status}</span></td>
                   <td>
                     <div className="flex gap-2">
                       <button onClick={() => router.push(`/instructors/${inst.id}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button>
                       <button onClick={() => router.push(`/instructors/${inst.id}/edit`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                      <button onClick={() => handleDelete(inst.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>停用</button>
+                      <button onClick={() => handleDelete(inst.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>停用</button>
                     </div>
                   </td>
                 </tr>

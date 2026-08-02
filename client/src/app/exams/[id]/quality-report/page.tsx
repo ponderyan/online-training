@@ -43,15 +43,15 @@ const TYPE_NAMES: Record<string, string> = {
 };
 
 const DISCRIMINATION_COLORS = {
-  great: '#2e7d32',
-  good: '#558b2f',
-  fair: '#f9a825',
-  poor: '#e53935',
+  great: 'var(--sage)',
+  good: 'var(--sage)',
+  fair: 'var(--warning)',
+  poor: 'var(--error)',
 };
 
-const INK_300 = '#999';
-const INK_400 = '#777';
-const INK_600 = '#444';
+const INK_300 = 'var(--neutral-400)';
+const INK_400 = 'var(--neutral-400)';
+const INK_600 = 'var(--neutral-600)';
 
 const CARD_STYLE = { background: 'var(--paper)', border: '1px solid var(--ink-200)', borderRadius: '10px' };
 
@@ -65,9 +65,9 @@ function discLevel(d: number | null): { label: string; color: string; suggest: s
 }
 
 function scoreColor(val: number): string {
-  if (val >= 80) return '#2e7d32';
-  if (val >= 60) return '#e87a30';
-  return '#e53935';
+  if (val >= 80) return 'var(--sage)';
+  if (val >= 60) return 'var(--fox)';
+  return 'var(--error)';
 }
 
 // ── 子组件 ──
@@ -130,7 +130,7 @@ function QuestionDetailModal({
 
         {error && (
           <div className="p-8 text-center">
-            <p className="text-sm" style={{ color: '#e53935' }}>加载失败</p>
+            <p className="text-sm" style={{ color: 'var(--error)' }}>加载失败</p>
             <p className="text-xs mt-2" style={{ color: INK_400 }}>{error}</p>
             <button onClick={onClose} className="btn btn-outline btn-xs mt-3">关闭</button>
           </div>
@@ -140,14 +140,14 @@ function QuestionDetailModal({
           <>
             {/* 负区分度红色警告 */}
             {detail.discrimination !== null && detail.discrimination < 0 && (
-              <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: '#e5393518', color: '#e53935', border: '1px solid #e5393544' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: 'var(--verm-glow)', color: 'var(--error)', border: '1px solid #e5393544' }}>
                 ⚠️ 此题区分度为负，高分段答对率低于低分段，请重点核查
               </div>
             )}
 
             {/* 样本量过小提示 */}
             {sampleTooSmall && (
-              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: '#f9a82518', color: '#e87a30', border: '1px solid #f9a82544' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
                 ℹ️ 样本量过小（{detail.sampleCount} 人），数据仅供参考
               </div>
             )}
@@ -167,13 +167,13 @@ function QuestionDetailModal({
               <div className="mb-4 space-y-1.5 text-sm">
                 {detail.options.map(o => (
                   <div key={o.label} className="flex items-center gap-2 p-1.5 rounded"
-                    style={{ background: o.isCorrect ? '#2e7d3208' : 'transparent' }}>
+                    style={{ background: o.isCorrect ? 'var(--sage-glow)' : 'transparent' }}>
                     <span className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold"
-                      style={{ background: o.isCorrect ? '#2e7d32' : 'var(--ink-200)', color: o.isCorrect ? '#fff' : INK_400 }}>
+                      style={{ background: o.isCorrect ? 'var(--sage)' : 'var(--ink-200)', color: o.isCorrect ? '#fff' : INK_400 }}>
                       {o.label}
                     </span>
-                    <span style={{ color: o.isCorrect ? '#2e7d32' : INK_600 }}>{o.text || '—'}</span>
-                    {o.isCorrect && <span className="text-xs" style={{ color: '#2e7d32' }}>✓ 正确答案</span>}
+                    <span style={{ color: o.isCorrect ? 'var(--sage)' : INK_600 }}>{o.text || '—'}</span>
+                    {o.isCorrect && <span className="text-xs" style={{ color: 'var(--sage)' }}>✓ 正确答案</span>}
                   </div>
                 ))}
               </div>
@@ -216,7 +216,7 @@ function QuestionDetailModal({
                     <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
                       {detail.optionSelection.map((opt, i) => {
                         const isCorrect = detail.options.find(o => o.label === opt.label)?.isCorrect;
-                        return <Cell key={i} fill={isCorrect ? '#2e7d32' : opt.rate >= 20 ? '#f9a82588' : '#ccc'} />;
+                        return <Cell key={i} fill={isCorrect ? 'var(--sage)' : opt.rate >= 20 ? '#f9a82588' : 'var(--neutral-200)'} />;
                       })}
                     </Bar>
                   </BarChart>
@@ -229,9 +229,9 @@ function QuestionDetailModal({
               <h4 className="text-xs font-semibold mb-2" style={{ color: INK_600 }}>各分数段答对率</h4>
               <div className="space-y-2">
                 {[
-                  { label: '高分档（前27%）', data: detail.tierStats.highGroup, color: '#2e7d32' },
-                  { label: '中档（中间46%）', data: detail.tierStats.midGroup, color: '#e87a30' },
-                  { label: '低分档（后27%）', data: detail.tierStats.lowGroup, color: '#e53935' },
+                  { label: '高分档（前27%）', data: detail.tierStats.highGroup, color: 'var(--sage)' },
+                  { label: '中档（中间46%）', data: detail.tierStats.midGroup, color: 'var(--fox)' },
+                  { label: '低分档（后27%）', data: detail.tierStats.lowGroup, color: 'var(--error)' },
                 ].map(tier => (
                   <div key={tier.label}>
                     <div className="flex justify-between items-center mb-0.5">
@@ -338,7 +338,7 @@ export default function ExamQualityReportPage() {
     return (
       <AppLayout>
         <div className="card p-8 text-center max-w-md mx-auto mt-16" style={CARD_STYLE}>
-          <div className="text-sm" style={{ color: '#e53935' }}>加载失败</div>
+          <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
           <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
           <button onClick={load} className="btn btn-fox btn-xs mt-3">重试</button>
           <button onClick={() => router.back()} className="btn btn-outline btn-xs mt-3 ml-2">返回</button>
@@ -363,17 +363,17 @@ export default function ExamQualityReportPage() {
 
       {/* 边界状态提示 */}
       {smallSample && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: '#f9a82518', color: '#e87a30', border: '1px solid #f9a82544' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
           ℹ️ 样本量过小（{overview.totalExaminees} 人），数据仅供参考
         </div>
       )}
       {allFullMarks && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: '#f9a82518', color: '#e87a30', border: '1px solid #f9a82544' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
           ℹ️ 所有学员成绩完全相同，成绩无区分度
         </div>
       )}
       {allGoodDistinction && (
-        <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: '#2e7d3208', color: '#2e7d32', border: '1px solid #2e7d3244' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', border: '1px solid #2e7d3244' }}>
           ✅ 试卷质量良好，所有题目区分度 ≥ 0.30，无需调整
         </div>
       )}
@@ -386,8 +386,8 @@ export default function ExamQualityReportPage() {
           <div className="grid grid-cols-6 gap-3 mb-6">
             <StatCard value={overview.totalExaminees} label="参考人数" color={INK_600} />
             <StatCard value={overview.avgScore} label="平均分" color={scoreColor(overview.avgScore)} suffix={`/${overview.totalScore}`} />
-            <StatCard value={overview.maxScore} label="最高分" color="#2e7d32" suffix={`/${overview.totalScore}`} />
-            <StatCard value={overview.minScore} label="最低分" color={overview.minScore < 60 ? '#e53935' : INK_600} suffix={`/${overview.totalScore}`} />
+            <StatCard value={overview.maxScore} label="最高分" color="var(--sage)" suffix={`/${overview.totalScore}`} />
+            <StatCard value={overview.minScore} label="最低分" color={overview.minScore < 60 ? 'var(--error)' : INK_600} suffix={`/${overview.totalScore}`} />
             <StatCard value={overview.passRate} label="及格率" color={scoreColor(overview.passRate)} suffix="%" />
             <StatCard value={overview.stdDev} label="标准差" color={overview.stdDev > 0 ? INK_600 : INK_300} />
           </div>

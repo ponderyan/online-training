@@ -4,6 +4,7 @@ import './globals.css';
 import { SiteSettingsProvider } from '@/hooks/use-site-settings';
 import DynamicBrand from '@/components/dynamic-brand';
 import { ToastProvider } from '@/components/Toast';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const notoSerifSC = Noto_Serif_SC({
   subsets: ['latin'],
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className={notoSerifSC.variable}>
-      <body><SiteSettingsProvider><ToastProvider><DynamicBrand />{children}</ToastProvider></SiteSettingsProvider></body>
+      <body><ThemeProvider><SiteSettingsProvider><ToastProvider><DynamicBrand />{children}</ToastProvider></SiteSettingsProvider></ThemeProvider></body>
     </html>
   );
 }

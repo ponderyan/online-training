@@ -104,11 +104,11 @@ export default function KnowledgePage() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; color: string }> = {
-      READY: { label: '就绪', color: '#4caf50' },
-      PROCESSING: { label: '处理中', color: '#ff9800' },
-      FAILED: { label: '失败', color: '#e53935' },
+      READY: { label: '就绪', color: 'var(--sage-light)' },
+      PROCESSING: { label: '处理中', color: 'var(--fox-light)' },
+      FAILED: { label: '失败', color: 'var(--error)' },
     };
-    const s = map[status] || { label: status, color: '#999' };
+    const s = map[status] || { label: status, color: 'var(--neutral-400)' };
     return <span className="tag" style={{ background: s.color + '18', color: s.color, fontSize: '10px' }}>{s.label}</span>;
   };
 
@@ -166,13 +166,13 @@ export default function KnowledgePage() {
                         <span className="text-xs ml-2" style={{ color: 'var(--ink-300)' }}>.{d.fileType}</span>
                       </td>
                       <td style={{ color: 'var(--ink-400)' }} className="text-xs">{d.subject?.name || '—'}</td>
-                      <td><span className="tag" style={{ background: '#7b1fa218', color: '#7b1fa2', fontSize: '10px' }}>{d.chunkCount} 块</span></td>
+                      <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{d.chunkCount} 块</span></td>
                       <td className="text-xs" style={{ color: 'var(--ink-300)' }}>v{d.version}</td>
                       <td>{statusBadge(d.status)}</td>
                       <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{d.createdAt ? new Date(d.createdAt).toLocaleString('zh-CN') : '—'}</td>
                       <td className="flex gap-2">
                         <Link href={`/admin/knowledge/${d.id}`} className="text-xs" style={{ color: 'var(--fox)' }}>分块</Link>
-                        <button onClick={() => handleDelete(d.id, d.name)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                        <button onClick={() => handleDelete(d.id, d.name)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                       </td>
                     </tr>
                   ))}
@@ -203,7 +203,7 @@ export default function KnowledgePage() {
               <div className="flex gap-1 mt-3 flex-wrap">
                 <span className="text-xs" style={{ color: 'var(--ink-300)' }}>提取关键词：</span>
                 {testKeywords.map((kw, i) => (
-                  <span key={i} className="tag" style={{ fontSize: '10px', background: '#e3f2fd', color: '#1565c0' }}>{kw}</span>
+                  <span key={i} className="tag" style={{ fontSize: '10px', background: 'var(--blue-pale)', color: 'var(--blue)' }}>{kw}</span>
                 ))}
               </div>
             )}
@@ -223,7 +223,7 @@ export default function KnowledgePage() {
                   {r.matchedKeywords?.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {r.matchedKeywords.map((kw: string, j: number) => (
-                        <span key={j} className="tag" style={{ fontSize: '9px', background: '#fff3e0', color: '#e65100' }}>{kw}</span>
+                        <span key={j} className="tag" style={{ fontSize: '9px', background: 'var(--fox-pale)', color: 'var(--fox-dark)' }}>{kw}</span>
                       ))}
                     </div>
                   )}

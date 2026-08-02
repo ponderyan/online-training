@@ -43,7 +43,7 @@ interface OrgUsers {
 
 const LEVEL_LABELS: Record<number, string> = { 1: 'Level 1', 2: 'Level 2', 3: 'Level 3', 4: 'Level 4' };
 const ORG_TYPE_LABELS: Record<string, string> = { ASSOCIATION: '协会', BRANCH: '分会', DEPARTMENT: '部门' };
-const ORG_TYPE_COLORS: Record<string, string> = { ASSOCIATION: '#7b1fa2', BRANCH: '#1565c0', DEPARTMENT: '#2e7d32' };
+const ORG_TYPE_COLORS: Record<string, string> = { ASSOCIATION: 'var(--purple)', BRANCH: 'var(--blue)', DEPARTMENT: 'var(--sage)' };
 
 // ── 搜索高亮：匹配关键词部分加淡狐狸色背景 ──
 function highlightText(text: string, keyword: string) {
@@ -465,7 +465,7 @@ export default function OrganizationsPage() {
                       {orgUsers.groups.map(g => (
                         <div key={g.roleCode} className="rounded-lg p-3" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: g.color || '#8b8174' }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: g.color || 'var(--ink-300)' }} />
                             <span className="text-xs font-medium" style={{ color: 'var(--ink-600)' }}>{g.roleName}</span>
                             <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>({g.users.length} 人)</span>
                           </div>
@@ -574,7 +574,7 @@ export default function OrganizationsPage() {
                     <div className="flex items-center gap-2">
                       <input type="checkbox" checked={certConfig.useFoxLearnSeal ?? true}
                         onChange={e => setCertConfig(prev => prev ? { ...prev, useFoxLearnSeal: e.target.checked } : prev)}
-                        style={{ accentColor: '#e87a30' }} />
+                        style={{ accentColor: 'var(--fox)' }} />
                       <span className="text-xs" style={{ color: 'var(--ink-500)' }}>使用平台统一印章（忽略机构印章）</span>
                     </div>
                     <button disabled={certSaving} onClick={async () => {
@@ -967,7 +967,7 @@ function CertImageUploader({ label, hint, value, uploading, onUpload, onClear, p
       <div className="flex items-center gap-3">
         {/* 预览区 */}
         {value ? (
-          <div className="relative group" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)', background: '#fafafa', ...previewStyle }}>
+          <div className="relative group" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)', background: 'var(--neutral-50)', ...previewStyle }}>
             <img src={value} alt={label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             <button onClick={onClear}
               className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"

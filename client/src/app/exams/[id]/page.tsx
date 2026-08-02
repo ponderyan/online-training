@@ -128,7 +128,7 @@ export default function ExamDetail() {
           )}
           {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && exam.examMode !== 'OFFLINE' && (
             <button onClick={() => router.push(`/proctoring/${exam.id}`)}
-              className="btn text-sm px-4 py-2" style={{ border: '1px solid #ef4444', color: '#ef4444' }}>
+              className="btn text-sm px-4 py-2" style={{ border: '1px solid #ef4444', color: 'var(--error)' }}>
               🎥 监考
             </button>
           )}
@@ -144,11 +144,11 @@ export default function ExamDetail() {
       {/* Status Overview — auto-refresh during active exams */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         {[
-          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: '#8b8174' },
-          { label: '已提交', value: submittedCount, color: '#00897b' },
-          { label: '考试中', value: activeCount, color: '#e87a30' },
-          { label: '已断线', value: pausedCount, color: '#ef4444' },
-          { label: '待参加', value: pendingCount, color: '#5a5348' },
+          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: 'var(--ink-300)' },
+          { label: '已提交', value: submittedCount, color: 'var(--info)' },
+          { label: '考试中', value: activeCount, color: 'var(--fox)' },
+          { label: '已断线', value: pausedCount, color: 'var(--error)' },
+          { label: '待参加', value: pendingCount, color: 'var(--ink-500)' },
         ].map((s, i) => (
           <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -201,8 +201,8 @@ export default function ExamDetail() {
               <div className="flex items-center gap-4">
                 {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
                 <span className="text-xs px-2.5 py-1 rounded-full" style={{
-                  background: s.absent ? '#fef3c7' : s.status === 'SUBMITTED' ? '#e8f5e9' : s.status === 'ACTIVE' ? '#fff3e0' : '#f5f5f5',
-                  color: s.absent ? '#d97706' : s.status === 'SUBMITTED' ? '#2e7d32' : s.status === 'ACTIVE' ? '#e65100' : '#757575',
+                  background: s.absent ? 'var(--warning-pale)' : s.status === 'SUBMITTED' ? 'var(--success-pale)' : s.status === 'ACTIVE' ? 'var(--fox-pale)' : 'var(--neutral-50)',
+                  color: s.absent ? 'var(--warning)' : s.status === 'SUBMITTED' ? 'var(--sage)' : s.status === 'ACTIVE' ? 'var(--fox-dark)' : '#757575',
                 }}>
                   {s.absent ? '缺考' : (sessionStatusLabels[s.status] || s.status)}
                 </span>

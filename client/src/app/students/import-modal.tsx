@@ -103,12 +103,12 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
 
         {/* Validation errors */}
         {errors.length > 0 && (
-          <div className="mb-4 p-3 rounded-lg" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-            <p className="text-xs font-medium mb-1" style={{ color: '#ef4444' }}>⚠️ 发现 {errors.length} 个问题</p>
+          <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--error-pale)', border: '1px solid #fecaca' }}>
+            <p className="text-xs font-medium mb-1" style={{ color: 'var(--error)' }}>⚠️ 发现 {errors.length} 个问题</p>
             {errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-xs" style={{ color: '#ef4444' }}>第{e.row}行：{e.message}</p>
+              <p key={i} className="text-xs" style={{ color: 'var(--error)' }}>第{e.row}行：{e.message}</p>
             ))}
-            {errors.length > 5 && <p className="text-xs" style={{ color: '#ef4444' }}>…还有 {errors.length - 5} 个错误</p>}
+            {errors.length > 5 && <p className="text-xs" style={{ color: 'var(--error)' }}>…还有 {errors.length - 5} 个错误</p>}
           </div>
         )}
 
@@ -119,7 +119,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
               <thead><tr>{HEADERS.map(h => <th key={h}>{h}</th>)}</tr></thead>
               <tbody>
                 {preview.map((row, i) => (
-                  <tr key={i} style={errors.some(e => e.row === i + 2) ? { background: '#fef2f2' } : {}}>
+                  <tr key={i} style={errors.some(e => e.row === i + 2) ? { background: 'var(--error-pale)' } : {}}>
                     {HEADERS.map((_, ci) => <td key={ci}>{row[ci] || '—'}</td>)}
                   </tr>
                 ))}
@@ -131,10 +131,10 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
 
         {/* Result */}
         {result && (
-          <div className="mb-4 p-3 rounded-lg" style={{ background: result.fail > 0 ? '#fef2f2' : '#f0faf0' }}>
+          <div className="mb-4 p-3 rounded-lg" style={{ background: result.fail > 0 ? 'var(--error-pale)' : 'var(--success-pale)' }}>
             <p className="text-sm">✅ 成功 {result.success} 行{result.fail > 0 ? ` · ❌ 失败 ${result.fail} 行` : ''}</p>
             {result.errors.slice(0, 3).map((e, i) => (
-              <p key={i} className="text-xs" style={{ color: '#ef4444' }}>第{e.row}行：{e.message}</p>
+              <p key={i} className="text-xs" style={{ color: 'var(--error)' }}>第{e.row}行：{e.message}</p>
             ))}
           </div>
         )}

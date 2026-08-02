@@ -140,7 +140,7 @@ export default function VideoPlayPage() {
 
       {/* Video Player */}
       <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
-        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+        <div style={{ position: 'relative', paddingTop: '56.25%', background: 'var(--ink-900)' }}>
           <video
             ref={videoRef}
             id="video-player"
@@ -165,9 +165,9 @@ export default function VideoPlayPage() {
           </div>
           <div>
             {completed ? (
-              <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>✅ 已完成</span>
+              <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontWeight: 600 }}>✅ 已完成</span>
             ) : (
-              <span className="tag" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中</span>
+              <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中</span>
             )}
           </div>
         </div>

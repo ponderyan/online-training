@@ -160,7 +160,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
             {subjectivePqs.map((pq: any) => (
               <div key={pq.id} onClick={() => setSelectedPq(pq)}
                 className="px-4 py-3 cursor-pointer transition-colors text-sm"
-                style={{ background: selectedPq?.id === pq.id ? '#fef3e7' : 'white' }}>
+                style={{ background: selectedPq?.id === pq.id ? 'var(--fox-pale2)' : 'white' }}>
                 <div className="flex items-center gap-2">
                   <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
                     {typeNames[pq.question?.type] || pq.question?.type}
@@ -232,9 +232,9 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                     <button key={idx} onClick={() => toggleRubricItem(idx)}
                       className="text-xs px-2.5 py-1.5 rounded-lg transition-all"
                       style={{
-                        border: `1.5px solid ${selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage)' : '#e53e3e') : 'var(--ink-200)'}`,
-                        background: selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage-glow)' : '#fff5f5') : 'white',
-                        color: selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage)' : '#e53e3e') : 'var(--ink-500)',
+                        border: `1.5px solid ${selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage)' : 'var(--error)') : 'var(--ink-200)'}`,
+                        background: selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage-glow)' : 'var(--error-pale)') : 'white',
+                        color: selectedRubric.has(idx) ? (item.type === 'add' ? 'var(--sage)' : 'var(--error)') : 'var(--ink-500)',
                       }}>
                       {item.type === 'add' ? '+' : '-'}{item.points} {item.description}
                     </button>
@@ -310,7 +310,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                 {answers.map((a, idx) => (
                   <div key={a.answerId} onClick={() => { setCurrentIdx(idx); setScoreInput(a.score !== null ? String(a.score) : ''); setNoteInput(a.graderNote || ''); setSelectedRubric(new Set()); }}
                     className="px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors"
-                    style={{ background: idx === currentIdx ? '#fef3e7' : 'white' }}>
+                    style={{ background: idx === currentIdx ? 'var(--fox-pale2)' : 'white' }}>
                     <span className="text-[10px] num w-6 text-center" style={{ color: 'var(--ink-300)' }}>{idx + 1}</span>
                     <span className="text-xs flex-1 truncate" style={{ color: 'var(--ink-500)' }}>
                       {blind ? `考生 #${idx + 1}` : a.studentName}
@@ -351,7 +351,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                     onChange={e => { const d = [...rubricDraft]; d[idx] = { ...d[idx], description: e.target.value }; setRubricDraft(d); }}
                     className="input flex-1 text-xs" />
                   <button onClick={() => setRubricDraft(rubricDraft.filter((_, i) => i !== idx))}
-                    className="text-xs px-2 py-1 rounded" style={{ color: '#e53e3e' }}>✕</button>
+                    className="text-xs px-2 py-1 rounded" style={{ color: 'var(--error)' }}>✕</button>
                 </div>
               ))}
             </div>

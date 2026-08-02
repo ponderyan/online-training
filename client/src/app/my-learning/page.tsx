@@ -56,11 +56,11 @@ export default function MyLearningPage() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   const LEVEL_COLORS: Record<string, string> = {
-    '优秀': '#2e7d32',
-    '良好': '#558b2f',
-    '一般': '#f59e0b',
-    '薄弱': '#ef4444',
-    '危险': '#dc2626',
+    '优秀': 'var(--sage)',
+    '良好': 'var(--sage)',
+    '一般': 'var(--warning)',
+    '薄弱': 'var(--error)',
+    '危险': 'var(--error)',
   };
 
   useEffect(() => {
@@ -115,21 +115,21 @@ export default function MyLearningPage() {
 
   const statusBadge = (status: string | null) => {
     if (status === 'PUBLISHED' || status === 'ADJUSTED') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: '#2e7d32' }}>已发布</span>;
+      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--sage)' }}>已发布</span>;
     }
     if (status === 'GRADED') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: '#e87a30' }}>已评分</span>;
+      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--fox)' }}>已评分</span>;
     }
     if (status === 'GRADING') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: '#f5a061' }}>评分中</span>;
+      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--fox-light)' }}>评分中</span>;
     }
-    return <span className="text-xs" style={{ fontWeight: 600, color: '#8b8174' }}>待评分</span>;
+    return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--ink-300)' }}>待评分</span>;
   };
 
   const hourStatusBadge = (status: string) => {
-    if (status === 'APPROVED') return <span className="text-xs" style={{ color: '#2e7d32' }}>✅ 已审核</span>;
-    if (status === 'REJECTED') return <span className="text-xs" style={{ color: '#ef4444' }}>❌ 已驳回</span>;
-    return <span className="text-xs" style={{ color: '#e87a30' }}>⏳ 待审核</span>;
+    if (status === 'APPROVED') return <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已审核</span>;
+    if (status === 'REJECTED') return <span className="text-xs" style={{ color: 'var(--error)' }}>❌ 已驳回</span>;
+    return <span className="text-xs" style={{ color: 'var(--fox)' }}>⏳ 待审核</span>;
   };
 
   // Learning path computation
@@ -176,9 +176,9 @@ export default function MyLearningPage() {
                 : 0}%
             </div>
             <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>通过 <strong style={{ color: '#2e7d32' }}>{data?.examStats.passed || 0}</strong></span>
-              <span>未通过 <strong style={{ color: '#ef4444' }}>{data?.examStats.failed || 0}</strong></span>
-              <span>待评分 <strong style={{ color: '#e87a30' }}>{data?.examStats.pendingScore || 0}</strong></span>
+              <span>通过 <strong style={{ color: 'var(--sage)' }}>{data?.examStats.passed || 0}</strong></span>
+              <span>未通过 <strong style={{ color: 'var(--error)' }}>{data?.examStats.failed || 0}</strong></span>
+              <span>待评分 <strong style={{ color: 'var(--fox)' }}>{data?.examStats.pendingScore || 0}</strong></span>
             </div>
           </div>
 
@@ -198,8 +198,8 @@ export default function MyLearningPage() {
               <span className="text-base font-normal" style={{ color: 'var(--ink-400)' }}> h</span>
             </div>
             <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>已审核 <strong style={{ color: '#2e7d32' }}>{data?.hoursStats.approvedHours || 0}</strong></span>
-              <span>待审核 <strong style={{ color: '#e87a30' }}>{data?.hoursStats.pendingHours || 0}</strong></span>
+              <span>已审核 <strong style={{ color: 'var(--sage)' }}>{data?.hoursStats.approvedHours || 0}</strong></span>
+              <span>待审核 <strong style={{ color: 'var(--fox)' }}>{data?.hoursStats.pendingHours || 0}</strong></span>
             </div>
           </div>
 
@@ -219,7 +219,7 @@ export default function MyLearningPage() {
             </div>
             <div className="mt-2">
               <button onClick={() => router.push('/my-certificates')}
-                className="text-xs" style={{ color: '#e87a30', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                 查看全部证书 →
               </button>
             </div>
@@ -276,7 +276,7 @@ export default function MyLearningPage() {
             {(data?.examStats.recentExams.length ?? 0) > 0 && (
               <div className="mt-3 text-right">
                 <button onClick={() => router.push('/exam/results')}
-                  className="text-xs" style={{ color: '#e87a30', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                   查看全部成绩 →
                 </button>
               </div>
@@ -320,7 +320,7 @@ export default function MyLearningPage() {
             {(data?.hoursStats.recentRecords.length ?? 0) > 0 && (
               <div className="mt-3 text-right">
                 <button onClick={() => router.push('/learning-hours')}
-                  className="text-xs" style={{ color: '#e87a30', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                   查看全部学时 →
                 </button>
               </div>
@@ -399,15 +399,15 @@ export default function MyLearningPage() {
                         {isCurrent && <span className="text-sm">➡️</span>}
                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                           style={{
-                            background: isCompleted ? '#2e7d3218' : isCurrent ? 'var(--fox)' : 'var(--ink-100)',
-                            color: isCompleted ? '#2e7d32' : isCurrent ? 'white' : 'var(--ink-400)',
+                            background: isCompleted ? 'var(--sage-glow)' : isCurrent ? 'var(--fox)' : 'var(--ink-100)',
+                            color: isCompleted ? 'var(--sage)' : isCurrent ? 'white' : 'var(--ink-400)',
                           }}>
                           {isCompleted ? '✅' : idx + 1}
                         </span>
                         <span className="text-xs font-medium truncate" style={{ color: 'var(--ink-700)' }}>{step.kpName}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0" style={{
-                          background: `${(LEVEL_COLORS[step.level] || '#f59e0b')}18`,
-                          color: LEVEL_COLORS[step.level] || '#f59e0b',
+                          background: `${(LEVEL_COLORS[step.level] || 'var(--warning)')}18`,
+                          color: LEVEL_COLORS[step.level] || 'var(--warning)',
                         }}>
                           {step.level}
                         </span>

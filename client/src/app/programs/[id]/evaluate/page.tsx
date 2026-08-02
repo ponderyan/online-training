@@ -169,7 +169,7 @@ function RatingInput({ value, onChange }: { value: number; onChange: (v: number)
       {[1, 2, 3, 4, 5].map(n => (
         <button key={n} type="button" onClick={() => onChange(n === value ? 0 : n)}
           className="text-xl bg-transparent border-none cursor-pointer transition-colors"
-          style={{ color: n <= value ? '#e87a30' : '#ddd' }}>
+          style={{ color: n <= value ? 'var(--fox)' : 'var(--neutral-200)' }}>
           ★
         </button>
       ))}

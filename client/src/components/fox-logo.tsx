@@ -14,25 +14,25 @@ function FoxSVG({ size = 48 }: { size?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 64 64" fill="none" className="flex-shrink-0">
       {/* 左耳 */}
-      <path d="M20,28 L12,6 L32,22Z" fill="#e87a30" />
+      <path d="M20,28 L12,6 L32,22Z" fill="var(--fox)" />
       {/* 右耳 */}
-      <path d="M44,28 L52,6 L32,22Z" fill="#e87a30" />
+      <path d="M44,28 L52,6 L32,22Z" fill="var(--fox)" />
       {/* 头部 */}
-      <ellipse cx="32" cy="34" rx="18" ry="16" fill="#e87a30" />
+      <ellipse cx="32" cy="34" rx="18" ry="16" fill="var(--fox)" />
       {/* 面部 */}
-      <ellipse cx="32" cy="37" rx="13" ry="10" fill="#fce6d3" opacity="0.7" />
+      <ellipse cx="32" cy="37" rx="13" ry="10" fill="var(--fox-pale)" opacity="0.7" />
       {/* 左眼 */}
-      <ellipse cx="26" cy="31" rx="2" ry="2.8" fill="#1a1712" />
+      <ellipse cx="26" cy="31" rx="2" ry="2.8" fill="var(--ink-900)" />
       <ellipse cx="26.5" cy="30" rx="0.8" ry="1.2" fill="#fff" opacity="0.7" />
       {/* 右眼 */}
-      <ellipse cx="38" cy="31" rx="2" ry="2.8" fill="#1a1712" />
+      <ellipse cx="38" cy="31" rx="2" ry="2.8" fill="var(--ink-900)" />
       <ellipse cx="38.5" cy="30" rx="0.8" ry="1.2" fill="#fff" opacity="0.7" />
       {/* 鼻子 */}
-      <ellipse cx="32" cy="38" rx="2" ry="1.5" fill="#c9601e" />
+      <ellipse cx="32" cy="38" rx="2" ry="1.5" fill="var(--fox-dark)" />
       {/* 嘴 */}
-      <path d="M29,40.5 Q32,44 35,40.5" stroke="#c9601e" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
+      <path d="M29,40.5 Q32,44 35,40.5" stroke="var(--fox-dark)" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
       {/* 尾巴 */}
-      <path d="M48,52 C56,48 58,40 54,36 C50,40 46,44 48,52Z" fill="#e87a30" opacity="0.85" />
+      <path d="M48,52 C56,48 58,40 54,36 C50,40 46,44 48,52Z" fill="var(--fox)" opacity="0.85" />
     </svg>
   );
 }

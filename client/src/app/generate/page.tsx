@@ -12,7 +12,7 @@ const TYPE_NAMES: Record<string, string> = {
 };
 const DIFFS = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'] as const;
 const DIFF_LABELS = ['易', '较易', '较难', '难'];
-const DIFF_COLORS = ['#00897b', '#c9a03a', '#8a6e4f', '#d9364a'];
+const DIFF_COLORS = ['var(--info)', 'var(--warning)', '#8a6e4f', 'var(--error)'];
 
 function GeneratePageContent() {
   const router = useRouter();
@@ -529,7 +529,7 @@ function GeneratePageContent() {
               <input type="range" min={0} max={100} value={sourceMix}
                 onChange={e => setSourceMix(Number(e.target.value))}
                 className="flex-1 h-1.5 rounded cursor-pointer"
-                style={{ accentColor: '#e87a30' }} />
+                style={{ accentColor: 'var(--fox)' }} />
               <span className="tag tag-ink">公共 {100 - sourceMix}%</span>
             </div>
             {questionCounts && !countsLoading && (

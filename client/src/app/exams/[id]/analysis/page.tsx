@@ -107,11 +107,11 @@ export default function ExamAnalysisPage() {
                 <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--ink-100)' }}>
                   <div className="h-full rounded-full" style={{
                     width: `${q.accuracy}%`,
-                    background: q.accuracy >= 80 ? 'var(--sage)' : q.accuracy >= 60 ? 'var(--fox)' : '#e53935',
+                    background: q.accuracy >= 80 ? 'var(--sage)' : q.accuracy >= 60 ? 'var(--fox)' : 'var(--error)',
                   }} />
                 </div>
                 <span className="text-xs font-medium whitespace-nowrap" style={{
-                  color: q.accuracy >= 80 ? 'var(--sage)' : q.accuracy >= 60 ? 'var(--fox)' : '#e53935',
+                  color: q.accuracy >= 80 ? 'var(--sage)' : q.accuracy >= 60 ? 'var(--fox)' : 'var(--error)',
                 }}>
                   {q.correctCount}/{q.totalAnswers} ({q.accuracy}%)
                 </span>

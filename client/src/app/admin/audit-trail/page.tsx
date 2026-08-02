@@ -6,13 +6,13 @@ import { api } from '@/lib/api';
 
 // ── 事件类型 → 颜色 + 图标 ──
 const EVENT_STYLE: Record<string, { color: string; bg: string; icon: string }> = {
-  STATE_CHANGE: { color: '#2563eb', bg: 'rgba(37,99,235,0.10)', icon: '🔄' },
-  ASSIGNMENT:   { color: '#00897b', bg: 'rgba(0,137,123,0.10)', icon: '👥' },
-  SUBMISSION:   { color: '#7b1fa2', bg: 'rgba(123,31,162,0.10)', icon: '📝' },
-  GRADING:      { color: '#c9a03a', bg: 'rgba(201,160,58,0.12)', icon: '✏️' },
-  APPEAL:       { color: '#e87a30', bg: 'rgba(232,122,48,0.10)', icon: '⚖️' },
-  SCORE_ADJUST: { color: '#e53935', bg: 'rgba(229,57,53,0.10)',  icon: '🔧' },
-  CERT_ISSUE:   { color: '#00897b', bg: 'rgba(0,137,123,0.10)',  icon: '🎓' },
+  STATE_CHANGE: { color: 'var(--blue)', bg: 'rgba(37,99,235,0.10)', icon: '🔄' },
+  ASSIGNMENT:   { color: 'var(--info)', bg: 'rgba(0,137,123,0.10)', icon: '👥' },
+  SUBMISSION:   { color: 'var(--purple)', bg: 'rgba(123,31,162,0.10)', icon: '📝' },
+  GRADING:      { color: 'var(--warning)', bg: 'rgba(201,160,58,0.12)', icon: '✏️' },
+  APPEAL:       { color: 'var(--fox)', bg: 'rgba(232,122,48,0.10)', icon: '⚖️' },
+  SCORE_ADJUST: { color: 'var(--error)', bg: 'rgba(229,57,53,0.10)',  icon: '🔧' },
+  CERT_ISSUE:   { color: 'var(--info)', bg: 'rgba(0,137,123,0.10)',  icon: '🎓' },
 };
 
 const ENTITY_LABELS: Record<string, string> = { EXAM: '考试', PROGRAM: '培训班', USER: '用户', CERTIFICATE: '证书' };

@@ -28,14 +28,14 @@ interface DashboardData {
 }
 
 // ── 主题色 ──
-const FOX = '#e87a30';
-const CYAN = '#00897b';
-const SAGE = '#558b2f';
-const GOLD = '#f9a825';
+const FOX = 'var(--fox)';
+const CYAN = 'var(--info)';
+const SAGE = 'var(--sage)';
+const GOLD = 'var(--warning)';
 const ROSE = '#e5393588';
-const INK_300 = '#999';
-const INK_400 = '#777';
-const INK_600 = '#444';
+const INK_300 = 'var(--neutral-400)';
+const INK_400 = 'var(--neutral-400)';
+const INK_600 = 'var(--neutral-600)';
 
 const CARD_STYLE = { background: 'var(--paper)', border: '1px solid var(--ink-200)', borderRadius: '10px' };
 
@@ -117,7 +117,7 @@ export default function DashboardTab({ programId }: { programId: string }) {
   if (error) {
     return (
       <div className="card p-8 text-center" style={CARD_STYLE}>
-        <div className="text-sm" style={{ color: '#e53935' }}>加载失败</div>
+        <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
         <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
         <button onClick={load} className="btn btn-fox btn-xs mt-3">重试</button>
       </div>
@@ -284,8 +284,8 @@ export default function DashboardTab({ programId }: { programId: string }) {
                             ? 'bg-[var(--gold-glow)] text-[var(--gold-dark)]'
                             : ''
                         }`} style={{
-                          background: row.certStatus === '已发放' ? '#00897b18' : row.certStatus !== '—' ? '#f9a82518' : 'transparent',
-                          color: row.certStatus === '已发放' ? '#00897b' : row.certStatus !== '—' ? '#f9a825' : INK_300,
+                          background: row.certStatus === '已发放' ? 'var(--cyan-glow)' : row.certStatus !== '—' ? 'var(--gold-glow)' : 'transparent',
+                          color: row.certStatus === '已发放' ? 'var(--info)' : row.certStatus !== '—' ? 'var(--warning)' : INK_300,
                         }}>
                           {row.certStatus}
                         </span>

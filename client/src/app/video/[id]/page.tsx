@@ -202,22 +202,22 @@ export default function VideoPlayPage() {
     return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#0f0f0f', color: '#888' }}>加载中… 🦊</div>;
-  if (error) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#0f0f0f', color: '#888' }}>{error}</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--ink-900)', color: 'var(--neutral-400)' }}>加载中… 🦊</div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--ink-900)', color: 'var(--neutral-400)' }}>{error}</div>;
   if (!video) return null;
 
   return (
-    <div style={{ background: '#0f0f0f', minHeight: '100vh', color: '#eee' }}>
+    <div style={{ background: 'var(--ink-900)', minHeight: '100vh', color: 'var(--neutral-100)' }}>
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3" style={{ background: '#1a1a1a', borderBottom: '1px solid #333' }}>
-        <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: '#e87a30', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
-        <span style={{ fontSize: 12, color: '#666' }}>🦊 狐学</span>
+        <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: 'var(--fox)', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
+        <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>🦊 狐学</span>
       </div>
 
       <div className="flex" style={{ maxWidth: 1400, margin: '0 auto' }}>
         {/* Left: Player */}
         <div className="flex-1 p-4">
-          <div className="rounded-lg overflow-hidden" style={{ background: '#000' }}>
+          <div className="rounded-lg overflow-hidden" style={{ background: 'var(--ink-900)' }}>
             <div style={{ position: 'relative', paddingTop: '56.25%' }}>
               <video ref={videoRef} controls autoPlay playsInline
                 poster={video.coverUrl ? mediaURL(video.coverUrl) : undefined}
@@ -236,29 +236,29 @@ export default function VideoPlayPage() {
                   <button key={idx} onClick={() => handleQuizSubmit(idx)}
                     className="block w-full text-left px-3 py-2 rounded text-sm transition-colors"
                     style={{
-                      background: quizAnswer === idx ? (idx === activeQuiz.correctIndex ? '#2e7d32' : '#c62828') : '#2a2a2a',
-                      color: '#eee', border: '1px solid #444', cursor: 'pointer',
+                      background: quizAnswer === idx ? (idx === activeQuiz.correctIndex ? 'var(--sage)' : 'var(--error)') : 'var(--neutral-800)',
+                      color: 'var(--neutral-100)', border: '1px solid #444', cursor: 'pointer',
                     }}>
                     {String.fromCharCode(65 + idx)}. {opt}
                   </button>
                 ))}
               </div>
-              {quizWrong && <p className="text-xs mt-2" style={{ color: '#ff9800' }}>❌ 回答错误，请重新选择</p>}
+              {quizWrong && <p className="text-xs mt-2" style={{ color: 'var(--fox-light)' }}>❌ 回答错误，请重新选择</p>}
             </div>
           )}
 
           {/* 倍速控制条 */}
           <div className="flex items-center gap-2 mt-2 px-1 flex-wrap">
-            <span className="text-xs" style={{ color: '#888' }}>倍速</span>
+            <span className="text-xs" style={{ color: 'var(--neutral-400)' }}>倍速</span>
             {SPEEDS.map(rate => (
               <button key={rate} onClick={() => changeRate(rate)}
                 className="px-2 py-0.5 rounded text-xs transition-colors"
-                style={{ background: playbackRate === rate ? '#e87a30' : '#2a2a2a', color: playbackRate === rate ? '#fff' : '#999', border: 'none', cursor: 'pointer' }}>
+                style={{ background: playbackRate === rate ? 'var(--fox)' : 'var(--neutral-800)', color: playbackRate === rate ? '#fff' : 'var(--neutral-400)', border: 'none', cursor: 'pointer' }}>
                 {rate}x
               </button>
             ))}
-            {seekBlocked && <span className="text-xs ml-3" style={{ color: '#ff9800' }}>⚠ 首次观看不可快进</span>}
-            {idlePaused && <span className="text-xs ml-3" style={{ color: '#ff9800' }}>⏸ 长时间无操作已暂停</span>}
+            {seekBlocked && <span className="text-xs ml-3" style={{ color: 'var(--fox-light)' }}>⚠ 首次观看不可快进</span>}
+            {idlePaused && <span className="text-xs ml-3" style={{ color: 'var(--fox-light)' }}>⏸ 长时间无操作已暂停</span>}
           </div>
         </div>
 
@@ -274,7 +274,7 @@ export default function VideoPlayPage() {
                 <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(46,125,50,0.2)', color: '#81c784' }}>继续教育</span>
               )}
             </div>
-            <div className="text-xs space-y-1" style={{ color: '#999' }}>
+            <div className="text-xs space-y-1" style={{ color: 'var(--neutral-400)' }}>
               {video.instructorName && <p>👤 {video.instructorName}{video.instructorLevel ? `（${video.instructorLevel}）` : ''}</p>}
               {video.hours && <p>⏱ {video.hours} 课时 {video.duration ? `· ${fmtDuration(video.duration)}` : ''}</p>}
             </div>
@@ -282,27 +282,27 @@ export default function VideoPlayPage() {
 
           {video.description && (
             <div className="mb-6">
-              <h3 className="text-xs font-semibold mb-2" style={{ color: '#999' }}>📝 简介</h3>
-              <p className="text-xs leading-relaxed" style={{ color: '#aaa' }}>{video.description}</p>
+              <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--neutral-400)' }}>📝 简介</h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--neutral-300)' }}>{video.description}</p>
             </div>
           )}
 
           {progress && (
             <div className="mb-6">
-              <h3 className="text-xs font-semibold mb-2" style={{ color: '#999' }}>📊 学习进度</h3>
+              <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--neutral-400)' }}>📊 学习进度</h3>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full" style={{ background: '#333' }}>
-                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, progress.progress || 0)}%`, background: progress.completed ? '#4caf50' : '#e87a30' }} />
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--neutral-700)' }}>
+                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, progress.progress || 0)}%`, background: progress.completed ? 'var(--sage-light)' : 'var(--fox)' }} />
                 </div>
-                <span className="text-xs font-mono" style={{ color: progress.completed ? '#4caf50' : '#e87a30' }}>{Math.round(progress.progress || 0)}%</span>
+                <span className="text-xs font-mono" style={{ color: progress.completed ? 'var(--sage-light)' : 'var(--fox)' }}>{Math.round(progress.progress || 0)}%</span>
               </div>
-              {progress.completed && <p className="text-xs mt-1" style={{ color: '#4caf50' }}>🎉 已完成</p>}
+              {progress.completed && <p className="text-xs mt-1" style={{ color: 'var(--sage-light)' }}>🎉 已完成</p>}
             </div>
           )}
 
           {relatedVideos.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold mb-3" style={{ color: '#999' }}>▶ 相关视频</h3>
+              <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--neutral-400)' }}>▶ 相关视频</h3>
               <div className="space-y-2">
                 {relatedVideos.map((rv: any) => {
                   const rpct = rv.progress ? Math.min(100, Math.round(rv.progress.progress || 0)) : 0;
@@ -310,21 +310,21 @@ export default function VideoPlayPage() {
                     <div key={rv.id} onClick={() => router.push(`/video/${rv.id}`)}
                       className="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
                       style={{ background: 'transparent' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#2a2a2a')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--neutral-800)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                       {rv.coverUrl ? (
                         <img src={mediaURL(rv.coverUrl)} alt="" className="rounded flex-shrink-0" style={{ width: 40, height: 27, objectFit: 'cover' }} />
                       ) : (
-                        <div className="rounded flex-shrink-0 flex items-center justify-center" style={{ width: 40, height: 27, background: '#333', fontSize: 12 }}>🎬</div>
+                        <div className="rounded flex-shrink-0 flex items-center justify-center" style={{ width: 40, height: 27, background: 'var(--neutral-700)', fontSize: 12 }}>🎬</div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs truncate">{rv.name}</p>
                         {rpct > 0 && (
                           <div className="flex items-center gap-1 mt-0.5">
-                            <div className="flex-1 h-1 rounded-full" style={{ background: '#444' }}>
-                              <div className="h-full rounded-full" style={{ width: `${rpct}%`, background: rpct >= 80 ? '#4caf50' : '#e87a30' }} />
+                            <div className="flex-1 h-1 rounded-full" style={{ background: 'var(--neutral-600)' }}>
+                              <div className="h-full rounded-full" style={{ width: `${rpct}%`, background: rpct >= 80 ? 'var(--sage-light)' : 'var(--fox)' }} />
                             </div>
-                            <span className="text-[10px]" style={{ color: '#666' }}>{rpct}%</span>
+                            <span className="text-[10px]" style={{ color: 'var(--neutral-500)' }}>{rpct}%</span>
                           </div>
                         )}
                       </div>

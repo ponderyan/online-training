@@ -13,8 +13,8 @@ const ROLE_NAMES: Record<string, string> = {
   LECTURER: '讲师', PROCTOR: '监考员', STUDENT: '学员',
 };
 const ROLE_COLORS: Record<string, string> = {
-  SUPER_ADMIN: '#ef4444', ORG_ADMIN: '#e87a30',
-  LECTURER: '#1565c0', PROCTOR: '#f59e0b', STUDENT: '#2e7d32',
+  SUPER_ADMIN: 'var(--error)', ORG_ADMIN: 'var(--fox)',
+  LECTURER: 'var(--blue)', PROCTOR: 'var(--warning)', STUDENT: 'var(--sage)',
 };
 
 function relativeTime(date: string | Date): string {
@@ -188,9 +188,9 @@ export default function AccountsPage() {
       <div className="grid grid-cols-4 gap-4 mb-5">
         {[
           { value: stats.total, label: '总用户', icon: '👥', color: 'var(--fox)' },
-          { value: stats.active, label: '活跃用户', icon: '🟢', color: '#2e7d32' },
-          { value: stats.students, label: '学员', icon: '🎓', color: '#1565c0' },
-          { value: stats.admins, label: '管理员/讲师', icon: '⚙️', color: '#7b1fa2' },
+          { value: stats.active, label: '活跃用户', icon: '🟢', color: 'var(--sage)' },
+          { value: stats.students, label: '学员', icon: '🎓', color: 'var(--blue)' },
+          { value: stats.admins, label: '管理员/讲师', icon: '⚙️', color: 'var(--purple)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center">
             <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -240,8 +240,8 @@ export default function AccountsPage() {
                     <div className="flex flex-wrap gap-1">
                       {(u.roles || [u.role || 'STUDENT']).map((r: string) => (
                         <span key={r} className="tag" style={{
-                          background: `${ROLE_COLORS[r] || '#888'}18`, color: ROLE_COLORS[r] || '#888',
-                          border: `1px solid ${ROLE_COLORS[r] || '#888'}30`, fontSize: '10px',
+                          background: `${ROLE_COLORS[r] || 'var(--neutral-400)'}18`, color: ROLE_COLORS[r] || 'var(--neutral-400)',
+                          border: `1px solid ${ROLE_COLORS[r] || 'var(--neutral-400)'}30`, fontSize: '10px',
                         }}>{ROLE_NAMES[r] || r}</span>
                       ))}
                     </div>
@@ -383,9 +383,9 @@ export default function AccountsPage() {
                     <div key={e.id} className="p-3 rounded-lg" style={{ background: 'var(--paper)' }}>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-medium" style={{ color: 'var(--ink-600)' }}>{e.exam?.title || '—'}</span>
-                        {e.isPassed === true && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#2e7d3218', color: '#2e7d32' }}>✅ {e.finalScore}分</span>}
-                        {e.isPassed === false && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#ef444418', color: '#ef4444' }}>❌ {e.finalScore}分</span>}
-                        {e.isPassed === null && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f59e0b18', color: '#f59e0b' }}>⏳ 待阅卷</span>}
+                        {e.isPassed === true && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ {e.finalScore}分</span>}
+                        {e.isPassed === false && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>❌ {e.finalScore}分</span>}
+                        {e.isPassed === null && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>⏳ 待阅卷</span>}
                       </div>
                       <div className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>
                         {e.submittedAt ? new Date(e.submittedAt).toLocaleString('zh-CN') : ''}
@@ -407,9 +407,9 @@ export default function AccountsPage() {
                           <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{c.certificateNo}</div>
                         </div>
                         {c.isRevoked ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#ef444418', color: '#ef4444' }}>已撤销</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>已撤销</span>
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#2e7d3218', color: '#2e7d32' }}>有效</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>有效</span>
                         )}
                       </div>
                       <div className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>
@@ -557,8 +557,8 @@ export default function AccountsPage() {
                             {sysRoles.map((r: any) => (
                               <label key={r.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded cursor-pointer text-xs transition-all"
                                 style={{
-                                  background: selectedRoles.includes(r.code) ? `${r.color || '#e87a30'}18` : 'var(--paper)',
-                                  border: '1px solid ' + (selectedRoles.includes(r.code) ? (r.color || '#e87a30') : 'var(--ink-100)'),
+                                  background: selectedRoles.includes(r.code) ? `${r.color || 'var(--fox)'}18` : 'var(--paper)',
+                                  border: '1px solid ' + (selectedRoles.includes(r.code) ? (r.color || 'var(--fox)') : 'var(--ink-100)'),
                                 }}>
                                 <input type="checkbox" checked={selectedRoles.includes(r.code)}
                                   onChange={e => { e.target.checked ? setSelectedRoles([...selectedRoles, r.code]) : setSelectedRoles(selectedRoles.filter(c => c !== r.code)); }}
@@ -577,8 +577,8 @@ export default function AccountsPage() {
                             {customRoles.map((r: any) => (
                               <label key={r.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded cursor-pointer text-xs transition-all"
                                 style={{
-                                  background: selectedRoles.includes(r.code) ? `${r.color || '#e87a30'}18` : 'var(--paper)',
-                                  border: '1px solid ' + (selectedRoles.includes(r.code) ? (r.color || '#e87a30') : 'var(--ink-100)'),
+                                  background: selectedRoles.includes(r.code) ? `${r.color || 'var(--fox)'}18` : 'var(--paper)',
+                                  border: '1px solid ' + (selectedRoles.includes(r.code) ? (r.color || 'var(--fox)') : 'var(--ink-100)'),
                                 }}>
                                 <input type="checkbox" checked={selectedRoles.includes(r.code)}
                                   onChange={e => { e.target.checked ? setSelectedRoles([...selectedRoles, r.code]) : setSelectedRoles(selectedRoles.filter(c => c !== r.code)); }}

@@ -14,8 +14,8 @@ const STATUS_NAMES: Record<string, string> = {
   REVIEWING: '待审核', CERTIFYING: '发证中', COMPLETED: '已结业', CANCELLED: '已取消',
 };
 const STATUS_COLORS: Record<string, string> = {
-  PREPARING: '#8b8174', ENROLLING: '#00897b', IN_PROGRESS: '#e87a30',
-  REVIEWING: '#e87a30', CERTIFYING: '#7b1fa2', COMPLETED: '#2e7d32', CANCELLED: '#aaa',
+  PREPARING: 'var(--ink-300)', ENROLLING: 'var(--info)', IN_PROGRESS: 'var(--fox)',
+  REVIEWING: 'var(--fox)', CERTIFYING: 'var(--purple)', COMPLETED: 'var(--sage)', CANCELLED: 'var(--neutral-300)',
 };
 const NEXT_STATUS: Record<string, { label: string; target: string; confirm?: string }[]> = {
   PREPARING: [{ label: '开放报名', target: 'ENROLLING', confirm: '确认开放报名？报名开始后学员可自主报名。' }],
@@ -280,8 +280,8 @@ export default function ProgramDetailPage() {
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{program.code}</span>
             <span className="tag" style={{
-              background: `${STATUS_COLORS[program.status] || '#888'}18`,
-              color: STATUS_COLORS[program.status] || '#888',
+              background: `${STATUS_COLORS[program.status] || 'var(--neutral-400)'}18`,
+              color: STATUS_COLORS[program.status] || 'var(--neutral-400)',
               padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
             }}>{STATUS_NAMES[program.status] || program.status}</span>
           </div>
@@ -355,8 +355,8 @@ export default function ProgramDetailPage() {
                       <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{e.paidAt ? new Date(e.paidAt).toLocaleDateString('zh-CN') : '—'}</td>
                       <td>
                         <span className="text-xs font-medium px-2 py-0.5 rounded" style={{
-                          background: e.feeStatus === 'PAID' ? '#00897b18' : e.feeStatus === 'REFUNDED' ? '#e5393518' : '#8b817418',
-                          color: e.feeStatus === 'PAID' ? '#00897b' : e.feeStatus === 'REFUNDED' ? '#e53935' : '#8b8174',
+                          background: e.feeStatus === 'PAID' ? 'var(--cyan-glow)' : e.feeStatus === 'REFUNDED' ? 'var(--verm-glow)' : 'var(--fox-glow)',
+                          color: e.feeStatus === 'PAID' ? 'var(--info)' : e.feeStatus === 'REFUNDED' ? 'var(--error)' : 'var(--ink-300)',
                         }}>
                           {feeStatusNames[e.feeStatus] || e.feeStatus}
                         </span>
@@ -411,7 +411,7 @@ export default function ProgramDetailPage() {
                       <td>
                         <div className="flex gap-2">
                           <button onClick={() => openEditSchedule(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                         </div>
                       </td>
                     </tr>
@@ -465,7 +465,7 @@ export default function ProgramDetailPage() {
         <div>
           <div className="card p-5 mb-6 text-center">
             <div className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>当前状态</div>
-            <div className="text-2xl font-bold mb-1" style={{ color: STATUS_COLORS[program.status] || '#888' }}>
+            <div className="text-2xl font-bold mb-1" style={{ color: STATUS_COLORS[program.status] || 'var(--neutral-400)' }}>
               {STATUS_NAMES[program.status] || program.status}
             </div>
           </div>
@@ -480,16 +480,16 @@ export default function ProgramDetailPage() {
               ) : statusLogs.map((log: any) => (
                 <div key={log.id} className="relative pb-6">
                   <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                    style={{ background: 'var(--paper)', borderColor: STATUS_COLORS[log.toStatus] || '#888' }} />
+                    style={{ background: 'var(--paper)', borderColor: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)' }} />
                   <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
                     {new Date(log.createdAt).toLocaleString('zh-CN')}
                   </div>
                   <div className="text-sm mt-0.5">
-                    <span style={{ color: STATUS_COLORS[log.fromStatus] || '#888' }}>
+                    <span style={{ color: STATUS_COLORS[log.fromStatus] || 'var(--neutral-400)' }}>
                       {STATUS_NAMES[log.fromStatus] || log.fromStatus || '初始'}
                     </span>
                     {' → '}
-                    <span style={{ color: STATUS_COLORS[log.toStatus] || '#888', fontWeight: 600 }}>
+                    <span style={{ color: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)', fontWeight: 600 }}>
                       {STATUS_NAMES[log.toStatus] || log.toStatus}
                     </span>
                   </div>
@@ -511,7 +511,7 @@ export default function ProgramDetailPage() {
               <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>学员总数</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: '#00897b' }}>
+              <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>
                 {attendanceRecords.length > 0
                   ? Math.round(attendanceRecords.reduce((s, r) => s + (r.attendanceRate || 0), 0) / attendanceRecords.length)
                   : 0}%
@@ -519,7 +519,7 @@ export default function ProgramDetailPage() {
               <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>平均出勤率</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: '#1565c0' }}>{attendanceRecords[0]?.totalDays || 0}</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{attendanceRecords[0]?.totalDays || 0}</div>
               <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总排课天数</div>
             </div>
           </div>
@@ -551,7 +551,7 @@ export default function ProgramDetailPage() {
                             <span>{r.actualDays ?? 0}</span>
                           )}
                         </td>
-                        <td><span className="font-semibold" style={{ color: (r.attendanceRate || 0) >= 80 ? '#00897b' : '#e87a30' }}>{r.attendanceRate || 0}%</span></td>
+                        <td><span className="font-semibold" style={{ color: (r.attendanceRate || 0) >= 80 ? 'var(--info)' : 'var(--fox)' }}>{r.attendanceRate || 0}%</span></td>
                         <td>
                           {canEdit && (
                             <button onClick={async () => {
@@ -619,15 +619,15 @@ export default function ProgramDetailPage() {
                           target="_blank" className="text-sm" style={{ color: 'var(--fox)' }}>{e.fileName}</a>
                       </td>
                       <td><span className="tag" style={{
-                        background: e.evidenceType === 'ATTENDANCE_SHEET' ? '#00897b18' : '#8b817418',
-                        color: e.evidenceType === 'ATTENDANCE_SHEET' ? '#00897b' : '#8b8174',
+                        background: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--cyan-glow)' : 'var(--fox-glow)',
+                        color: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--info)' : 'var(--ink-300)',
                         fontSize: '10px',
                       }}>{e.evidenceType === 'ATTENDANCE_SHEET' ? '签到表' : e.evidenceType === 'SCORING' ? '成绩表' : e.evidenceType === 'SCHEDULE' ? '排课表' : '其他'}</span></td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.uploadedBy?.displayName || '—'}</td>
                       <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.notes || '—'}</td>
                       <td>
-                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: '#e53935' }}>删除</button>
+                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                       </td>
                     </tr>
                   ))}
@@ -694,7 +694,7 @@ export default function ProgramDetailPage() {
           <div className="card p-5 mb-6 text-center">
             <div className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>备案状态</div>
             <div className="text-2xl font-bold mb-1" style={{
-              color: !filing ? '#8b8174' : filing.status === 'PENDING' ? '#e87a30' : filing.status === 'APPROVED' ? '#2e7d32' : '#e53935',
+              color: !filing ? 'var(--ink-300)' : filing.status === 'PENDING' ? 'var(--fox)' : filing.status === 'APPROVED' ? 'var(--sage)' : 'var(--error)',
             }}>
               {!filing ? '未提交' : filing.status === 'PENDING' ? '待审核' : filing.status === 'APPROVED' ? '已通过' : '已驳回'}
             </div>
@@ -738,8 +738,8 @@ export default function ProgramDetailPage() {
               )}
 
               {filing.status === 'APPROVED' && (
-                <div className="card p-5 text-center" style={{ background: '#2e7d3208' }}>
-                  <p className="text-sm font-semibold" style={{ color: '#2e7d32' }}>✅ 备案已通过</p>
+                <div className="card p-5 text-center" style={{ background: 'var(--sage-glow)' }}>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--sage)' }}>✅ 备案已通过</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>培训班状态已自动更新为「报名中」</p>
                 </div>
               )}

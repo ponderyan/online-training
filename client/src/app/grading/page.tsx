@@ -138,7 +138,7 @@ export default function Grading() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ background: '#fef3e7', color: '#e87a30' }}>进入阅卷 →</span>
+                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'var(--fox-pale2)', color: 'var(--fox)' }}>进入阅卷 →</span>
                   </div>
                 </div>
               </div>

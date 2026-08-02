@@ -8,12 +8,12 @@ import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
 
-const FOX = '#e87a30';
-const INK_200 = '#bbb';
-const INK_300 = '#999';
-const INK_400 = '#777';
-const INK_600 = '#444';
-const INK_700 = '#333';
+const FOX = 'var(--fox)';
+const INK_200 = 'var(--neutral-300)';
+const INK_300 = 'var(--neutral-400)';
+const INK_400 = 'var(--neutral-400)';
+const INK_600 = 'var(--neutral-600)';
+const INK_700 = 'var(--neutral-700)';
 
 const TYPE_ICONS: Record<string, string> = {
   EXAM_PUBLISHED: '📢',

@@ -149,7 +149,7 @@ export default function LearningCenterPlayPage() {
       <div className="flex gap-4 items-start">
         <div className="flex-1 min-w-0">
           <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
-            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+            <div style={{ position: 'relative', paddingTop: '56.25%', background: 'var(--ink-900)' }}>
               <video ref={videoRef} className="plyr"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                 controls playsInline>
@@ -177,9 +177,9 @@ export default function LearningCenterPlayPage() {
               </div>
               <div>
                 {completed ? (
-                  <span className="tag" style={{ background: '#2e7d3218', color: '#2e7d32', fontWeight: 600 }}>🎉 已完成</span>
+                  <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontWeight: 600 }}>🎉 已完成</span>
                 ) : (
-                  <span className="tag" style={{ background: '#e87a3018', color: '#e87a30' }}>学习中</span>
+                  <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中</span>
                 )}
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function LearningCenterPlayPage() {
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
                     <div className="h-full rounded-full" style={{
                       width: `${Math.min(100, progress.progress || 0)}%`,
-                      background: completed ? '#2e7d32' : 'var(--fox)',
+                      background: completed ? 'var(--sage)' : 'var(--fox)',
                       transition: 'width 0.3s',
                     }} />
                   </div>
@@ -201,7 +201,7 @@ export default function LearningCenterPlayPage() {
               </div>
             )}
             {completed && (
-              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: '#f0faf0', border: '1px solid #c8e6c9' }}>
+              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: 'var(--success-pale)', border: '1px solid #c8e6c9' }}>
                 <span className="text-lg">🎉 恭喜完成本视频学习！</span>
               </div>
             )}
@@ -220,9 +220,9 @@ export default function LearningCenterPlayPage() {
                   const vDone = v.progress?.completed || false;
                   let icon = '•';
                   let iconColor = 'var(--ink-300)';
-                  if (vDone) { icon = '✅'; iconColor = '#2e7d32'; }
+                  if (vDone) { icon = '✅'; iconColor = 'var(--sage)'; }
                   else if (isCurrent) { icon = '▶️'; iconColor = 'var(--fox)'; }
-                  else if (vPct > 0) { icon = '⏳'; iconColor = '#e87a30'; }
+                  else if (vPct > 0) { icon = '⏳'; iconColor = 'var(--fox)'; }
                   return (
                     <div key={v.id} onClick={() => !isCurrent && router.push(`/learning-center/${v.id}/play`)}
                       className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-all ${isCurrent ? 'font-bold' : 'cursor-pointer hover:bg-[var(--fox-glow)]'}`}
@@ -252,9 +252,9 @@ export default function LearningCenterPlayPage() {
               const vDone = v.progress?.completed || false;
               let icon = '•';
               let iconColor = 'var(--ink-300)';
-              if (vDone) { icon = '✅'; iconColor = '#2e7d32'; }
+              if (vDone) { icon = '✅'; iconColor = 'var(--sage)'; }
               else if (isCurrent) { icon = '▶️'; iconColor = 'var(--fox)'; }
-              else if (vPct > 0) { icon = '⏳'; iconColor = '#e87a30'; }
+              else if (vPct > 0) { icon = '⏳'; iconColor = 'var(--fox)'; }
               return (
                 <div key={v.id} onClick={() => !isCurrent && router.push(`/learning-center/${v.id}/play`)}
                   className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-all ${isCurrent ? 'font-bold' : 'cursor-pointer hover:bg-[var(--fox-glow)]'}`}

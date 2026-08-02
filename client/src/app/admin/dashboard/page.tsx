@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/app-layout';
 import CountUp from '@/components/CountUp';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { BarChart3, AlertCircle, Loader2 } from 'lucide-react';
 
 // ═══════════════════════════════════════════
 // Types
@@ -86,8 +89,8 @@ function KpiCard({
   trendLabel?: string;
 }) {
   const trendColors: Record<string, string> = {
-    up: '#2e7d32',
-    down: '#c62828',
+    up: 'var(--sage)',
+    down: 'var(--error)',
     flat: 'var(--ink-400)',
   };
   const trendIcons: Record<string, string> = {
@@ -103,25 +106,19 @@ function KpiCard({
     : 0;
 
   return (
-    <div
-      className="card p-5 rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-      style={{
-        background: 'var(--paper)',
-        border: '1px solid var(--ink-100)',
-      }}
-    >
-      <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-400)' }}>
+    <Card hover className="transition-all duration-200 hover:-translate-y-1">
+      <div className="text-xs font-medium mb-2 text-[var(--ink-400)]">
         {title}
       </div>
       <div className="flex items-baseline gap-1">
         <CountUp
           value={numValue}
           decimals={decimals}
-          className="text-4xl font-bold"
-          style={{ color: 'var(--ink-700)', fontFamily: 'var(--font-serif)' }}
+          className="text-4xl font-bold text-[var(--ink-700)]"
+          style={{ fontFamily: 'var(--font-serif)' }}
         />
         {unit && (
-          <span className="text-sm" style={{ color: 'var(--ink-400)' }}>
+          <span className="text-sm text-[var(--ink-400)]">
             {unit}
           </span>
         )}
@@ -133,11 +130,11 @@ function KpiCard({
         >
           {trendIcons[trend]}
         </span>
-        <span className="text-[11px]" style={{ color: 'var(--ink-400)' }}>
+        <span className="text-[11px] text-[var(--ink-400)]">
           {trendLabel || '较上期'}
         </span>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -306,8 +303,8 @@ function TrendChart({
       {/* Area fill under polyline */}
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e87a30" stopOpacity={0.2} />
-          <stop offset="100%" stopColor="#e87a30" stopOpacity={0.02} />
+          <stop offset="0%" stopColor="var(--fox)" stopOpacity={0.2} />
+          <stop offset="100%" stopColor="var(--fox)" stopOpacity={0.02} />
         </linearGradient>
       </defs>
       <polygon
@@ -319,7 +316,7 @@ function TrendChart({
       <polyline
         points={points}
         fill="none"
-        stroke="#e87a30"
+        stroke="var(--fox)"
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -333,7 +330,7 @@ function TrendChart({
           cy={yScale(d.passRate)}
           r={3}
           fill="#fff"
-          stroke="#e87a30"
+          stroke="var(--fox)"
           strokeWidth={2}
         />
       ))}
@@ -440,7 +437,7 @@ export default function AdminDashboard() {
     <AppLayout>
       {/* Row 1: Title */}
       <div className="mb-8">
-        <h1 className="page-title">📊 运营概览</h1>
+        <h1 className="page-title flex items-center gap-2"><BarChart3 size={24} className="text-[var(--fox)]" /> 运营概览</h1>
         <p className="page-subtitle">
           平台统计 · 数据分析 · {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
         </p>
@@ -448,31 +445,26 @@ export default function AdminDashboard() {
 
       {/* Loading */}
       {fetchState === 'loading' && (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
-          <div className="text-4xl mb-4">🦊</div>
+        <div className="text-center py-16 text-[var(--ink-300)]">
+          <Loader2 size={32} className="mx-auto mb-4 animate-spin text-[var(--fox)]" />
           <p>小狐狸正在加载统计数据…</p>
         </div>
       )}
 
       {/* Error */}
       {fetchState === 'error' && (
-        <div className="card p-8 text-center rounded-xl" style={{ border: '1px solid rgba(198,40,40,0.2)' }}>
-          <div className="text-4xl mb-4">😿</div>
-          <p className="text-sm font-medium mb-2" style={{ color: 'var(--ink-600)' }}>
+        <Card className="p-8 text-center border-[var(--error)]/20">
+          <AlertCircle size={32} className="mx-auto mb-4 text-[var(--error)]" />
+          <p className="text-sm font-medium mb-2 text-[var(--ink-600)]">
             加载失败
           </p>
-          <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>
+          <p className="text-xs mb-4 text-[var(--ink-400)]">
             {error}
           </p>
-          <button
-            onClick={() => {
-              setRetryCount((c) => c + 1);
-            }}
-            className="btn btn-fox btn-sm"
-          >
+          <Button size="sm" onClick={() => setRetryCount((c) => c + 1)}>
             重新加载
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Loaded content */}
@@ -532,24 +524,24 @@ export default function AdminDashboard() {
           </div>
 
           {/* Row 3: Pass Rate Trend Chart */}
-          <div className="card p-6 mb-8 rounded-xl" style={{ border: '1px solid var(--ink-100)' }}>
+          <Card className="p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                <h3 className="text-sm font-semibold text-[var(--ink-700)]">
                   考试通过率趋势
                 </h3>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                <p className="text-xs mt-0.5 text-[var(--ink-400)]">
                   近30天 · 每日考试通过率
                 </p>
               </div>
-              <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+              <div className="flex items-center gap-4 text-xs text-[var(--ink-400)]">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 rounded" style={{ background: '#e87a30' }} />
+                  <span className="w-3 h-0.5 rounded" style={{ background: 'var(--fox)' }} />
                   <span>通过率</span>
                 </div>
                 <div>
                   平均{' '}
-                  <span className="font-semibold" style={{ color: 'var(--ink-600)' }}>
+                  <span className="font-semibold text-[var(--ink-600)]">
                     {trend.length > 0
                       ? `${(trend.reduce((s, d) => s + d.passRate, 0) / trend.length).toFixed(1)}%`
                       : '—'}
@@ -558,28 +550,28 @@ export default function AdminDashboard() {
               </div>
             </div>
             <TrendChart data={trend} />
-          </div>
+          </Card>
 
           {/* Row 4: Agency Breakdown */}
-          <div className="card p-6 rounded-xl" style={{ border: '1px solid var(--ink-100)' }}>
+          <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                <h3 className="text-sm font-semibold text-[var(--ink-700)]">
                   机构学时分布
                 </h3>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                <p className="text-xs mt-0.5 text-[var(--ink-400)]">
                   各招生机构已审核学时统计
                 </p>
               </div>
-              <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
+              <div className="text-xs text-[var(--ink-400)]">
                 总学时:{' '}
-                <span className="font-semibold" style={{ color: 'var(--ink-600)' }}>
+                <span className="font-semibold text-[var(--ink-600)]">
                   {data.hoursOverview?.totalApprovedHours ?? 0}
                 </span>
               </div>
             </div>
             <AgencyTable data={data.hoursOverview?.agencyBreakdown ?? []} />
-          </div>
+          </Card>
         </>
       )}
     </AppLayout>

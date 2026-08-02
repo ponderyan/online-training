@@ -111,14 +111,14 @@ export default function RegisterPage() {
         {/* 狐狸轮廓 SVG 装饰 */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
           <svg width="600" height="700" viewBox="0 0 800 900" fill="none">
-            <path d="M300,400 L200,150 L480,300Z" fill="#e87a30" />
-            <path d="M500,400 L600,150 L320,300Z" fill="#e87a30" />
-            <ellipse cx="400" cy="460" rx="260" ry="200" fill="#e87a30" />
-            <ellipse cx="400" cy="520" rx="180" ry="130" fill="#fce6d3" />
-            <ellipse cx="360" cy="460" rx="30" ry="36" fill="#1a1712" />
-            <ellipse cx="440" cy="460" rx="30" ry="36" fill="#1a1712" />
-            <ellipse cx="400" cy="510" rx="28" ry="18" fill="#c9601e" />
-            <path d="M370,540 Q400,570 430,540" stroke="#c9601e" strokeWidth="3" strokeLinecap="round" fill="none" />
+            <path d="M300,400 L200,150 L480,300Z" fill="var(--fox)" />
+            <path d="M500,400 L600,150 L320,300Z" fill="var(--fox)" />
+            <ellipse cx="400" cy="460" rx="260" ry="200" fill="var(--fox)" />
+            <ellipse cx="400" cy="520" rx="180" ry="130" fill="var(--fox-pale)" />
+            <ellipse cx="360" cy="460" rx="30" ry="36" fill="var(--ink-900)" />
+            <ellipse cx="440" cy="460" rx="30" ry="36" fill="var(--ink-900)" />
+            <ellipse cx="400" cy="510" rx="28" ry="18" fill="var(--fox-dark)" />
+            <path d="M370,540 Q400,570 430,540" stroke="var(--fox-dark)" strokeWidth="3" strokeLinecap="round" fill="none" />
           </svg>
         </div>
         {/* 浮动光点 */}

@@ -19,11 +19,11 @@ const ROLE_NAMES: Record<string, string> = {
 };
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: 'var(--verm)', ORG_ADMIN: 'var(--fox)',
-  LECTURER: 'var(--cyan)', PROCTOR: '#7b1fa2', STUDENT: 'var(--ink-400)',
+  LECTURER: 'var(--cyan)', PROCTOR: 'var(--purple)', STUDENT: 'var(--ink-400)',
 };
 const ROLE_BGS: Record<string, string> = {
   SUPER_ADMIN: 'var(--verm-glow)', ORG_ADMIN: 'var(--fox-pale)',
-  LECTURER: 'var(--cyan-glow)', PROCTOR: '#7b1fa218', STUDENT: 'transparent',
+  LECTURER: 'var(--cyan-glow)', PROCTOR: 'rgba(123,31,162,0.09)', STUDENT: 'transparent',
 };
 
 export default function StudentsPage() {

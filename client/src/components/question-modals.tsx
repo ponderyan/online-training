@@ -373,7 +373,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                             if (e.target.checked) setSelectedKPIds(prev => [...prev, kp.id]);
                             else setSelectedKPIds(prev => prev.filter(x => x !== kp.id));
                           }}
-                          style={{ accentColor: '#e87a30' }} />
+                          style={{ accentColor: 'var(--fox)' }} />
                         <span className="truncate flex-1">{kp.name}</span>
                         {kp.code && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{kp.code}</span>}
                       </label>
@@ -454,10 +454,10 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* ── 来源教材信息（蓝绿卡片，有教材关联） ── */}
           {question.materialQuestions?.[0]?.material && (
             <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: '#f0f7fa', border: '1px solid #d8e8ed' }}>
+              style={{ background: 'var(--info-pale)', border: '1px solid #d8e8ed' }}>
               <span style={{ fontSize: '18px' }}>📖</span>
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a7a8a' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--info)' }}>
                   {question.materialQuestions[0].material.name}
                 </div>
                 {question.materialQuestions[0].chapter?.title && (
@@ -466,7 +466,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
                   </div>
                 )}
               </div>
-              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#d8e8ed', color: '#1a7a8a', whiteSpace: 'nowrap' }}>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#d8e8ed', color: 'var(--info)', whiteSpace: 'nowrap' }}>
                 结构化出题
               </span>
             </div>

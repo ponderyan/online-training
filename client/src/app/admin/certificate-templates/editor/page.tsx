@@ -10,13 +10,13 @@ import Moveable from 'react-moveable';
 
 // ── 默认画布 ──
 const DEFAULT_CANVAS: CanvasDef = {
-  width: 1123, height: 794, background: '#fffdf5',
+  width: 1123, height: 794, background: 'var(--paper-50)',
   elements: [
-    { id: 'border', type: 'rect', x: 30, y: 30, width: 1063, height: 734, name: '边框', props: { fill: 'transparent', stroke: '#8B4513', strokeWidth: 3, radius: 8 } },
-    { id: 'title', type: 'text', x: 360, y: 80, width: 400, height: 60, name: '标题', props: { content: '结业证书', fontSize: 42, fontFamily: 'SimSun, serif', fontWeight: 'bold', color: '#8B4513', textAlign: 'center' } },
-    { id: 'body', type: 'variable-text', x: 150, y: 250, width: 820, height: 120, name: '正文', props: { template: '兹证明 {{studentName}} 同志参加 {{courseName}} 培训课程，经考核成绩合格，特发此证。', fontSize: 22, fontFamily: 'SimSun, serif', color: '#333', lineHeight: 1.8 } },
-    { id: 'date', type: 'auto-field', x: 700, y: 650, width: 300, height: 30, name: '发证日期', props: { field: 'issueDate', format: 'yyyy年MM月dd日', fontSize: 16, fontFamily: 'SimSun, serif', color: '#666', textAlign: 'right' } },
-    { id: 'divider1', type: 'divider', x: 150, y: 420, width: 820, height: 0, name: '分割线', props: { style: 'solid', color: '#ddd', thickness: 1 } },
+    { id: 'border', type: 'rect', x: 30, y: 30, width: 1063, height: 734, name: '边框', props: { fill: 'transparent', stroke: 'var(--fox-dark)', strokeWidth: 3, radius: 8 } },
+    { id: 'title', type: 'text', x: 360, y: 80, width: 400, height: 60, name: '标题', props: { content: '结业证书', fontSize: 42, fontFamily: 'SimSun, serif', fontWeight: 'bold', color: 'var(--fox-dark)', textAlign: 'center' } },
+    { id: 'body', type: 'variable-text', x: 150, y: 250, width: 820, height: 120, name: '正文', props: { template: '兹证明 {{studentName}} 同志参加 {{courseName}} 培训课程，经考核成绩合格，特发此证。', fontSize: 22, fontFamily: 'SimSun, serif', color: 'var(--neutral-700)', lineHeight: 1.8 } },
+    { id: 'date', type: 'auto-field', x: 700, y: 650, width: 300, height: 30, name: '发证日期', props: { field: 'issueDate', format: 'yyyy年MM月dd日', fontSize: 16, fontFamily: 'SimSun, serif', color: 'var(--neutral-500)', textAlign: 'right' } },
+    { id: 'divider1', type: 'divider', x: 150, y: 420, width: 820, height: 0, name: '分割线', props: { style: 'solid', color: 'var(--neutral-200)', thickness: 1 } },
   ],
 };
 
@@ -195,16 +195,16 @@ export default function CertificateTemplateEditor() {
     const cy = Math.round(canvas.height / 2 - 20);
     switch (type) {
       case 'text':
-        newEl = { id, type: 'text', x: cx, y: cy, width: 200, height: 40, name: '文本', props: { content: '新文本', fontSize: 18, fontFamily: 'sans-serif', color: '#333', textAlign: 'left' } };
+        newEl = { id, type: 'text', x: cx, y: cy, width: 200, height: 40, name: '文本', props: { content: '新文本', fontSize: 18, fontFamily: 'sans-serif', color: 'var(--neutral-700)', textAlign: 'left' } };
         break;
       case 'rect':
-        newEl = { id, type: 'rect', x: cx, y: cy, width: 200, height: 100, name: '矩形', props: { fill: '#f0f0f0', stroke: '#999', strokeWidth: 1, radius: 4 } };
+        newEl = { id, type: 'rect', x: cx, y: cy, width: 200, height: 100, name: '矩形', props: { fill: 'var(--neutral-100)', stroke: 'var(--neutral-400)', strokeWidth: 1, radius: 4 } };
         break;
       case 'variable-text':
-        newEl = { id, type: 'variable-text', x: cx, y: cy, width: 400, height: 60, name: '变量文本', props: { template: '{{studentName}}', fontSize: 18, fontFamily: 'sans-serif', color: '#333', textAlign: 'left' } };
+        newEl = { id, type: 'variable-text', x: cx, y: cy, width: 400, height: 60, name: '变量文本', props: { template: '{{studentName}}', fontSize: 18, fontFamily: 'sans-serif', color: 'var(--neutral-700)', textAlign: 'left' } };
         break;
       case 'divider':
-        newEl = { id, type: 'divider', x: 100, y: cy, width: canvas.width - 200, height: 0, name: '分割线', props: { style: 'solid', color: '#ccc', thickness: 1 } };
+        newEl = { id, type: 'divider', x: 100, y: cy, width: canvas.width - 200, height: 0, name: '分割线', props: { style: 'solid', color: 'var(--neutral-200)', thickness: 1 } };
         break;
       case 'image':
         newEl = { id, type: 'image', x: cx, y: cy, width: 120, height: 120, name: '图片', props: { src: '', fit: 'contain' } };
@@ -213,10 +213,10 @@ export default function CertificateTemplateEditor() {
         newEl = { id, type: 'qrcode', x: cx, y: cy, width: 100, height: 100, name: '二维码', props: { dataTemplate: 'https://verify.example.com/{{certificateNo}}', label: '扫码验证', labelFontSize: 10 } };
         break;
       case 'seal':
-        newEl = { id, type: 'seal', x: cx, y: cy, width: 120, height: 120, name: '印章', props: { shape: 'circle', text: '培训认证专用章', subText: '★', color: '#d32f2f', fontSize: 12 } };
+        newEl = { id, type: 'seal', x: cx, y: cy, width: 120, height: 120, name: '印章', props: { shape: 'circle', text: '培训认证专用章', subText: '★', color: 'var(--error)', fontSize: 12 } };
         break;
       case 'barcode':
-        newEl = { id, type: 'barcode', x: cx, y: cy, width: 200, height: 50, name: '条形码', props: { dataTemplate: '{{certificateNo}}', format: 'CODE128', color: '#000', showText: true } };
+        newEl = { id, type: 'barcode', x: cx, y: cy, width: 200, height: 50, name: '条形码', props: { dataTemplate: '{{certificateNo}}', format: 'CODE128', color: 'var(--ink-900)', showText: true } };
         break;
       default:
         return;
@@ -381,22 +381,22 @@ export default function CertificateTemplateEditor() {
         {/* ═══ 顶栏 ═══ */}
         <div style={{ padding: '6px 12px', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, background: '#fff', fontSize: 13 }}>
           <button onClick={() => router.push('/admin/certificate-templates')} title="返回模板列表" style={{ ...toolBtnStyle, display: 'inline-flex', alignItems: 'center', gap: 3 }}>← 返回</button>
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <input value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ border: 'none', fontSize: 14, fontWeight: 600, width: 180, outline: 'none' }} />
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <button onClick={undo} disabled={!canUndo} title="撤销 (⌘Z)" style={toolBtnStyle}>↩</button>
           <button onClick={redo} disabled={!canRedo} title="重做 (⌘Z)" style={toolBtnStyle}>↪</button>
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <button onClick={() => addElement('text')} style={toolBtnStyle}>T 文本</button>
           <button onClick={() => addElement('variable-text')} style={toolBtnStyle}>{'{{}'} 变量</button>
           <button onClick={() => addElement('rect')} style={toolBtnStyle}>□ 矩形</button>
           <button onClick={() => addElement('divider')} style={toolBtnStyle}>— 线</button>
           <button onClick={() => addElement('image')} style={toolBtnStyle}>🖼 图</button>
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
-          <button onClick={deleteSelected} disabled={!selectedId} style={{ ...toolBtnStyle, color: selectedId ? '#d32f2f' : '#ccc' }}>🗑</button>
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <button onClick={deleteSelected} disabled={!selectedId} style={{ ...toolBtnStyle, color: selectedId ? 'var(--error)' : 'var(--neutral-200)' }}>🗑</button>
           {selectedId && <>
-            <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
-            <span style={{ fontSize: 10, color: '#999' }}>对齐</span>
+            <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+            <span style={{ fontSize: 10, color: 'var(--neutral-400)' }}>对齐</span>
             <button onClick={() => alignToCanvas('left')} style={toolBtnStyle} title="左对齐">⇤</button>
             <button onClick={() => alignToCanvas('centerH')} style={toolBtnStyle} title="水平居中">⇔</button>
             <button onClick={() => alignToCanvas('right')} style={toolBtnStyle} title="右对齐">⇥</button>
@@ -406,14 +406,14 @@ export default function CertificateTemplateEditor() {
           </>}
           <div style={{ flex: 1 }} />
           <button onClick={zoomOut} style={toolBtnStyle} title="缩小 (⌘-)">−</button>
-          <span style={{ fontSize: 11, color: '#666', width: 40, textAlign: 'center', cursor: 'pointer' }} onClick={zoomFit} title="点击适应窗口 (⌘0)">{(scale * 100).toFixed(0)}%</span>
+          <span style={{ fontSize: 11, color: 'var(--neutral-500)', width: 40, textAlign: 'center', cursor: 'pointer' }} onClick={zoomFit} title="点击适应窗口 (⌘0)">{(scale * 100).toFixed(0)}%</span>
           <button onClick={zoomIn} style={toolBtnStyle} title="放大 (⌘+)">＋</button>
           <button onClick={zoomFit} style={toolBtnStyle} title="适应窗口 (⌘0)">⤢</button>
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <button onClick={() => bgFileRef.current?.click()} style={toolBtnStyle} title="上传底版图片">🖼 底版</button>
           <input ref={bgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBgUpload} />
-          {canvas.backgroundImage && <button onClick={clearBgImage} style={{ ...toolBtnStyle, color: '#d32f2f' }} title="清除底版">✕底版</button>}
-          <div style={{ width: 1, height: 20, background: '#e0e0e0' }} />
+          {canvas.backgroundImage && <button onClick={clearBgImage} style={{ ...toolBtnStyle, color: 'var(--error)' }} title="清除底版">✕底版</button>}
+          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <select value={renderMode} onChange={e => setRenderMode(e.target.value as RenderMode)} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid #ddd', borderRadius: 3 }} title="渲染模式">
             <option value="preview">预览(全部)</option>
             <option value="print">打印(动态层)</option>
@@ -425,14 +425,14 @@ export default function CertificateTemplateEditor() {
             <option value={300}>300dpi</option>
           </select>
           <button onClick={() => setShowPreview(!showPreview)} style={toolBtnStyle}>{showPreview ? '✏️ 编辑' : '👁 预览'}</button>
-          <button onClick={exportPdf} disabled={exporting} style={{ ...toolBtnStyle, background: '#f5f5f5' }}>{exporting ? '...' : '📄 PDF'}</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: '4px 14px', background: '#e87d30', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>{saving ? '保存中' : '💾 保存'}</button>
+          <button onClick={exportPdf} disabled={exporting} style={{ ...toolBtnStyle, background: 'var(--neutral-50)' }}>{exporting ? '...' : '📄 PDF'}</button>
+          <button onClick={handleSave} disabled={saving} style={{ padding: '4px 14px', background: 'var(--fox)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>{saving ? '保存中' : '💾 保存'}</button>
         </div>
 
         {/* ═══ 主体 ═══ */}
         <div ref={bodyRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* 画布区 */}
-          <div ref={canvasAreaRef} style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: '#e0e0e0' }}>
+          <div ref={canvasAreaRef} style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: 'var(--neutral-200)' }}>
             {showPreview ? (
               <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(canvas, previewData, { mode: renderMode }) }} />
             ) : (
@@ -517,7 +517,7 @@ export default function CertificateTemplateEditor() {
 
             <div style={{ flex: 1, overflow: 'auto', padding: 10, fontSize: 12 }}>
               {rightPanel === 'props' ? (
-                selectedEl ? <PropertyPanel el={selectedEl} updateProp={updateProp} onToggleLayer={toggleLayer} /> : <p style={{ color: '#999', textAlign: 'center', marginTop: 40 }}>选择元素查看属性</p>
+                selectedEl ? <PropertyPanel el={selectedEl} updateProp={updateProp} onToggleLayer={toggleLayer} /> : <p style={{ color: 'var(--neutral-400)', textAlign: 'center', marginTop: 40 }}>选择元素查看属性</p>
               ) : (
                 <LayerPanel elements={canvas.elements} selectedId={selectedId} onSelect={setSelectedId} onMove={moveLayer} onLock={toggleLock} onHidden={toggleHidden} onToggleLayer={toggleLayer} />
               )}
@@ -525,9 +525,9 @@ export default function CertificateTemplateEditor() {
 
             {/* 预览数据（可折叠，默认收起以释放属性/图层空间） */}
             <div style={{ borderTop: '1px solid #e0e0e0', fontSize: 12 }}>
-              <button onClick={() => setShowPreviewVars(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
+              <button onClick={() => setShowPreviewVars(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--neutral-500)' }}>
                 <span>🧪 预览变量</span>
-                <span style={{ color: '#bbb', fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
+                <span style={{ color: 'var(--neutral-300)', fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
               </button>
               {showPreviewVars && (
                 <div style={{ padding: '0 10px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -556,7 +556,7 @@ function renderVariableChips(template: string) {
     const m = part.match(/\{\{\s*(\w+)\s*\}\}/);
     if (m) {
       const label = VAR_LABELS[m[1]] || m[1];
-      return <span key={i} style={{ background: '#e3f2fd', color: '#1565c0', padding: '0 4px', borderRadius: 3, fontSize: '0.9em', fontWeight: 500 }}>[{label}]</span>;
+      return <span key={i} style={{ background: 'var(--blue-pale)', color: 'var(--blue)', padding: '0 4px', borderRadius: 3, fontSize: '0.9em', fontWeight: 500 }}>[{label}]</span>;
     }
     return <span key={i}>{part}</span>;
   });
@@ -567,14 +567,14 @@ function renderElementPreview(el: CanvasElement) {
   switch (el.type) {
     case 'text': return <span style={{ fontSize: p.fontSize, color: p.color, fontWeight: p.fontWeight, whiteSpace: 'pre-wrap' }}>{p.content}</span>;
     case 'variable-text': return <span style={{ fontSize: p.fontSize, color: p.color, whiteSpace: 'pre-wrap' }}>{renderVariableChips(p.template)}</span>;
-    case 'rect': return <div style={{ width: '100%', height: '100%', background: p.fill || 'transparent', border: `${p.strokeWidth || 1}px ${p.borderStyle || 'solid'} ${p.stroke || '#ccc'}`, borderRadius: p.radius || 0 }} />;
+    case 'rect': return <div style={{ width: '100%', height: '100%', background: p.fill || 'transparent', border: `${p.strokeWidth || 1}px ${p.borderStyle || 'solid'} ${p.stroke || 'var(--neutral-200)'}`, borderRadius: p.radius || 0 }} />;
     case 'divider': return <div style={{ width: '100%', borderTop: `${p.thickness}px ${p.style} ${p.color}` }} />;
     case 'auto-field': return <span style={{ fontSize: p.fontSize, color: p.color }}>[{p.field}]</span>;
-    case 'image': return p.src ? <img src={p.src} style={{ width: '100%', height: '100%', objectFit: p.fit || 'contain' }} alt="" /> : <span style={{ color: '#ccc', fontSize: 11 }}>🖼 图片</span>;
-    case 'qrcode': return <div style={{ width: '100%', height: '100%', border: '1px dashed #999', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa', flexDirection: 'column' as const }}><span style={{ fontSize: 20 }}>⊞</span><span style={{ fontSize: 9, color: '#999' }}>QR</span></div>;
-    case 'seal': return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid ' + (p.color || '#d32f2f'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.color || '#d32f2f', fontSize: 10, textAlign: 'center' as const }}>{p.text || '印章'}</div>;
+    case 'image': return p.src ? <img src={p.src} style={{ width: '100%', height: '100%', objectFit: p.fit || 'contain' }} alt="" /> : <span style={{ color: 'var(--neutral-200)', fontSize: 11 }}>🖼 图片</span>;
+    case 'qrcode': return <div style={{ width: '100%', height: '100%', border: '1px dashed #999', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--neutral-50)', flexDirection: 'column' as const }}><span style={{ fontSize: 20 }}>⊞</span><span style={{ fontSize: 9, color: 'var(--neutral-400)' }}>QR</span></div>;
+    case 'seal': return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid ' + (p.color || 'var(--error)'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.color || 'var(--error)', fontSize: 10, textAlign: 'center' as const }}>{p.text || '印章'}</div>;
     case 'barcode': return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, #fff 2px, #fff 4px)' }}><span style={{ background: '#fff', padding: '0 4px', fontSize: 9 }}>{p.dataTemplate}</span></div>;
-    default: return <span style={{ color: '#999', fontSize: 11 }}>[{el.type}]</span>;
+    default: return <span style={{ color: 'var(--neutral-400)', fontSize: 11 }}>[{el.type}]</span>;
   }
 }
 
@@ -584,10 +584,10 @@ function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasElement; u
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <PropRow label="名称"><input value={el.name || ''} onChange={e => updateProp('name', e.target.value)} style={inputStyle} /></PropRow>
       <PropRow label="图层">
-        <button onClick={() => onToggleLayer(el.id)} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid ' + (el.layer === 'design' ? '#ff9800' : '#4caf50'), borderRadius: 3, background: el.layer === 'design' ? '#fff3e0' : '#e8f5e9', cursor: 'pointer' }}>
+        <button onClick={() => onToggleLayer(el.id)} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid ' + (el.layer === 'design' ? 'var(--fox-light)' : 'var(--sage-light)'), borderRadius: 3, background: el.layer === 'design' ? 'var(--fox-pale)' : 'var(--success-pale)', cursor: 'pointer' }}>
           {el.layer === 'design' ? '🎨 底版层' : '🖨 打印层'}
         </button>
-        <span style={{ fontSize: 10, color: '#999', marginLeft: 4 }}>{el.layer === 'design' ? '打印时跳过' : '打印时输出'}</span>
+        <span style={{ fontSize: 10, color: 'var(--neutral-400)', marginLeft: 4 }}>{el.layer === 'design' ? '打印时跳过' : '打印时输出'}</span>
       </PropRow>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
         <PropRow label="X"><input type="number" value={el.x} onChange={e => updateProp('x', Number(e.target.value))} style={inputStyle} /></PropRow>
@@ -623,7 +623,7 @@ function LayerPanel({ elements, selectedId, onSelect, onMove, onLock, onHidden, 
           onClick={() => onSelect(el.id)}
           style={{
             display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', borderRadius: 4, cursor: 'pointer',
-            background: selectedId === el.id ? '#e3f2fd' : 'transparent',
+            background: selectedId === el.id ? 'var(--blue-pale)' : 'transparent',
             opacity: el.hidden ? 0.4 : 1,
             borderLeft: el.layer === 'design' ? '3px solid #ff9800' : '3px solid transparent',
           }}
@@ -644,7 +644,7 @@ function LayerPanel({ elements, selectedId, onSelect, onMove, onLock, onHidden, 
 }
 
 function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 36, color: '#666', flexShrink: 0 }}>{label}</span>{children}</div>;
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 36, color: 'var(--neutral-500)', flexShrink: 0 }}>{label}</span>{children}</div>;
 }
 
 // ── 样式常量 ──
@@ -652,5 +652,5 @@ const toolBtnStyle: React.CSSProperties = { padding: '3px 8px', background: 'non
 const inputStyle: React.CSSProperties = { flex: 1, padding: '2px 6px', border: '1px solid #ddd', borderRadius: 3, fontSize: 12, minWidth: 0 };
 const layerBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: '0 2px' };
 function tabStyle(active: boolean): React.CSSProperties {
-  return { flex: 1, padding: '6px 0', border: 'none', background: active ? '#fff' : '#f5f5f5', borderBottom: active ? '2px solid #e87d30' : '2px solid transparent', cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400 };
+  return { flex: 1, padding: '6px 0', border: 'none', background: active ? '#fff' : 'var(--neutral-50)', borderBottom: active ? '2px solid #e87d30' : '2px solid transparent', cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400 };
 }

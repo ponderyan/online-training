@@ -139,8 +139,8 @@ export default function LearningHourTypesPage() {
                     <span
                       className="tag"
                       style={{
-                        background: t.status === 'ACTIVE' ? '#2e7d3218' : '#e5393518',
-                        color: t.status === 'ACTIVE' ? '#2e7d32' : '#e53935',
+                        background: t.status === 'ACTIVE' ? 'var(--sage-glow)' : 'var(--verm-glow)',
+                        color: t.status === 'ACTIVE' ? 'var(--sage)' : 'var(--error)',
                         fontSize: '10px',
                       }}
                     >
@@ -159,7 +159,7 @@ export default function LearningHourTypesPage() {
                       <button
                         onClick={() => handleDelete(t.id)}
                         className="text-xs bg-transparent border-none cursor-pointer"
-                        style={{ color: '#e53935' }}
+                        style={{ color: 'var(--error)' }}
                       >
                         删除
                       </button>

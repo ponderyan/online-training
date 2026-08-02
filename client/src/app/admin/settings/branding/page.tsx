@@ -90,7 +90,7 @@ export default function BrandingPage() {
             <label htmlFor="pubReg" className="text-sm">允许公开注册</label>
           </div>
 
-          {error && <div className="text-xs" style={{ color: '#e53935' }}>{error}</div>}
+          {error && <div className="text-xs" style={{ color: 'var(--error)' }}>{error}</div>}
           <div className="flex items-center gap-3 pt-2">
             <button onClick={handleSave} disabled={saving} className="btn btn-fox">{saving ? '保存中…' : '保存设置'}</button>
             {saved && <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已保存</span>}

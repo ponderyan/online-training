@@ -413,7 +413,7 @@ export default function GradingDetail() {
                   return (
                     <div key={s.id} onClick={() => loadStudentAnswers(s.student?.id)}
                       className="px-4 py-3 cursor-pointer transition-colors text-sm"
-                      style={{ background: selectedStudent === s.student?.id ? '#fef3e7' : 'white', color: 'var(--ink-600)' }}>
+                      style={{ background: selectedStudent === s.student?.id ? 'var(--fox-pale2)' : 'white', color: 'var(--ink-600)' }}>
                       <div className="flex items-center gap-1">
                         <div className="font-medium">{getStudentLabel(s, idx)}</div>
                         {assignedSessionIds.has(s.id) && (
@@ -511,7 +511,7 @@ export default function GradingDetail() {
                   const graded = a.score !== null;
                   const need = isSub && !graded;
                   return (
-                    <div key={a.answerId} className="rounded-xl p-5" style={{ background: 'white', border: `1px solid ${need ? '#fde68a' : graded ? '#d4edda' : 'var(--ink-100)'}` }}>
+                    <div key={a.answerId} className="rounded-xl p-5" style={{ background: 'white', border: `1px solid ${need ? '#fde68a' : graded ? 'var(--success-pale)' : 'var(--ink-100)'}` }}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>

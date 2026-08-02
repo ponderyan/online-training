@@ -299,7 +299,7 @@ export default function AiAssistantPage() {
             {error && (
               <div className="flex justify-start">
                 <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm"
-                  style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626' }}>
+                  style={{ background: 'var(--error-pale)', border: '1px solid #fecaca', color: 'var(--error)' }}>
                   {error}
                 </div>
               </div>
@@ -324,7 +324,7 @@ export default function AiAssistantPage() {
             {loading ? (
               <button onClick={handleStop}
                 className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors flex-shrink-0"
-                style={{ background: '#ef4444' }}>
+                style={{ background: 'var(--error)' }}>
                 停止
               </button>
             ) : (

@@ -102,7 +102,7 @@ export default function AuditSettingsPage() {
               onClick={handleManualArchive}
               disabled={archiving}
               className="px-4 py-2 rounded-lg text-sm border transition-colors"
-              style={{ borderColor: '#fca5a5', color: '#dc2626', background: '#fef2f2' }}
+              style={{ borderColor: '#fca5a5', color: 'var(--error)', background: 'var(--error-pale)' }}
             >
               {archiving ? '清理中…' : '🗑 立即清理'}
             </button>
@@ -126,9 +126,9 @@ export default function AuditSettingsPage() {
           <div
             className="rounded-lg px-4 py-3 text-sm"
             style={{
-              background: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-              color: message.type === 'success' ? '#16a34a' : '#dc2626',
+              background: message.type === 'success' ? 'var(--success-pale)' : 'var(--error-pale)',
+              border: `1px solid ${message.type === 'success' ? '#bbf7d0' : 'var(--error-pale)'}`,
+              color: message.type === 'success' ? 'var(--sage)' : 'var(--error)',
             }}
           >
             {message.text}

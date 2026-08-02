@@ -104,8 +104,8 @@ export default function AuditLogsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   const ACTION_COLORS: Record<string, string> = {
-    CREATE: '#00897b', UPDATE: '#e87a30', DELETE: '#e53935',
-    APPEAL_ADJUST: '#7b1fa2', UNLOCK: '#c9a03a', ADJUST: '#e87a30',
+    CREATE: 'var(--info)', UPDATE: 'var(--fox)', DELETE: 'var(--error)',
+    APPEAL_ADJUST: 'var(--purple)', UNLOCK: 'var(--warning)', ADJUST: 'var(--fox)',
   };
 
   return (
@@ -207,7 +207,7 @@ export default function AuditLogsPage() {
                   </td>
                   <td><span className="tag tag-cyan text-[10px]">{log.entityType}</span></td>
                   <td className="font-mono text-xs">{log.entityId}</td>
-                  <td><span className="tag text-[10px]" style={{ background: `${ACTION_COLORS[log.action] || '#888'}18`, color: ACTION_COLORS[log.action] || '#888' }}>{log.action}</span></td>
+                  <td><span className="tag text-[10px]" style={{ background: `${ACTION_COLORS[log.action] || 'var(--neutral-400)'}18`, color: ACTION_COLORS[log.action] || 'var(--neutral-400)' }}>{log.action}</span></td>
                   <td className="text-[10px]">{
                     log.eventSource === 'SYSTEM' ? '🤖 系统' :
                     log.eventSource === 'MANUAL' ? '✋ 手动' :

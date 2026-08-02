@@ -149,12 +149,12 @@ function ReportCard({ result }: { result: ExamResult }) {
               </td>
             </tr>
             <tr style={{
-              background: isPassed ? '#f0faf0' : '#fef2f2',
+              background: isPassed ? 'var(--success-pale)' : 'var(--error-pale)',
               borderTop: '2px solid var(--ink-200)',
             }}>
               <td className="py-3 px-3 font-bold" style={{ color: 'var(--ink-700)' }}>总分</td>
               <td className="py-3 px-3 text-right font-bold text-base"
-                style={{ color: isPassed ? '#2e7d32' : '#ef4444' }}>
+                style={{ color: isPassed ? 'var(--sage)' : 'var(--error)' }}>
                 {result.finalScore ?? '—'}
               </td>
               <td className="py-3 px-3 text-right font-medium" style={{ color: 'var(--ink-400)' }}>
@@ -162,7 +162,7 @@ function ReportCard({ result }: { result: ExamResult }) {
               </td>
               <td className="py-3 px-3 text-right">
                 <span className="inline-flex items-center gap-1 text-xs font-semibold"
-                  style={{ color: isPassed ? '#2e7d32' : '#ef4444' }}>
+                  style={{ color: isPassed ? 'var(--sage)' : 'var(--error)' }}>
                   {isPassed ? '✓ 合格' : '✗ 不合格'}
                 </span>
               </td>
@@ -174,14 +174,14 @@ function ReportCard({ result }: { result: ExamResult }) {
       {/* ===== 统计概览 ===== */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: '正确率', value: accuracy !== null ? `${accuracy}%` : '—', color: '#2e7d32' },
+          { label: '正确率', value: accuracy !== null ? `${accuracy}%` : '—', color: 'var(--sage)' },
           { label: '答对', value: String(correctCount), color: 'var(--ink-700)' },
           { label: '答错', value: String(wrongCount), color: 'var(--ink-700)' },
-          { label: '待判', value: String(pendingCount), color: '#f59e0b' },
+          { label: '待判', value: String(pendingCount), color: 'var(--warning)' },
           { label: '总题数', value: String(result.answers.length), color: 'var(--ink-500)' },
           { label: '判分状态',
             value: result.finalScore !== null ? '已发布' : '待发布',
-            color: result.finalScore !== null ? '#2e7d32' : '#f59e0b' },
+            color: result.finalScore !== null ? 'var(--sage)' : 'var(--warning)' },
         ].map((s, i) => (
           <div key={i} className="text-center py-3 rounded-lg"
             style={{ background: 'var(--paper-dark)' }}>

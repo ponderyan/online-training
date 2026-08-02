@@ -333,7 +333,7 @@ export default function QuestionsPage() {
                   if (selectMode) { setSelectedIds(new Set()); setSelectMode(false); }
                   else { setSelectMode(true); setSelectedIds(new Set(questions.filter(q => q.status !== 'ARCHIVED').map(q => q.id))); }
                 }}
-                  style={{ cursor: 'pointer', accentColor: '#e87a30' }} />
+                  style={{ cursor: 'pointer', accentColor: 'var(--fox)' }} />
               </th>
               <th style={{ width: '38px', textAlign: 'center' }}>#</th>
               <th style={{ width: '30%' }}>试题内容</th>
@@ -371,7 +371,7 @@ export default function QuestionsPage() {
                     checked={selectedIds.has(q.id)}
                     onChange={() => q.status !== 'ARCHIVED' && toggleSelect(q.id)}
                     disabled={q.status === 'ARCHIVED'}
-                    style={{ cursor: q.status === 'ARCHIVED' ? 'not-allowed' : 'pointer', accentColor: '#e87a30', opacity: q.status === 'ARCHIVED' ? 0.3 : 1 }} />
+                    style={{ cursor: q.status === 'ARCHIVED' ? 'not-allowed' : 'pointer', accentColor: 'var(--fox)', opacity: q.status === 'ARCHIVED' ? 0.3 : 1 }} />
                 </td>
                 <td className="text-center text-xs" style={{ color: 'var(--ink-300)', fontFamily: 'monospace' }}>
                   {(page - 1) * pageSize + idx + 1}
@@ -517,7 +517,7 @@ export default function QuestionsPage() {
                 className="btn btn-xs"
                 style={{
                   background: p === page ? 'var(--ink-900)' : 'transparent',
-                  color: p === page ? '#f6f1e8' : 'var(--ink-500)',
+                  color: p === page ? 'var(--paper-light)' : 'var(--ink-500)',
                   border: p === page ? 'none' : '1px solid var(--ink-100)',
                   minWidth: '32px',
                 }}>

@@ -252,12 +252,12 @@ export default function PracticePlayer({ title, loadQuestions }: {
                   <button key={q.id} onClick={() => { setCurrentIdx(i); setDone(false); }}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm hover:bg-[var(--paper)] transition-colors border-none bg-transparent cursor-pointer">
                     <span className="w-6 h-6 flex items-center justify-center rounded text-[11px] font-bold text-white flex-shrink-0"
-                      style={{ background: !r ? 'var(--ink-200)' : r.subjective ? '#f59e0b' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
+                      style={{ background: !r ? 'var(--ink-200)' : r.subjective ? 'var(--warning)' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
                       {i + 1}
                     </span>
                     <span className="text-xs text-[var(--ink-400)] w-14 flex-shrink-0">{TYPE_LABELS[q.type] || q.type}</span>
                     <span className="flex-1 text-xs text-[var(--ink-500)] truncate">{q.content?.replace(/<[^>]*>/g, '').slice(0, 30)}</span>
-                    <span className="text-xs flex-shrink-0" style={{ color: !r ? 'var(--ink-300)' : r.subjective ? '#f59e0b' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
+                    <span className="text-xs flex-shrink-0" style={{ color: !r ? 'var(--ink-300)' : r.subjective ? 'var(--warning)' : r.isCorrect ? 'var(--cyan)' : 'var(--verm)' }}>
                       {!r ? '未答' : r.subjective ? '自评' : r.isCorrect ? '✓' : '✗'}
                     </span>
                     <span className="text-[10px] text-[var(--ink-300)] w-12 text-right flex-shrink-0">{t > 0 ? fmtTime(t) : '-'}</span>

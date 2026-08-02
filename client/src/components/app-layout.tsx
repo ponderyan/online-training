@@ -5,11 +5,29 @@ import { useRouter } from 'next/navigation';
 import Sidebar from './sidebar';
 import ErrorBoundary from './error-boundary';
 import NotificationBell from './notification-bell';
+import { usePathname } from 'next/navigation';
+import { Search, ChevronRight } from 'lucide-react';
 
 export default function AppLayout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+
+  // 面包屑路径映射
+  const BREADCRUMB_MAP: Record<string, string> = {
+    '/admin/dashboard': '统计看板', '/dashboard': '工作台',
+    '/questions': '题库管理', '/exams': '考试管理', '/courses': '课程管理',
+    '/students': '学员管理', '/programs': '培训班管理', '/papers': '试卷管理',
+    '/certificates': '证书管理', '/instructors': '讲师管理', '/agencies': '招生机构',
+    '/admin/organizations': '组织管理', '/admin/certificate-templates': '证书模板',
+    '/admin/learning-hours': '学时管理', '/admin/video-courses': '视频课程',
+    '/materials': '教材出题', '/generate': '智能组卷', '/proctoring': '监考中心',
+    '/grading': '阅卷中心', '/evaluations': '评价管理', '/notifications': '消息通知',
+    '/my/profile': '个人中心', '/admin/audit-trail': '全链审计',
+    '/admin/system-config': '配置中心', '/admin/ai-configs': 'AI 配置',
+  };
+  const currentLabel = BREADCRUMB_MAP[pathname] || pathname.split('/').filter(Boolean).pop() || '首页';
 
   useEffect(() => {
     const u = localStorage.getItem('user');
@@ -74,12 +92,30 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
       <Sidebar user={user} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top header bar */}
-        <header className="flex items-center justify-end px-8 py-2.5" style={{
-          background: 'white',
-          borderBottom: '1px solid var(--ink-100)',
+        <header className="flex items-center justify-between px-6 py-2.5" style={{
+          background: 'var(--topbar-bg)',
+          borderBottom: '1px solid var(--topbar-border)',
           minHeight: 48,
         }}>
-          <NotificationBell user={user} />
+          {/* 面包屑 */}
+          <nav className="flex items-center gap-1.5 text-xs text-[var(--ink-400)]">
+            <span className="text-[var(--ink-300)]">FoxLearn</span>
+            <ChevronRight size={12} />
+            <span className="text-[var(--ink-700)] font-medium">{currentLabel}</span>
+          </nav>
+
+          {/* 右侧：搜索 + 通知 */}
+          <div className="flex items-center gap-3">
+            <div className="relative hidden md:block">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-300)]" />
+              <input
+                type="text"
+                placeholder="搜索功能、课程、学员…"
+                className="pl-8 pr-3 py-1.5 text-xs rounded-md border border-[var(--ink-100)] bg-[var(--paper)] text-[var(--ink-700)] placeholder:text-[var(--ink-300)] focus:border-[var(--fox)] focus:ring-1 focus:ring-[var(--fox)]/10 outline-none w-52 transition-all focus:w-64"
+              />
+            </div>
+            <NotificationBell user={user} />
+          </div>
         </header>
         {/* Main content */}
         {fullBleed ? (

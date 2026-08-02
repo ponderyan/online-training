@@ -6,16 +6,16 @@ import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  APPROVED: { label: '✅ 已通过', color: '#2e7d32', bg: '#2e7d3218' },
-  AUTO_APPROVED: { label: '✅ 已通过', color: '#2e7d32', bg: '#2e7d3218' },
-  PENDING: { label: '⏳ 待审核', color: '#e87a30', bg: '#e87a3018' },
-  REJECTED: { label: '❌ 已驳回', color: '#ef4444', bg: '#ef444418' },
+  APPROVED: { label: '✅ 已通过', color: 'var(--sage)', bg: 'var(--sage-glow)' },
+  AUTO_APPROVED: { label: '✅ 已通过', color: 'var(--sage)', bg: 'var(--sage-glow)' },
+  PENDING: { label: '⏳ 待审核', color: 'var(--fox)', bg: 'var(--fox-glow)' },
+  REJECTED: { label: '❌ 已驳回', color: 'var(--error)', bg: 'var(--verm-glow)' },
 };
 
 const SOURCE_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  VIDEO: { label: '📺 视频', color: '#00897b', bg: '#00897b18' },
-  OFFLINE: { label: '✏️ 申报', color: '#e87a30', bg: '#e87a3018' },
-  MANUAL: { label: '✏️ 人工', color: '#e87a30', bg: '#e87a3018' },
+  VIDEO: { label: '📺 视频', color: 'var(--info)', bg: 'var(--cyan-glow)' },
+  OFFLINE: { label: '✏️ 申报', color: 'var(--fox)', bg: 'var(--fox-glow)' },
+  MANUAL: { label: '✏️ 人工', color: 'var(--fox)', bg: 'var(--fox-glow)' },
 };
 
 export default function AdminLearningHoursPage() {
@@ -71,15 +71,15 @@ export default function AdminLearningHoursPage() {
           <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总记录数</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: '#2e7d32' }}>{Math.round(summary.approved * 100) / 100}h</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--sage)' }}>{Math.round(summary.approved * 100) / 100}h</div>
           <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已通过学时</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: '#e87a30' }}>{Math.round(summary.pending * 100) / 100}h</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--fox)' }}>{Math.round(summary.pending * 100) / 100}h</div>
           <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>待审核学时</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: '#ef4444' }}>{Math.round(summary.rejected * 100) / 100}h</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--error)' }}>{Math.round(summary.rejected * 100) / 100}h</div>
           <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已驳回学时</div>
         </div>
       </div>

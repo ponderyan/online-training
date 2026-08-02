@@ -32,10 +32,10 @@ const GROUP_LABELS: Record<string, string> = {
 /** 分组排序（未列出的排最后） */
 const GROUP_ORDER = ['training', 'exam', 'question', 'bank', 'cert', 'org', 'audit', 'notification', 'email', 'sms'];
 
-const FOX = '#e87a30';
-const INK_300 = '#999';
-const INK_400 = '#777';
-const INK_600 = '#444';
+const FOX = 'var(--fox)';
+const INK_300 = 'var(--neutral-400)';
+const INK_400 = 'var(--neutral-400)';
+const INK_600 = 'var(--neutral-600)';
 const CARD_STYLE = { background: 'var(--paper)', border: '1px solid var(--ink-200)', borderRadius: '10px' };
 
 export default function SystemConfigPage() {
@@ -144,7 +144,7 @@ export default function SystemConfigPage() {
             />
             <span style={{
               width: '36px', height: '20px', borderRadius: '10px',
-              background: val === 'true' ? FOX : '#ccc',
+              background: val === 'true' ? FOX : 'var(--neutral-200)',
               position: 'relative', transition: 'background 0.2s',
               display: 'inline-block',
             }}>
@@ -213,7 +213,7 @@ export default function SystemConfigPage() {
       {toast && (
         <div style={{
           position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 9999, background: toast.includes('失败') ? '#e53935' : '#2e7d32',
+          zIndex: 9999, background: toast.includes('失败') ? 'var(--error)' : 'var(--sage)',
           color: '#fff', padding: '10px 24px', borderRadius: '8px',
           fontSize: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           transition: 'opacity 0.3s',
@@ -232,7 +232,7 @@ export default function SystemConfigPage() {
       {loading ? (
         <div className="text-center py-16" style={{ color: INK_300 }}>加载中… 🦊</div>
       ) : error ? (
-        <div className="text-center py-16" style={{ color: '#e53935' }}>
+        <div className="text-center py-16" style={{ color: 'var(--error)' }}>
           <p className="mb-4">{error}</p>
           <button onClick={load} className="btn btn-fox btn-sm">🔄 重试</button>
         </div>
