@@ -27,6 +27,10 @@ export class OfflineExamService {
     const exam = await this.getOfflineExam(examId);
     if (exam.status !== 'PUBLISHED') throw new BadRequestException('只有已发布的考试可以进入阅卷阶段');
 
+    // 校验：必须有考生
+    const sessionCount = await this.prisma.examSession.count({ where: { examId } });
+    if (sessionCount === 0) throw new BadRequestException('该考试尚未分配考生，不能进入阅卷阶段');
+
     // 线下统一笔试：考试已进行，所有 ASSIGNED 的 session 视为已交卷
     await this.prisma.examSession.updateMany({
       where: { examId, status: 'ASSIGNED' },
@@ -53,6 +57,7 @@ export class OfflineExamService {
       where: { examId, absent: false },
       select: { id: true },
     });
+    if (sessions.length === 0) throw new BadRequestException('没有需要确认成绩的学员');
     const entries = await this.prisma.offlineScoreEntry.findMany({
       where: { examId },
       select: { sessionId: true },
@@ -361,7 +366,10 @@ export class OfflineExamService {
   // ═══════════════════════════════════════════
 
   async markAbsent(examId: number, sessionId: number, absent: boolean) {
-    await this.getOfflineExam(examId);
+    const exam = await this.getOfflineExam(examId);
+    if (!['PUBLISHED', 'AWAITING_GRADING', 'GRADING_IN_PROGRESS'].includes(exam.status)) {
+      throw new BadRequestException('当前状态不允许修改缺考标记（仅在考试发布后至成绩确认前可操作）');
+    }
     const session = await this.prisma.examSession.findFirst({
       where: { id: sessionId, examId },
     });
@@ -389,7 +397,10 @@ export class OfflineExamService {
 
   /** 自动分配座位号（按学员ID排序） */
   async assignSeats(examId: number, options?: { startFrom?: number }) {
-    await this.getOfflineExam(examId);
+    const exam = await this.getOfflineExam(examId);
+    if (!['DRAFT', 'PUBLISHED'].includes(exam.status)) {
+      throw new BadRequestException('考试已开始阅卷，不能再分配座位');
+    }
     const sessions = await this.prisma.examSession.findMany({
       where: { examId },
       orderBy: { studentId: 'asc' },
@@ -664,7 +675,10 @@ export class OfflineExamService {
     reviewNote?: string;
     approved: boolean;
   }) {
-    await this.getOfflineExam(examId);
+    const exam = await this.getOfflineExam(examId);
+    if (!['GRADING_IN_PROGRESS', 'SCORE_CONFIRMED'].includes(exam.status)) {
+      throw new BadRequestException('当前状态不允许复核（仅在录入中或已确认阶段可操作）');
+    }
     const entry = await this.prisma.offlineScoreEntry.findUnique({ where: { sessionId } });
     if (!entry) throw new NotFoundException('该学员尚未录入成绩');
 

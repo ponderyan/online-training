@@ -53,6 +53,8 @@ export default function OfflineScoresPage() {
 
   const statusInfo = STATUS_FLOW[exam?.status] || { label: exam?.status, color: 'var(--ink-400)' };
   const canEnterScores = ['AWAITING_GRADING', 'GRADING_IN_PROGRESS'].includes(exam?.status);
+  const canAssignSeats = ['DRAFT', 'PUBLISHED'].includes(exam?.status);
+  const canMarkAbsent = ['PUBLISHED', 'AWAITING_GRADING', 'GRADING_IN_PROGRESS'].includes(exam?.status);
 
   // 状态流转
   const handleStatusAction = async () => {
@@ -221,7 +223,9 @@ export default function OfflineScoresPage() {
               <button onClick={() => window.open(api.offlineExams.importTemplateUrl(examId), '_blank')} className="btn btn-outline btn-xs">📄 下载模板</button>
             </>
           )}
-          <button onClick={handleAssignSeats} className="btn btn-outline btn-xs">💺 分配座位</button>
+          {canAssignSeats && (
+            <button onClick={handleAssignSeats} className="btn btn-outline btn-xs">💺 分配座位</button>
+          )}
           <button onClick={() => window.open(api.offlineExams.seatTableExcelUrl(examId), '_blank')} className="btn btn-outline btn-xs">📊 座位表Excel</button>
           <button onClick={() => window.open(api.offlineExams.seatTablePdfUrl(examId), '_blank')} className="btn btn-outline btn-xs">🖨️ 座位表PDF</button>
           {['SCORE_PUBLISHED', 'SCORE_CONFIRMED'].includes(exam?.status) && (
@@ -281,14 +285,16 @@ export default function OfflineScoresPage() {
                        <span className="tag" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>待录入</span>}
                     </td>
                     <td className="text-center px-3 py-2.5">
-                      {canEnterScores && (
+                      {(canEnterScores || canMarkAbsent) && (
                         <div className="flex gap-1 justify-center">
-                          {!s.absent && (
+                          {canEnterScores && !s.absent && (
                             <button onClick={() => openScoreEntry(s)} className="btn btn-ghost btn-xs" style={{ fontSize: '10px' }}>录入</button>
                           )}
-                          <button onClick={() => toggleAbsent(s)} className="btn btn-ghost btn-xs" style={{ fontSize: '10px', color: s.absent ? 'var(--green)' : 'var(--verm)' }}>
-                            {s.absent ? '取消缺考' : '缺考'}
-                          </button>
+                          {canMarkAbsent && (
+                            <button onClick={() => toggleAbsent(s)} className="btn btn-ghost btn-xs" style={{ fontSize: '10px', color: s.absent ? 'var(--green)' : 'var(--verm)' }}>
+                              {s.absent ? '取消缺考' : '缺考'}
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>

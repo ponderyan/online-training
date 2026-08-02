@@ -98,7 +98,7 @@ export default function ExamDetail() {
               <button onClick={handlePublish} className="btn btn-fox text-sm px-4 py-2">发布考试</button>
             </>
           )}
-          {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && (
+          {!isOffline && exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && (
             <button onClick={() => setConfirmAction('finish')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--verm)', color: 'var(--verm)' }}>结束考试</button>
           )}
@@ -106,19 +106,21 @@ export default function ExamDetail() {
             <button onClick={() => setConfirmAction('delete')} className="btn text-sm px-4 py-2"
               style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>删除</button>
           )}
-          {exam.status === 'FINISHED' && (
+          {(exam.status === 'FINISHED' || (isOffline && exam.status === 'SCORE_PUBLISHED')) && (
             <>
-              <button onClick={() => router.push(`/grading/${exam.id}`)}
-                className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
-                📊 阅卷
-              </button>
+              {!isOffline && (
+                <button onClick={() => router.push(`/grading/${exam.id}`)}
+                  className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
+                  📊 阅卷
+                </button>
+              )}
               <button onClick={() => router.push(`/exams/${exam.id}/transcript`)}
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>
                 📋 成绩单
               </button>
               <button onClick={() => router.push(`/exams/${exam.id}/analysis`)}
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--gold)', color: 'var(--gold)' }}>
-                📊 分析
+                �� 分析
               </button>
               <button onClick={() => router.push(`/exams/${exam.id}/quality-report`)}
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>
@@ -143,13 +145,19 @@ export default function ExamDetail() {
 
       {/* Status Overview — auto-refresh during active exams */}
       <div className="grid grid-cols-5 gap-4 mb-6">
-        {[
+        {(isOffline ? [
+          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: 'var(--ink-300)' },
+          { label: '已录入', value: students.filter(s => s.totalScore !== null && !s.absent).length, color: 'var(--sage)' },
+          { label: '待录入', value: students.filter(s => s.totalScore === null && !s.absent).length, color: 'var(--fox)' },
+          { label: '缺考', value: students.filter(s => s.absent).length, color: 'var(--verm)' },
+          { label: '通过', value: students.filter(s => s.isPassed).length, color: 'var(--green)' },
+        ] : [
           { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: 'var(--ink-300)' },
           { label: '已提交', value: submittedCount, color: 'var(--info)' },
           { label: '考试中', value: activeCount, color: 'var(--fox)' },
           { label: '已断线', value: pausedCount, color: 'var(--error)' },
           { label: '待参加', value: pendingCount, color: 'var(--ink-500)' },
-        ].map((s, i) => (
+        ]).map((s, i) => (
           <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</p>
