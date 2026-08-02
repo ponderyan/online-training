@@ -46,6 +46,18 @@ function applyTheme(theme: ThemeId) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>('fox-warm');
 
+  // 多标签页同步：监听其他标签页的 localStorage 变化
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue && THEMES.some(t => t.id === e.newValue)) {
+        setThemeState(e.newValue as ThemeId);
+        applyTheme(e.newValue as ThemeId);
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
   // 初始化：先从 localStorage 读取（即时），再从后端同步（跨设备）
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null;

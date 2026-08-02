@@ -1,12 +1,12 @@
 'use client';
 
-import { EXAM_STATUS_LABELS } from '@/lib/exam-constants';
-
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
+import ExamStatusCards from './components/exam-status-cards';
+import ExamStudentList from './components/exam-student-list';
 
 export default function ExamDetail() {
   const params = useParams();
@@ -17,10 +17,6 @@ export default function ExamDetail() {
   const [lastUpdated, setLastUpdated] = useState('');
   const [confirmAction, setConfirmAction] = useState<'delete' | 'finish' | null>(null);
   const refreshRef = useRef<any>(null);
-
-  const loadExam = () => {
-    api.exams.get(parseInt(params.id as string)).then(setExam).catch(() => router.push('/exams'));
-  };
 
   const loadStudents = () => {
     api.exams.students(parseInt(params.id as string)).then(s => {
@@ -43,7 +39,6 @@ export default function ExamDetail() {
 
   useEffect(loadAll, [params.id]);
 
-  // 自动刷新（考试进行中时每10秒刷新学员状态）
   useEffect(() => {
     if (!exam || exam.status === 'FINISHED') return;
     refreshRef.current = setInterval(loadStudents, 10000);
@@ -68,17 +63,7 @@ export default function ExamDetail() {
   if (loading) return <AppLayout><p style={{ color: 'var(--ink-300)' }}>加载中…</p></AppLayout>;
   if (!exam) return null;
 
-
-
   const isOffline = exam.examMode === 'OFFLINE';
-  const sessionStatusLabels: Record<string, string> = isOffline
-    ? { ASSIGNED: '待录入', ACTIVE: '待录入', PAUSED: '待录入', SUBMITTED: '已录入' }
-    : { ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交' };
-
-  const submittedCount = students.filter(s => s.status === 'SUBMITTED').length;
-  const activeCount = students.filter(s => s.status === 'ACTIVE').length;
-  const pausedCount = students.filter(s => s.status === 'PAUSED').length;
-  const pendingCount = students.length - submittedCount - activeCount - pausedCount;
 
   return (
     <AppLayout>
@@ -86,7 +71,7 @@ export default function ExamDetail() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="page-title">{exam.title}</h1>
-          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生{exam.examMode === 'OFFLINE' ? ' · ✍️ 线下笔试' : ''}</p>
+          <p className="page-subtitle">试卷：{exam.paper?.name || '-'} · 共{students.length}名考生{isOffline ? ' · ✍️ 线下笔试' : ''}</p>
         </div>
         <div className="flex gap-2">
           {exam.status === 'DRAFT' && (
@@ -120,7 +105,7 @@ export default function ExamDetail() {
               </button>
               <button onClick={() => router.push(`/exams/${exam.id}/analysis`)}
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--gold)', color: 'var(--gold)' }}>
-                �� 分析
+                📊 分析
               </button>
               <button onClick={() => router.push(`/exams/${exam.id}/quality-report`)}
                 className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>
@@ -128,13 +113,13 @@ export default function ExamDetail() {
               </button>
             </>
           )}
-          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && exam.examMode !== 'OFFLINE' && (
+          {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && !isOffline && (
             <button onClick={() => router.push(`/proctoring/${exam.id}`)}
-              className="btn text-sm px-4 py-2" style={{ border: '1px solid #ef4444', color: 'var(--error)' }}>
+              className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--error)', color: 'var(--error)' }}>
               🎥 监考
             </button>
           )}
-          {exam.examMode === 'OFFLINE' && (
+          {isOffline && (
             <button onClick={() => router.push(`/exams/${exam.id}/offline-scores`)}
               className="btn text-sm px-4 py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
               ✍️ 成绩管理
@@ -143,27 +128,8 @@ export default function ExamDetail() {
         </div>
       </div>
 
-      {/* Status Overview — auto-refresh during active exams */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
-        {(isOffline ? [
-          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: 'var(--ink-300)' },
-          { label: '已录入', value: students.filter(s => s.totalScore !== null && !s.absent).length, color: 'var(--sage)' },
-          { label: '待录入', value: students.filter(s => s.totalScore === null && !s.absent).length, color: 'var(--fox)' },
-          { label: '缺考', value: students.filter(s => s.absent).length, color: 'var(--verm)' },
-          { label: '通过', value: students.filter(s => s.isPassed).length, color: 'var(--green)' },
-        ] : [
-          { label: '考试状态', value: EXAM_STATUS_LABELS[exam.status] || exam.status, color: 'var(--ink-300)' },
-          { label: '已提交', value: submittedCount, color: 'var(--info)' },
-          { label: '考试中', value: activeCount, color: 'var(--fox)' },
-          { label: '已断线', value: pausedCount, color: 'var(--error)' },
-          { label: '待参加', value: pendingCount, color: 'var(--ink-500)' },
-        ]).map((s, i) => (
-          <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</p>
-          </div>
-        ))}
-      </div>
+      {/* Status Cards */}
+      <ExamStatusCards exam={exam} students={students} isOffline={isOffline} />
 
       {/* Info */}
       <div className="rounded-xl p-4 mb-6 text-xs space-y-1" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
@@ -177,52 +143,15 @@ export default function ExamDetail() {
         )}
       </div>
 
-      {/* Student list / Proctoring table */}
-      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
-        <div className="px-5 py-3 flex items-center justify-between text-xs" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
-          <span>考生状态 · 共{students.length}人</span>
-          <div className="flex items-center gap-3">
-            {lastUpdated && (
-              <span>更新于 {lastUpdated}
-                {exam.status !== 'FINISHED' && exam.status !== 'CANCELLED' && ' · 自动刷新中'}
-              </span>
-            )}
-            <button onClick={loadStudents} className="px-2 py-1 rounded hover:bg-[var(--fox-glow)] transition-colors"
-              style={{ border: '1px solid var(--ink-200)' }}>
-              🔄 刷新
-            </button>
-          </div>
-        </div>
-        <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
-          {students.map(s => (
-            <div key={s.id} className="px-5 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-                  {s.student?.displayName?.[0] || '?'}
-                </div>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{s.student?.displayName || '未知'}</p>
-                  <p className="text-xs" style={{ color: 'var(--ink-300)' }}>{s.student?.organization || ''}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
-                <span className="text-xs px-2.5 py-1 rounded-full" style={{
-                  background: s.absent ? 'var(--warning-pale)' : s.status === 'SUBMITTED' ? 'var(--success-pale)' : s.status === 'ACTIVE' ? 'var(--fox-pale)' : 'var(--neutral-50)',
-                  color: s.absent ? 'var(--warning)' : s.status === 'SUBMITTED' ? 'var(--sage)' : s.status === 'ACTIVE' ? 'var(--fox-dark)' : 'var(--ink-400)',
-                }}>
-                  {s.absent ? '缺考' : (sessionStatusLabels[s.status] || s.status)}
-                </span>
-                {s.suspicionLevel > 0 && <span className="text-xs">⚠️ 异常{s.suspicionLevel}</span>}
-              </div>
-            </div>
-          ))}
-          {students.length === 0 && (
-            <div className="px-5 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无考生</div>
-          )}
-        </div>
-      </div>
+      {/* Student List */}
+      <ExamStudentList
+        students={students}
+        isOffline={isOffline}
+        lastUpdated={lastUpdated}
+        examStatus={exam.status}
+        onRefresh={loadStudents}
+      />
+
       <ReasonConfirmModal
         open={confirmAction !== null}
         title={confirmAction === 'delete' ? '🗑 删除考试' : '🛑 结束考试'}
