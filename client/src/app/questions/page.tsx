@@ -8,29 +8,18 @@ import { AddQuestionModal, ViewQuestionModal } from '@/components/question-modal
 import QuestionImportModal from '@/components/question-import-modal';
 import { api } from '@/lib/api';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
-import EmptyState from '@/components/EmptyState';
-import ErrorCard from '@/components/ErrorCard';
-import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
-import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Pencil, Brain, FileText, Upload, Plus, Search, X } from 'lucide-react';
-
-const TYPE_LABELS: Record<string, string> = {
-  SINGLE_CHOICE: '单选', MULTIPLE_CHOICE: '多选', TRUE_FALSE: '判断',
-  FILL_BLANK: '填空', SHORT_ANSWER: '简答', CASE_STUDY: '案例',
-};
-const DIFF_LABELS: Record<string, { label: string; cls: string }> = {
-  EASY: { label: '易', cls: 'tag-cyan' },
-  MEDIUM_EASY: { label: '较易', cls: 'tag-gold' },
-  MEDIUM_HARD: { label: '较难', cls: 'tag-ink' },
-  HARD: { label: '难', cls: 'tag-verm' },
-};
-// 可选的每页条数（用户也可手动输入任意值）
-const PAGE_SIZE_OPTIONS = [10, 15, 20, 30, 50, 100];
+import { Pencil, Upload, Plus } from 'lucide-react';
+import QuestionFilterBar from './components/QuestionFilterBar';
+import QuestionTable from './components/QuestionTable';
+import SelectionBar from './components/SelectionBar';
+import KnowledgePointModal from './components/KnowledgePointModal';
+import ReferencedPapersModal from './components/ReferencedPapersModal';
 
 export default function QuestionsPage() {
   const toast = useToast();
+  const router = useRouter();
   const [questions, setQuestions] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -60,7 +49,6 @@ export default function QuestionsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [bankPolicy, setBankPolicy] = useState<{ org_bank_visibility: string; allow_org_own_bank?: boolean } | null>(null);
-  const router = useRouter();
   const [referencedPapers, setReferencedPapers] = useState<any>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
@@ -71,39 +59,7 @@ export default function QuestionsPage() {
   const [kpLoading, setKpLoading] = useState(false);
   const [kpSubjectId, setKpSubjectId] = useState<number>(0);
 
-  const loadKpTree = async (subjectId: number) => {
-    setKpLoading(true);
-    try {
-      const tree = await api.knowledgePoints.getTree(subjectId);
-      setKpTree(tree);
-    } catch {}
-    setKpLoading(false);
-  };
-
-  const openKpModal = async (q: any) => {
-    setKpModalQuestion(q);
-    setKpTree([]);
-    setKpSelected(new Set());
-    // ★ 自动选中题目所属科目并加载知识点树
-    const qSubjectId = q.subjectId || 0;
-    setKpSubjectId(qSubjectId);
-    if (qSubjectId > 0) loadKpTree(qSubjectId);
-    try {
-      const existing = await api.knowledgePoints.getQuestionKPs(q.id);
-      setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
-    } catch {}
-  };
-
-  /** 展平知识点树为列表 */
-  const flattenTree = (nodes: any[], depth = 0): { id: number; name: string; code: string; depth: number }[] => {
-    const result: { id: number; name: string; code: string; depth: number }[] = [];
-    for (const n of nodes) {
-      result.push({ id: n.id, name: n.name, code: n.code || '', depth });
-      if (n.children?.length) result.push(...flattenTree(n.children, depth + 1));
-    }
-    return result;
-  };
-
+  // ── 数据加载 ──
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -115,7 +71,6 @@ export default function QuestionsPage() {
     if (filterMaterial) params.materialId = filterMaterial;
     if (filterMatChapter) params.chapterId = filterMatChapter;
     if (filterStatus) params.status = filterStatus;
-
     try {
       const data = await api.questions.list(params);
       setQuestions(data.items);
@@ -129,25 +84,17 @@ export default function QuestionsPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    // 科目筛选：直接使用 subjects 列表
-    api.subjects.list().then((subjs: any[]) => {
-      setSubjects(Array.isArray(subjs) ? subjs : []);
-    }).catch(() => {});
-    // 加载教材列表（供筛选用）
+    api.subjects.list().then((subjs: any[]) => setSubjects(Array.isArray(subjs) ? subjs : [])).catch(() => {});
     api.materials.listForFilter().then(setMaterials).catch(() => {});
   }, []);
-  // 选择教材后加载该教材的章节
   useEffect(() => {
     if (!filterMaterial) { setMatChapters([]); setFilterMatChapter(''); return; }
     api.materials.get(Number(filterMaterial)).then(m => {
       setMatChapters(m.chapters?.map((ch: any) => ({ id: ch.id, title: ch.title })) || []);
     }).catch(() => setMatChapters([]));
   }, [filterMaterial]);
-
   useEffect(() => {
-    api.systemConfig.bankPolicy.get()
-      .then(data => setBankPolicy(data))
-      .catch(() => {});
+    api.systemConfig.bankPolicy.get().then(data => setBankPolicy(data)).catch(() => {});
   }, []);
 
   // 当前用户角色
@@ -156,8 +103,24 @@ export default function QuestionsPage() {
     : {};
   const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN') || false;
 
-  const toggleStatus = async (q: any) => {
-    setToggleTarget(q);
+  // ── Handlers ──
+  const loadKpTree = async (subjectId: number) => {
+    setKpLoading(true);
+    try { setKpTree(await api.knowledgePoints.getTree(subjectId)); } catch {}
+    setKpLoading(false);
+  };
+
+  const openKpModal = async (q: any) => {
+    setKpModalQuestion(q);
+    setKpTree([]);
+    setKpSelected(new Set());
+    const qSubjectId = q.subjectId || 0;
+    setKpSubjectId(qSubjectId);
+    if (qSubjectId > 0) loadKpTree(qSubjectId);
+    try {
+      const existing = await api.knowledgePoints.getQuestionKPs(q.id);
+      setKpSelected(new Set(existing.map((e: any) => e.knowledgePointId)));
+    } catch {}
   };
 
   const confirmToggle = async (reason: string) => {
@@ -172,18 +135,14 @@ export default function QuestionsPage() {
     if (deleteTarget === null) return;
     const q = questions.find(qx => qx.id === deleteTarget);
     if (!q) { setDeleteTarget(null); return; }
-
     try {
       await api.questions.delete(q.id);
       toast.success('试题已删除');
       setDeleteTarget(null);
       load();
-    } catch (e: any) {
-      toast.error('删除失败：' + e.message);
-    }
+    } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
-  // 点击删除按钮：先查引用，无引用才打开原因弹窗
   const requestDelete = async (q: any) => {
     try {
       const refs = await api.questions.getReferencedPapers(q.id);
@@ -197,74 +156,44 @@ export default function QuestionsPage() {
 
   const openEditModal = async (q: any) => {
     setEditingId(q.id);
-    try {
-      const full = await api.questions.get(q.id);
-      setEditQuestion(full);
-    } catch {
-      setEditQuestion(q);
-    }
+    try { setEditQuestion(await api.questions.get(q.id)); }
+    catch { setEditQuestion(q); }
     setEditingId(null);
   };
 
   const showReferencedPapers = async (questionId: number) => {
     setLoadingRefs(true);
     setReferencedPapers(null);
-    try {
-      const data = await api.questions.getReferencedPapers(questionId);
-      setReferencedPapers(data);
-    } catch (e: any) {
-      toast.error('查询失败：' + e.message);
-    }
+    try { setReferencedPapers(await api.questions.getReferencedPapers(questionId)); }
+    catch (e: any) { toast.error('查询失败：' + e.message); }
     setLoadingRefs(false);
   };
 
-  const getPageNumbers = () => {
-    const pages: number[] = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else if (page <= 4) {
-      for (let i = 1; i <= 7; i++) pages.push(i);
-    } else if (page >= totalPages - 3) {
-      for (let i = totalPages - 6; i <= totalPages; i++) pages.push(i);
-    } else {
-      for (let i = page - 3; i <= page + 3; i++) pages.push(i);
-    }
-    return pages;
-  };
-
   const handleRowDoubleClick = async (q: any) => {
-    try {
-      const full = await api.questions.get(q.id);
-      setViewQuestion(full);
-    } catch {
-      setViewQuestion(q);
-    }
+    try { setViewQuestion(await api.questions.get(q.id)); }
+    catch { setViewQuestion(q); }
   };
 
-  // 选题模式
   const toggleSelect = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   };
 
   const goGenerateWithSelected = () => {
     if (selectedIds.size === 0) { toast.warning('请先勾选试题'); return; }
-    // 存储选中试题的 ID 和题型（用于锁定题型）
-    const selectedData = questions.filter(q => selectedIds.has(q.id)).map(q => ({
-      id: q.id,
-      type: q.type,
-    }));
+    const selectedData = questions.filter(q => selectedIds.has(q.id)).map(q => ({ id: q.id, type: q.type }));
     localStorage.setItem('selectedQuestionData', JSON.stringify(selectedData));
     router.push('/generate');
   };
 
-  const clearSelection = () => {
-    setSelectedIds(new Set());
-    setSelectMode(false);
+  const clearSelection = () => { setSelectedIds(new Set()); setSelectMode(false); };
+
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+    else if (page <= 4) { for (let i = 1; i <= 7; i++) pages.push(i); }
+    else if (page >= totalPages - 3) { for (let i = totalPages - 6; i <= totalPages; i++) pages.push(i); }
+    else { for (let i = page - 3; i <= page + 3; i++) pages.push(i); }
+    return pages;
   };
 
   return (
@@ -284,218 +213,45 @@ export default function QuestionsPage() {
       </div>
 
       {/* ── 筛选栏 ── */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-300)] pointer-events-none" />
-          <input value={keyword} onChange={e => { setKeyword(e.target.value); setPage(1); }}
-            placeholder="搜索题干…" className="input" style={{ paddingLeft: '32px' }} />
-        </div>
-        <select value={filterSubject} onChange={e => { setFilterSubject(e.target.value); setPage(1); }}
-          className="input select" style={{ width: '120px' }}>
-          <option value="">全部科目</option>
-          {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code}</option>)}
-        </select>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }}
-          className="input select" style={{ width: '100px' }}>
-          <option value="">全部题型</option>
-          {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select value={filterDifficulty} onChange={e => { setFilterDifficulty(e.target.value); setPage(1); }}
-          className="input select" style={{ width: '100px' }}>
-          <option value="">全部难度</option>
-          {Object.entries(DIFF_LABELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
-          className="input select" style={{ width: '100px' }}>
-          <option value="">全部状态</option>
-          <option value="PUBLISHED">启用</option>
-          <option value="ARCHIVED">已停用</option>
-        </select>
-        <select value={filterMaterial} onChange={e => { setFilterMaterial(e.target.value); setPage(1); }}
-          className="input select" style={{ width: '140px' }}>
-          <option value="">全部教材</option>
-          {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        {filterMaterial && (
-          <select value={filterMatChapter} onChange={e => { setFilterMatChapter(e.target.value); setPage(1); }}
-            className="input select" style={{ width: '140px' }}>
-            <option value="">全部章节</option>
-            {matChapters.map((ch: any) => <option key={ch.id} value={ch.id}>{ch.title}</option>)}
-          </select>
-        )}
-      </div>
+      <QuestionFilterBar
+        keyword={keyword} setKeyword={setKeyword}
+        filterSubject={filterSubject} setFilterSubject={setFilterSubject}
+        filterType={filterType} setFilterType={setFilterType}
+        filterDifficulty={filterDifficulty} setFilterDifficulty={setFilterDifficulty}
+        filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+        filterMaterial={filterMaterial} setFilterMaterial={setFilterMaterial}
+        filterMatChapter={filterMatChapter} setFilterMatChapter={setFilterMatChapter}
+        subjects={subjects} materials={materials} matChapters={matChapters}
+        setPage={setPage}
+      />
 
       {/* ── 表格 ── */}
-      <div className="card overflow-hidden">
-        <table className="list-table">
-          <thead>
-            <tr>
-              <th style={{ width: '32px', textAlign: 'center' }}>
-                <input type="checkbox" checked={selectMode} onChange={() => {
-                  if (selectMode) { setSelectedIds(new Set()); setSelectMode(false); }
-                  else { setSelectMode(true); setSelectedIds(new Set(questions.filter(q => q.status !== 'ARCHIVED').map(q => q.id))); }
-                }}
-                  style={{ cursor: 'pointer', accentColor: 'var(--fox)' }} />
-              </th>
-              <th style={{ width: '38px', textAlign: 'center' }}>#</th>
-              <th style={{ width: '30%' }}>试题内容</th>
-              <th style={{ width: '7%' }}>题型</th>
-              <th style={{ width: '7%' }}>难度</th>
-              <th style={{ width: '6%' }}>科目</th>
-              <th style={{ width: '7%' }}>来源</th>
-              <th style={{ width: '8%' }}>创建时间</th>
-              <th style={{ width: '5%' }}>状态</th>
-              <th style={{ width: '5%' }}>引用</th>
-              <th style={{ width: '14%' }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={11} style={{ padding: 0 }}><SkeletonTable rows={6} cols={6} /></td></tr>
-            ) : error ? (
-              <tr><td colSpan={11}><ErrorCard message={error} onRetry={() => load()} /></td></tr>
-            ) : questions.length === 0 ? (
-              <tr><td colSpan={11}>
-                <EmptyState icon="🦊" title="还没有试题" description="点击右上角「录入试题」开始">
-                  <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">录入试题</button>
-                </EmptyState>
-              </td></tr>
-            ) : questions.map((q: any, idx: number) => (
-              <tr key={q.id}
-                onDoubleClick={() => handleRowDoubleClick(q)}
-                className="cursor-pointer"
-                style={{
-                  background: selectedIds.has(q.id) ? 'var(--fox-pale)' : undefined,
-                  opacity: q.status === 'ARCHIVED' ? 0.5 : undefined,
-                }}>
-                <td className="text-center" onClick={e => e.stopPropagation()}>
-                  <input type="checkbox"
-                    checked={selectedIds.has(q.id)}
-                    onChange={() => q.status !== 'ARCHIVED' && toggleSelect(q.id)}
-                    disabled={q.status === 'ARCHIVED'}
-                    style={{ cursor: q.status === 'ARCHIVED' ? 'not-allowed' : 'pointer', accentColor: 'var(--fox)', opacity: q.status === 'ARCHIVED' ? 0.3 : 1 }} />
-                </td>
-                <td className="text-center text-xs" style={{ color: 'var(--ink-300)', fontFamily: 'monospace' }}>
-                  {(page - 1) * pageSize + idx + 1}
-                </td>
-                <td>
-                  <span className="line-clamp-1 text-sm">{q.content}</span>
-                </td>
-                <td><span className="tag tag-ink">{TYPE_LABELS[q.type]}</span></td>
-                <td><span className={`tag ${DIFF_LABELS[q.difficulty]?.cls}`}>{DIFF_LABELS[q.difficulty]?.label}</span></td>
-                <td><span className="tag tag-gold">{q.subject?.code}</span></td>
-                <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 0, overflow: 'hidden' }}>
-                  {q.materialName ? (
-                    <span className="truncate block" style={{ maxWidth: '100%' }} title={`${q.materialName}${q.chapterTitle ? ` > ${q.chapterTitle}` : ''}`}>
-                      📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}
-                    </span>
-                  ) : q.orgId ? (
-                    <>
-                      {q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'}
-                      <span className="ml-1.5 tag tag-gold" style={{ fontSize: '10px', padding: '1px 5px' }}>
-                        机构
-                      </span>
-                    </>
-                  ) : (
-                    q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'
-                  )}
-                </td>
-                <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                  {q.createdAt ? new Date(q.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) : '—'}
-                </td>
-                <td>
-                  <span className={`tag ${q.status === 'PUBLISHED' ? 'tag-cyan' : 'tag-ink'}`}>
-                    {q.status === 'PUBLISHED' ? '启用' : '已停用'}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-xs cursor-pointer hover:text-[var(--fox)] transition-colors"
-                    style={{ color: q._count?.paperQuestions > 0 ? 'var(--ink-500)' : 'var(--ink-200)' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (q._count?.paperQuestions > 0) showReferencedPapers(q.id);
-                    }}>
-                    {q._count?.paperQuestions || 0}次
-                  </span>
-                </td>
-                <td>
-                  {(() => {
-                    const isOrgQuestion = q.orgId !== null;
-                    const isViewOnly = isOrgQuestion && isSuperAdmin && bankPolicy?.org_bank_visibility === 'view_only';
-                    return (
-                    <div className="flex gap-1.5">
-                      <button onClick={async (e) => { e.stopPropagation(); try { const full = await api.questions.get(q.id); setViewQuestion(full); } catch { setViewQuestion(q); } }}
-                        className="btn btn-xs btn-ghost">详情</button>
-                      <button onClick={(e) => { e.stopPropagation(); openEditModal(q); }}
-                        className="btn btn-xs btn-ghost"
-                        disabled={isViewOnly || editingId === q.id}
-                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingId === q.id ? '…' : '编辑'}</button>
-                      {q.status === 'PUBLISHED' ? (
-                        <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
-                          className="btn btn-xs" style={{ color: 'var(--verm)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
-                          disabled={isViewOnly}>停用</button>
-                      ) : (
-                        <button onClick={(e) => { e.stopPropagation(); toggleStatus(q); }}
-                          className="btn btn-xs" style={{ color: 'var(--cyan)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
-                          disabled={isViewOnly}>启用</button>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); openKpModal(q); }}
-                        className="btn btn-xs btn-ghost text-[var(--fox)] hover:text-[var(--fox-dark)]"><Brain size={13} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); requestDelete(q); }}
-                        className="btn btn-xs btn-ghost text-[var(--ink-300)] hover:text-[var(--error)] transition-colors"
-                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
-                        disabled={isViewOnly}>删除</button>
-                    </div>
-                    );
-                  })()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <QuestionTable
+        questions={questions} loading={loading} error={error}
+        selectedIds={selectedIds} selectMode={selectMode}
+        page={page} pageSize={pageSize} editingId={editingId}
+        isSuperAdmin={isSuperAdmin} bankPolicy={bankPolicy}
+        onToggleSelectAll={() => {
+          if (selectMode) { setSelectedIds(new Set()); setSelectMode(false); }
+          else { setSelectMode(true); setSelectedIds(new Set(questions.filter(q => q.status !== 'ARCHIVED').map(q => q.id))); }
+        }}
+        onToggleSelect={toggleSelect}
+        onRowDoubleClick={handleRowDoubleClick}
+        onView={(q) => handleRowDoubleClick(q)}
+        onEdit={openEditModal}
+        onToggleStatus={(q) => setToggleTarget(q)}
+        onOpenKp={openKpModal}
+        onDelete={requestDelete}
+        onShowRefs={showReferencedPapers}
+        onRetry={() => load()}
+        onShowAdd={() => setShowAdd(true)}
+        setViewQuestion={setViewQuestion}
+      />
 
       {/* ── 选题操作栏 ── */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center justify-center gap-3 mt-4 p-3 rounded-lg animate-fadeSlide flex-wrap"
-          style={{ background: 'var(--fox-glow)' }}>
-          <span className="text-sm font-medium" style={{ color: 'var(--fox-dark)' }}>
-            已选 <strong>{selectedIds.size}</strong> 道试题
-          </span>
-          <button onClick={goGenerateWithSelected} className="btn btn-fox btn-sm">选题组卷 →</button>
-          <select
-            onChange={async (e) => {
-              const val = e.target.value;
-              e.target.value = '';
-              if (!val) return;
-              const ids = Array.from(selectedIds);
-              try {
-                if (val === 'archive' || val === 'publish') {
-                  const status = val === 'archive' ? 'ARCHIVED' : 'PUBLISHED';
-                  await Promise.all(ids.map(id => api.questions.update(id, { status })));
-                  toast.success(`已${val === 'archive' ? '停用' : '启用'} ${ids.length} 道试题`);
-                } else {
-                  await Promise.all(ids.map(id => api.questions.update(id, { difficulty: val })));
-                  toast.success(`已修改 ${ids.length} 道试题难度`);
-                }
-                clearSelection();
-                load();
-              } catch (err: any) { toast.error('批量操作失败：' + err.message); }
-            }}
-            className="input select btn-sm" style={{ width: '130px', fontSize: '12px' }}>
-            <option value="">批量操作…</option>
-            <option value="archive">批量停用</option>
-            <option value="publish">批量启用</option>
-            <option value="EASY">难度→易</option>
-            <option value="MEDIUM_EASY">难度→较易</option>
-            <option value="MEDIUM_HARD">难度→较难</option>
-            <option value="HARD">难度→难</option>
-          </select>
-          <button onClick={clearSelection} className="btn btn-ghost btn-xs">取消选择</button>
-        </div>
-      )}
+      <SelectionBar selectedIds={selectedIds} onGenerate={goGenerateWithSelected} onClear={clearSelection} onDone={load} />
 
-      {/* ── 分页（居中） ── */}
+      {/* ── 分页 ── */}
       <div className="flex flex-col items-center mt-4 gap-2" style={{ color: 'var(--ink-400)' }}>
         <div className="flex items-center gap-2 text-xs">
           <span>显示</span>
@@ -503,9 +259,7 @@ export default function QuestionsPage() {
             const v = parseInt(e.target.value) || 0;
             if (v > 0 && v <= 500) { setPageSize(v); setPage(1); }
           }}
-            className="input text-xs text-center"
-            style={{ width: '56px', padding: '4px 6px' }}
-            inputMode="numeric" />
+            className="input text-xs text-center" style={{ width: '56px', padding: '4px 6px' }} inputMode="numeric" />
           <span>条 / 页，共 {total} 条</span>
           <span className="ml-2" style={{ color: 'var(--ink-200)' }}>
             （第 {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} 条）
@@ -514,8 +268,7 @@ export default function QuestionsPage() {
         {totalPages > 1 && (
           <div className="flex gap-1.5">
             {getPageNumbers().map(p => (
-              <button key={p} onClick={() => setPage(p)}
-                className="btn btn-xs"
+              <button key={p} onClick={() => setPage(p)} className="btn btn-xs"
                 style={{
                   background: p === page ? 'var(--ink-900)' : 'transparent',
                   color: p === page ? 'var(--paper-light)' : 'var(--ink-500)',
@@ -529,123 +282,29 @@ export default function QuestionsPage() {
         )}
       </div>
 
+      {/* ── 弹窗 ── */}
       <AddQuestionModal open={showAdd || !!editQuestion} onClose={() => { setShowAdd(false); setEditQuestion(null); load(); }} subjects={subjects} editQuestion={editQuestion} />
       <ViewQuestionModal open={!!viewQuestion} onClose={() => setViewQuestion(null)} question={viewQuestion} />
       <QuestionImportModal open={showImport} onClose={() => { setShowImport(false); load(); }} subjects={subjects} />
-
-      {/* 引用详情弹窗 */}
-      <Modal open={referencedPapers !== null} onClose={() => setReferencedPapers(null)} title="引用详情" width="md"
-        footer={<Button variant="secondary" size="sm" onClick={() => setReferencedPapers(null)}>关闭</Button>}>
-        {referencedPapers !== null && (<>
-              <p className="text-xs mb-4 text-[var(--ink-400)]">
-                该试题已被引用 <strong>{referencedPapers?.count || 0}</strong> 次，共出现在以下试卷中：
-              </p>
-              {loadingRefs ? (
-                <p className="text-sm text-center py-4 text-[var(--ink-300)]">查询中…</p>
-              ) : referencedPapers?.papers?.length > 0 ? (
-                <div className="space-y-2">
-                  {referencedPapers.papers.map((p: any, i: number) => (
-                    <div key={i}
-                      onClick={() => { setReferencedPapers(null); router.push(`/papers/${p.paperId}`); }}
-                      className="flex items-center justify-between p-3 rounded-lg text-sm cursor-pointer transition-colors bg-[var(--paper)] hover:bg-[var(--fox-pale)]">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-[var(--ink-700)]">{p.name}</p>
-                        <p className="text-xs mt-0.5 text-[var(--ink-300)]">{p.paperNumber}</p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className="text-xs text-[var(--ink-400)]">{p.score}分</span>
-                        <span className={`tag ${
-                          p.status === 'OFFICIAL' ? 'tag-verm' :
-                          p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
-                        }`}>
-                          {p.status === 'OFFICIAL' ? '正式' : p.status === 'FINALIZED' ? '定稿' : '草稿'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-center py-4" style={{ color: 'var(--ink-300)' }}>
-                  该试题暂未被任何试卷引用
-                </p>
-              )}
-        </>)}
-      </Modal>
-
-      {/* ═══ 知识点标记弹窗 ═══ */}
-      <Modal open={!!kpModalQuestion} onClose={() => setKpModalQuestion(null)}
-        title={`标记知识点 — ${kpModalQuestion?.content?.slice(0, 30) || ''}…`} width="lg"
-        footer={<>
-          <Button variant="ghost" size="sm" onClick={() => setKpModalQuestion(null)}>取消</Button>
-          <Button size="sm" onClick={async () => {
-            if (!kpModalQuestion) return;
-            try {
-              await api.knowledgePoints.setQuestionKPs(kpModalQuestion.id, Array.from(kpSelected));
-              setKpModalQuestion(null);
-              toast.success('知识点已保存');
-            } catch (e: any) { toast.error('保存失败：' + e.message); }
-          }}>保存</Button>
-        </>}>
-        {kpModalQuestion && (<>
-            {/* 科目选择器 */}
-            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-[var(--paper)]">
-              <span className="text-xs font-medium text-[var(--ink-400)] whitespace-nowrap">科目</span>
-              <select value={kpSubjectId} onChange={e => { const sid = Number(e.target.value); setKpSubjectId(sid); if (sid > 0) loadKpTree(sid); }}
-                className="input text-sm flex-1" style={{ padding: '6px 10px', height: '36px' }}>
-                <option value={0}>请选择科目</option>
-                {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
-              </select>
-            </div>
-            <div className="max-h-[50vh] overflow-y-auto">
-              {kpLoading ? (
-                <div className="py-8 text-center text-xs text-[var(--ink-300)]">加载中…</div>
-              ) : kpSubjectId === 0 ? (
-                <div className="py-8 text-center text-xs text-[var(--ink-300)]">请先选择科目后查看知识点树</div>
-              ) : kpTree.length === 0 ? (
-                <div className="py-8 text-center text-xs text-[var(--ink-300)]">该科目暂无知识点</div>
-              ) : (
-                <div className="space-y-1">
-                  {flattenTree(kpTree).map(kp => (
-                    <label key={kp.id} className="flex items-center gap-2 p-1.5 rounded cursor-pointer hover:bg-[var(--fox-glow)] transition-colors"
-                      style={{ paddingLeft: `${12 + kp.depth * 20}px` }}>
-                      <input type="checkbox" checked={kpSelected.has(kp.id)}
-                        onChange={() => {
-                          const next = new Set(kpSelected);
-                          next.has(kp.id) ? next.delete(kp.id) : next.add(kp.id);
-                          setKpSelected(next);
-                        }}
-                        className="accent-[var(--fox)]" />
-                      <span className={`text-xs text-[var(--ink-600)] ${kp.depth === 0 ? 'font-semibold' : ''}`}>{kp.name}</span>
-                      {kp.code && <span className="text-xs ml-1 text-[var(--ink-300)]">({kp.code})</span>}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-        </>)}
-      </Modal>
-
-
-      {/* 删除确认弹窗 */}
-      <ReasonConfirmModal
-        open={deleteTarget !== null}
-        title="🗑 删除试题"
-        message="确认永久删除此题？此操作不可撤销。"
-        required
-        presetReasons={['创建错误', '题目内容有误', '重复创建']}
-        confirmText="确认删除"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
+      <ReferencedPapersModal data={referencedPapers} loading={loadingRefs} onClose={() => setReferencedPapers(null)} />
+      <KnowledgePointModal
+        question={kpModalQuestion} kpTree={kpTree} kpSelected={kpSelected}
+        kpLoading={kpLoading} kpSubjectId={kpSubjectId} subjects={subjects}
+        onClose={() => setKpModalQuestion(null)}
+        onSubjectChange={(sid) => { setKpSubjectId(sid); if (sid > 0) loadKpTree(sid); }}
+        onToggleKp={(id) => { const next = new Set(kpSelected); next.has(id) ? next.delete(id) : next.add(id); setKpSelected(next); }}
       />
-      {/* 停用/启用确认弹窗 */}
+      <ReasonConfirmModal
+        open={deleteTarget !== null} title="🗑 删除试题"
+        message="确认永久删除此题？此操作不可撤销。" required
+        presetReasons={['创建错误', '题目内容有误', '重复创建']}
+        confirmText="确认删除" onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)}
+      />
       <ReasonConfirmModal
         open={toggleTarget !== null}
         title={toggleTarget?.status === 'PUBLISHED' ? '⏸ 停用试题' : '▶️ 启用试题'}
         message={toggleTarget?.status === 'PUBLISHED' ? '停用后，试题不再出现在试卷选题列表中，已引用的试卷不受影响。' : '启用后，试题可被再次选入试卷。'}
-        required={false}
-        confirmText="确认"
-        onConfirm={confirmToggle}
-        onCancel={() => setToggleTarget(null)}
+        required={false} confirmText="确认" onConfirm={confirmToggle} onCancel={() => setToggleTarget(null)}
       />
     </AppLayout>
   );
