@@ -2219,6 +2219,7 @@ model CertificateTemplate {
   version     Int      @default(2)                 // 模板格式版本
   isDefault   Boolean  @default(false) @map("is_default") // 组织默认模板
   isActive    Boolean  @default(true) @map("is_active")
+  isSystem    Boolean  @default(false) @map("is_system") // 系统内置模板，禁止删除/停用
   sortOrder   Int      @default(0) @map("sort_order")
 
   // ── 机构归属 ──

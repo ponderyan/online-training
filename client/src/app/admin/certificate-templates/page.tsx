@@ -20,6 +20,7 @@ interface TemplateItem {
   createdBy: number;
   creatorName?: string;
   usageCount?: number;
+  isSystem?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -304,6 +305,7 @@ export default function CertificateTemplatesPage() {
                   {/* 缩略图 */}
                   <div className="ct-thumb" onClick={() => setPreviewTpl(tpl)}>
                     <span className="ct-badge" style={{ left: 10, background: m.bg, color: m.color }}>{m.label}</span>
+                    {tpl.isSystem && <span className="ct-badge" style={{ left: 10, top: 38, background: 'rgba(58,54,48,.88)', color: '#fff' }}>🔒 系统内置</span>}
                     {tpl.isDefault && <span className="ct-badge" style={{ right: 10, background: 'rgba(201,160,58,.92)', color: '#fff' }}>★ 默认</span>}
                     {!tpl.isActive && <span className="ct-badge" style={{ right: tpl.isDefault ? 64 : 10, background: 'rgba(90,83,72,.85)', color: '#fff' }}>已停用</span>}
                     {tpl.thumbnail ? (
@@ -352,6 +354,7 @@ export default function CertificateTemplatesPage() {
                       <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--color-ink-800)', fontFamily: 'var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
                       <span className="tag" style={{ background: m.bg, color: m.color }}>{m.label}</span>
                       {tpl.isDefault && <span className="tag tag-gold">★ 默认</span>}
+                      {tpl.isSystem && <span className="tag tag-ink">🔒 系统内置</span>}
                       {!tpl.isActive && <span className="tag tag-ink">已停用</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--color-ink-300)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -363,7 +366,7 @@ export default function CertificateTemplatesPage() {
                     <button className="ct-act" onClick={() => openBatch(tpl.id)}>批量</button>
                     <button className="ct-act" onClick={() => handleDuplicate(tpl.id)}>复制</button>
                     {!tpl.isDefault && tpl.isActive && <button className="ct-act" onClick={() => handleSetDefault(tpl.id)}>设为默认</button>}
-                    {tpl.isActive && <button className="ct-act danger" onClick={() => handleDelete(tpl.id)}>停用</button>}
+                    {tpl.isActive && !tpl.isSystem && <button className="ct-act danger" onClick={() => handleDelete(tpl.id)}>停用</button>}
                   </div>
                 </div>
               );
@@ -380,6 +383,7 @@ export default function CertificateTemplatesPage() {
                   <h3 style={{ margin: 0, fontSize: 17, fontFamily: 'var(--font-serif)', color: 'var(--color-ink-800)' }}>{previewTpl.name}</h3>
                   <span className="tag" style={{ background: typeMeta(previewTpl.type).bg, color: typeMeta(previewTpl.type).color }}>{typeMeta(previewTpl.type).label}</span>
                   {previewTpl.isDefault && <span className="tag tag-gold">★ 默认</span>}
+                  {previewTpl.isSystem && <span className="tag tag-ink">🔒 系统内置</span>}
                   {!previewTpl.isActive && <span className="tag tag-ink">已停用</span>}
                 </div>
                 <button onClick={() => setPreviewTpl(null)} className="btn btn-ghost btn-icon">✕</button>
@@ -408,7 +412,7 @@ export default function CertificateTemplatesPage() {
                 {!previewTpl.isDefault && previewTpl.isActive && <button className="btn btn-outline btn-sm" onClick={() => handleSetDefault(previewTpl.id)}>设为默认</button>}
                 <button className="btn btn-outline btn-sm" onClick={() => openBatch(previewTpl.id)}>📦 批量生成</button>
                 <button className="btn btn-fox btn-sm" onClick={() => openEditor(previewTpl.id)}>✏️ 编辑模板</button>
-                {previewTpl.isActive && <button className="btn btn-verm btn-sm" onClick={() => handleDelete(previewTpl.id)}>停用</button>}
+                {previewTpl.isActive && !previewTpl.isSystem && <button className="btn btn-verm btn-sm" onClick={() => handleDelete(previewTpl.id)}>停用</button>}
               </div>
             </div>
           </div>

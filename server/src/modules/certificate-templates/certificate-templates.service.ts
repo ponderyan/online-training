@@ -38,7 +38,7 @@ export class CertificateTemplatesService {
       orderBy,
       select: {
         id: true, name: true, type: true, description: true,
-        thumbnail: true, isDefault: true, isActive: true,
+        thumbnail: true, isDefault: true, isActive: true, isSystem: true,
         orgId: true, createdBy: true, createdAt: true, updatedAt: true,
       },
     });
@@ -126,6 +126,9 @@ export class CertificateTemplatesService {
   /** 删除（软删除：isActive=false） */
   async remove(id: number, userOrgId: number | null, isSuperAdmin: boolean) {
     const existing = await this.findById(id, userOrgId, isSuperAdmin);
+    if (existing.isSystem) {
+      throw new ForbiddenException('系统内置模板不可停用/删除，如需自定义请使用"复制"另存为副本');
+    }
     if (!isSuperAdmin && !existing.orgId) {
       throw new ForbiddenException('无权删除平台级模板');
     }
@@ -137,7 +140,10 @@ export class CertificateTemplatesService {
 
   /** 硬删除 */
   async hardRemove(id: number, userOrgId: number | null, isSuperAdmin: boolean) {
-    await this.findById(id, userOrgId, isSuperAdmin);
+    const existing = await this.findById(id, userOrgId, isSuperAdmin);
+    if (existing.isSystem) {
+      throw new ForbiddenException('系统内置模板不可删除');
+    }
     return this.prisma.certificateTemplate.delete({ where: { id } });
   }
 
@@ -152,6 +158,7 @@ export class CertificateTemplatesService {
         canvasJson: src.canvasJson as any,
         orgId: userOrgId ?? src.orgId,
         createdBy: userId,
+        isSystem: false, // 副本始终为用户自定义模板（可删除/停用），不继承系统内置属性
       },
     });
   }
