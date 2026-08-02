@@ -1,15 +1,23 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Fuse from 'fuse.js';
-import { Search, CornerDownLeft, X } from 'lucide-react';
+import { Search, CornerDownLeft, FileText, Users, Loader2 } from 'lucide-react';
 
 interface SearchItem {
   path: string;
   label: string;
   group: string;
   keywords?: string;
+}
+
+interface DataResult {
+  id: number;
+  label: string;
+  sub: string;
+  path: string;
+  type: 'question' | 'student';
 }
 
 const SEARCH_INDEX: SearchItem[] = [
@@ -54,8 +62,11 @@ export function GlobalSearch() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [dataResults, setDataResults] = useState<DataResult[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fuse = useMemo(() => new Fuse(SEARCH_INDEX, {
     keys: ['label', 'keywords', 'group'],
@@ -63,10 +74,58 @@ export function GlobalSearch() {
     includeScore: true,
   }), []);
 
-  const results = useMemo(() => {
+  const navResults = useMemo(() => {
     if (!query.trim()) return [];
-    return fuse.search(query.trim()).slice(0, 8).map(r => r.item);
+    return fuse.search(query.trim()).slice(0, 6).map(r => r.item);
   }, [query, fuse]);
+
+  // 后端数据搜索（防抖 400ms）
+  const searchData = useCallback(async (q: string) => {
+    if (q.trim().length < 2) { setDataResults([]); return; }
+    setDataLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const [qRes, sRes] = await Promise.allSettled([
+        fetch(`/api/questions?page=1&pageSize=5&keyword=${encodeURIComponent(q)}`, { headers }).then(r => r.json()),
+        fetch(`/api/students?page=1&pageSize=5&keyword=${encodeURIComponent(q)}`, { headers }).then(r => r.json()),
+      ]);
+      const items: DataResult[] = [];
+      if (qRes.status === 'fulfilled' && qRes.value?.items) {
+        for (const item of qRes.value.items) {
+          items.push({
+            id: item.id,
+            label: (item.content || item.question || '').slice(0, 40),
+            sub: `${item.type === 'SINGLE_CHOICE' ? '单选' : item.type === 'MULTIPLE_CHOICE' ? '多选' : item.type === 'TRUE_FALSE' ? '判断' : item.type || ''} · ${item.subject?.name || ''}`,
+            path: `/questions?highlight=${item.id}`,
+            type: 'question',
+          });
+        }
+      }
+      if (sRes.status === 'fulfilled' && sRes.value?.items) {
+        for (const item of sRes.value.items) {
+          items.push({
+            id: item.id,
+            label: item.displayName || item.username,
+            sub: `${item.studentNumber || ''} ${item.phone || ''}`.trim(),
+            path: `/students?highlight=${item.id}`,
+            type: 'student',
+          });
+        }
+      }
+      setDataResults(items.slice(0, 8));
+    } catch {
+      setDataResults([]);
+    }
+    setDataLoading(false);
+  }, []);
+
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    setOpen(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchData(val), 400);
+  };
 
   // 键盘快捷键 Cmd/Ctrl+K
   useEffect(() => {
@@ -99,9 +158,12 @@ export function GlobalSearch() {
   const navigate = (path: string) => {
     router.push(path);
     setQuery('');
+    setDataResults([]);
     setOpen(false);
     inputRef.current?.blur();
   };
+
+  const hasResults = navResults.length > 0 || dataResults.length > 0;
 
   return (
     <div ref={containerRef} className="relative hidden md:block">
@@ -110,32 +172,68 @@ export function GlobalSearch() {
         ref={inputRef}
         type="text"
         value={query}
-        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onChange={e => handleQueryChange(e.target.value)}
         onFocus={() => setOpen(true)}
-        placeholder="搜索功能… ⌘K"
+        placeholder="搜索功能、题目、学员… ⌘K"
         className="pl-8 pr-3 py-1.5 text-xs rounded-md border border-[var(--ink-100)] bg-[var(--paper)] text-[var(--ink-700)] placeholder:text-[var(--ink-300)] focus:border-[var(--fox)] focus:ring-1 focus:ring-[var(--fox)]/10 outline-none w-52 transition-all focus:w-72"
       />
       {open && query.trim() && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--paper-bright)] border border-[var(--ink-100)] rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-          {results.length === 0 ? (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--paper-bright)] border border-[var(--ink-100)] rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto min-w-[320px]">
+          {!hasResults && !dataLoading ? (
             <div className="px-4 py-6 text-center text-xs text-[var(--ink-300)]">
-              未找到匹配的功能
+              未找到匹配结果
             </div>
           ) : (
             <div className="py-1">
-              {results.map(item => (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-[var(--fox-pale)] transition-colors bg-transparent border-none cursor-pointer"
-                >
-                  <div>
-                    <span className="text-sm text-[var(--ink-700)]">{item.label}</span>
-                    <span className="text-[10px] ml-2 text-[var(--ink-300)]">{item.group}</span>
+              {/* 导航结果 */}
+              {navResults.length > 0 && (
+                <>
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-300)]">功能导航</div>
+                  {navResults.map(item => (
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className="w-full flex items-center justify-between px-4 py-2 text-left hover:bg-[var(--fox-pale)] transition-colors bg-transparent border-none cursor-pointer"
+                    >
+                      <div>
+                        <span className="text-sm text-[var(--ink-700)]">{item.label}</span>
+                        <span className="text-[10px] ml-2 text-[var(--ink-300)]">{item.group}</span>
+                      </div>
+                      <CornerDownLeft size={12} className="text-[var(--ink-200)]" />
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {/* 数据结果 */}
+              {dataLoading && (
+                <div className="flex items-center gap-2 px-4 py-3 text-xs text-[var(--ink-300)]">
+                  <Loader2 size={12} className="animate-spin" /> 搜索数据中…
+                </div>
+              )}
+              {!dataLoading && dataResults.length > 0 && (
+                <>
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-300)] border-t border-[var(--ink-50)] mt-1">
+                    数据匹配
                   </div>
-                  <CornerDownLeft size={12} className="text-[var(--ink-200)]" />
-                </button>
-              ))}
+                  {dataResults.map(item => (
+                    <button
+                      key={`${item.type}-${item.id}`}
+                      onClick={() => navigate(item.path)}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-[var(--fox-pale)] transition-colors bg-transparent border-none cursor-pointer"
+                    >
+                      {item.type === 'question'
+                        ? <FileText size={14} className="text-[var(--fox)] shrink-0" />
+                        : <Users size={14} className="text-[var(--cyan)] shrink-0" />
+                      }
+                      <div className="min-w-0">
+                        <div className="text-xs text-[var(--ink-700)] truncate">{item.label}</div>
+                        <div className="text-[10px] text-[var(--ink-300)] truncate">{item.sub}</div>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>

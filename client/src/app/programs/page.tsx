@@ -8,6 +8,9 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { ClipboardList, Plus, Search, FolderOpen, Calendar, MapPin, Users, User } from 'lucide-react';
 
 const STATUS_NAMES: Record<string, string> = {
   PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
@@ -79,10 +82,10 @@ export default function ProgramsPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">📋 培训班管理</h1>
+          <h1 className="page-title flex items-center gap-2"><ClipboardList size={22} className="text-[var(--fox)]" /> 培训班管理</h1>
           <p className="page-subtitle">共 {total} 个培训班 · 培训班级 · 招生报名 · 考试关联</p>
         </div>
-        <button onClick={() => router.push('/programs/new')} className="btn btn-fox btn-sm">➕ 新建培训班</button>
+        <Button size="sm" icon={<Plus size={14} />} onClick={() => router.push('/programs/new')}>新建培训班</Button>
       </div>
 
       {/* 状态统计条 */}
@@ -99,7 +102,7 @@ export default function ProgramsPage() {
       )}
 
       <div className="flex gap-3 mb-5">
-        <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="🔍 搜索培训班名称…"
+        <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索培训班名称…"
           className="input" style={{ maxWidth: 320 }}
           onKeyDown={e => { if (e.key === 'Enter') load(1); }} />
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); load(1); }}
@@ -115,8 +118,8 @@ export default function ProgramsPage() {
         <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : programs.length === 0 ? (
         <div className="card">
-          <EmptyState icon="📋" title="暂无培训班" description="创建第一个培训班，开始招生和排课">
-            <button onClick={() => router.push('/programs/new')} className="btn btn-fox btn-sm">创建第一个培训班</button>
+          <EmptyState icon="" title="暂无培训班" description="创建第一个培训班，开始招生和排课">
+            <Button size="sm" icon={<Plus size={14} />} onClick={() => router.push('/programs/new')}>创建第一个培训班</Button>
           </EmptyState>
         </div>
       ) : (
@@ -124,8 +127,7 @@ export default function ProgramsPage() {
           <div className="space-y-3">
             {programs.map((p: any) => (
               <div key={p.id} onClick={() => router.push(`/programs/${p.id}`)}
-                className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-                style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md bg-[var(--paper-bright)] border border-[var(--ink-100)]">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     {/* 标题行 */}
@@ -134,21 +136,21 @@ export default function ProgramsPage() {
                       <h3 className="font-semibold" style={{ color: 'var(--ink-700)', fontSize: 15 }}>{p.name}</h3>
                       {p.headTeacher && (
                         <span className="text-xs" style={{ color: 'var(--fox)' }}>
-                          👤 {p.headTeacher}
+                          <User size={12} className="inline mr-0.5" />{p.headTeacher}
                         </span>
                       )}
                     </div>
                     {/* 信息行 1: 科目 · 日期 · 地点 */}
                     <div className="flex gap-4 text-xs flex-wrap mb-1.5" style={{ color: 'var(--ink-400)' }}>
-                      <span>📂 {p.subject?.code || p.subjectId || '—'}</span>
+                      <span><FolderOpen size={12} className="inline mr-0.5" />{p.subject?.code || p.subjectId || '—'}</span>
                       {p.startDate && (
-                        <span>📅 {formatDate(p.startDate)} ~ {formatDate(p.endDate)}</span>
+                        <span><Calendar size={12} className="inline mr-0.5" />{formatDate(p.startDate)} ~ {formatDate(p.endDate)}</span>
                       )}
-                      {p.location && <span>📍 {p.location}</span>}
+                      {p.location && <span><MapPin size={12} className="inline mr-0.5" />{p.location}</span>}
                     </div>
                     {/* 信息行 2: 学员 · 费用 */}
                     <div className="flex gap-4 text-xs flex-wrap" style={{ color: 'var(--ink-400)' }}>
-                      <span>👥 {p.enrolledCount || 0}/{p.maxStudents || '不限'}人</span>
+                      <span><Users size={12} className="inline mr-0.5" />{p.enrolledCount || 0}/{p.maxStudents || '不限'}人</span>
                       <FeeTag label="培训费" amount={p.tuitionFee} />
                       <FeeTag label="考试费" amount={p.examFee} />
                       <FeeTag label="证书费" amount={p.certFee} />
@@ -164,21 +166,7 @@ export default function ProgramsPage() {
           </div>
 
           {/* 分页 */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <button disabled={page <= 1} onClick={() => load(page - 1)}
-                className="btn btn-sm" style={{ opacity: page <= 1 ? 0.4 : 1 }}>
-                ◀ 上一页
-              </button>
-              <span className="text-sm" style={{ color: 'var(--ink-400)' }}>
-                第 {page}/{totalPages} 页 · 共 {total} 条
-              </span>
-              <button disabled={page >= totalPages} onClick={() => load(page + 1)}
-                className="btn btn-sm" style={{ opacity: page >= totalPages ? 0.4 : 1 }}>
-                下一页 ▶
-              </button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} total={total} onChange={(p) => load(p)} />
         </>
       )}
     </AppLayout>

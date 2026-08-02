@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
+import { Card } from '@/components/ui/card';
+import { BarChart3, FileText, CheckCircle2, User, TrendingUp, FileSearch, Users, ArrowRight } from 'lucide-react';
 
 const STATUS_OPTIONS = [
   { value: '', label: '全部' },
@@ -72,19 +74,19 @@ export default function Grading() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📊 阅卷中心</h1>
+        <h1 className="page-title flex items-center gap-2"><BarChart3 size={22} className="text-[var(--fox)]" /> 阅卷中心</h1>
         <p className="page-subtitle">主观题阅卷 · 成绩发布 · 教考分离</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { value: totalGrading, label: '待阅卷场次', icon: '📝', color: 'var(--fox)' },
-          { value: totalPublished, label: '已发布成绩', icon: '✅', color: 'var(--cyan)' },
-          { value: totalPending, label: '待批改学员', icon: '👤', color: 'var(--gold)' },
-          { value: `${overall}%`, label: '整体进度', icon: '📈', color: 'var(--sage)' },
+          { value: totalGrading, label: '待阅卷场次', icon: <FileText size={20} />, color: 'var(--fox)' },
+          { value: totalPublished, label: '已发布成绩', icon: <CheckCircle2 size={20} />, color: 'var(--cyan)' },
+          { value: totalPending, label: '待批改学员', icon: <User size={20} />, color: 'var(--gold)' },
+          { value: `${overall}%`, label: '整体进度', icon: <TrendingUp size={20} />, color: 'var(--sage)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 flex items-center gap-4">
-            <span className="text-2xl">{s.icon}</span>
+            <span style={{ color: s.color }}>{s.icon}</span>
             <div>
               <div className="stat-card-value" style={{ color: s.color }}>{s.value}</div>
               <div className="stat-card-label">{s.label}</div>
@@ -94,7 +96,7 @@ export default function Grading() {
       </div>
 
       <div className="flex items-center gap-3 mb-4">
-        <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="🔍 搜索考试标题…" className="input" style={{ maxWidth: 320 }}
+        <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索考试标题…" className="input" style={{ maxWidth: 320 }}
           onKeyDown={e => e.key === 'Enter' && load()} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="input !w-auto"
@@ -111,7 +113,7 @@ export default function Grading() {
       ) : error ? (
         <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : exams.length === 0 ? (
-        <div className="card"><EmptyState icon="📊" title="暂无待阅卷考试" description="考试结束后，待阅卷场次会出现在这里" /></div>
+        <div className="card"><EmptyState icon="" title="暂无待阅卷考试" description="考试结束后，待阅卷场次会出现在这里" /></div>
       ) : (
         <div className="space-y-3">
           {exams.map(exam => {
@@ -120,15 +122,14 @@ export default function Grading() {
             const pending = total - submitted;
             const progress = total > 0 ? Math.round(submitted / total * 100) : 0;
             return (
-              <div key={exam.id} className="rounded-xl p-5 transition-all hover:shadow-md cursor-pointer"
-                style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}
+              <div key={exam.id} className="rounded-xl p-5 transition-all hover:shadow-md cursor-pointer bg-[var(--paper-bright)] border border-[var(--ink-100)]"
                 onClick={() => router.push(`/grading/${exam.id}`)}
                 onKeyDown={e => e.key === 'Enter' && router.push(`/grading/${exam.id}`)}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
                     <p className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>
-                      📄 {exam.paper?.name || '-'} · 👥 {total}人 · 已提交 {submitted}人 · 待批改 {pending}人
+                      <FileSearch size={12} className="inline mr-0.5" />{exam.paper?.name || '-'} · <Users size={12} className="inline mr-0.5" />{total}人 · 已提交 {submitted}人 · 待批改 {pending}人
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--paper-dark)' }}>
@@ -138,7 +139,7 @@ export default function Grading() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'var(--fox-pale2)', color: 'var(--fox)' }}>进入阅卷 →</span>
+                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'var(--fox-pale2)', color: 'var(--fox)' }}>进入阅卷 <ArrowRight size={12} className="inline ml-0.5" /></span>
                   </div>
                 </div>
               </div>

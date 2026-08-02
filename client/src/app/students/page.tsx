@@ -12,6 +12,9 @@ import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
 import { validatePhone, validateEmail } from '@/lib/validators';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { Users, Plus, Download, FolderOpen, Upload, LayoutList, LayoutGrid } from 'lucide-react';
 
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员',
@@ -210,7 +213,7 @@ export default function StudentsPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">🦊 学员管理</h1>
+          <h1 className="page-title flex items-center gap-2"><Users size={22} className="text-[var(--fox)]" /> 学员管理</h1>
           <p className="page-subtitle">共 {total} 名学员{totalPages > 1 && <span className="ml-2 text-xs opacity-50">第 {page}/{totalPages} 页</span>}</p>
         </div>
         <div className="flex gap-2">
@@ -229,13 +232,13 @@ export default function StudentsPage() {
               a.click();
               URL.revokeObjectURL(url);
             } catch (e: any) { toast.error('导出失败：' + e.message); }
-          }} className="btn btn-outline btn-sm">📤 导出CSV</button>
+          }} className="btn btn-outline btn-sm"><Download size={14} className="inline mr-1" />导出CSV</button>
           <button onClick={() => { setShowGroup(true); setGroupForm({ name: '', note: '' }); }}
-            className="btn btn-outline btn-sm">📂 分组管理</button>
+            className="btn btn-outline btn-sm"><FolderOpen size={14} className="inline mr-1" />分组管理</button>
           <button onClick={() => setShowImport(true)}
-            className="btn btn-outline btn-sm">📥 导入学员</button>
+            className="btn btn-outline btn-sm"><Upload size={14} className="inline mr-1" />导入学员</button>
           <button onClick={() => { setShowAdd(true); setEditStudent(null); resetForm(); }}
-            className="btn btn-fox btn-sm">➕ 添加学员</button>
+            className="btn btn-fox btn-sm"><Plus size={14} className="inline mr-1" />添加学员</button>
         </div>
       </div>
 
@@ -251,12 +254,12 @@ export default function StudentsPage() {
           <button onClick={() => setViewMode('table')}
             className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
             style={{ background: viewMode === 'table' ? 'var(--fox)' : 'transparent', color: viewMode === 'table' ? '#fff' : 'var(--ink-400)', border: 'none' }}>
-            📋 表格
+            <LayoutList size={13} className="inline mr-1" />表格
           </button>
           <button onClick={() => setViewMode('card')}
             className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
             style={{ background: viewMode === 'card' ? 'var(--fox)' : 'transparent', color: viewMode === 'card' ? '#fff' : 'var(--ink-400)', border: 'none' }}>
-            🃏 卡片
+            <LayoutGrid size={13} className="inline mr-1" />卡片
           </button>
         </div>
       </div>
@@ -268,8 +271,8 @@ export default function StudentsPage() {
         <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : students.length === 0 ? (
         <div className="card">
-          <EmptyState icon="👥" title="还没有学员记录" description="添加学员或批量导入，开始管理">
-            <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">添加第一位学员</button>
+          <EmptyState icon="" title="还没有学员记录" description="添加学员或批量导入，开始管理">
+            <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowAdd(true)}>添加第一位学员</Button>
           </EmptyState>
         </div>
       ) : viewMode === 'table' ? (
@@ -343,23 +346,7 @@ export default function StudentsPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button onClick={() => load(page - 1)} disabled={page <= 1}
-            className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.3 : 1 }}>‹ 上一页</button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-            .map((p, idx, arr) => (
-              <span key={p} className="flex items-center">
-                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="mx-1 text-xs" style={{ color: 'var(--ink-300)' }}>…</span>}
-                <button onClick={() => load(p)}
-                  className={`btn btn-xs ${p === page ? 'btn-fox' : 'btn-ghost'}`}>{p}</button>
-              </span>
-            ))}
-          <button onClick={() => load(page + 1)} disabled={page >= totalPages}
-            className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>下一页 ›</button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={(p) => load(p)} />
 
       {/* ── Add/Edit Modal ── */}
       {showAdd && (
