@@ -116,6 +116,13 @@ export class CertificatesService {
       issuerName = progOrg?.certIssuerName || progOrg?.name || null;
     }
 
+    // 确定本次发证使用的模板（组织默认模板，与 PDF 渲染逻辑一致），用于"使用次数"统计
+    const issueTemplate = await this.prisma.certificateTemplate.findFirst({
+      where: { orgId: certOrgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
+      select: { id: true },
+    });
+    const issueTemplateId = issueTemplate?.id ?? null;
+
     const results: any[] = [];
 
     for (const studentId of studentIds) {
@@ -148,6 +155,7 @@ export class CertificatesService {
           verificationCode,
           orgId: certOrgId,
           issuerName,
+          templateId: issueTemplateId,
           approvalStatus: approvalRequired ? 'PENDING' : 'APPROVED',
         },
       });
@@ -332,12 +340,17 @@ export class CertificatesService {
     });
     if (!cert) throw new NotFoundException('证书不存在');
 
-    // ── Phase 2: 检查组织默认模板（平滑过渡） ──
-    const orgDefaultTemplate = await this.prisma.certificateTemplate.findFirst({
-      where: { orgId: cert.orgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
-    });
-    if (orgDefaultTemplate) {
-      const canvas = orgDefaultTemplate.canvasJson as unknown as CanvasDef;
+    // ── 优先使用证书记录的模板，其次组织默认模板（平滑过渡） ──
+    let renderTemplate = cert.templateId
+      ? await this.prisma.certificateTemplate.findUnique({ where: { id: cert.templateId } })
+      : null;
+    if (!renderTemplate) {
+      renderTemplate = await this.prisma.certificateTemplate.findFirst({
+        where: { orgId: cert.orgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
+      });
+    }
+    if (renderTemplate) {
+      const canvas = renderTemplate.canvasJson as unknown as CanvasDef;
       const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
       // 查询学员身份证
       const studentUser = await this.prisma.user.findUnique({

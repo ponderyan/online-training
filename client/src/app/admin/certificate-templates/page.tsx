@@ -19,6 +19,7 @@ interface TemplateItem {
   orgId: number | null;
   createdBy: number;
   creatorName?: string;
+  usageCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -323,9 +324,12 @@ export default function CertificateTemplatesPage() {
                     <p style={{ margin: '0 0 9px', fontSize: 12, color: 'var(--color-ink-300)', height: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {tpl.description || '暂无描述'}
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--color-ink-300)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11.5, color: 'var(--color-ink-300)' }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>👤 {tpl.creatorName || `用户#${tpl.createdBy}`}</span>
-                      <span style={{ flexShrink: 0 }}>{fmtDate(tpl.updatedAt)}</span>
+                      <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span title="使用次数（已签发证书数）" style={{ color: (tpl.usageCount ?? 0) > 0 ? 'var(--color-fox)' : undefined }}>📄 {tpl.usageCount ?? 0}</span>
+                        <span>{fmtDate(tpl.updatedAt)}</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -351,7 +355,7 @@ export default function CertificateTemplatesPage() {
                       {!tpl.isActive && <span className="tag tag-ink">已停用</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--color-ink-300)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {tpl.description || '暂无描述'} · 👤 {tpl.creatorName || `用户#${tpl.createdBy}`} · {tpl.orgId ? `组织#${tpl.orgId}` : '平台级'} · 更新于 {fmtDate(tpl.updatedAt)}
+                      {tpl.description || '暂无描述'} · 👤 {tpl.creatorName || `用户#${tpl.createdBy}`} · {tpl.orgId ? `组织#${tpl.orgId}` : '平台级'} · 📄 {tpl.usageCount ?? 0} 次使用 · 更新于 {fmtDate(tpl.updatedAt)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 7, flexShrink: 0 }}>
@@ -394,6 +398,7 @@ export default function CertificateTemplatesPage() {
                   <div>🏢 归属：{previewTpl.orgId ? `组织 #${previewTpl.orgId}` : '平台级模板'}</div>
                   <div>🕐 创建时间：{fmtDate(previewTpl.createdAt)}</div>
                   <div>🔄 更新时间：{fmtDate(previewTpl.updatedAt)}</div>
+                  <div>📄 使用次数：{previewTpl.usageCount ?? 0} 次</div>
                 </div>
               </div>
               <div className="modal-footer" style={{ flexWrap: 'wrap' }}>

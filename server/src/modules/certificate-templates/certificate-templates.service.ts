@@ -49,7 +49,23 @@ export class CertificateTemplatesService {
       ? await this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, displayName: true, username: true } })
       : [];
     const userMap = new Map(users.map(u => [u.id, u.displayName || u.username]));
-    return rows.map(r => ({ ...r, creatorName: userMap.get(r.createdBy) || `用户#${r.createdBy}` }));
+
+    // 统计每个模板的使用次数（已签发证书数）
+    const tplIds = rows.map(r => r.id);
+    const usageRows = tplIds.length
+      ? await this.prisma.certificate.groupBy({
+          by: ['templateId'],
+          where: { templateId: { in: tplIds } },
+          _count: { _all: true },
+        })
+      : [];
+    const countMap = new Map(usageRows.map(c => [c.templateId as number, c._count._all]));
+
+    return rows.map(r => ({
+      ...r,
+      creatorName: userMap.get(r.createdBy) || `用户#${r.createdBy}`,
+      usageCount: countMap.get(r.id) || 0,
+    }));
   }
 
   /** 详情 */
