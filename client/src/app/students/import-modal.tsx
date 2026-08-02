@@ -103,7 +103,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
 
         {/* Validation errors */}
         {errors.length > 0 && (
-          <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--error-pale)', border: '1px solid #fecaca' }}>
+          <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--error-pale)', border: '1px solid var(--verm)' }}>
             <p className="text-xs font-medium mb-1" style={{ color: 'var(--error)' }}>⚠️ 发现 {errors.length} 个问题</p>
             {errors.slice(0, 5).map((e, i) => (
               <p key={i} className="text-xs" style={{ color: 'var(--error)' }}>第{e.row}行：{e.message}</p>

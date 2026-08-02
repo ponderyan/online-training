@@ -190,7 +190,7 @@ export default function BatchGeneratePage() {
 
         {/* Step: 上传 */}
         {step === 'upload' && (
-          <div style={{ padding: 20, border: '2px dashed #ddd', borderRadius: 8, textAlign: 'center' }}>
+          <div style={{ padding: 20, border: '2px dashed var(--ink-200)', borderRadius: 8, textAlign: 'center' }}>
             <p style={{ marginBottom: 8 }}>模板：<strong>{template?.name}</strong>（{rows.length === 0 ? '等待上传数据' : `${rows.length} 条数据`}）</p>
             <button onClick={() => fileRef.current?.click()} style={btnPrimary}>📂 上传 Excel 文件</button>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleFileUpload} />
@@ -215,10 +215,10 @@ export default function BatchGeneratePage() {
               </thead>
               <tbody>
                 {VAR_FIELDS.map(f => (
-                  <tr key={f.key} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={f.key} style={{ borderBottom: '1px solid var(--ink-100)' }}>
                     <td style={tdStyle}><code style={{ background: 'var(--blue-pale)', padding: '1px 4px', borderRadius: 3 }}>{'{{' + f.key + '}}'}</code> {f.label}</td>
                     <td style={tdStyle}>
-                      <select value={mapping[f.key] || ''} onChange={e => setMapping(m => ({ ...m, [f.key]: e.target.value }))} style={{ padding: '3px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3 }}>
+                      <select value={mapping[f.key] || ''} onChange={e => setMapping(m => ({ ...m, [f.key]: e.target.value }))} style={{ padding: '3px 8px', fontSize: 12, border: '1px solid var(--ink-100)', borderRadius: 3 }}>
                         <option value="">（不映射）</option>
                         {headers.map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
@@ -246,7 +246,7 @@ export default function BatchGeneratePage() {
               </thead>
               <tbody>
                 {mappedPreview.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid var(--ink-100)' }}>
                     {Object.entries(row).filter(([, v]) => v).map(([k, v]) => <td key={k} style={tdStyle}>{String(v)}</td>)}
                   </tr>
                 ))}
@@ -303,6 +303,6 @@ export default function BatchGeneratePage() {
 }
 
 const btnPrimary: React.CSSProperties = { padding: '8px 20px', background: 'var(--fox)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
-const btnSecondary: React.CSSProperties = { padding: '8px 20px', background: 'var(--neutral-50)', color: 'var(--neutral-700)', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
+const btnSecondary: React.CSSProperties = { padding: '8px 20px', background: 'var(--neutral-50)', color: 'var(--neutral-700)', border: '1px solid var(--ink-100)', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
 const thStyle: React.CSSProperties = { padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid #ddd' };
 const tdStyle: React.CSSProperties = { padding: '6px 10px' };

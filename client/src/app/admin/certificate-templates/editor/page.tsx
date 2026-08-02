@@ -379,7 +379,7 @@ export default function CertificateTemplateEditor() {
     <AppLayout fullBleed>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--neutral-50)' }}>
         {/* ═══ 顶栏 ═══ */}
-        <div style={{ padding: '6px 12px', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, background: '#fff', fontSize: 13 }}>
+        <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--ink-100)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, background: 'var(--paper-bright)', fontSize: 13 }}>
           <button onClick={() => router.push('/admin/certificate-templates')} title="返回模板列表" style={{ ...toolBtnStyle, display: 'inline-flex', alignItems: 'center', gap: 3 }}>← 返回</button>
           <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
           <input value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ border: 'none', fontSize: 14, fontWeight: 600, width: 180, outline: 'none' }} />
@@ -414,12 +414,12 @@ export default function CertificateTemplateEditor() {
           <input ref={bgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBgUpload} />
           {canvas.backgroundImage && <button onClick={clearBgImage} style={{ ...toolBtnStyle, color: 'var(--error)' }} title="清除底版">✕底版</button>}
           <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
-          <select value={renderMode} onChange={e => setRenderMode(e.target.value as RenderMode)} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid #ddd', borderRadius: 3 }} title="渲染模式">
+          <select value={renderMode} onChange={e => setRenderMode(e.target.value as RenderMode)} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid var(--ink-100)', borderRadius: 3 }} title="渲染模式">
             <option value="preview">预览(全部)</option>
             <option value="print">打印(动态层)</option>
             <option value="pdf">PDF(全部)</option>
           </select>
-          <select value={exportDpi} onChange={e => setExportDpi(Number(e.target.value))} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid #ddd', borderRadius: 3 }} title="导出分辨率">
+          <select value={exportDpi} onChange={e => setExportDpi(Number(e.target.value))} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid var(--ink-100)', borderRadius: 3 }} title="导出分辨率">
             <option value={96}>96dpi</option>
             <option value={150}>150dpi</option>
             <option value={300}>300dpi</option>
@@ -504,13 +504,13 @@ export default function CertificateTemplateEditor() {
             onMouseLeave={() => setSplitHover(false)}
             onDoubleClick={() => setPanelWidth(300)}
             title="拖拽调整宽度，双击复位"
-            style={{ width: 5, flexShrink: 0, cursor: 'col-resize', borderLeft: '1px solid #e0e0e0', background: dragging ? 'var(--color-fox)' : splitHover ? 'rgba(232,122,48,0.35)' : 'transparent', transition: dragging ? 'none' : 'background .15s' }}
+            style={{ width: 5, flexShrink: 0, cursor: 'col-resize', borderLeft: '1px solid var(--ink-100)', background: dragging ? 'var(--color-fox)' : splitHover ? 'rgba(232,122,48,0.35)' : 'transparent', transition: dragging ? 'none' : 'background .15s' }}
           />
 
           {/* ═══ 右侧面板 ═══ */}
-          <div style={{ width: panelWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+          <div style={{ width: panelWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', background: 'var(--paper-bright)' }}>
             {/* Tab 切换 */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #e0e0e0' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--ink-100)' }}>
               <button onClick={() => setRightPanel('props')} style={tabStyle(rightPanel === 'props')}>属性</button>
               <button onClick={() => setRightPanel('layers')} style={tabStyle(rightPanel === 'layers')}>图层</button>
             </div>
@@ -524,7 +524,7 @@ export default function CertificateTemplateEditor() {
             </div>
 
             {/* 预览数据（可折叠，默认收起以释放属性/图层空间） */}
-            <div style={{ borderTop: '1px solid #e0e0e0', fontSize: 12 }}>
+            <div style={{ borderTop: '1px solid var(--ink-100)', fontSize: 12 }}>
               <button onClick={() => setShowPreviewVars(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--neutral-500)' }}>
                 <span>🧪 预览变量</span>
                 <span style={{ color: 'var(--neutral-300)', fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
@@ -573,7 +573,7 @@ function renderElementPreview(el: CanvasElement) {
     case 'image': return p.src ? <img src={p.src} style={{ width: '100%', height: '100%', objectFit: p.fit || 'contain' }} alt="" /> : <span style={{ color: 'var(--neutral-200)', fontSize: 11 }}>🖼 图片</span>;
     case 'qrcode': return <div style={{ width: '100%', height: '100%', border: '1px dashed #999', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--neutral-50)', flexDirection: 'column' as const }}><span style={{ fontSize: 20 }}>⊞</span><span style={{ fontSize: 9, color: 'var(--neutral-400)' }}>QR</span></div>;
     case 'seal': return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid ' + (p.color || 'var(--error)'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.color || 'var(--error)', fontSize: 10, textAlign: 'center' as const }}>{p.text || '印章'}</div>;
-    case 'barcode': return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, #fff 2px, #fff 4px)' }}><span style={{ background: '#fff', padding: '0 4px', fontSize: 9 }}>{p.dataTemplate}</span></div>;
+    case 'barcode': return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, #fff 2px, #fff 4px)' }}><span style={{ background: 'var(--paper-bright)', padding: '0 4px', fontSize: 9 }}>{p.dataTemplate}</span></div>;
     default: return <span style={{ color: 'var(--neutral-400)', fontSize: 11 }}>[{el.type}]</span>;
   }
 }
@@ -597,7 +597,7 @@ function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasElement; u
       </div>
       {el.rotation !== undefined && <PropRow label="旋转"><input type="number" value={el.rotation} onChange={e => updateProp('rotation', Number(e.target.value))} style={inputStyle} />°</PropRow>}
       {p.content !== undefined && <PropRow label="内容"><textarea value={p.content} onChange={e => updateProp('content', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow>}
-      {p.template !== undefined && <div><PropRow label="模板"><textarea value={p.template} onChange={e => updateProp('template', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow><div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>{AVAILABLE_VARS.map(v => <button key={v.key} onClick={() => updateProp('template', p.template + '{{' + v.key + '}}')} style={{ fontSize: 10, padding: '1px 5px', border: '1px solid #e0e0e0', borderRadius: 3, background: 'var(--neutral-50)', cursor: 'pointer' }} title={'{{' + v.key + '}}'}>{v.label}</button>)}</div></div>}
+      {p.template !== undefined && <div><PropRow label="模板"><textarea value={p.template} onChange={e => updateProp('template', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow><div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>{AVAILABLE_VARS.map(v => <button key={v.key} onClick={() => updateProp('template', p.template + '{{' + v.key + '}}')} style={{ fontSize: 10, padding: '1px 5px', border: '1px solid var(--ink-100)', borderRadius: 3, background: 'var(--neutral-50)', cursor: 'pointer' }} title={'{{' + v.key + '}}'}>{v.label}</button>)}</div></div>}
       {p.fontSize !== undefined && <PropRow label="字号"><input type="number" value={p.fontSize} onChange={e => updateProp('fontSize', Number(e.target.value))} style={{ ...inputStyle, width: 60 }} /></PropRow>}
       {p.fontFamily !== undefined && <PropRow label="字体"><input value={p.fontFamily} onChange={e => updateProp('fontFamily', e.target.value)} style={inputStyle} /></PropRow>}
       {p.color !== undefined && <PropRow label="颜色"><div style={{ display: 'flex', gap: 4, alignItems: 'center' }}><input type="color" value={p.color} onChange={e => updateProp('color', e.target.value)} style={{ width: 28, height: 22, border: 'none', padding: 0 }} /><input value={p.color} onChange={e => updateProp('color', e.target.value)} style={{ ...inputStyle, flex: 1 }} /></div></PropRow>}
@@ -648,8 +648,8 @@ function PropRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 // ── 样式常量 ──
-const toolBtnStyle: React.CSSProperties = { padding: '3px 8px', background: 'none', border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', fontSize: 12 };
-const inputStyle: React.CSSProperties = { flex: 1, padding: '2px 6px', border: '1px solid #ddd', borderRadius: 3, fontSize: 12, minWidth: 0 };
+const toolBtnStyle: React.CSSProperties = { padding: '3px 8px', background: 'none', border: '1px solid var(--ink-100)', borderRadius: 4, cursor: 'pointer', fontSize: 12 };
+const inputStyle: React.CSSProperties = { flex: 1, padding: '2px 6px', border: '1px solid var(--ink-100)', borderRadius: 3, fontSize: 12, minWidth: 0 };
 const layerBtnStyle: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: '0 2px' };
 function tabStyle(active: boolean): React.CSSProperties {
   return { flex: 1, padding: '6px 0', border: 'none', background: active ? '#fff' : 'var(--neutral-50)', borderBottom: active ? '2px solid #e87d30' : '2px solid transparent', cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400 };

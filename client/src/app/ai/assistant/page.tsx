@@ -299,7 +299,7 @@ export default function AiAssistantPage() {
             {error && (
               <div className="flex justify-start">
                 <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm"
-                  style={{ background: 'var(--error-pale)', border: '1px solid #fecaca', color: 'var(--error)' }}>
+                  style={{ background: 'var(--error-pale)', border: '1px solid var(--verm)', color: 'var(--error)' }}>
                   {error}
                 </div>
               </div>

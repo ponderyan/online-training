@@ -97,7 +97,7 @@ export default function VerifyHoursPage() {
           {/* Error */}
           {error && !loading && (
             <div className="card p-6 text-center"
-              style={{ border: '2px solid #ef9a9a', background: 'var(--error-pale)' }}>
+              style={{ border: '2px solid var(--verm)', background: 'var(--error-pale)' }}>
               <div className="text-4xl mb-2">❌</div>
               <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>验证失败</p>
               <p className="text-xs mt-1" style={{ color: 'var(--error-light)' }}>{error}</p>
@@ -185,7 +185,7 @@ export default function VerifyHoursPage() {
           {/* Revoked / Invalid result */}
           {result && !isValid && !loading && (
             <div className="card p-6 text-center"
-              style={{ border: '2px solid #ef9a9a', background: 'var(--error-pale)' }}>
+              style={{ border: '2px solid var(--verm)', background: 'var(--error-pale)' }}>
               <div className="text-4xl mb-2">❌</div>
               <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>
                 {isRevoked ? '此证明已被撤销' : '证明无效'}

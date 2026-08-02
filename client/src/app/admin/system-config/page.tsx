@@ -151,7 +151,7 @@ export default function SystemConfigPage() {
               <span style={{
                 position: 'absolute', top: '2px', left: val === 'true' ? '18px' : '2px',
                 width: '16px', height: '16px', borderRadius: '50%',
-                background: '#fff', transition: 'left 0.2s',
+                background: 'var(--paper-bright)', transition: 'left 0.2s',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }} />
             </span>

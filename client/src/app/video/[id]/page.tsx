@@ -209,7 +209,7 @@ export default function VideoPlayPage() {
   return (
     <div style={{ background: 'var(--ink-900)', minHeight: '100vh', color: 'var(--neutral-100)' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3" style={{ background: 'var(--ink-900)', borderBottom: '1px solid #333' }}>
+      <div className="flex items-center justify-between px-6 py-3" style={{ background: 'var(--ink-900)', borderBottom: '1px solid var(--ink-200)' }}>
         <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: 'var(--fox)', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
         <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>🦊 狐学</span>
       </div>
@@ -263,7 +263,7 @@ export default function VideoPlayPage() {
         </div>
 
         {/* Right: Info panel */}
-        <div className="w-80 p-4 overflow-y-auto" style={{ borderLeft: '1px solid #333', maxHeight: 'calc(100vh - 56px)' }}>
+        <div className="w-80 p-4 overflow-y-auto" style={{ borderLeft: '1px solid var(--ink-200)', maxHeight: 'calc(100vh - 56px)' }}>
           <div className="mb-6">
             <h2 className="text-base font-semibold mb-2">{video.name}</h2>
             <div className="flex flex-wrap gap-1 mb-3">

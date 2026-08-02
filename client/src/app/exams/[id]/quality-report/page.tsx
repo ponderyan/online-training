@@ -147,7 +147,7 @@ function QuestionDetailModal({
 
             {/* 样本量过小提示 */}
             {sampleTooSmall && (
-              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
                 ℹ️ 样本量过小（{detail.sampleCount} 人），数据仅供参考
               </div>
             )}
@@ -363,12 +363,12 @@ export default function ExamQualityReportPage() {
 
       {/* 边界状态提示 */}
       {smallSample && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
           ℹ️ 样本量过小（{overview.totalExaminees} 人），数据仅供参考
         </div>
       )}
       {allFullMarks && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid #f9a82544' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
           ℹ️ 所有学员成绩完全相同，成绩无区分度
         </div>
       )}

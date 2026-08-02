@@ -167,7 +167,7 @@ export default function ExamList() {
                 const ended = exam.endTime && now > new Date(exam.endTime);
                 return (
                 <div key={exam.id} style={{
-                  background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #e2e8f0',
+                  background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--ink-100)',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   opacity: ended ? 0.6 : 1,
@@ -202,7 +202,7 @@ export default function ExamList() {
             <h2 style={styles.sectionTitle}>⚠️ 已缺考</h2>
             {missedExams.map(exam => (
               <div key={exam.id} style={{
-                background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #fecaca',
+                background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--verm)',
                 padding: '16px 24px', marginBottom: '8px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 opacity: 0.8,
@@ -239,7 +239,7 @@ export default function ExamList() {
               return (
                 <div key={exam.id} onClick={() => isPublished ? router.push(`/exam/result/${exam.id}`) : undefined}
                   style={{
-                    background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #e2e8f0',
+                    background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--ink-100)',
                     padding: '16px 24px', marginBottom: '8px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     cursor: isPublished ? 'pointer' : 'default',

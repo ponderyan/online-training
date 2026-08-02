@@ -511,9 +511,9 @@ export default function ExamResult() {
                               (Array.isArray(a.correctAnswer) && a.correctAnswer.includes(o.label));
                             let bg = 'transparent';
                             let border = '1px solid transparent';
-                            if (isUserAnswer && isCorrectOption && a.isCorrect === true) { bg = 'var(--sage-glow)'; border = '1px solid #c8e6c9'; }
-                            else if (isUserAnswer && !isCorrectOption) { bg = 'var(--verm-glow)'; border = '1px solid #fecaca'; }
-                            else if (!isUserAnswer && isCorrectOption && a.isCorrect === false) { bg = 'var(--sage-glow)'; border = '1px solid #c8e6c9'; }
+                            if (isUserAnswer && isCorrectOption && a.isCorrect === true) { bg = 'var(--sage-glow)'; border = '1px solid var(--green)'; }
+                            else if (isUserAnswer && !isCorrectOption) { bg = 'var(--verm-glow)'; border = '1px solid var(--verm)'; }
+                            else if (!isUserAnswer && isCorrectOption && a.isCorrect === false) { bg = 'var(--sage-glow)'; border = '1px solid var(--green)'; }
 
                             return (
                               <div key={o.label} className="p-2.5 rounded-lg text-xs flex items-center gap-2"

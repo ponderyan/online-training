@@ -201,7 +201,7 @@ export default function LearningCenterPlayPage() {
               </div>
             )}
             {completed && (
-              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: 'var(--success-pale)', border: '1px solid #c8e6c9' }}>
+              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: 'var(--success-pale)', border: '1px solid var(--green)' }}>
                 <span className="text-lg">🎉 恭喜完成本视频学习！</span>
               </div>
             )}

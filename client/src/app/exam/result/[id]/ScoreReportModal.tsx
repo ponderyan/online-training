@@ -252,7 +252,7 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
         <div className="score-report-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,23,18,0.45)', backdropFilter: 'blur(2px)' }}>
           <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl"
-            style={{ background: '#fff' }}>
+            style={{ background: 'var(--paper-bright)' }}>
             
             {/* 预览 */}
             <div className="p-8">
