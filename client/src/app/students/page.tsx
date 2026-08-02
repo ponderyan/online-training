@@ -14,6 +14,7 @@ import { validatePhone, validateEmail } from '@/lib/validators';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
+import { Table, THead, TH, TBody, TR, TD } from '@/components/ui/table';
 import { Users, Plus, Download, FolderOpen, Upload, LayoutList, LayoutGrid } from 'lucide-react';
 
 const ROLE_NAMES: Record<string, string> = {
@@ -277,67 +278,61 @@ export default function StudentsPage() {
         </div>
       ) : viewMode === 'table' ? (
         /* ── 表格视图 ── */
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="list-table">
-              <thead>
-                <tr>
-                  <th>学号</th>
-                  <th>姓名</th>
-                  <th>用户名</th>
-                  <th>角色</th>
-                  <th>手机号</th>
-                  <th>邮箱</th>
-                  <th>单位</th>
-                  <th>班级</th>
-                  <th>注册时间</th>
-                  <th>状态</th>
-                  <th style={{ width: 140 }}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((s: any) => (
-                  <tr key={s.id}>
-                    <td><span className="font-medium" style={{ color: 'var(--ink-500)' }}>{s.studentNumber || '—'}</span></td>
-                    <td><span className="font-medium"><a onClick={() => router.push(`/students/${s.id}`)} className="cursor-pointer hover:underline" style={{ color: 'var(--fox)' }}>{s.displayName}</a></span></td>
-                    <td style={{ color: 'var(--ink-400)' }}>{s.username}</td>
-                    <td><RoleBadge roles={s.roleAssignments?.map((ra: any) => ra.role.code) || [s.role || 'STUDENT']} /></td>
-                    <td>{s.phone || '—'}</td>
-                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{s.email || '—'}</td>
-                    <td className="max-w-[160px] truncate text-xs" style={{ color: 'var(--ink-400)' }}>{s.organization || '—'}</td>
-                    <td className="text-xs">{s.group?.name || '—'}</td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
-                    <td>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
-                        {s.isActive ? '正常' : '已停用'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex gap-1">
-                        <button onClick={() => {
-                          setForm({
-                            username: s.username, displayName: s.displayName, password: '',
-                            studentNumber: s.studentNumber || '', phone: s.phone || '',
-                            email: s.email || '', organization: s.organization || '',
-                            groupId: s.groupId ? String(s.groupId) : '',
-                            role: s.role || 'STUDENT',
-                          });
-                          setEditStudent(s);
-                          setShowAdd(true);
-                        }} className="btn btn-ghost btn-xs">编辑</button>
-                        <button onClick={() => handleToggleActive(s)}
-                          className="btn btn-ghost btn-xs"
-                          style={{ color: s.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
-                          {s.isActive ? '停用' : '启用'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Table>
+          <THead>
+            <TH>学号</TH>
+            <TH>姓名</TH>
+            <TH>用户名</TH>
+            <TH>角色</TH>
+            <TH>手机号</TH>
+            <TH>邮箱</TH>
+            <TH>单位</TH>
+            <TH>班级</TH>
+            <TH>注册时间</TH>
+            <TH>状态</TH>
+            <TH style={{ width: 140 }}>操作</TH>
+          </THead>
+          <TBody>
+            {students.map((s: any) => (
+              <TR key={s.id}>
+                <TD><span className="font-medium text-[var(--ink-500)]">{s.studentNumber || '—'}</span></TD>
+                <TD><a onClick={() => router.push(`/students/${s.id}`)} className="cursor-pointer hover:underline font-medium text-[var(--fox)]">{s.displayName}</a></TD>
+                <TD className="text-[var(--ink-400)]">{s.username}</TD>
+                <TD><RoleBadge roles={s.roleAssignments?.map((ra: any) => ra.role.code) || [s.role || 'STUDENT']} /></TD>
+                <TD>{s.phone || '—'}</TD>
+                <TD className="text-xs text-[var(--ink-400)]">{s.email || '—'}</TD>
+                <TD className="max-w-[160px] truncate text-xs text-[var(--ink-400)]">{s.organization || '—'}</TD>
+                <TD className="text-xs">{s.group?.name || '—'}</TD>
+                <TD className="text-xs text-[var(--ink-300)]">{s.createdAt ? new Date(s.createdAt).toLocaleDateString('zh-CN') : '—'}</TD>
+                <TD>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
+                    {s.isActive ? '正常' : '已停用'}
+                  </span>
+                </TD>
+                <TD>
+                  <div className="flex gap-1">
+                    <button onClick={() => {
+                      setForm({
+                        username: s.username, displayName: s.displayName, password: '',
+                        studentNumber: s.studentNumber || '', phone: s.phone || '',
+                        email: s.email || '', organization: s.organization || '',
+                        groupId: s.groupId ? String(s.groupId) : '',
+                        role: s.role || 'STUDENT',
+                      });
+                      setEditStudent(s);
+                      setShowAdd(true);
+                    }} className="btn btn-ghost btn-xs">编辑</button>
+                    <button onClick={() => handleToggleActive(s)}
+                      className="btn btn-ghost btn-xs"
+                      style={{ color: s.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
+                      {s.isActive ? '停用' : '启用'}
+                    </button>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
       ) : (
         /* ── 卡片视图 ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

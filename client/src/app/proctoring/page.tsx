@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
+import { MonitorPlay, RefreshCw, ClipboardList, Circle, Calendar, CheckCircle2, Users, Radio } from 'lucide-react';
 
 export default function ProctoringHome() {
   const router = useRouter();
@@ -61,13 +62,13 @@ export default function ProctoringHome() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">🎥 监考中心</h1>
+          <h1 className="page-title flex items-center gap-2"><MonitorPlay size={22} className="text-[var(--fox)]" /> 监考中心</h1>
           <p className="page-subtitle">实时监控 · 异常干预 · 考试管理</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>🔄 {lastRefresh ? `刷新于 ${lastRefresh}` : '自动每30秒更新'}</span>
+          <span className="text-[10px] text-[var(--ink-300)]"><RefreshCw size={10} className="inline mr-0.5" />{lastRefresh ? `刷新于 ${lastRefresh}` : '自动每30秒更新'}</span>
           <button onClick={load} className="btn btn-sm" style={{ border: '1px solid var(--ink-200)' }}>
-            ⟳ 刷新
+            <RefreshCw size={13} className="inline mr-1" />刷新
           </button>
         </div>
       </div>
@@ -75,14 +76,14 @@ export default function ProctoringHome() {
       {/* Overview cards */}
       <div className="grid grid-cols-5 gap-3 mb-6">
         {[
-          { label: '考试总数', value: stats.all, icon: '📋', color: 'var(--ink-600)' },
-          { label: '进行中', value: stats.inProgress, icon: '🟢', color: 'var(--sage)', highlight: stats.inProgress > 0 },
-          { label: '待开考', value: stats.active - stats.inProgress, icon: '📅', color: 'var(--blue)' },
-          { label: '已交卷', value: stats.submitted, icon: '✅', color: 'var(--neutral-400)' },
-          { label: '总考生', value: stats.totalStudents, icon: '👥', color: 'var(--fox)' },
+          { label: '考试总数', value: stats.all, icon: <ClipboardList size={16} />, color: 'var(--ink-600)' },
+          { label: '进行中', value: stats.inProgress, icon: <Circle size={16} />, color: 'var(--sage)', highlight: stats.inProgress > 0 },
+          { label: '待开考', value: stats.active - stats.inProgress, icon: <Calendar size={16} />, color: 'var(--blue)' },
+          { label: '已交卷', value: stats.submitted, icon: <CheckCircle2 size={16} />, color: 'var(--neutral-400)' },
+          { label: '总考生', value: stats.totalStudents, icon: <Users size={16} />, color: 'var(--fox)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center" style={s.highlight ? { border: '2px solid #2e7d32' } : {}}>
-            <div className="text-sm mb-1">{s.icon}</div>
+            <div className="text-sm mb-1 flex justify-center" style={{ color: s.color }}>{s.icon}</div>
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
             <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
           </div>
@@ -96,7 +97,7 @@ export default function ProctoringHome() {
           border: '2px solid var(--fox)',
         }}>
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🔴</span>
+            <Radio size={24} className="text-[var(--error)] animate-pulse" />
             <div>
               <p className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>
                 {stats.inProgress} 场考试正在进行

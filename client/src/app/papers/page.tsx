@@ -9,6 +9,9 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonCardGrid } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { FileText, Plus, Sparkles, Search } from 'lucide-react';
 
 export default function PapersPage() {
   const router = useRouter();
@@ -151,21 +154,21 @@ export default function PapersPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="page-title">🦊 试卷管理</h1>
+          <h1 className="page-title flex items-center gap-2"><FileText size={22} className="text-[var(--fox)]" /> 试卷管理</h1>
           <p className="page-subtitle">
             草稿 {draftCount} · 待审 {reviewCount} · 已定稿 {finalizedCount} · 正式 {officialCount} &mdash; 共 {total} 份试卷
             {totalPages > 1 && <span className="ml-3 text-xs opacity-50">第 {page}/{totalPages} 页</span>}
           </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">+ 小狐狸，组个卷</button>
+          <Button size="sm" icon={<Sparkles size={14} />} onClick={() => router.push('/generate')}>小狐狸，组个卷</Button>
         </div>
       </div>
 
       {/* 筛选栏 */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
         <input value={keyword} onChange={e => setKeyword(e.target.value)}
-          placeholder="🔍 搜索名称/编号…" className="input" style={{ maxWidth: 220 }}
+          placeholder="搜索名称/编号…" className="input" style={{ maxWidth: 220 }}
           onKeyDown={e => e.key === 'Enter' && load(1)} />
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); }} className="input" style={{ maxWidth: 130 }}>
           <option value="">全部状态</option>
@@ -206,8 +209,8 @@ export default function PapersPage() {
         <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : papers.length === 0 ? (
         <div className="card">
-          <EmptyState icon="🦊" title="还没有试卷" description="让小狐狸帮你组一份试卷">
-            <button onClick={() => router.push('/generate')} className="btn btn-fox btn-sm">让小狐狸组一份</button>
+          <EmptyState icon="" title="还没有试卷" description="让小狐狸帮你组一份试卷">
+            <Button size="sm" icon={<Sparkles size={14} />} onClick={() => router.push('/generate')}>让小狐狸组一份</Button>
           </EmptyState>
         </div>
       ) : (
@@ -287,30 +290,7 @@ export default function PapersPage() {
       )}
 
       {/* 分页 */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8 mb-4">
-          <button onClick={() => goPage(page - 1)} disabled={page <= 1}
-            className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.3 : 1 }}>
-            ‹ 上一页
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-            .map((p, idx, arr) => (
-              <span key={p} className="flex items-center">
-                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="mx-1 text-xs" style={{ color: 'var(--ink-300)' }}>…</span>}
-                <button onClick={() => goPage(p)}
-                  className={`btn btn-xs ${p === page ? 'btn-fox' : 'btn-ghost'}`}
-                  style={p === page ? {} : {}}>
-                  {p}
-                </button>
-              </span>
-            ))}
-          <button onClick={() => goPage(page + 1)} disabled={page >= totalPages}
-            className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>
-            下一页 ›
-          </button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={goPage} className="mb-4" />
 
       {/* Answer Key Modal */}
       {showAnswer && (

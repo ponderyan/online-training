@@ -113,6 +113,39 @@ export class UserProfileController {
     };
   }
 
+  @Get('preferences')
+  async getPreferences(@Req() req: any) {
+    const userId = this.getUserId(req);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    if (!user?.preferences) return { theme: 'fox-warm' };
+    try { return JSON.parse(user.preferences); } catch { return { theme: 'fox-warm' }; }
+  }
+
+  @Put('preferences')
+  async updatePreferences(
+    @Body() data: { theme?: string },
+    @Req() req: any,
+  ) {
+    const userId = this.getUserId(req);
+    // 读取现有偏好并合并
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    let prefs: Record<string, any> = {};
+    try { if (user?.preferences) prefs = JSON.parse(user.preferences); } catch {}
+    if (data.theme) prefs.theme = data.theme;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { preferences: JSON.stringify(prefs) },
+    });
+    return prefs;
+  }
+
   @Post('password')
   async changePassword(
     @Body() data: { oldPassword: string; newPassword: string },

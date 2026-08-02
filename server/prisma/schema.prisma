@@ -186,6 +186,9 @@ model User {
   // ── 标签 ──
   tags Json? // ["VIP学员","2026春季班"]
 
+  // ── 用户偏好 ──
+  preferences String? @db.Text // JSON: {"theme":"fox-warm"}
+
   // ── 招生机构归属 ──
   primaryAgencyId Int?              @map("primary_agency_id")
   primaryAgency   EnrollmentAgency? @relation(fields: [primaryAgencyId], references: [id])

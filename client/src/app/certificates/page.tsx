@@ -10,6 +10,9 @@ import Loading from '@/components/Loading';
 import { SkeletonTable } from '@/components/Skeleton';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { useToast } from '@/components/Toast';
+import { Pagination } from '@/components/ui/pagination';
+import { Table, THead, TH, TBody, TR, TD } from '@/components/ui/table';
+import { Award, Eye, FileDown } from 'lucide-react';
 import CertificatePreviewModal, { PreviewTarget } from '@/components/CertificatePreviewModal';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -133,7 +136,7 @@ function CertificatesContent() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">🏅 证书管理</h1>
+          <h1 className="page-title flex items-center gap-2"><Award size={22} className="text-[var(--fox)]" /> 证书管理</h1>
           <p className="page-subtitle">
             共 {total} 份证书
             {filterExamSessionId && ` · 筛选自考试场次 #${filterExamSessionId}`}
@@ -145,7 +148,7 @@ function CertificatesContent() {
       {/* Filters */}
       <div className="flex gap-3 mb-5">
         <input value={keyword} onChange={e => setKeyword(e.target.value)}
-          placeholder="🔍 搜索学员姓名/证书编号…" className="input" style={{ maxWidth: 320 }} />
+          placeholder="搜索学员姓名/证书编号…" className="input" style={{ maxWidth: 320 }} />
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="input select" style={{ maxWidth: 120 }}>
           <option value="">全部状态</option>
@@ -162,87 +165,64 @@ function CertificatesContent() {
         <div className="card"><ErrorCard message={error} onRetry={() => load()} /></div>
       ) : certificates.length === 0 ? (
         <div className="card">
-          <EmptyState icon="🏅" title="暂无证书" description="发布成绩后，可在此发证并下载 PDF" />
+          <EmptyState icon="" title="暂无证书" description="发布成绩后，可在此发证并下载 PDF" />
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="list-table">
-              <thead>
-                <tr>
-                  <th>证书编号</th>
-                  <th>学员</th>
-                  <th>课程</th>
-                  <th>培训班</th>
-                  <th>发证日期</th>
-                  <th>防伪码</th>
-                  <th>状态</th>
-                  <th style={{ width: 120 }}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {certificates.map((cert: any) => (
-                  <tr key={cert.id}>
-                    <td className="font-mono text-xs font-medium" style={{ color: 'var(--ink-600)' }}>
-                      {cert.certificateNo}
-                    </td>
-                    <td>
-                      <span className="font-medium text-sm" style={{ color: 'var(--ink-600)' }}>
-                        {cert.studentName}
-                      </span>
-                    </td>
-                    <td className="text-xs max-w-[200px] truncate" style={{ color: 'var(--ink-400)' }}>
-                      {cert.courseName}
-                    </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
-                      {cert.program?.name || '—'}
-                    </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
-                      {new Date(cert.issueDate).toLocaleDateString('zh-CN')}
-                    </td>
-                    <td className="font-mono text-xs" style={{ color: 'var(--ink-300)' }}>
-                      {cert.verificationCode ? cert.verificationCode.slice(0, 8) + '…' : '—'}
-                    </td>
-                    <td>{renderStatus(cert)}</td>
-                    <td>
-                      <div className="flex gap-1">
-                        <button onClick={() => openPreview(cert)}
-                          className="btn btn-ghost btn-xs">👁 预览</button>
-                        <button onClick={() => downloadPdf(cert.id)}
-                          className="btn btn-ghost btn-xs">📄 PDF</button>
-                        {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
-                          <button onClick={() => setRevokeTarget(cert.id)}
-                            className="btn btn-ghost btn-xs"
-                            style={{ color: 'var(--verm)' }}>撤销</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Table>
+          <THead>
+            <TH>证书编号</TH>
+            <TH>学员</TH>
+            <TH>课程</TH>
+            <TH>培训班</TH>
+            <TH>发证日期</TH>
+            <TH>防伪码</TH>
+            <TH>状态</TH>
+            <TH style={{ width: 120 }}>操作</TH>
+          </THead>
+          <TBody>
+            {certificates.map((cert: any) => (
+              <TR key={cert.id}>
+                <TD className="font-mono text-xs font-medium text-[var(--ink-600)]">
+                  {cert.certificateNo}
+                </TD>
+                <TD>
+                  <span className="font-medium text-sm text-[var(--ink-600)]">
+                    {cert.studentName}
+                  </span>
+                </TD>
+                <TD className="text-xs max-w-[200px] truncate text-[var(--ink-400)]">
+                  {cert.courseName}
+                </TD>
+                <TD className="text-xs text-[var(--ink-400)]">
+                  {cert.program?.name || '—'}
+                </TD>
+                <TD className="text-xs text-[var(--ink-300)]">
+                  {new Date(cert.issueDate).toLocaleDateString('zh-CN')}
+                </TD>
+                <TD className="font-mono text-xs text-[var(--ink-300)]">
+                  {cert.verificationCode ? cert.verificationCode.slice(0, 8) + '…' : '—'}
+                </TD>
+                <TD>{renderStatus(cert)}</TD>
+                <TD>
+                  <div className="flex gap-1">
+                    <button onClick={() => openPreview(cert)}
+                      className="btn btn-ghost btn-xs"><Eye size={12} className="inline mr-0.5" />预览</button>
+                    <button onClick={() => downloadPdf(cert.id)}
+                      className="btn btn-ghost btn-xs"><FileDown size={12} className="inline mr-0.5" />PDF</button>
+                    {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
+                      <button onClick={() => setRevokeTarget(cert.id)}
+                        className="btn btn-ghost btn-xs text-[var(--verm)]">撤销</button>
+                    )}
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button onClick={() => load(page - 1)} disabled={page <= 1}
-            className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.3 : 1 }}>‹ 上一页</button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-            .map((p, idx, arr) => (
-              <span key={p} className="flex items-center">
-                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="mx-1 text-xs" style={{ color: 'var(--ink-300)' }}>…</span>}
-                <button onClick={() => load(p)}
-                  className={`btn btn-xs ${p === page ? 'btn-fox' : 'btn-ghost'}`}>{p}</button>
-              </span>
-            ))}
-          <button onClick={() => load(page + 1)} disabled={page >= totalPages}
-            className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>下一页 ›</button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={(p) => load(p)} />
 
       <CertificatePreviewModal target={preview} onClose={() => setPreview(null)} />
       {/* 吊销确认弹窗 */}

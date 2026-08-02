@@ -46,12 +46,26 @@ function applyTheme(theme: ThemeId) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>('fox-warm');
 
-  // 初始化：从 localStorage 读取
+  // 初始化：先从 localStorage 读取（即时），再从后端同步（跨设备）
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null;
     if (saved && THEMES.some(t => t.id === saved)) {
       setThemeState(saved);
       applyTheme(saved);
+    }
+    // 异步从后端拉取偏好（跨设备同步）
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch('/api/user/preferences', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.theme && THEMES.some(t => t.id === data.theme) && data.theme !== localStorage.getItem(STORAGE_KEY)) {
+            setThemeState(data.theme);
+            applyTheme(data.theme);
+            localStorage.setItem(STORAGE_KEY, data.theme);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -59,6 +73,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(t);
     applyTheme(t);
     localStorage.setItem(STORAGE_KEY, t);
+    // 异步同步到后端
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ theme: t }),
+      }).catch(() => {});
+    }
   }, []);
 
   return (
