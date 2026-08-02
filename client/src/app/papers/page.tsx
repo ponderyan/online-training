@@ -248,7 +248,7 @@ export default function PapersPage() {
                 <div className="relative">
                   <button onClick={() => setMoreMenu(moreMenu === p.id ? null : p.id)} className="btn btn-ghost btn-xs">⋯ 更多</button>
                   {moreMenu === p.id && (
-                    <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs" style={{ background: 'white', borderColor: 'var(--ink-200)' }}
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}
                       onMouseLeave={() => setMoreMenu(null)}>
                       <button onClick={() => { handleDownload(p.id, 'word'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载试卷 Word</button>
                       <button onClick={() => { handleDownload(p.id, 'pdf'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载 PDF</button>

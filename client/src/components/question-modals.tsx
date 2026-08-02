@@ -461,12 +461,12 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
                   {question.materialQuestions[0].material.name}
                 </div>
                 {question.materialQuestions[0].chapter?.title && (
-                  <div style={{ fontSize: '11px', color: '#4a9aaa', marginTop: '1px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--info)', marginTop: '1px' }}>
                     {question.materialQuestions[0].chapter.title}
                   </div>
                 )}
               </div>
-              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#d8e8ed', color: 'var(--info)', whiteSpace: 'nowrap' }}>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--info-pale)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
                 结构化出题
               </span>
             </div>
@@ -474,17 +474,17 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* ── 已归档来源（金色卡片） ── */}
           {question.sourceNote && !question.materialQuestions?.[0]?.material && (
             <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: '#fef8ee', border: '1px solid #edd9b0' }}>
+              style={{ background: 'var(--fox-pale)', border: '1px solid #edd9b0' }}>
               <span style={{ fontSize: '18px' }}>🗂️</span>
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#b87a20' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gold)' }}>
                   {question.sourceNote}
                 </div>
-                <div style={{ fontSize: '11px', color: '#d4a050', marginTop: '1px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--gold-light)', marginTop: '1px' }}>
                   该教材已归档，试题信息保留
                 </div>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#edd9b0', color: '#8a6010', whiteSpace: 'nowrap' }}>
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--gold-light)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>
                 已归档
               </span>
             </div>

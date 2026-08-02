@@ -264,7 +264,7 @@ export default function VideoCoursesPage() {
                       </div>
                     </div>
                     {/* hover 浮动信息 */}
-                    <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs" style={{ background: 'white', borderColor: 'var(--ink-200)' }}>
+                    <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}>
                       <p className="font-semibold text-sm mb-1">{v.name}</p>
                       {v.description && <p className="mb-1.5" style={{ color: 'var(--ink-400)' }}>{v.description.length > 80 ? v.description.slice(0, 80) + '…' : v.description}</p>}
                       <div className="flex gap-4" style={{ color: 'var(--ink-400)' }}>
@@ -654,7 +654,7 @@ export default function VideoCoursesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPreviewVideo(null)}>
           <div className="rounded-xl overflow-hidden w-full max-w-3xl" style={{ background: 'var(--ink-900)' }}
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3" style={{ background: '#111' }}>
+            <div className="flex items-center justify-between px-5 py-3" style={{ background: 'var(--ink-900)' }}>
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-white truncate block">{previewVideo.name}</span>
                 {previewVideo.description && (

@@ -102,7 +102,7 @@ const PERM_TREE: { key: string; icon: string; children: { permission: string; na
   ]},
 ];
 
-const PRESET_COLORS = ['var(--error)', 'var(--fox)', 'var(--blue)', 'var(--warning)', 'var(--sage)', 'var(--purple)', 'var(--info-light)', '#ec4899'];
+const PRESET_COLORS = ['var(--error)', 'var(--fox)', 'var(--blue)', 'var(--warning)', 'var(--sage)', 'var(--purple)', 'var(--info-light)', 'var(--error)'];
 
 export default function PermissionsPage() {
   const toast = useToast();

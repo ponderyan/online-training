@@ -150,7 +150,7 @@ export default function ExamDetail() {
           { label: '已断线', value: pausedCount, color: 'var(--error)' },
           { label: '待参加', value: pendingCount, color: 'var(--ink-500)' },
         ].map((s, i) => (
-          <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+          <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</p>
           </div>
@@ -158,7 +158,7 @@ export default function ExamDetail() {
       </div>
 
       {/* Info */}
-      <div className="rounded-xl p-4 mb-6 text-xs space-y-1" style={{ background: 'white', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
+      <div className="rounded-xl p-4 mb-6 text-xs space-y-1" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
         <p>📅 {new Date(exam.startTime).toLocaleString('zh-CN')} — {new Date(exam.endTime).toLocaleString('zh-CN')}</p>
         <p>⏱ 单人次限时 {exam.durationMinutes} 分钟 · {exam.timeMode === 'FLEXIBLE' ? '随到随考' : '统一开考'} · {exam.paperMode === 'RANDOM' ? '随机抽题' : '统一试卷'} · {exam.shuffleQuestions ? '题目乱序' : '顺序出题'}</p>
         {exam.program && <p>📚 所属培训项目：{exam.program.name}{exam.program.code ? `（${exam.program.code}）` : ''}</p>}
@@ -170,7 +170,7 @@ export default function ExamDetail() {
       </div>
 
       {/* Student list / Proctoring table */}
-      <div className="rounded-xl overflow-hidden" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
         <div className="px-5 py-3 flex items-center justify-between text-xs" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
           <span>考生状态 · 共{students.length}人</span>
           <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export default function ExamDetail() {
                 {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
                 <span className="text-xs px-2.5 py-1 rounded-full" style={{
                   background: s.absent ? 'var(--warning-pale)' : s.status === 'SUBMITTED' ? 'var(--success-pale)' : s.status === 'ACTIVE' ? 'var(--fox-pale)' : 'var(--neutral-50)',
-                  color: s.absent ? 'var(--warning)' : s.status === 'SUBMITTED' ? 'var(--sage)' : s.status === 'ACTIVE' ? 'var(--fox-dark)' : '#757575',
+                  color: s.absent ? 'var(--warning)' : s.status === 'SUBMITTED' ? 'var(--sage)' : s.status === 'ACTIVE' ? 'var(--fox-dark)' : 'var(--ink-400)',
                 }}>
                   {s.absent ? '缺考' : (sessionStatusLabels[s.status] || s.status)}
                 </span>

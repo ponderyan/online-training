@@ -170,7 +170,7 @@ export default function VerifyHoursPage() {
                 {cert.contentHash && (
                   <div className="pt-2 border-t flex items-center gap-1" style={{ borderColor: 'var(--sage-light)' }}>
                     <span className="text-xs" style={{ color: 'var(--sage)' }}>🛡️ 内容指纹：</span>
-                    <span className="text-[10px] font-mono" style={{ color: '#689f38' }}>
+                    <span className="text-[10px] font-mono" style={{ color: 'var(--sage)' }}>
                       {cert.contentHash.slice(0, 16)}...
                     </span>
                     <span className="text-[10px]" style={{ color: 'var(--sage)' }}>

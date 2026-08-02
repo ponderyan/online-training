@@ -305,11 +305,11 @@ export default function PracticePlayer({ title, loadQuestions }: {
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-[var(--ink-400)]">模式：</span>
             <button onClick={() => setMode('practice')}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${mode === 'practice' ? 'bg-[var(--fox)] text-white border-[var(--fox)]' : 'bg-white text-[var(--ink-500)] border-[var(--ink-200)]'}`}>
+              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${mode === 'practice' ? 'bg-[var(--fox)] text-white border-[var(--fox)]' : 'bg-[var(--paper-bright)] text-[var(--ink-500)] border-[var(--ink-200)]'}`}>
               做题模式
             </button>
             <button onClick={() => setMode('browse')}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${mode === 'browse' ? 'bg-[var(--fox)] text-white border-[var(--fox)]' : 'bg-white text-[var(--ink-500)] border-[var(--ink-200)]'}`}>
+              className={`text-xs px-2.5 py-1 rounded-full border transition-all ${mode === 'browse' ? 'bg-[var(--fox)] text-white border-[var(--fox)]' : 'bg-[var(--paper-bright)] text-[var(--ink-500)] border-[var(--ink-200)]'}`}>
               背题模式
             </button>
           </div>
@@ -424,7 +424,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
                           className={`inline-block mx-1 px-2 py-0.5 text-center text-sm border-b-2 outline-none w-[130px] transition-colors ${
                             blankCorrect ? 'border-[var(--sage)] bg-[var(--sage-glow)] text-[var(--sage)] font-medium'
                               : blankWrong ? 'border-[var(--verm)] bg-[var(--verm-glow)] text-[var(--verm)]'
-                              : 'border-[var(--fox)] bg-white focus:border-[var(--fox-dark)]'
+                              : 'border-[var(--fox)] bg-[var(--paper-bright)] focus:border-[var(--fox-dark)]'
                           }`}
                           placeholder={`第${i + 1}空`}
                         />
@@ -578,7 +578,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
 
         {/* Right — Answer card */}
         <aside className="w-[180px] flex-shrink-0 hidden lg:block">
-          <div className="sticky top-24 bg-white rounded-xl border border-[var(--ink-100)] p-4">
+          <div className="sticky top-24 bg-[var(--paper-bright)] rounded-xl border border-[var(--ink-100)] p-4">
             <div className="text-xs font-medium mb-3 text-[var(--ink-500)]">答题卡</div>
             <div className="grid grid-cols-6 gap-1.5 mb-2">
               {questions.map((q: any, i: number) => {

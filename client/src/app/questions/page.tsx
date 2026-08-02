@@ -12,6 +12,9 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
+import { Pencil, Brain, FileText, Upload, Plus, Search, X } from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
   SINGLE_CHOICE: '单选', MULTIPLE_CHOICE: '多选', TRUE_FALSE: '判断',
@@ -269,13 +272,13 @@ export default function QuestionsPage() {
       {/* ── 页面标题 ── */}
       <div className="flex items-start justify-between mb-7">
         <div>
-          <h1 className="page-title">🦊 题库管理</h1>
+          <h1 className="page-title flex items-center gap-2"><Pencil size={22} className="text-[var(--fox)]" /> 题库管理</h1>
           <p className="page-subtitle">共 {total} 道试题 · 6 种题型 · {subjects.length} 个科目</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setShowImport(true)} className="btn btn-outline btn-sm">↑ 批量导入</button>
+          <Button variant="outline" size="sm" icon={<Upload size={14} />} onClick={() => setShowImport(true)}>批量导入</Button>
           {(!isSuperAdmin && bankPolicy?.allow_org_own_bank === false) ? null : (
-            <button onClick={() => setShowAdd(true)} className="btn btn-fox btn-sm">+ 录入试题</button>
+            <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowAdd(true)}>录入试题</Button>
           )}
         </div>
       </div>
@@ -283,8 +286,7 @@ export default function QuestionsPage() {
       {/* ── 筛选栏 ── */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none"
-            style={{ color: 'var(--ink-300)' }}>⌕</span>
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-300)] pointer-events-none" />
           <input value={keyword} onChange={e => { setKeyword(e.target.value); setPage(1); }}
             placeholder="搜索题干…" className="input" style={{ paddingLeft: '32px' }} />
         </div>
@@ -438,12 +440,11 @@ export default function QuestionsPage() {
                           disabled={isViewOnly}>启用</button>
                       )}
                       <button onClick={(e) => { e.stopPropagation(); openKpModal(q); }}
-                        className="btn btn-xs btn-ghost" style={{ color: 'var(--fox)' }}>🧠</button>
+                        className="btn btn-xs btn-ghost text-[var(--fox)] hover:text-[var(--fox-dark)]"><Brain size={13} /></button>
                       <button onClick={(e) => { e.stopPropagation(); requestDelete(q); }}
-                        className="btn btn-xs btn-ghost" style={{ color: 'var(--ink-300)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
-                        disabled={isViewOnly}
-                        onMouseEnter={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--verm)'; }}
-                        onMouseLeave={e => { if (!isViewOnly) e.currentTarget.style.color = 'var(--ink-300)'; }}>删除</button>
+                        className="btn btn-xs btn-ghost text-[var(--ink-300)] hover:text-[var(--error)] transition-colors"
+                        style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                        disabled={isViewOnly}>删除</button>
                     </div>
                     );
                   })()}
@@ -533,36 +534,26 @@ export default function QuestionsPage() {
       <QuestionImportModal open={showImport} onClose={() => { setShowImport(false); load(); }} subjects={subjects} />
 
       {/* 引用详情弹窗 */}
-      {referencedPapers !== null && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setReferencedPapers(null); }}>
-          <div className="modal-card max-w-[500px] animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">📋 引用详情</h3>
-              <button onClick={() => setReferencedPapers(null)}
-                className="text-lg bg-transparent border-none cursor-pointer"
-                style={{ color: 'var(--ink-300)' }}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>
+      <Modal open={referencedPapers !== null} onClose={() => setReferencedPapers(null)} title="引用详情" width="md"
+        footer={<Button variant="secondary" size="sm" onClick={() => setReferencedPapers(null)}>关闭</Button>}>
+        {referencedPapers !== null && (<>
+              <p className="text-xs mb-4 text-[var(--ink-400)]">
                 该试题已被引用 <strong>{referencedPapers?.count || 0}</strong> 次，共出现在以下试卷中：
               </p>
               {loadingRefs ? (
-                <p className="text-sm text-center py-4" style={{ color: 'var(--ink-300)' }}>查询中…</p>
+                <p className="text-sm text-center py-4 text-[var(--ink-300)]">查询中…</p>
               ) : referencedPapers?.papers?.length > 0 ? (
                 <div className="space-y-2">
                   {referencedPapers.papers.map((p: any, i: number) => (
                     <div key={i}
                       onClick={() => { setReferencedPapers(null); router.push(`/papers/${p.paperId}`); }}
-                      className="flex items-center justify-between p-3 rounded-lg text-sm cursor-pointer transition-colors"
-                      style={{ background: 'var(--paper)' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--fox-glow)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'var(--paper)'}>
+                      className="flex items-center justify-between p-3 rounded-lg text-sm cursor-pointer transition-colors bg-[var(--paper)] hover:bg-[var(--fox-pale)]">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium" style={{ color: 'var(--ink-700)' }}>{p.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</p>
+                        <p className="truncate font-medium text-[var(--ink-700)]">{p.name}</p>
+                        <p className="text-xs mt-0.5 text-[var(--ink-300)]">{p.paperNumber}</p>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className="text-xs" style={{ color: 'var(--ink-400)' }}>{p.score}分</span>
+                        <span className="text-xs text-[var(--ink-400)]">{p.score}分</span>
                         <span className={`tag ${
                           p.status === 'OFFICIAL' ? 'tag-verm' :
                           p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'
@@ -578,25 +569,27 @@ export default function QuestionsPage() {
                   该试题暂未被任何试卷引用
                 </p>
               )}
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setReferencedPapers(null)} className="btn btn-ink btn-sm">关闭</button>
-            </div>
-          </div>
-        </div>
-      )}
+        </>)}
+      </Modal>
 
       {/* ═══ 知识点标记弹窗 ═══ */}
-      {kpModalQuestion && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setKpModalQuestion(null); }}>
-          <div className="modal-card max-w-lg animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">🧠 标记知识点 — {kpModalQuestion.content?.slice(0, 30)}…</h3>
-              <button onClick={() => setKpModalQuestion(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
-            </div>
+      <Modal open={!!kpModalQuestion} onClose={() => setKpModalQuestion(null)}
+        title={`标记知识点 — ${kpModalQuestion?.content?.slice(0, 30) || ''}…`} width="lg"
+        footer={<>
+          <Button variant="ghost" size="sm" onClick={() => setKpModalQuestion(null)}>取消</Button>
+          <Button size="sm" onClick={async () => {
+            if (!kpModalQuestion) return;
+            try {
+              await api.knowledgePoints.setQuestionKPs(kpModalQuestion.id, Array.from(kpSelected));
+              setKpModalQuestion(null);
+              toast.success('知识点已保存');
+            } catch (e: any) { toast.error('保存失败：' + e.message); }
+          }}>保存</Button>
+        </>}>
+        {kpModalQuestion && (<>
             {/* 科目选择器 */}
-            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg" style={{ background: 'var(--paper)' }}>
-              <span className="text-xs font-medium" style={{ color: 'var(--ink-400)', whiteSpace: 'nowrap' }}>科目</span>
+            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-[var(--paper)]">
+              <span className="text-xs font-medium text-[var(--ink-400)] whitespace-nowrap">科目</span>
               <select value={kpSubjectId} onChange={e => { const sid = Number(e.target.value); setKpSubjectId(sid); if (sid > 0) loadKpTree(sid); }}
                 className="input text-sm flex-1" style={{ padding: '6px 10px', height: '36px' }}>
                 <option value={0}>请选择科目</option>
@@ -605,11 +598,11 @@ export default function QuestionsPage() {
             </div>
             <div className="max-h-[50vh] overflow-y-auto">
               {kpLoading ? (
-                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                <div className="py-8 text-center text-xs text-[var(--ink-300)]">加载中…</div>
               ) : kpSubjectId === 0 ? (
-                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>请先选择科目后查看知识点树</div>
+                <div className="py-8 text-center text-xs text-[var(--ink-300)]">请先选择科目后查看知识点树</div>
               ) : kpTree.length === 0 ? (
-                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>该科目暂无知识点</div>
+                <div className="py-8 text-center text-xs text-[var(--ink-300)]">该科目暂无知识点</div>
               ) : (
                 <div className="space-y-1">
                   {flattenTree(kpTree).map(kp => (
@@ -622,27 +615,15 @@ export default function QuestionsPage() {
                           setKpSelected(next);
                         }}
                         className="accent-[var(--fox)]" />
-                      <span className="text-xs" style={{ color: 'var(--ink-600)', fontWeight: kp.depth === 0 ? 600 : 400 }}>{kp.name}</span>
-                      {kp.code && <span className="text-xs ml-1" style={{ color: 'var(--ink-300)' }}>({kp.code})</span>}
+                      <span className={`text-xs text-[var(--ink-600)] ${kp.depth === 0 ? 'font-semibold' : ''}`}>{kp.name}</span>
+                      {kp.code && <span className="text-xs ml-1 text-[var(--ink-300)]">({kp.code})</span>}
                     </label>
                   ))}
                 </div>
               )}
             </div>
-            <div className="modal-footer flex gap-2">
-              <button onClick={() => setKpModalQuestion(null)} className="btn btn-ghost btn-sm">取消</button>
-              <button onClick={async () => {
-                if (!kpModalQuestion) return;
-                try {
-                  await api.knowledgePoints.setQuestionKPs(kpModalQuestion.id, Array.from(kpSelected));
-                  setKpModalQuestion(null);
-                  toast.success('知识点已保存');
-                } catch (e: any) { toast.error('保存失败：' + e.message); }
-              }} className="btn btn-fox btn-sm">保存</button>
-            </div>
-          </div>
-        </div>
-      )}
+        </>)}
+      </Modal>
 
 
       {/* 删除确认弹窗 */}

@@ -400,7 +400,7 @@ export default function ExamResult() {
         {/* ═══ 薄弱考点推荐课程 ═══ */}
         {recommendations?.recommendedCourses?.length > 0 && (
           <div className="rounded-xl p-6 mb-8" style={{
-            background: 'white',
+            background: 'var(--paper-bright)',
             border: '1px solid var(--ink-100)',
             maxHeight: maxRecHeight > 0 ? maxRecHeight : undefined,
             overflowY: 'auto',

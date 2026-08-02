@@ -256,7 +256,7 @@ export default function LearningHoursPage() {
       {applyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={e => { if (e.target === e.currentTarget) setApplyModal(false); }}>
-          <div className="rounded-2xl w-full max-w-md p-6" style={{ background: 'white' }}
+          <div className="rounded-2xl w-full max-w-md p-6" style={{ background: 'var(--paper-bright)' }}
             onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-semibold mb-4">📜 申请学时证明</h3>
 
@@ -279,7 +279,7 @@ export default function LearningHoursPage() {
             </div>
 
             {preview && (
-              <div className="card p-4 mb-4 space-y-2" style={{ background: '#faf8f5' }}>
+              <div className="card p-4 mb-4 space-y-2" style={{ background: 'var(--paper-50)' }}>
                 <div className="flex justify-between text-xs">
                   <span style={{ color: 'var(--ink-400)' }}>培训班</span>
                   <span className="font-medium">{preview.programName}</span>

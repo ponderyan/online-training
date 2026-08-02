@@ -211,7 +211,7 @@ export default function OfflineScoresPage() {
         </div>
 
         {error && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>⚠ {error}</div>}
-        {success && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg" style={{ background: '#ecfdf5', color: 'var(--green)' }}>✓ {success}</div>}
+        {success && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--success-pale)', color: 'var(--green)' }}>✓ {success}</div>}
 
         {/* 工具栏 */}
         <div className="flex gap-3 mb-4 flex-wrap">

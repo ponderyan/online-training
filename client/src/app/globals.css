@@ -760,6 +760,53 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+
+  /* dark 模式额外覆盖 */
+  --fox-glow:     rgba(232,122,48,0.12);
+  --amber-glow:   rgba(217,119,6,0.12);
+  --sage-glow:    rgba(46,125,50,0.12);
+}
+
+/* dark 模式组件级覆盖 */
+[data-theme="dark"] .card,
+[data-theme="dark"] [class*="rounded-xl"][class*="border"] {
+  background: var(--paper-bright) !important;
+  border-color: var(--ink-700) !important;
+}
+[data-theme="dark"] .list-table th {
+  color: var(--ink-300);
+  border-bottom-color: var(--ink-700);
+}
+[data-theme="dark"] .list-table td {
+  border-bottom-color: var(--ink-800);
+}
+[data-theme="dark"] .input,
+[data-theme="dark"] select.input,
+[data-theme="dark"] input.input {
+  background: var(--paper);
+  border-color: var(--ink-700);
+  color: var(--ink-100);
+}
+[data-theme="dark"] .tag {
+  opacity: 0.9;
+}
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .modal-overlay > div {
+  background: var(--paper-bright);
+  border-color: var(--ink-700);
+}
+[data-theme="dark"] .page-title {
+  color: var(--ink-50);
+}
+[data-theme="dark"] .page-subtitle {
+  color: var(--ink-300);
+}
+[data-theme="dark"] .btn-ghost {
+  color: var(--ink-300);
+}
+[data-theme="dark"] .btn-ghost:hover {
+  background: var(--ink-800);
+  color: var(--ink-100);
 }
 
 

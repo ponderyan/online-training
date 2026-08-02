@@ -782,7 +782,7 @@ export default function ExamTake() {
                 dismissedMessagesRef.current.add(msg.id);
                 setProctorMessages(prev => prev.filter(m => m.id !== msg.id));
               }}
-                className="text-xs px-3 py-1.5 rounded-lg cursor-pointer border-none font-medium bg-white/80 text-[var(--ink-500)]">
+                className="text-xs px-3 py-1.5 rounded-lg cursor-pointer border-none font-medium bg-[var(--paper-bright)]/80 text-[var(--ink-500)]">
                 我知道了
               </button>
             </div>

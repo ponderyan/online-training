@@ -133,8 +133,8 @@ export default function ProctoringDetail() {
 
   const getBgColor = (s: any) => {
     if (s.status === 'SUBMITTED') return 'white';
-    if (s.suspicionLevel >= 3) return '#fff0ee';
-    if (s.suspicionLevel >= 1) return '#fffde7';
+    if (s.suspicionLevel >= 3) return 'var(--error-pale)';
+    if (s.suspicionLevel >= 1) return 'var(--warning-pale)';
     return 'white';
   };
 
@@ -184,7 +184,7 @@ export default function ProctoringDetail() {
         ) : sessions.map(s => (
           <div key={s.sessionId} onClick={() => openDetail(s.sessionId)}
             className="rounded-xl p-4 transition-all cursor-pointer flex items-center gap-4"
-            style={{ background: getBgColor(s), border: `1px solid ${s.suspicionLevel >= 3 ? '#ef9a9a' : 'var(--ink-100)'}` }}>
+            style={{ background: getBgColor(s), border: `1px solid ${s.suspicionLevel >= 3 ? 'var(--error-light)' : 'var(--ink-100)'}` }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
               style={{ background: 'rgba(232,122,48,0.1)', color: 'var(--fox)' }}>
               {s.studentName?.[0] || '?'}
@@ -212,7 +212,7 @@ export default function ProctoringDetail() {
       {/* Session Detail Modal */}
       {showDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/30" onClick={() => setShowDetail(false)}>
-          <div className="w-[500px] h-full overflow-y-auto p-6" style={{ background: 'white' }} onClick={e => e.stopPropagation()}>
+          <div className="w-[500px] h-full overflow-y-auto p-6" style={{ background: 'var(--paper-bright)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-semibold text-base" style={{ color: 'var(--ink-700)' }}>考生详情</h2>
               <button onClick={() => setShowDetail(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>

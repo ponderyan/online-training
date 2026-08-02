@@ -11,6 +11,9 @@ import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonList } from '@/components/Skeleton';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ClipboardList, Plus, Search, MonitorPlay, BarChart3, Pencil } from 'lucide-react';
 
 
 
@@ -57,17 +60,18 @@ export default function ExamList() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">📋 考试管理</h1>
+          <h1 className="page-title flex items-center gap-2"><ClipboardList size={22} className="text-[var(--fox)]" /> 考试管理</h1>
           <p className="page-subtitle">共 {total} 场 · 创建和管理在线考试</p>
         </div>
-        <button onClick={() => router.push('/exams/create')} className="btn btn-fox btn-sm">
-          + 创建考试
-        </button>
+        <Button size="sm" icon={<Plus size={14} />} onClick={() => router.push('/exams/create')}>创建考试</Button>
       </div>
 
       <div className="flex gap-3 mb-5">
-        <input value={keyword} onChange={e => setKeyword(e.target.value)}
-          placeholder="🔍 搜索考试标题…" className="input" style={{ maxWidth: 320 }} />
+        <div className="relative" style={{ maxWidth: 320 }}>
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-300)] pointer-events-none" />
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder="搜索考试标题…" className="input pl-8" />
+        </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="input select" style={{ maxWidth: 140 }}>
           {EXAM_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -85,44 +89,43 @@ export default function ExamList() {
       ) : exams.length === 0 ? (
         <div className="card">
           <EmptyState icon="📋" title="还没有考试场次" description="创建第一场考试，开始管理在线考试">
-            <button onClick={() => router.push('/exams/create')} className="btn btn-fox btn-sm">创建第一场考试</button>
+            <Button size="sm" onClick={() => router.push('/exams/create')}>创建第一场考试</Button>
           </EmptyState>
         </div>
       ) : (
         <>
           <div className="space-y-3">
             {exams.map(exam => (
-              <div key={exam.id} onClick={() => router.push(`/exams/${exam.id}`)}
-                className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-                style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+              <Card key={exam.id} hover padding="md" className="cursor-pointer"
+                onClick={() => router.push(`/exams/${exam.id}`)}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-                    <div className="flex gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+                    <h3 className="font-semibold text-sm mb-1 text-[var(--ink-700)]">{exam.title}</h3>
+                    <div className="flex gap-4 text-xs text-[var(--ink-400)]">
                       <span>试卷：{exam.paper?.name || '-'}</span>
                       <span>学员：{exam._count?.sessions ?? 0}人</span>
                       <span>时长：{exam.durationMinutes}分钟</span>
                     </div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+                    <div className="text-xs mt-1 text-[var(--ink-300)]">
                       {exam.startTime ? new Date(exam.startTime).toLocaleString('zh-CN') : ''}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {(exam.status === 'IN_PROGRESS' || exam.status === 'PUBLISHED') && (
                       <span onClick={e => { e.stopPropagation(); router.push(`/proctoring/${exam.id}`); }}
-                        className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: 'var(--fox-pale2)', color: 'var(--error)' }}>
-                        🎥 监考
+                        className="text-[10px] px-2 py-1 rounded cursor-pointer bg-[var(--error-pale)] text-[var(--error)] inline-flex items-center gap-1">
+                        <MonitorPlay size={10} /> 监考
                       </span>
                     )}
                     {exam.status === 'FINISHED' && (
                       <span onClick={e => { e.stopPropagation(); router.push(`/exams/${exam.id}/analysis`); }}
-                        className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-                        📊 分析
+                        className="text-[10px] px-2 py-1 rounded cursor-pointer bg-[var(--fox-pale)] text-[var(--fox)] inline-flex items-center gap-1">
+                        <BarChart3 size={10} /> 分析
                       </span>
                     )}
                     <span onClick={e => { e.stopPropagation(); router.push(`/admin/exam-results/${exam.id}`); }}
-                      className="text-[10px] px-2 py-1 rounded cursor-pointer" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
-                      📊 查看结果
+                      className="text-[10px] px-2 py-1 rounded cursor-pointer bg-[var(--fox-pale)] text-[var(--fox)] inline-flex items-center gap-1">
+                      <BarChart3 size={10} /> 查看结果
                     </span>
                     <span className="text-xs font-medium px-3 py-1 rounded-full" style={{
                       background: `${EXAM_STATUS_COLORS[exam.status]}18`,
@@ -140,14 +143,14 @@ export default function ExamList() {
                     )}
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
               <button onClick={() => load(page - 1)} disabled={page <= 1}
                 className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.3 : 1 }}>‹ 上一页</button>
-              <span className="text-xs" style={{ color: 'var(--ink-400)' }}>{page}/{totalPages}</span>
+              <span className="text-xs text-[var(--ink-400)]">{page}/{totalPages}</span>
               <button onClick={() => load(page + 1)} disabled={page >= totalPages}
                 className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.3 : 1 }}>下一页 ›</button>
             </div>

@@ -70,7 +70,7 @@ export default function AdminStudentResultPage() {
           {appeals.map((ap: any) => (
             <div key={ap.id} className="card p-4">
               <h3 className="section-title mb-3">📝 申诉处理</h3>
-              <div className="text-sm mb-3 p-3 rounded" style={{ background: '#fff8e1' }}><p className="font-medium">考生申诉理由：</p><p className="text-xs mt-1">{ap.reason}</p></div>
+              <div className="text-sm mb-3 p-3 rounded" style={{ background: 'var(--warning-pale)' }}><p className="font-medium">考生申诉理由：</p><p className="text-xs mt-1">{ap.reason}</p></div>
               {ap.status === 'PENDING' ? (
                 <>
                   <div className="mb-3"><label className="text-xs mb-1 block">调整分数</label><input value={adjustScore} onChange={e => setAdjustScore(e.target.value)} type="number" className="input" style={{ width: 120 }} placeholder="新分数" /></div>

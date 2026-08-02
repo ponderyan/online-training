@@ -149,7 +149,7 @@ export default function CourseDetailPage() {
       {/* 管理关联视频弹窗 */}
       {linkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-[var(--paper-bright)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
             <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--ink-200)' }}>
               <h3 className="font-semibold text-sm">管理关联视频课程</h3>
               <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>勾选要关联到「{course.name}」的视频课程</p>
@@ -183,7 +183,7 @@ export default function CourseDetailPage() {
               )}
             </div>
             <div className="px-5 py-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--ink-200)' }}>
-              <button onClick={() => setLinkModalOpen(false)} className="px-4 py-1.5 text-xs rounded-md border cursor-pointer" style={{ borderColor: 'var(--ink-300)', color: 'var(--ink-400)', background: 'white' }}>
+              <button onClick={() => setLinkModalOpen(false)} className="px-4 py-1.5 text-xs rounded-md border cursor-pointer" style={{ borderColor: 'var(--ink-300)', color: 'var(--ink-400)', background: 'var(--paper-bright)' }}>
                 取消
               </button>
               <button onClick={saveLinks} disabled={saving} className="px-4 py-1.5 text-xs rounded-md border-none cursor-pointer text-white" style={{ background: 'var(--fox)', opacity: saving ? 0.6 : 1 }}>

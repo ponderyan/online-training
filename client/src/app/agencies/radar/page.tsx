@@ -30,7 +30,7 @@ const FOX = 'var(--fox)';
 const INK_300 = 'var(--neutral-400)';
 const INK_400 = 'var(--neutral-400)';
 const INK_600 = 'var(--neutral-600)';
-const INK_100 = '#e8e2da';
+const INK_100 = 'var(--ink-100)';
 
 const DIMENSION_CONFIG = [
   { key: 'capacityUtilization', label: '招生能力', icon: '🏫', sortOrder: 1 },
@@ -384,9 +384,9 @@ export default function AgencyRadarPage() {
                   <div className="space-y-2">
                     {evaluations.map((ev, i) => (
                       <div key={i} className="p-3 rounded-lg text-xs" style={{
-                        background: ev.type === 'warn' ? '#e5393508' : ev.type === 'good' ? 'var(--sage-glow)' : '#f9a82508',
+                        background: ev.type === 'warn' ? 'rgba(229,57,53,0.03)' : ev.type === 'good' ? 'var(--sage-glow)' : 'rgba(249,168,37,0.03)',
                         border: `1px solid ${
-                          ev.type === 'warn' ? '#e5393544' : ev.type === 'good' ? '#2e7d3244' : 'rgba(249,168,37,0.27)'
+                          ev.type === 'warn' ? 'rgba(229,57,53,0.27)' : ev.type === 'good' ? 'rgba(46,125,50,0.27)' : 'rgba(249,168,37,0.27)'
                         }`,
                         color: ev.type === 'warn' ? 'var(--error)' : ev.type === 'good' ? 'var(--sage)' : FOX,
                       }}>

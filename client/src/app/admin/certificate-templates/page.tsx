@@ -33,11 +33,11 @@ const PRESET_PREVIEW_DATA: TemplateData = {
 
 // 类型元信息：标签文字 + 柔和配色（与证书语义呼应）
 const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  COMPLETION: { label: '结业证书', color: 'var(--blue)', bg: '#e7f1fb' },
-  HOURS: { label: '学时证明', color: 'var(--sage)', bg: '#e9f4ea' },
-  CUSTOM: { label: '自定义', color: 'var(--purple)', bg: '#f4eaf6' },
+  COMPLETION: { label: '结业证书', color: 'var(--blue)', bg: 'var(--info-pale)' },
+  HOURS: { label: '学时证明', color: 'var(--sage)', bg: 'var(--success-pale)' },
+  CUSTOM: { label: '自定义', color: 'var(--purple)', bg: 'var(--info-pale)' },
 };
-const typeMeta = (t: string) => TYPE_META[t] || { label: t, color: 'var(--ink-500)', bg: '#eee9df' };
+const typeMeta = (t: string) => TYPE_META[t] || { label: t, color: 'var(--ink-500)', bg: 'var(--ink-50)' };
 
 const SORT_OPTIONS = [
   { value: 'default', label: '默认排序' },
@@ -346,7 +346,7 @@ export default function CertificateTemplatesPage() {
               return (
                 <div key={tpl.id} className="ct-row" style={{ opacity: tpl.isActive ? 1 : 0.62 }}>
                   <div onClick={() => setPreviewTpl(tpl)}
-                    style={{ width: 92, height: 65, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f3efe6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--color-ink-100)' }}>
+                    style={{ width: 92, height: 65, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: 'var(--paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--color-ink-100)' }}>
                     {tpl.thumbnail ? <img src={tpl.thumbnail} alt={tpl.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: 11, color: 'var(--color-ink-200)' }}>无图</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

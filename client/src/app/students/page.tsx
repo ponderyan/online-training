@@ -160,7 +160,7 @@ export default function StudentsPage() {
 
   const StudentCard = ({ s }: { s: any }) => (
     <div key={s.id} className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-      style={{ background: 'white', border: '1px solid var(--ink-100)' }}
+      style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}
       onClick={() => router.push(`/students/${s.id}`)}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">

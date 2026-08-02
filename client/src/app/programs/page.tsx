@@ -125,7 +125,7 @@ export default function ProgramsPage() {
             {programs.map((p: any) => (
               <div key={p.id} onClick={() => router.push(`/programs/${p.id}`)}
                 className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-                style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+                style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     {/* 标题行 */}

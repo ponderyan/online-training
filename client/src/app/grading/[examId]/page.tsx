@@ -400,7 +400,7 @@ export default function GradingDetail() {
       {activeTab === 'grading' && (
         <div className="flex gap-6">
           <div className="w-64 flex-shrink-0">
-            <div className="rounded-xl overflow-hidden" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+            <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
               <div className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>已提交学员</div>
               <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
                 {filteredStudents.map((s: any, idx: number) => {
@@ -442,7 +442,7 @@ export default function GradingDetail() {
 
           <div className="flex-1">
             {!selectedStudent ? (
-              <div className="rounded-xl p-12 text-center" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+              <div className="rounded-xl p-12 text-center" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                 <p className="text-4xl mb-4">📝</p>
                 <p style={{ color: 'var(--ink-300)' }}>选择一个学员开始阅卷</p>
               </div>
@@ -466,7 +466,7 @@ export default function GradingDetail() {
                   const isPassed = totalScore >= passScore;
                   const allGraded = pendingSubj.length === 0 && answers.every(a => a.score !== null);
                   return (
-                    <div className="rounded-xl p-5" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+                    <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <span style={{ width: 4, height: 16, background: 'var(--fox)', borderRadius: 2, display: 'inline-block' }} />
                         <h3 className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>得分汇总</h3>
@@ -511,7 +511,7 @@ export default function GradingDetail() {
                   const graded = a.score !== null;
                   const need = isSub && !graded;
                   return (
-                    <div key={a.answerId} className="rounded-xl p-5" style={{ background: 'white', border: `1px solid ${need ? '#fde68a' : graded ? 'var(--success-pale)' : 'var(--ink-100)'}` }}>
+                    <div key={a.answerId} className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: `1px solid ${need ? 'var(--gold-light)' : graded ? 'var(--success-pale)' : 'var(--ink-100)'}` }}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
@@ -551,7 +551,7 @@ export default function GradingDetail() {
                 })}
 
                 {/* 阅卷操作 */}
-                <div className="rounded-xl p-5" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+                <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-3">
                     <span style={{ width: 4, height: 14, background: 'var(--fox)', borderRadius: 2, display: 'inline-block' }} />
                     <span className="text-xs font-semibold" style={{ color: 'var(--ink-600)' }}>阅卷操作</span>
@@ -581,7 +581,7 @@ export default function GradingDetail() {
                 )}
 
                 {adjustOpen && (
-                  <div className="rounded-xl p-5" style={{ background: 'white', border: '1px solid #fde68a' }}>
+                  <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid #fde68a' }}>
                     <p className="text-sm font-medium mb-3" style={{ color: 'var(--ink-600)' }}>成绩调整（将记录审计日志）</p>
                     <div className="flex gap-3 items-end">
                       <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>调整后分数</label><input type="number" value={adjustScore} onChange={e => setAdjustScore(e.target.value)} className="input w-24" min={0} max={100} /></div>

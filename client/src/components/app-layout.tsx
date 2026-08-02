@@ -6,7 +6,8 @@ import Sidebar from './sidebar';
 import ErrorBoundary from './error-boundary';
 import NotificationBell from './notification-bell';
 import { usePathname } from 'next/navigation';
-import { Search, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { GlobalSearch } from './global-search';
 
 export default function AppLayout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
   const router = useRouter();
@@ -106,14 +107,7 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
 
           {/* 右侧：搜索 + 通知 */}
           <div className="flex items-center gap-3">
-            <div className="relative hidden md:block">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-300)]" />
-              <input
-                type="text"
-                placeholder="搜索功能、课程、学员…"
-                className="pl-8 pr-3 py-1.5 text-xs rounded-md border border-[var(--ink-100)] bg-[var(--paper)] text-[var(--ink-700)] placeholder:text-[var(--ink-300)] focus:border-[var(--fox)] focus:ring-1 focus:ring-[var(--fox)]/10 outline-none w-52 transition-all focus:w-64"
-              />
-            </div>
+            <GlobalSearch />
             <NotificationBell user={user} />
           </div>
         </header>

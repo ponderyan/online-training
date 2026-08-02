@@ -98,7 +98,7 @@ export default function Grading() {
           onKeyDown={e => e.key === 'Enter' && load()} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="input !w-auto"
-          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', background: 'white', border: '1px solid var(--ink-100)', borderRadius: '0.5rem', fontSize: '0.8rem', color: 'var(--ink-500)', cursor: 'pointer' }}>
+          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', background: 'var(--paper-bright)', border: '1px solid var(--ink-100)', borderRadius: '0.5rem', fontSize: '0.8rem', color: 'var(--ink-500)', cursor: 'pointer' }}>
           {STATUS_OPTIONS.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
@@ -121,7 +121,7 @@ export default function Grading() {
             const progress = total > 0 ? Math.round(submitted / total * 100) : 0;
             return (
               <div key={exam.id} className="rounded-xl p-5 transition-all hover:shadow-md cursor-pointer"
-                style={{ background: 'white', border: '1px solid var(--ink-100)' }}
+                style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}
                 onClick={() => router.push(`/grading/${exam.id}`)}
                 onKeyDown={e => e.key === 'Enter' && router.push(`/grading/${exam.id}`)}>
                 <div className="flex items-center justify-between">

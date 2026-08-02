@@ -306,7 +306,7 @@ export default function AccountsPage() {
       {/* Side Panel */}
       {sideUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setSideUser(null)}>
-          <div className="w-[660px] max-h-[80vh] overflow-y-auto rounded-xl p-6 shadow-xl" style={{ background: 'white' }} onClick={e => e.stopPropagation()}>
+          <div className="w-[660px] max-h-[80vh] overflow-y-auto rounded-xl p-6 shadow-xl" style={{ background: 'var(--paper-bright)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>

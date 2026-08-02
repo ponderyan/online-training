@@ -175,7 +175,7 @@ export default function ProctoringHome() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{
-                        background: isLive ? 'var(--fox-glow)' : isPending ? 'rgba(21,101,192,0.09)' : '#88888818',
+                        background: isLive ? 'var(--fox-glow)' : isPending ? 'rgba(21,101,192,0.09)' : 'rgba(136,136,136,0.09)',
                         color: isLive ? 'var(--fox)' : isPending ? 'var(--blue)' : 'var(--neutral-400)',
                       }}>
                         {isLive ? '🟢 进行中' : isPending ? '📅 待开考' : isDone ? '📋 已结束' : exam.status}

@@ -216,7 +216,7 @@ function QuestionDetailModal({
                     <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
                       {detail.optionSelection.map((opt, i) => {
                         const isCorrect = detail.options.find(o => o.label === opt.label)?.isCorrect;
-                        return <Cell key={i} fill={isCorrect ? 'var(--sage)' : opt.rate >= 20 ? '#f9a82588' : 'var(--neutral-200)'} />;
+                        return <Cell key={i} fill={isCorrect ? 'var(--sage)' : opt.rate >= 20 ? 'rgba(249,168,37,0.53)' : 'var(--neutral-200)'} />;
                       })}
                     </Bar>
                   </BarChart>

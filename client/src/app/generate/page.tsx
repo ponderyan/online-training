@@ -12,7 +12,7 @@ const TYPE_NAMES: Record<string, string> = {
 };
 const DIFFS = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'] as const;
 const DIFF_LABELS = ['易', '较易', '较难', '难'];
-const DIFF_COLORS = ['var(--info)', 'var(--warning)', '#8a6e4f', 'var(--error)'];
+const DIFF_COLORS = ['var(--info)', 'var(--warning)', 'var(--ink-500)', 'var(--error)'];
 
 function GeneratePageContent() {
   const router = useRouter();

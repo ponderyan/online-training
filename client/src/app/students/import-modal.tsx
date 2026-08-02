@@ -87,7 +87,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="rounded-2xl w-full max-w-3xl p-6" style={{ background: 'white', maxHeight: '90vh', overflow: 'auto' }}>
+      <div className="rounded-2xl w-full max-w-3xl p-6" style={{ background: 'var(--paper-bright)', maxHeight: '90vh', overflow: 'auto' }}>
         <h2 className="text-lg font-semibold mb-4">📥 导入学员</h2>
 
         {/* Step 1: Download template */}

@@ -191,7 +191,7 @@ export default function LearningHoursReviewPage() {
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(false); }}>
-          <div className="rounded-2xl w-full max-w-sm p-6" style={{ background: 'white' }}>
+          <div className="rounded-2xl w-full max-w-sm p-6" style={{ background: 'var(--paper-bright)' }}>
             <h3 className="text-base font-semibold mb-2">驳回原因</h3>
             <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
               rows={3} className="input w-full" placeholder="请输入驳回原因…" />

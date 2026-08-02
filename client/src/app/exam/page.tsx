@@ -138,7 +138,7 @@ export default function ExamList() {
             <>
               {sortedActive.map(exam => (
                 <div key={exam.id} style={{
-                  background: 'white', borderRadius: '12px',
+                  background: 'var(--paper-bright)', borderRadius: '12px',
                   border: exam.accessType === 'UNIFIED' ? '1px solid #e87a30' : '2px solid #e87a30',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -167,7 +167,7 @@ export default function ExamList() {
                 const ended = exam.endTime && now > new Date(exam.endTime);
                 return (
                 <div key={exam.id} style={{
-                  background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+                  background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #e2e8f0',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   opacity: ended ? 0.6 : 1,
@@ -180,7 +180,7 @@ export default function ExamList() {
                     <p style={{ fontSize: '12px', color: 'var(--neutral-400)', margin: 0 }}>{exam.paperName}</p>
                   </div>
                   {notStarted ? (
-                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', color: 'var(--neutral-400)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
+                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--neutral-100)', color: 'var(--neutral-400)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
                   ) : ended ? (
                     <span style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--error-pale)', color: 'var(--error)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
                   ) : (
@@ -202,7 +202,7 @@ export default function ExamList() {
             <h2 style={styles.sectionTitle}>⚠️ 已缺考</h2>
             {missedExams.map(exam => (
               <div key={exam.id} style={{
-                background: 'white', borderRadius: '12px', border: '1px solid #fecaca',
+                background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #fecaca',
                 padding: '16px 24px', marginBottom: '8px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 opacity: 0.8,
@@ -231,7 +231,7 @@ export default function ExamList() {
               const isPublished = exam.scoringStatus === 'PUBLISHED' || exam.scoringStatus === 'ADJUSTED';
               const isPassed = exam.isPassed === true;
               const badge = !isPublished
-                ? { text: '⏸️ 待公布', bg: '#f8fafc', color: 'var(--neutral-400)' }
+                ? { text: '⏸️ 待公布', bg: 'var(--neutral-50)', color: 'var(--neutral-400)' }
                 : isPassed
                 ? { text: '✅ 通过', bg: 'var(--success-pale)', color: 'var(--sage)' }
                 : { text: '❌ 未通过', bg: 'var(--error-pale)', color: 'var(--error)' };
@@ -239,7 +239,7 @@ export default function ExamList() {
               return (
                 <div key={exam.id} onClick={() => isPublished ? router.push(`/exam/result/${exam.id}`) : undefined}
                   style={{
-                    background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+                    background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid #e2e8f0',
                     padding: '16px 24px', marginBottom: '8px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     cursor: isPublished ? 'pointer' : 'default',

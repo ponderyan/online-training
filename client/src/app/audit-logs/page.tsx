@@ -241,13 +241,13 @@ export default function AuditLogsPage() {
                 <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                   <div>
                     <div className="font-medium text-[10px] mb-1" style={{ color: 'var(--ink-400)' }}>变更前 (before):</div>
-                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.before, null, 2) || '—'}
                     </pre>
                   </div>
                   <div>
                     <div className="font-medium text-[10px] mb-1" style={{ color: 'var(--ink-400)' }}>变更后 (after):</div>
-                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.after, null, 2) || '—'}
                     </pre>
                   </div>

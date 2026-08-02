@@ -51,7 +51,7 @@ export default function PracticePage() {
         {loading ? (
           <div className="grid grid-cols-4 gap-3 mb-6">
             {[0, 1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-xl p-3.5 shadow-sm">
+              <div key={i} className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
                 <SkeletonBar width="50%" height={26} />
                 <div style={{ height: 6 }} />
                 <SkeletonBar width="40%" height={11} />
@@ -60,19 +60,19 @@ export default function PracticePage() {
           </div>
         ) : stats && (
           <div className="grid grid-cols-4 gap-3 mb-6">
-            <div className="bg-white rounded-xl p-3.5 shadow-sm">
+            <div className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--ink-700)]">{stats.total}</div>
               <div className="text-xs text-[var(--ink-300)]">总练习</div>
             </div>
-            <div className="bg-white rounded-xl p-3.5 shadow-sm">
+            <div className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--cyan)]">{stats.correct}</div>
               <div className="text-xs text-[var(--ink-300)]">正确</div>
             </div>
-            <div className="bg-white rounded-xl p-3.5 shadow-sm">
+            <div className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--verm)]">{stats.wrong}</div>
               <div className="text-xs text-[var(--ink-300)]">错误</div>
             </div>
-            <div className="bg-white rounded-xl p-3.5 shadow-sm">
+            <div className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--fox)]">{stats.accuracy}%</div>
               <div className="text-xs text-[var(--ink-300)]">正确率</div>
             </div>
@@ -82,7 +82,7 @@ export default function PracticePage() {
         {/* 四个模式入口卡片 — 2×2 网格 */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           {/* 章节练习 — 狐狸橙 */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--fox)]">
+          <div className="bg-[var(--paper-bright)] rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--fox)]">
             <h2 className="text-base font-semibold text-[var(--ink-700)]">📖 章节练习</h2>
             <p className="text-xs text-[var(--ink-300)] mb-4">按科目→章节顺序刷题</p>
 
@@ -141,7 +141,7 @@ export default function PracticePage() {
           </div>
 
           {/* 随机练习 — 青色 */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--cyan)]">
+          <div className="bg-[var(--paper-bright)] rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--cyan)]">
             <h2 className="text-base font-semibold text-[var(--ink-700)]">🔀 随机练习</h2>
             <p className="text-xs text-[var(--ink-300)] mb-4">按题型+难度随机抽题</p>
             <button onClick={() => router.push('/practice/random')}
@@ -151,7 +151,7 @@ export default function PracticePage() {
           </div>
 
           {/* 错题重练 — 朱红 */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--verm)]">
+          <div className="bg-[var(--paper-bright)] rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--verm)]">
             <h2 className="text-base font-semibold text-[var(--ink-700)]">❌ 错题重练</h2>
             <p className="text-xs text-[var(--ink-300)] mb-4">回顾做错的题目，针对性巩固</p>
             <button onClick={() => router.push('/practice/wrong')}
@@ -165,7 +165,7 @@ export default function PracticePage() {
           </div>
 
           {/* 收藏练习 — 金色 */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--gold)]">
+          <div className="bg-[var(--paper-bright)] rounded-xl p-5 shadow-sm border border-[var(--ink-100)] hover:shadow-md transition-shadow border-l-4 border-l-[var(--gold)]">
             <h2 className="text-base font-semibold text-[var(--ink-700)]">📌 收藏练习</h2>
             <p className="text-xs text-[var(--ink-300)] mb-4">回顾收藏的题目，针对性巩固</p>
             <button onClick={() => router.push('/practice/favorite')}

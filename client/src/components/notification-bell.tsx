@@ -121,7 +121,7 @@ export default function NotificationBell({ user }: { user: any }) {
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-xl overflow-hidden shadow-xl"
-          style={{ background: 'white', border: '1px solid var(--ink-100)' }}>
+          style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--ink-100)' }}>
             <span className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>消息通知</span>
             {unreadCount > 0 && (

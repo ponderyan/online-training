@@ -209,7 +209,7 @@ export default function VideoPlayPage() {
   return (
     <div style={{ background: 'var(--ink-900)', minHeight: '100vh', color: 'var(--neutral-100)' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3" style={{ background: '#1a1a1a', borderBottom: '1px solid #333' }}>
+      <div className="flex items-center justify-between px-6 py-3" style={{ background: 'var(--ink-900)', borderBottom: '1px solid #333' }}>
         <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: 'var(--fox)', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
         <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>🦊 狐学</span>
       </div>
@@ -229,7 +229,7 @@ export default function VideoPlayPage() {
 
           {/* 弹题覆盖层 */}
           {activeQuiz && (
-            <div className="mt-3 p-4 rounded-lg" style={{ background: '#1e1e1e', border: '1px solid #444' }}>
+            <div className="mt-3 p-4 rounded-lg" style={{ background: 'var(--ink-900)', border: '1px solid #444' }}>
               <p className="text-sm font-medium mb-3" style={{ color: '#fff' }}>📋 {activeQuiz.question}</p>
               <div className="space-y-2">
                 {(JSON.parse(activeQuiz.options) as string[]).map((opt, idx) => (
@@ -267,11 +267,11 @@ export default function VideoPlayPage() {
           <div className="mb-6">
             <h2 className="text-base font-semibold mb-2">{video.name}</h2>
             <div className="flex flex-wrap gap-1 mb-3">
-              <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: video.type === 'PUBLIC' ? 'rgba(0,137,123,0.2)' : 'rgba(21,101,192,0.2)', color: video.type === 'PUBLIC' ? '#4db6ac' : '#64b5f6' }}>
+              <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: video.type === 'PUBLIC' ? 'rgba(0,137,123,0.2)' : 'rgba(21,101,192,0.2)', color: video.type === 'PUBLIC' ? 'var(--info)' : 'var(--info-light)' }}>
                 {video.type === 'PUBLIC' ? '公共课' : '专项课'}
               </span>
               {video.isContinuingEducation && (
-                <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(46,125,50,0.2)', color: '#81c784' }}>继续教育</span>
+                <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(46,125,50,0.2)', color: 'var(--sage-light)' }}>继续教育</span>
               )}
             </div>
             <div className="text-xs space-y-1" style={{ color: 'var(--neutral-400)' }}>

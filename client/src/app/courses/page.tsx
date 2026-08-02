@@ -9,6 +9,8 @@ import ErrorCard from '@/components/ErrorCard';
 import { SkeletonTable } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Plus, Search } from 'lucide-react';
 
 const STATUS_NAMES: Record<string, string> = { ACTIVE: '启用', INACTIVE: '停用' };
 const STATUS_COLORS: Record<string, string> = { ACTIVE: 'var(--info)', INACTIVE: 'var(--ink-300)' };
@@ -67,18 +69,21 @@ export default function CoursesPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">📚 课程管理</h1>
+          <h1 className="page-title flex items-center gap-2"><BookOpen size={22} className="text-[var(--fox)]" /> 课程管理</h1>
           <p className="page-subtitle">
             共 {total} 门课程{totalPages > 1 && <span className="ml-2 text-xs opacity-50">第 {page}/{totalPages} 页</span>}
           </p>
         </div>
-        <button onClick={() => router.push('/courses/new')} className="btn btn-fox btn-sm">➕ 新建课程</button>
+        <Button size="sm" icon={<Plus size={14} />} onClick={() => router.push('/courses/new')}>新建课程</Button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-5">
-        <input value={keyword} onChange={e => setKeyword(e.target.value)}
-          placeholder="🔍 搜索课程名称…" className="input" style={{ maxWidth: 320 }} />
+        <div className="relative" style={{ maxWidth: 320 }}>
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-300)] pointer-events-none" />
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder="搜索课程名称…" className="input pl-8" />
+        </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="input select" style={{ maxWidth: 110 }}>
           <option value="">全部状态</option>
@@ -98,7 +103,7 @@ export default function CoursesPage() {
       ) : courses.length === 0 ? (
         <div className="card">
           <EmptyState icon="📚" title="暂无课程" description="创建第一门课程，供培训班引用">
-            <button onClick={() => router.push('/courses/new')} className="btn btn-fox btn-sm">创建第一门课程</button>
+            <Button size="sm" onClick={() => router.push('/courses/new')}>创建第一门课程</Button>
           </EmptyState>
         </div>
       ) : (
@@ -137,9 +142,9 @@ export default function CoursesPage() {
                         {TYPE_NAMES[c.type] || c.type}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--ink-400)' }} className="font-mono text-xs">{c.code || '—'}</td>
+                    <td className="font-mono text-xs text-[var(--ink-400)]">{c.code || '—'}</td>
                     <td>{c.hours ? `${c.hours} 学时` : '—'}</td>
-                    <td className="max-w-[240px] truncate text-xs" style={{ color: 'var(--ink-400)' }}>
+                    <td className="max-w-[240px] truncate text-xs text-[var(--ink-400)]">
                       {c.description || '—'}
                     </td>
                     <td>
@@ -150,7 +155,7 @@ export default function CoursesPage() {
                         {STATUS_NAMES[c.status] || c.status}
                       </span>
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <td className="text-xs text-[var(--ink-300)]">
                       {c.createdAt ? new Date(c.createdAt).toLocaleDateString('zh-CN') : '—'}
                     </td>
                     <td>
