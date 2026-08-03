@@ -9,11 +9,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 const BASE = 'http://localhost:3001/api';
 let adminToken: string;   // SUPER_ADMIN
-let org5Token: string;    // branch_admin (org5)
-let org6Token: string;    // dept_admin (org6)
+let orgAToken: string;    // branch_admin（分支机构）
+let orgBToken: string;    // dept_admin（另一机构）
+let orgAId: number;       // branch_admin 的 orgId（从登录响应动态获取）
+let orgBId: number;
 
-let stuOrg5Id: number;    // 动态创建的 org5 学员
-let stuOrg6Id: number;    // 动态创建的 org6 学员
+let stuOrgAId: number;    // 动态创建的机构A学员
+let stuOrgBId: number;    // 动态创建的机构B学员
 const suffix = Date.now();
 const usernameOrg5 = `isotest_a_${suffix}`;
 const usernameOrg6 = `isotest_b_${suffix}`;
@@ -40,52 +42,60 @@ async function api(method: string, path: string, body?: any, token = adminToken)
 
 describe('组织隔离', () => {
   beforeAll(async () => {
-    adminToken = (await login('admin')).accessToken;
-    org5Token = (await login('branch_admin')).accessToken;
-    org6Token = (await login('dept_admin')).accessToken;
+    const admin = await login('admin');
+    const orgA = await login('branch_admin');
+    const orgB = await login('dept_admin');
+    adminToken = admin.accessToken;
+    orgAToken = orgA.accessToken;
+    orgBToken = orgB.accessToken;
+    orgAId = orgA.user.orgId;
+    orgBId = orgB.user.orgId;
     expect(adminToken).toBeTruthy();
-    expect(org5Token).toBeTruthy();
-    expect(org6Token).toBeTruthy();
+    expect(orgAToken).toBeTruthy();
+    expect(orgBToken).toBeTruthy();
+    expect(orgAId).toBeTruthy();
+    expect(orgBId).toBeTruthy();
+    expect(orgAId).not.toBe(orgBId);
 
-    // 超管分别在 org5 / org6 创建一名学员
+    // 超管分别在机构A / 机构B 创建一名学员
     const r1 = await api('POST', '/users', {
       username: usernameOrg5, password: '123456', displayName: '隔离测试A',
-      roles: ['STUDENT'], orgId: 5,
+      roles: ['STUDENT'], orgId: orgAId,
     });
     expect([200, 201]).toContain(r1.status);
-    stuOrg5Id = r1.data.id;
+    stuOrgAId = r1.data.id;
 
     const r2 = await api('POST', '/users', {
       username: usernameOrg6, password: '123456', displayName: '隔离测试B',
-      roles: ['STUDENT'], orgId: 6,
+      roles: ['STUDENT'], orgId: orgBId,
     });
     expect([200, 201]).toContain(r2.status);
-    stuOrg6Id = r2.data.id;
+    stuOrgBId = r2.data.id;
   });
 
-  it('学员列表隔离：org5 只见本组织学员，看不到 org6 的', async () => {
-    const { status, data } = await api('GET', '/students?pageSize=100', undefined, org5Token);
+  it('学员列表隔离：机构A 只见本组织学员，看不到机构B 的', async () => {
+    const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgAToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
     // ★ 功能结果断言：本组织学员可见，对方组织学员不可见
-    expect(ids).toContain(stuOrg5Id);
-    expect(ids).not.toContain(stuOrg6Id);
+    expect(ids).toContain(stuOrgAId);
+    expect(ids).not.toContain(stuOrgBId);
   });
 
-  it('学员列表隔离：org6 只见本组织学员，看不到 org5 的', async () => {
-    const { status, data } = await api('GET', '/students?pageSize=100', undefined, org6Token);
+  it('学员列表隔离：机构B 只见本组织学员，看不到机构A 的', async () => {
+    const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgBToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
-    expect(ids).toContain(stuOrg6Id);
-    expect(ids).not.toContain(stuOrg5Id);
+    expect(ids).toContain(stuOrgBId);
+    expect(ids).not.toContain(stuOrgAId);
   });
 
   it('跨组织按 ID 直读学员详情被拒（防 IDOR）', async () => {
-    // org5 管理员读 org6 学员 → 404（不泄露存在性）
-    const r1 = await api('GET', `/students/${stuOrg6Id}`, undefined, org5Token);
+    // 机构A 管理员读机构B 学员 → 404（不泄露存在性）
+    const r1 = await api('GET', `/students/${stuOrgBId}`, undefined, orgAToken);
     expect(r1.status).toBe(404);
     // 反向同理
-    const r2 = await api('GET', `/students/${stuOrg5Id}`, undefined, org6Token);
+    const r2 = await api('GET', `/students/${stuOrgAId}`, undefined, orgBToken);
     expect(r2.status).toBe(404);
   });
 
@@ -94,29 +104,29 @@ describe('组织隔离', () => {
       subjectId: 1, chapterId: 1, type: 'SINGLE_CHOICE',
       content: `隔离测试-${suffix}`, difficulty: 'EASY',
       options: [{ label: 'A', content: 'x', isCorrect: true }],
-    }, org5Token);
+    }, orgAToken);
     expect(q.status).toBe(403);
 
     const p = await api('POST', '/papers', {
       name: `隔离测试卷-${suffix}`, subjectId: 1, createdBy: 1,
-    }, org6Token);
+    }, orgBToken);
     expect(p.status).toBe(403);
 
     // 平台级题库对两机构一致开放（同为 orgId=null 的系统资源，总数一致）
-    const l5 = await api('GET', '/questions?pageSize=1', undefined, org5Token);
-    const l6 = await api('GET', '/questions?pageSize=1', undefined, org6Token);
-    expect(l5.data.total).toBe(l6.data.total);
+    const lA = await api('GET', '/questions?pageSize=1', undefined, orgAToken);
+    const lB = await api('GET', '/questions?pageSize=1', undefined, orgBToken);
+    expect(lA.data.total).toBe(lB.data.total);
   });
 
   it('工作台统计隔离：机构管理员只见本组织规模，小于超管全平台', async () => {
-    const s5 = await api('GET', '/dashboard/stats', undefined, org5Token);
+    const sA = await api('GET', '/dashboard/stats', undefined, orgAToken);
     const sa = await api('GET', '/dashboard/stats', undefined, adminToken);
-    expect(s5.status).toBe(200);
+    expect(sA.status).toBe(200);
     expect(sa.status).toBe(200);
-    const org5Students = s5.data.global.totalStudents;
+    const orgAStudents = sA.data.global.totalStudents;
     const allStudents = sa.data.global.totalStudents;
-    // ★ 功能结果断言：org5 学员数 ≥ 1（刚创建的隔离测试A）且严格小于全平台
-    expect(org5Students).toBeGreaterThanOrEqual(1);
-    expect(org5Students).toBeLessThan(allStudents);
+    // ★ 功能结果断言：机构A 学员数 ≥ 1（刚创建的隔离测试A）且严格小于全平台
+    expect(orgAStudents).toBeGreaterThanOrEqual(1);
+    expect(orgAStudents).toBeLessThan(allStudents);
   });
 });

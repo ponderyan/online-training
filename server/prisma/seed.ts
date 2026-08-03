@@ -266,6 +266,35 @@ async function main() {
   }
   console.log(`✅ 测试账号: ${testAccounts.length} 个`);
 
+  // ── 9.1 两个分支机构 + 机构管理员（组织隔离测试/Demo 用） ──
+  const branchOrg = await prisma.organization.upsert({
+    where: { code: 'BRANCH01' },
+    update: {},
+    create: { name: '华东分中心', code: 'BRANCH01', contactName: '分支管理员', parentId: org.id },
+  });
+  const deptOrg = await prisma.organization.upsert({
+    where: { code: 'DEPT01' },
+    update: {},
+    create: { name: '数字人才事业部', code: 'DEPT01', contactName: '部门管理员', parentId: org.id },
+  });
+  const orgAdminRole = roles.find(r => r.code === 'ORG_ADMIN')!;
+  for (const acct of [
+    { username: 'branch_admin', displayName: '分支管理员', orgId: branchOrg.id },
+    { username: 'dept_admin', displayName: '部门管理员', orgId: deptOrg.id },
+  ]) {
+    const user = await prisma.user.upsert({
+      where: { username: acct.username },
+      update: {},
+      create: { username: acct.username, passwordHash: testPw, displayName: acct.displayName, orgId: acct.orgId },
+    });
+    await prisma.userRoleAssignment.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: orgAdminRole.id } },
+      update: {},
+      create: { userId: user.id, roleId: orgAdminRole.id },
+    });
+  }
+  console.log(`✅ 分支机构账号: branch_admin / dept_admin`);
+
   // ═══════════════════════════════════════════════════════════════
   // 以下为 Part B 新增业务数据
   // ═══════════════════════════════════════════════════════════════
