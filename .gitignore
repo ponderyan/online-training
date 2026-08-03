@@ -9,3 +9,6 @@ server/uploads/
 server/.next/
 client/playwright-report/
 client/test-results/
+
+# 临时回归验证脚本
+server/_*.mjs
