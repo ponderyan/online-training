@@ -13,7 +13,9 @@ test.describe('考试全流程 - 管理员视角', () => {
     // 页面不报错，有内容
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=500').first().isVisible().catch(() => false);
+    // 检测真实错误指示（API 错误卡片/Next.js 错误页）。
+    // 不用裸 'text=500'——会误匹配标题中的时间戳数字片段（如 守卫测试-1785769616500）
+    const hasError = await page.getByText(/Internal Server Error|Application error|加载考试列表失败|HTTP 5\d{2}/).first().isVisible().catch(() => false);
     expect(hasError).toBeFalsy();
   });
 
