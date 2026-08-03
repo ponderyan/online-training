@@ -2,9 +2,6 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  turbopack: {
-    root: '/Users/ponder/projects/online-training/client',
-  },
   async redirects() {
     return [
       {
