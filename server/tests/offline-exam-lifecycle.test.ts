@@ -122,6 +122,18 @@ describe('线下考试完整生命周期', () => {
     expect(data.status).toBe('SCORE_PUBLISHED');
   });
 
+  it('Step 9.5: 发布成绩后自动触发证书申请（通过的学员）', async () => {
+    const { status, data } = await api('GET', '/certificates/applications?limit=100');
+    expect(status).toBe(200);
+    const items = data.items || [];
+    // 第 1 名缺考、第 2/3 名 60 分及格 → 各自生成一条 PENDING 证书申请
+    for (let i = 1; i < sessionIds.length; i++) {
+      const found = items.find((app: any) => app.sessionId === sessionIds[i]);
+      expect(found).toBeTruthy();
+      expect(found.status).toBe('PENDING');
+    }
+  });
+
   it('Step 10: 发布后操作全部被守卫拦截', async () => {
     const r1 = await api('POST', `/offline-exams/${examId}/assign-seats`, {});
     expect(r1.status).toBe(400);
