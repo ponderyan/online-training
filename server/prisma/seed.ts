@@ -1,10 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { DEMO_CERT_TEMPLATES } from './demo-cert-templates.js';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 FoxLearn 种子数据初始化...\n');
+
+  // Demo 环境可通过 DEMO_PASSWORD 统一设置所有演示账号密码（默认 123456，CI/本地不受影响）
+  const DEMO_PW = process.env.DEMO_PASSWORD || '123456';
 
   // ── 1. 创建默认机构 ──
   const org = await prisma.organization.upsert({
@@ -151,7 +155,7 @@ async function main() {
   console.log('✅ 角色权限映射: 已填充所有 8 个角色的权限点');
 
   // ── 3. 创建默认管理员用户 ──
-  const passwordHash = await bcrypt.hash('123456', 10);
+  const passwordHash = await bcrypt.hash(DEMO_PW, 10);
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
     update: { passwordHash, email: '747097458@qq.com', phone: '13301240496' },
@@ -234,7 +238,7 @@ async function main() {
   console.log('✅ 讲师: 1 名样例（管理员讲师）');
 
   // ── 9. 各角色测试账号 ──
-  const testPw = await bcrypt.hash('123456', 10);
+  const testPw = await bcrypt.hash(DEMO_PW, 10);
   const testAccounts = [
     { username: 'org_admin', displayName: '机构管理员', roles: ['ORG_ADMIN'] },
     { username: 'agency_admin', displayName: '招生机构管理员', roles: ['AGENCY_ADMIN'] },
@@ -590,7 +594,7 @@ async function main() {
   console.log(`✅ B-3/B-5 培训班: ${program.name} (${program.code})`);
 
   // ── B-10: 新增学员关联 ──
-  const studentPw = await bcrypt.hash('123456', 10);
+  const studentPw = await bcrypt.hash(DEMO_PW, 10);
   const studentRole = roles.find(r => r.code === 'STUDENT')!;
 
   // 机构1（中电标协招办）下的学员：stu001已存在 + stu002, stu003新增
@@ -917,15 +921,104 @@ async function main() {
 
 
 
+  // ═══════════════════════════════════════════════════════════
+  // 12. Demo 演示数据：线上考试（可开考）+ 线下考试（已发布成绩）+ 已签发证书
+  // ═══════════════════════════════════════════════════════════
+  const demoPaper = await prisma.paper.findFirst({ where: { name: '数智化管理师（DTM）模拟测试' } });
+  const demoStu1 = await prisma.user.findUnique({ where: { username: 'stu001' } });
+  const demoStu2 = await prisma.user.findUnique({ where: { username: 'stu002' } });
+  if (demoPaper && demoStu1 && demoStu2) {
+    const now = new Date();
+    const inDays = (d: number, h = 9) => { const t = new Date(now); t.setDate(t.getDate() + d); t.setHours(h, 0, 0, 0); return t; };
+
+    // ── 12.1 线上考试（PUBLISHED，当前可开考）──
+    let onlineExam = await prisma.exam.findFirst({ where: { title: '【Demo】数智化管理师线上统考' } });
+    if (!onlineExam) {
+      onlineExam = await prisma.exam.create({
+        data: {
+          title: '【Demo】数智化管理师线上统考', paperId: demoPaper.id,
+          startTime: new Date(now.getTime() - 3600e3), endTime: inDays(7, 18),
+          durationMinutes: 120, status: 'PUBLISHED', examMode: 'ONLINE',
+          passingScore: 60, lateEntryMinutes: 30, earlyExitMinutes: 0,
+          createdBy: admin.id, orgId: org.id,
+        },
+      });
+      for (const u of [demoStu1, demoStu2]) {
+        await prisma.examSession.create({ data: { examId: onlineExam.id, studentId: u.id, status: 'ASSIGNED' } });
+      }
+      await prisma.exam.update({ where: { id: onlineExam.id }, data: { totalStudents: 2 } });
+    }
+    console.log(`✅ Demo 线上考试: ${onlineExam.title} (PUBLISHED, stu001/stu002 可开考)`);
+
+    // ── 12.2 线下考试（SCORE_PUBLISHED）+ 已签发证书 ──
+    let offlineExam = await prisma.exam.findFirst({ where: { title: '【Demo】数智化管理师线下结业笔试' } });
+    if (!offlineExam) {
+      offlineExam = await prisma.exam.create({
+        data: {
+          title: '【Demo】数智化管理师线下结业笔试', paperId: demoPaper.id,
+          startTime: inDays(-3, 9), endTime: inDays(-3, 11),
+          durationMinutes: 120, status: 'SCORE_PUBLISHED', examMode: 'OFFLINE',
+          passingScore: 60, createdBy: admin.id, orgId: org.id,
+          locations: [{ name: '第一考场', address: '中电标协培训中心 2 层会议室' }],
+        },
+      });
+      const demoScores = [ { user: demoStu1, score: 86, certNo: 'FX-20260803-9001', vcode: 'FXV-DEMO-2026-0001' },
+                           { user: demoStu2, score: 72, certNo: 'FX-20260803-9002', vcode: 'FXV-DEMO-2026-0002' } ];
+      for (const ds of demoScores) {
+        const session = await prisma.examSession.create({
+          data: {
+            examId: offlineExam.id, studentId: ds.user.id, status: 'SUBMITTED',
+            startedAt: inDays(-3, 9), submittedAt: inDays(-3, 11),
+            totalScore: ds.score, finalScore: ds.score, isPassed: ds.score >= 60,
+            scoringStatus: 'PUBLISHED', scoringPublishedAt: inDays(-1, 10),
+          },
+        });
+        if (ds.score >= 60) {
+          await prisma.certificate.create({
+            data: {
+              examSessionId: session.id, studentId: ds.user.id,
+              certificateNo: ds.certNo, studentName: ds.user.displayName,
+              courseName: '数智化管理师（DTM）培训',
+              issueDate: inDays(-1, 10),
+              verificationCode: ds.vcode,
+              orgId: org.id, issuerName: '中电标协培训中心',
+            },
+          });
+        }
+      }
+      await prisma.exam.update({ where: { id: offlineExam.id }, data: { totalStudents: 2, submittedCount: 2 } });
+    }
+    console.log(`✅ Demo 线下考试: ${offlineExam.title} (SCORE_PUBLISHED, 证书 FX-20260803-9001/9002 已签发)`);
+  } else {
+    console.log('⚠️ Demo 考试数据跳过（缺少试卷或学员）');
+  }
+
+
+  // ═══════════════════════════════════════════════════════════
+  // 13. Demo 证书模板（任务3 产出：结业证书 / 学时证明 / 机构定制）
+  // ═══════════════════════════════════════════════════════════
+  for (const tpl of DEMO_CERT_TEMPLATES) {
+    const existing = await prisma.certificateTemplate.findFirst({ where: { name: tpl.name } });
+    if (existing) {
+      await prisma.certificateTemplate.update({ where: { id: existing.id }, data: { canvasJson: tpl.canvas, type: tpl.type } });
+    } else {
+      await prisma.certificateTemplate.create({
+        data: { name: tpl.name, description: tpl.description, type: tpl.type, canvasJson: tpl.canvas, orgId: org.id, createdBy: admin.id },
+      });
+    }
+  }
+  console.log(`✅ Demo 证书模板: ${DEMO_CERT_TEMPLATES.length} 份（结业证书/学时证明/机构定制）`);
+
+
   // ── 最终输出 ──
   console.log('\n🎉 种子数据初始化完成!');
-  console.log(`   管理员:   admin / admin_temp`);
-  console.log(`   机构管理:  org_admin / 123456`);
-  console.log(`   招生机构:  agency_admin / 123456`);
-  console.log(`   讲师:     lecturer01 / 123456`);
-  console.log(`   考务员:   exam_officer / 123456`);
-  console.log(`   监考员:   proctor01 / 123456`);
-  console.log(`   审计员:   auditor01 / 123456`);
+  console.log(`   管理员:   admin / ${DEMO_PW}`);
+  console.log(`   机构管理:  org_admin / ${DEMO_PW}`);
+  console.log(`   招生机构:  agency_admin / ${DEMO_PW}`);
+  console.log(`   讲师:     lecturer01 / ${DEMO_PW}`);
+  console.log(`   考务员:   exam_officer / ${DEMO_PW}`);
+  console.log(`   监考员:   proctor01 / ${DEMO_PW}`);
+  console.log(`   审计员:   auditor01 / ${DEMO_PW}`);
   console.log(`   学员A:    stu001 / 123456 (中电标协招办)`);
   console.log(`   学员B:    stu002 / 123456 (中电标协招办)`);
   console.log(`   学员C:    stu003 / 123456 (中电标协招办)`);

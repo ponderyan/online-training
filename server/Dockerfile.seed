@@ -1,0 +1,10 @@
+# ── 一次性 seed 容器（含 dev 依赖 tsx，用于初始化/重置演示数据）──
+FROM node:20-alpine
+WORKDIR /app
+RUN corepack enable pnpm
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY prisma ./prisma
+RUN npx prisma generate
+# 用法: docker compose run --rm seed  （可用 -e DEMO_PASSWORD=xxx 覆盖演示密码）
+CMD ["npx", "tsx", "prisma/seed.ts"]

@@ -84,6 +84,20 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - uploads_data:/var/www/uploads:ro
 
+  # ── 一次性 Seed 容器（初始化/重置演示数据，profiles=tools 默认不启动）──
+  seed:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.seed
+    container_name: foxlearn-seed
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql://${DB_USER:-training_user}:${DB_PASSWORD:-training_2024}@db:3306/${DB_NAME:-online_training}"
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-foxlearn2026}
+
 volumes:
   mysql_data:
   uploads_data:
