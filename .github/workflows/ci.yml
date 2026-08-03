@@ -83,7 +83,9 @@ jobs:
         working-directory: server
         env:
           DATABASE_URL: mysql://root:root@localhost:3306/foxlearn_test
-        run: npx prisma db push --accept-data-loss
+        run: |
+          npx prisma db push --accept-data-loss
+          pnpm prisma:seed
 
       - name: Build server
         working-directory: server
