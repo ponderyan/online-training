@@ -160,7 +160,7 @@ export default function CourseDetailPage() {
               ) : (
                 <div className="space-y-1">
                   {allVideos.map((v: any) => (
-                    <label key={v.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <label key={v.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[var(--paper-light)]">
                       <input
                         type="checkbox"
                         checked={selectedVideoIds.includes(v.id)}

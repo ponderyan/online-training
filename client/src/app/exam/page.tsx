@@ -139,7 +139,7 @@ export default function ExamList() {
               {sortedActive.map(exam => (
                 <div key={exam.id} style={{
                   background: 'var(--paper-bright)', borderRadius: '12px',
-                  border: exam.accessType === 'UNIFIED' ? '1px solid #e87a30' : '2px solid #e87a30',
+                  border: exam.accessType === 'UNIFIED' ? '1px solid var(--fox)' : '2px solid var(--fox)',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>

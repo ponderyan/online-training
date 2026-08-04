@@ -51,7 +51,7 @@ export default function VerifyCertificatePage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)', fontFamily: 'var(--font-sans, "PingFang SC","Microsoft YaHei",sans-serif)' }}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'rgba(255,255,255,0.7)' }}>
+      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
         <div className="font-serif font-bold text-lg tracking-wider" style={{ color: 'var(--ink-700)' }}>
           {settings?.siteName || 'FoxLearn'}

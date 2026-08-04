@@ -26,8 +26,8 @@ function renderMarkdown(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   return escaped
-    .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 rounded p-2 my-1 text-xs overflow-x-auto"><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code class="bg-gray-100 rounded px-1 text-xs">$1</code>')
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-[var(--paper-alt)] rounded p-2 my-1 text-xs overflow-x-auto"><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code class="bg-[var(--paper-alt)] rounded px-1 text-xs">$1</code>')
     .replace(/^### (.+)$/gm, '<h3 class="font-bold text-sm mt-2 mb-1">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="font-bold text-base mt-2 mb-1">$1</h2>')
     .replace(/^# (.+)$/gm, '<h1 class="font-bold text-lg mt-2 mb-1">$1</h1>')

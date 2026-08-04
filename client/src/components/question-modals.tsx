@@ -454,7 +454,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* ── 来源教材信息（蓝绿卡片，有教材关联） ── */}
           {question.materialQuestions?.[0]?.material && (
             <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: 'var(--info-pale)', border: '1px solid #d8e8ed' }}>
+              style={{ background: 'var(--info-pale)', border: '1px solid color-mix(in srgb, var(--info) 35%, transparent)' }}>
               <span style={{ fontSize: '18px' }}>📖</span>
               <div className="flex-1 min-w-0">
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--info)' }}>
@@ -474,7 +474,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* ── 已归档来源（金色卡片） ── */}
           {question.sourceNote && !question.materialQuestions?.[0]?.material && (
             <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: 'var(--fox-pale)', border: '1px solid #edd9b0' }}>
+              style={{ background: 'var(--fox-pale)', border: '1px solid color-mix(in srgb, var(--gold) 35%, transparent)' }}>
               <span style={{ fontSize: '18px' }}>🗂️</span>
               <div className="flex-1 min-w-0">
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gold)' }}>

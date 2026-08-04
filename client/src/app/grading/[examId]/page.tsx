@@ -581,7 +581,7 @@ export default function GradingDetail() {
                 )}
 
                 {adjustOpen && (
-                  <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid #fde68a' }}>
+                  <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--gold-light)' }}>
                     <p className="text-sm font-medium mb-3" style={{ color: 'var(--ink-600)' }}>成绩调整（将记录审计日志）</p>
                     <div className="flex gap-3 items-end">
                       <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>调整后分数</label><input type="number" value={adjustScore} onChange={e => setAdjustScore(e.target.value)} className="input w-24" min={0} max={100} /></div>

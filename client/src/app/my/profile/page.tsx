@@ -182,7 +182,7 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* ═══ 头部：头像 + 身份 + 操作按钮 ═══ */}
-        <div className="card p-6" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)' }}>
+        <div className="card p-6" style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}>
           <div className="flex items-start gap-5">
             {/* Avatar */}
             <div className="relative flex-shrink-0">

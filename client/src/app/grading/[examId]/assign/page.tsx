@@ -131,7 +131,7 @@ export default function AssignPage() {
           </div>
           <div className="max-h-[400px] overflow-y-auto divide-y" style={{ borderColor: 'var(--ink-100)' }}>
             {students.map((s: any) => (
-              <label key={s.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#fef3e7] transition-colors">
+              <label key={s.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--fox-pale)] transition-colors">
                 <input type="checkbox" checked={selectedSessionIds.includes(s.id)}
                   onChange={e => {
                     if (e.target.checked) setSelectedSessionIds([...selectedSessionIds, s.id]);
@@ -163,7 +163,7 @@ export default function AssignPage() {
             {paperQuestions.map((pq: any) => {
               const typeName = pq.question?.type === 'SHORT_ANSWER' ? '简答' : '案例';
               return (
-                <label key={pq.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#fef3e7] transition-colors">
+                <label key={pq.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--fox-pale)] transition-colors">
                   <input type="checkbox" checked={selectedQuestionIds.includes(pq.id)}
                     onChange={e => {
                       if (e.target.checked) setSelectedQuestionIds([...selectedQuestionIds, pq.id]);

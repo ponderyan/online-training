@@ -46,9 +46,9 @@ export default function VerifyHoursPage() {
   const isRevoked = cert?.isRevoked === true || cert?.approvalStatus === 'REVOKED';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'rgba(255,255,255,0.7)' }}>
+      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
         <div className="font-serif font-bold text-lg tracking-wider" style={{ color: 'var(--ink-600)' }}>
           {settings?.siteName || 'FoxLearn'}
@@ -107,7 +107,7 @@ export default function VerifyHoursPage() {
           {/* Valid result */}
           {isValid && !loading && (
             <div className="card p-6"
-              style={{ border: '2px solid #a5d6a7', background: 'var(--success-pale)' }}>
+              style={{ border: '2px solid var(--sage-light)', background: 'var(--success-pale)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">✅</span>
                 <span className="text-sm font-semibold" style={{ color: 'var(--sage)' }}>验证通过 - 真实有效</span>

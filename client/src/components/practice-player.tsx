@@ -233,7 +233,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
             <p className="mb-2">共 <strong>{questions.length}</strong> 题 · 已答 <strong>{answeredCount}</strong> 题</p>
             <p className="text-sm text-[var(--ink-500)]">
               正确 <strong className="text-[var(--cyan)]">{correctCount}</strong> · 错误 <strong className="text-[var(--verm)]">{wrongCount}</strong>
-              {subjectiveCount > 0 && <> · 自评 <strong className="text-[#f59e0b]">{subjectiveCount}</strong></>}
+              {subjectiveCount > 0 && <> · 自评 <strong className="text-[var(--gold)]">{subjectiveCount}</strong></>}
               {objectiveResults.length > 0 && <> · 客观题正确率 <strong>{accuracy}%</strong></>}
             </p>
             <p className="text-xs text-[var(--ink-400)] mt-2">

@@ -306,7 +306,7 @@ export default function ExamResult() {
         {/* Stats Bar */}
         {subjectivePending && (
           <div className="mb-6 p-4 rounded-lg flex items-center gap-3"
-            style={{ background: 'var(--gold-glow)', border: '1px solid #ffe082', color: 'var(--gold-dark)' }}>
+            style={{ background: 'var(--gold-glow)', border: '1px solid var(--gold-light)', color: 'var(--gold-dark)' }}>
             <span className="text-xl">⏳</span>
             <div>
               <p className="font-semibold text-sm">主观题阅卷中</p>

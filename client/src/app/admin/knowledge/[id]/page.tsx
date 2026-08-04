@@ -277,7 +277,7 @@ export default function KnowledgeDocumentDetailPage() {
                 <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>该科目暂无知识点</p>
               ) : (
                 flattenTree(kpTree).map((kp: any) => (
-                  <label key={kp.id} className="flex items-center gap-2 py-1.5 px-2 rounded cursor-pointer hover:bg-gray-50"
+                  <label key={kp.id} className="flex items-center gap-2 py-1.5 px-2 rounded cursor-pointer hover:bg-[var(--paper-light)]"
                     style={{ paddingLeft: kp.depth * 20 + 8 }}>
                     <input type="checkbox" checked={selectedKpIds.includes(kp.id)}
                       onChange={e => {

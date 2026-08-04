@@ -174,7 +174,7 @@ export default function CertificateTemplatesPage() {
           border-radius: var(--radius-card); overflow: hidden; transition: box-shadow .18s, transform .18s, border-color .18s; }
         .ct-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--color-ink-200); }
         .ct-thumb { position: relative; aspect-ratio: 1123 / 794;
-          background: linear-gradient(135deg, #e7e1d3 0%, #dcd5c5 100%);
+          background: linear-gradient(135deg, var(--paper-alt) 0%, var(--paper-dark) 100%);
           display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
         .ct-thumb img { width: 100%; height: 100%; object-fit: contain; box-shadow: 0 1px 6px rgba(26,23,18,.18); }
         .ct-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 8px;

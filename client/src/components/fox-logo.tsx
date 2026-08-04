@@ -45,7 +45,7 @@ function FoxLogo({ size = 48, showText = false }: { size?: number; showText?: bo
       <FoxSVG size={size} />
       <div>
         <div className="font-serif font-bold leading-tight tracking-wider text-white">FoxLearn</div>
-        <div className="text-[11px] text-[#f5a061] font-light tracking-widest mt-0.5">狐学</div>
+        <div className="text-[11px] text-[var(--fox-light)] font-light tracking-widest mt-0.5">狐学</div>
       </div>
     </div>
   );

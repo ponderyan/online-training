@@ -765,6 +765,16 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   --fox-glow:     rgba(232,122,48,0.12);
   --amber-glow:   rgba(217,119,6,0.12);
   --sage-glow:    rgba(46,125,50,0.12);
+
+  /* pale 浅色态 dark 覆盖（低透明同色，替代浅色实底） */
+  --fox-pale:      rgba(232,122,48,0.16);
+  --fox-pale2:     rgba(232,122,48,0.10);
+  --success-pale:  rgba(76,175,80,0.14);
+  --error-pale:    rgba(255,77,94,0.12);
+  --warning-pale:  rgba(219,185,92,0.14);
+  --info-pale:     rgba(0,201,182,0.12);
+  --purple-pale:   rgba(171,71,188,0.14);
+  --blue-pale:     rgba(66,165,245,0.12);
 }
 
 /* dark 模式组件级覆盖 */

@@ -82,7 +82,7 @@ export default function ProctoringHome() {
           { label: '已交卷', value: stats.submitted, icon: <CheckCircle2 size={16} />, color: 'var(--neutral-400)' },
           { label: '总考生', value: stats.totalStudents, icon: <Users size={16} />, color: 'var(--fox)' },
         ].map((s, i) => (
-          <div key={i} className="card p-4 text-center" style={s.highlight ? { border: '2px solid #2e7d32' } : {}}>
+          <div key={i} className="card p-4 text-center" style={s.highlight ? { border: '2px solid var(--sage)' } : {}}>
             <div className="text-sm mb-1 flex justify-center" style={{ color: s.color }}>{s.icon}</div>
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
             <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
@@ -93,7 +93,7 @@ export default function ProctoringHome() {
       {/* Alert banner for active exams */}
       {stats.inProgress > 0 && (
         <div className="rounded-xl p-4 mb-5 flex items-center justify-between" style={{
-          background: 'linear-gradient(135deg, #fef3e7, #ffe0b2)',
+          background: 'linear-gradient(135deg, var(--fox-pale), var(--gold-light))',
           border: '2px solid var(--fox)',
         }}>
           <div className="flex items-center gap-3">

@@ -253,23 +253,23 @@ export default function PapersPage() {
                   {moreMenu === p.id && (
                     <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}
                       onMouseLeave={() => setMoreMenu(null)}>
-                      <button onClick={() => { handleDownload(p.id, 'word'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载试卷 Word</button>
-                      <button onClick={() => { handleDownload(p.id, 'pdf'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">下载 PDF</button>
+                      <button onClick={() => { handleDownload(p.id, 'word'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">下载试卷 Word</button>
+                      <button onClick={() => { handleDownload(p.id, 'pdf'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">下载 PDF</button>
                       {p.status === 'DRAFT' && (
-                        <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">修改配置</button>
+                        <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">修改配置</button>
                       )}
                       {p.status === 'FINALIZED' && (
-                        <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
+                        <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
                       )}
-                      <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50">复制组卷</button>
+                      <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">复制组卷</button>
                       {p.status !== 'ARCHIVED' && (
-                        <button onClick={() => { handleArchive(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--ink-400)' }}>归档</button>
+                        <button onClick={() => { handleArchive(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--ink-400)' }}>归档</button>
                       )}
                       {p.status === 'ARCHIVED' && (
-                        <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--cyan)' }}>恢复为草稿</button>
+                        <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--cyan)' }}>恢复为草稿</button>
                       )}
                       <hr className="my-1" style={{ borderColor: 'var(--ink-100)' }} />
-                      <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-gray-50" style={{ color: 'var(--verm)' }}>删除</button>
+                      <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--verm)' }}>删除</button>
                     </div>
                   )}
                 </div>
