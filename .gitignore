@@ -12,3 +12,6 @@ client/test-results/
 
 # 临时回归验证脚本
 server/_*.mjs
+
+# Playwright 本地登录态产物（CI 由 setup 项目自动生成）
+client/e2e/auth/.auth/
