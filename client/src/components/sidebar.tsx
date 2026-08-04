@@ -105,6 +105,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/admin/organizations', label: '组织管理', icon: 'building', perm: 'org:view' },
       { path: '/admin/settings/branding', label: '品牌设置', icon: 'palette', perm: 'system:config' },
+      { path: '/admin/settings/codes', label: '编码词典', icon: 'building', perm: 'system:config' },
       { path: '/admin/system-config', label: '配置中心', icon: 'settings', perm: 'systemConfig:view' },
       { path: '/admin/ai-configs', label: 'AI 配置', icon: 'bot', perm: 'aiConfig:view' },
       { path: '/admin/messages', label: '消息中心', icon: 'megaphone', perm: 'notice:manage' },

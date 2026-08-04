@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
-import Link from 'next/link';
 
 interface Abbreviation {
   id: number;
@@ -27,6 +26,10 @@ export default function OrgCodesSettingsPage() {
   const [editKeyword, setEditKeyword] = useState('');
   const [editAbbr, setEditAbbr] = useState('');
 
+  // 编码规则
+  const [rules, setRules] = useState<{ separator: string; autoGenerate: boolean; includeLevel: boolean } | null>(null);
+  const [rulesSaving, setRulesSaving] = useState(false);
+
   // 预览
   const [previewName, setPreviewName] = useState('');
   const [previewParentId, setPreviewParentId] = useState<number | null>(null);
@@ -34,12 +37,14 @@ export default function OrgCodesSettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [a, o] = await Promise.all([
+      const [a, o, r] = await Promise.all([
         api.orgCodes.getAbbreviations(),
         api.organizations.getTree(),
+        api.orgCodes.getRules(),
       ]);
       setAbbreviations(a);
       setOrgs(Array.isArray(o) ? o : []);
+      setRules(r);
     } catch {}
   }, []);
 
@@ -70,6 +75,17 @@ export default function OrgCodesSettingsPage() {
       await api.orgCodes.deleteAbbreviation(id);
       load();
     } catch (e: any) { toast.error(e.message); }
+  };
+
+  const saveRules = async () => {
+    if (!rules) return;
+    setRulesSaving(true);
+    try {
+      const r = await api.orgCodes.updateRules(rules);
+      setRules(r);
+      toast.success('编码规则已保存');
+    } catch (e: any) { toast.error('保存失败：' + e.message); }
+    setRulesSaving(false);
   };
 
   const doPreview = async () => {
@@ -119,16 +135,35 @@ export default function OrgCodesSettingsPage() {
             </div>
           )}
 
-          {/* 配置入口 */}
+          {/* 编码规则配置 */}
           <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-            <p className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>编码规则配置（分隔符、自动生成、层级体现）：</p>
-            <Link 
-              href="/admin/system-config"
-              className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-              style={{ color: 'var(--fox)', background: 'var(--fox-pale)' }}
-            >
-              ⚙️ 前往配置中心 → 组织编码
-            </Link>
+            <p className="text-xs font-bold mb-2" style={{ color: 'var(--ink-600)' }}>编码规则</p>
+            {rules ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-500)' }}>
+                  <span style={{ width: 64 }}>分隔符</span>
+                  <input value={rules.separator} maxLength={2}
+                    onChange={e => setRules({ ...rules, separator: e.target.value.replace(/[^\w.@/]/g, '') })}
+                    className="input text-xs" style={{ width: 56, padding: '2px 6px' }} />
+                  <span style={{ color: 'var(--ink-300)' }}>父编码与缩写之间的连接符</span>
+                </div>
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+                  <input type="checkbox" checked={rules.autoGenerate}
+                    onChange={e => setRules({ ...rules, autoGenerate: e.target.checked })} />
+                  新建组织时自动生成编码
+                </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+                  <input type="checkbox" checked={rules.includeLevel}
+                    onChange={e => setRules({ ...rules, includeLevel: e.target.checked })} />
+                  编码体现层级（拼接父组织编码）
+                </label>
+                <button onClick={saveRules} disabled={rulesSaving} className="btn btn-fox btn-sm">
+                  {rulesSaving ? '保存中…' : '保存规则'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>规则加载中…</p>
+            )}
           </div>
         </div>
 

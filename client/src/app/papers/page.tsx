@@ -184,7 +184,7 @@ export default function PapersPage() {
         </select>
         <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); }} className="input" style={{ maxWidth: 160 }}>
           <option value="">全部组织</option>
-          {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.code} - {o.name}</option>)}
         </select>
         <button onClick={() => load(1)} className="btn btn-outline btn-xs">筛选</button>
         {(keyword || filterStatus || filterSubject || filterOrg) && (

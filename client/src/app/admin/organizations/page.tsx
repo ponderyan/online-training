@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
@@ -24,6 +24,7 @@ export default function OrganizationsPage() {
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [editOrg, setEditOrg] = useState<OrgNode | null>(null);
   const [modalParent, setModalParent] = useState<OrgNode | null>(null);
+  const codeTouched = useRef(false); // 用户手动改过编码后，preview 不再覆盖
   const [orgForm, setOrgForm] = useState({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '', orgType: 'BRANCH' });
   const [saving, setSaving] = useState(false);
 
@@ -107,7 +108,7 @@ export default function OrganizationsPage() {
 
   // ── Handlers ──
   const openCreate = (parent: OrgNode | null) => {
-    setEditOrg(null); setModalParent(parent);
+    setEditOrg(null); setModalParent(parent); codeTouched.current = false;
     setOrgForm({ name: '', code: '', contactName: '', contactPhone: '', contactEmail: '', orgType: 'BRANCH' });
     setShowOrgModal(true);
   };
@@ -234,8 +235,10 @@ export default function OrganizationsPage() {
 
   // 编码自动生成（防抖）
   const handleFormChange = (form: any) => {
+    // 用户手动修改了编码（name 未变而 code 变了）→ 后续 preview 不再覆盖
+    if (!editOrg && form.code !== orgForm.code && form.name === orgForm.name) codeTouched.current = true;
     setOrgForm(form);
-    if (!editOrg && form.name.length >= 2) {
+    if (!editOrg && !codeTouched.current && form.name.length >= 2) {
       clearTimeout((window as any).__orgCodeTimer);
       (window as any).__orgCodeTimer = setTimeout(async () => {
         try { const code = await api.orgCodes.preview(modalParent?.id || null, form.name); if (code) setOrgForm(prev => ({ ...prev, code })); } catch {}
