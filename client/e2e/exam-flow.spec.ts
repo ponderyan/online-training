@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectNoPageError } from './helpers';
 
 /**
  * 链路 3：考试全流程测试
@@ -13,10 +14,7 @@ test.describe('考试全流程 - 管理员视角', () => {
     // 页面不报错，有内容
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    // 检测真实错误指示（API 错误卡片/Next.js 错误页）。
-    // 不用裸 'text=500'——会误匹配标题中的时间戳数字片段（如 守卫测试-1785769616500）
-    const hasError = await page.getByText(/Internal Server Error|Application error|加载考试列表失败|HTTP 5\d{2}/).first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能查看考试列表数据', async ({ page }) => {
@@ -28,8 +26,7 @@ test.describe('考试全流程 - 管理员视角', () => {
     const count = await rows.count();
     console.log(`考试列表数据条数: ${count}`);
 
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能打开创建考试入口', async ({ page }) => {
@@ -62,8 +59,7 @@ test.describe('考试全流程 - 学员视角', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('学员能访问考试成绩页面', async ({ page }) => {
@@ -94,8 +90,7 @@ test.describe('考试全流程 - 考务员视角', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const hasError = await page.locator('text=403').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('考务员能访问阅卷页面', async ({ page }) => {
@@ -103,7 +98,6 @@ test.describe('考试全流程 - 考务员视角', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const hasError = await page.locator('text=403').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 });

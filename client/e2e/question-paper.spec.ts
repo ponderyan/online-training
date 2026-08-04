@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectNoPageError } from './helpers';
 
 /**
  * 链路 2：出题与组卷测试
@@ -13,8 +14,7 @@ test.describe('出题与组卷 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('题库页面有搜索和筛选功能', async ({ page }) => {
@@ -28,8 +28,7 @@ test.describe('出题与组卷 - 管理员视角', () => {
     console.log(`题库搜索框可见: ${hasSearch}`);
 
     // 页面不报错
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能访问试卷管理页面', async ({ page }) => {
@@ -39,8 +38,7 @@ test.describe('出题与组卷 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能访问题库出题页面', async ({ page }) => {

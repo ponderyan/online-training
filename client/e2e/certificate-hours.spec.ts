@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectNoPageError } from './helpers';
 
 /**
  * 链路 5：证书与学时测试
@@ -12,8 +13,7 @@ test.describe('证书与学时 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能访问学时管理页面', async ({ page }) => {
@@ -50,8 +50,7 @@ test.describe('证书与学时 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(50);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 });
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectNoPageError } from './helpers';
 
 /**
  * 链路 6：培训班全生命周期测试
@@ -12,8 +13,7 @@ test.describe('培训班 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能访问学员管理页面', async ({ page }) => {
@@ -23,8 +23,7 @@ test.describe('培训班 - 管理员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(100);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('管理员能访问教材管理页面', async ({ page }) => {
@@ -47,8 +46,7 @@ test.describe('培训班 - 学员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(50);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 
   test('学员能访问视频课程页面', async ({ page }) => {

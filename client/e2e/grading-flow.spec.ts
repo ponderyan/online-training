@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectNoPageError } from './helpers';
 
 /**
  * 链路 4：阅卷与成绩测试
@@ -10,8 +11,7 @@ test.describe('阅卷与成绩 - 管理员视角', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(50);
   });
@@ -21,8 +21,7 @@ test.describe('阅卷与成绩 - 管理员视角', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
   });
 });
 
@@ -36,8 +35,7 @@ test.describe('阅卷与成绩 - 学员视角', () => {
 
     const bodyText = await page.textContent('body');
     expect(bodyText!.length).toBeGreaterThan(50);
-    const hasError = await page.locator('text=Error').first().isVisible().catch(() => false);
-    expect(hasError).toBeFalsy();
+    await expectNoPageError(page);
     console.log('学员考试成绩页面正常');
   });
 
