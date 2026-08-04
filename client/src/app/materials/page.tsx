@@ -4,23 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { api } from '@/lib/api';
-import PipelineProgress from '@/components/pipeline-progress';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
 import { SkeletonCardGrid } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
-
-const STATUS: Record<string, { label: string; cls: string }> = {
-  UPLOADED: { label: '待处理', cls: 'tag-ink' },
-  PROCESSING: { label: '处理中', cls: 'tag-gold' },
-  OCR_DONE: { label: '已识别', cls: 'tag-cyan' },
-  STRUCTURED: { label: '已结构化', cls: 'tag-cyan' },
-  GENERATING: { label: '出题中', cls: 'tag-gold' },
-  GENERATED: { label: '待审核', cls: 'tag-fox' },
-  REVIEWING: { label: '审核中', cls: 'tag-fox' },
-  COMPLETED: { label: '已完成', cls: 'tag-cyan' },
-  FAILED: { label: '失败', cls: 'tag-verm' },
-};
+import MaterialCard from './components/material-card';
+import UploadModal from './components/upload-modal';
+import ManualEntryModal from './components/manual-entry-modal';
 
 /** 教材在 Pipeline 中的分组 */
 const PIPELINE_GROUPS = [
@@ -35,8 +25,6 @@ const PIPELINE_GROUPS = [
 
 // 已归档分组
 const ARCHIVED_FILTER = { label: '📦 已归档', statuses: [] as string[] };
-
-const FILE_ICONS: Record<string, string> = { pdf: '📘', pptx: '📗', docx: '📕', doc: '📕' };
 
 export default function MaterialsPage() {
   const router = useRouter();
@@ -146,97 +134,6 @@ export default function MaterialsPage() {
     );
   };
 
-  // ── 渲染教材卡片 ──
-  const renderMaterialCard = (m: any, showArchivedBadge = false) => {
-    const actionBtn = (() => {
-      switch (m.status) {
-        case 'UPLOADED':
-          return m.errorMessage
-            ? <button className="btn btn-verm btn-xs" onClick={() => handleDelete(m)}>删除</button>
-            : <span className="text-xs" style={{ color: 'var(--ink-300)' }}>⏳ 等待处理…</span>;
-        case 'PROCESSING':
-        case 'GENERATING':
-          return <span className="text-xs" style={{ color: 'var(--gold)' }}>⏳ 处理中…</span>;
-        case 'OCR_DONE':
-          return <button className="btn btn-fox btn-xs" onClick={() => router.push(`/materials/${m.id}`)}>📋 复核章节结构</button>;
-        case 'STRUCTURED':
-          return <button className="btn btn-fox btn-xs" onClick={() => router.push(`/materials/${m.id}?tab=plan`)}>🤖 配置出题</button>;
-        case 'GENERATED':
-        case 'REVIEWING':
-          return <button className="btn btn-fox btn-xs" onClick={() => router.push(`/materials/${m.id}`)}>📝 去审核（{m._count?.questions || 0}）</button>;
-        case 'COMPLETED':
-          return <button className="btn btn-outline btn-xs" onClick={() => router.push(`/materials/${m.id}`)}>查看详情</button>;
-        case 'FAILED':
-          return <button className="btn btn-verm btn-xs" onClick={() => handleDelete(m)}>重试</button>;
-        default:
-          return null;
-      }
-    })();
-
-    return (
-      <div key={m.id} className={`card p-4 ${showArchivedBadge ? 'opacity-70' : ''}`}>
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="flex-shrink-0">{FILE_ICONS[m.fileType] || '📄'}</span>
-            <h3 className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>{m.name}</h3>
-            {showArchivedBadge && <span className="tag tag-ink text-[10px]">已归档</span>}
-          </div>
-          <span className={`tag flex-shrink-0 ${(STATUS[m.status]?.cls) || 'tag-ink'}`}>
-            {STATUS[m.status]?.label || m.status}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mb-2" style={{ color: 'var(--ink-400)' }}>
-          <span>{m.fileType?.toUpperCase() || '—'}</span>
-          {m.totalPages && <span>{m.totalPages} 页</span>}
-          <span>{new Date(m.createdAt).toLocaleDateString('zh-CN')}</span>
-          <span>{m.subject?.code || '—'}</span>
-          <span>{m._count?.chapters || 0} 章 · {m._count?.questions || 0} 题</span>
-        </div>
-
-        {/* Pipeline 进度条 */}
-        <div className="mb-3">
-          <PipelineProgress
-            status={m.status}
-            hasChapters={(m._count?.chapters || 0) > 0}
-            totalQuestions={m._count?.questions || 0}
-            archived={!!m.archivedAt}
-          />
-        </div>
-
-        {/* 错误提示 */}
-        {m.errorMessage && (
-          <div className="text-xs p-2 rounded mb-2" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
-            ⚠ {m.errorMessage}
-          </div>
-        )}
-
-        {/* 操作栏 */}
-        <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-          {actionBtn}
-          <div className="flex-1" />
-          {m.archivedAt ? (
-            <>
-              <button onClick={() => handleUnarchive(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--fox)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--cyan)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fox)')}>恢复</button>
-              <button onClick={() => handleDelete(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>彻底删除</button>
-            </>
-          ) : m.status !== 'UPLOADED' && m.status !== 'FAILED' ? (
-            <button onClick={() => handleArchive(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>归档</button>
-          ) : (
-            <button onClick={() => handleDelete(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <AppLayout>
       {/* ── 标题 + 操作 ── */}
@@ -307,7 +204,7 @@ export default function MaterialsPage() {
                   {g.label} · {g.items.length} 份
                 </h3>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
-                  {g.items.map(m => renderMaterialCard(m))}
+                  {g.items.map(m => <MaterialCard m={m} onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                 </div>
               </div>
             ))}
@@ -322,7 +219,7 @@ export default function MaterialsPage() {
                 </button>
                 {showArchived && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
-                    {archivedMaterials.map(m => renderMaterialCard(m, true))}
+                    {archivedMaterials.map(m => <MaterialCard m={m} showArchivedBadge onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                   </div>
                 )}
               </div>
@@ -377,7 +274,7 @@ export default function MaterialsPage() {
                       {subject?.code || '其他'} — {subject?.name || '未分类'} · {items.length} 本
                     </h4>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
-                      {items.map(m => renderMaterialCard(m))}
+                      {items.map(m => <MaterialCard m={m} onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                     </div>
                   </div>
                 );
@@ -393,7 +290,7 @@ export default function MaterialsPage() {
               )}
               {showArchived && archivedMaterials.length > 0 && (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3 mb-6">
-                  {archivedMaterials.map(m => renderMaterialCard(m, true))}
+                  {archivedMaterials.map(m => <MaterialCard m={m} showArchivedBadge onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                 </div>
               )}
             </div>
@@ -412,205 +309,5 @@ export default function MaterialsPage() {
       {/* Manual Entry Modal */}
       {showEntry && <ManualEntryModal subjects={subjects} onClose={() => { setShowEntry(false); load(); }} />}
     </AppLayout>
-  );
-}
-
-// ══════════════════════════════════════════
-// UploadModal 组件（代码同前）
-// ══════════════════════════════════════════
-
-function UploadModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
-  const router = useRouter();
-  const toast = useToast();
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
-  const [materialName, setMaterialName] = useState('');
-  const [batchNote, setBatchNote] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState('');
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Backspace') {
-        const tag = (e.target as HTMLElement)?.tagName;
-        const isEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || !!(e.target as HTMLElement)?.isContentEditable;
-        if (!isEditable) e.preventDefault();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
-
-  const handleSubmit = async () => {
-    if (!file || !subjectId) return;
-    if (!batchNote.trim()) { toast.warning('请填写出题要求，说明题型、数量和难度分布'); return; }
-    setUploading(true);
-    setProgress('上传中…');
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx)$/i, ''));
-      formData.append('subjectId', String(subjectId));
-      formData.append('batchNote', batchNote);
-      // P1-1: createdBy 由后端从认证token取，不再前端传入
-      const result = await api.materials.upload(formData);
-      setProgress('✅ 上传成功！小狐狸马上开始处理');
-      setTimeout(() => { onClose(); router.push(`/materials/${result.id}`); }, 1500);
-    } catch (e: any) { setProgress('❌ ' + e.message); }
-    setUploading(false);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget && !uploading) onClose(); }}>
-      <div className="modal-card max-w-[480px] animate-fadeSlide">
-        <div className="modal-header">
-          <h3 className="font-serif font-bold text-base">📖 上传教材</h3>
-          <button onClick={onClose} disabled={uploading}
-            className="text-lg bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-300)' }}>✕</button>
-        </div>
-        <div className="modal-body space-y-4">
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>所属科目</label>
-            <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="input select">
-              {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材名称</label>
-            <input value={materialName} onChange={e => setMaterialName(e.target.value)}
-              placeholder="如：DTIV上册" className="input" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-              出题要求 <span style={{ color: 'var(--verm)' }}>*必填</span>
-            </label>
-            <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
-              placeholder={'补充特殊要求（可选），如：侧重第三章、减少概念定义题、60%书上原话…'}
-              className="input textarea" rows={5} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF / PPTX / DOCX）</label>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center transition-all"
-              style={{ borderColor: file ? 'var(--fox)' : 'var(--ink-100)', background: file ? 'var(--fox-pale)' : 'var(--paper)' }}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => {
-                e.preventDefault();
-                const f = e.dataTransfer.files[0];
-                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx') || f.name.endsWith('.docx'))) setFile(f);
-              }}>
-              {file ? (
-                <div>
-                  <div className="text-2xl mb-2">📄</div>
-                  <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{file.name}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</p>
-                  <button onClick={() => setFile(null)} className="btn btn-ghost btn-xs mt-2">重新选择</button>
-                </div>
-              ) : (
-                <label className="cursor-pointer block">
-                  <div className="text-3xl mb-2">📂</div>
-                  <p className="text-sm" style={{ color: 'var(--ink-500)' }}>拖拽或点击上传</p>
-                  <input type="file" accept=".pdf,.pptx,.docx" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
-                </label>
-              )}
-            </div>
-          </div>
-          {progress && (
-            <div className="text-sm text-center py-2" style={{
-              color: progress.startsWith('✅') ? 'var(--cyan)' : progress.startsWith('❌') ? 'var(--verm)' : 'var(--fox)',
-            }}>{progress}</div>
-          )}
-        </div>
-        <div className="modal-footer">
-          <button onClick={onClose} disabled={uploading} className="btn btn-ghost btn-sm">取消</button>
-          <button onClick={handleSubmit} disabled={!file || !subjectId || uploading}
-            className="btn btn-fox btn-sm">{uploading ? '上传中…' : '上传并开始处理'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════
-// ManualEntryModal 组件（代码同前）
-// ══════════════════════════════════════════
-
-function ManualEntryModal({ subjects, onClose }: { subjects: any[]; onClose: () => void }) {
-  const router = useRouter();
-  const toast = useToast();
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
-  const [name, setName] = useState('');
-  const [content, setContent] = useState('');
-  const [batchNote, setBatchNote] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [progress, setProgress] = useState('');
-
-  const handleSubmit = async () => {
-    if (!name.trim() || !subjectId || !content.trim()) { toast.warning('请填写教材名称和正文内容'); return; }
-    setSubmitting(true);
-    setProgress('提交中…');
-    try {
-      const result = await api.materials.create({ name: name.trim(), subjectId: Number(subjectId), content: content.trim(), batchNote: batchNote.trim() || undefined });
-      setProgress('✅ 创建成功！');
-      setTimeout(() => { onClose(); router.push(`/materials/${result.id}`); }, 1500);
-    } catch (e: any) { setProgress('❌ ' + e.message); }
-    setSubmitting(false);
-  };
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Backspace') {
-        const tag = (e.target as HTMLElement)?.tagName;
-        const isEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || !!(e.target as HTMLElement)?.isContentEditable;
-        if (!isEditable) e.preventDefault();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
-
-  return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget && !submitting) onClose(); }}>
-      <div className="modal-card max-w-[560px] animate-fadeSlide">
-        <div className="modal-header">
-          <h3 className="font-serif font-bold text-base">📝 录入正文</h3>
-          <button onClick={onClose} disabled={submitting} className="text-lg bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-300)' }}>✕</button>
-        </div>
-        <div className="modal-body space-y-4">
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>所属科目</label>
-            <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="input select">
-              {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材名称</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="如：DTIV上册" className="input" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>正文内容 <span style={{ color: 'var(--verm)' }}>*必填</span></label>
-            <textarea value={content} onChange={e => setContent(e.target.value)}
-              placeholder={'请粘贴教材正文内容…'} className="input textarea" rows={12} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>出题要求 <span className="text-xs" style={{ color: 'var(--ink-400)' }}>（可选）</span></label>
-            <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
-              placeholder={'补充特殊要求（可选），如：侧重第三章、减少概念定义题…'} className="input textarea" rows={3} />
-          </div>
-          {progress && (
-            <div className="text-sm text-center py-2" style={{
-              color: progress.startsWith('✅') ? 'var(--cyan)' : progress.startsWith('❌') ? 'var(--verm)' : 'var(--fox)',
-            }}>{progress}</div>
-          )}
-        </div>
-        <div className="modal-footer">
-          <button onClick={onClose} disabled={submitting} className="btn btn-ghost btn-sm">取消</button>
-          <button onClick={handleSubmit} disabled={!name.trim() || !subjectId || !content.trim() || submitting}
-            className="btn btn-fox btn-sm">{submitting ? '提交中…' : '创建教材'}</button>
-        </div>
-      </div>
-    </div>
   );
 }
