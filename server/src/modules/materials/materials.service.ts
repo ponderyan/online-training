@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { AiUnavailableException } from '../../common/exceptions/ai-unavailable.exception.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ChunkingService } from '../ai-assistant/chunking.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
@@ -1833,7 +1834,8 @@ async function withAiRetry<T>(
       await new Promise(r => setTimeout(r, 2000)); // 重试间隔2秒
     }
   }
-  throw lastError || new Error('AI 调用失败');
+  // 降级：重试耗尽 → 503 友好提示（不透传底层错误细节给用户，仅保留摘要）
+  throw new AiUnavailableException(lastError?.message);
 }
 
 function parseAIJsonResponse(reply: string): any[] {

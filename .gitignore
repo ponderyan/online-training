@@ -15,3 +15,6 @@ server/_*.mjs
 
 # Playwright 本地登录态产物（CI 由 setup 项目自动生成）
 client/e2e/auth/.auth/
+
+# 服务端结构化日志
+server/logs/

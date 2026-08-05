@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { AiUnavailableException } from '../../common/exceptions/ai-unavailable.exception.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
@@ -94,6 +95,8 @@ ${chunkTexts}
           }
         }
       } catch (e: any) {
+        // AI 外部服务不可用 → 冒泡（503 友好提示）；其余错误静默降级继续下一批
+        if (e instanceof AiUnavailableException) throw e;
         this.logger.warn(`[AI标注] 批次 ${i / batchSize + 1} 失败: ${e.message}`);
       }
     }
@@ -140,6 +143,8 @@ ${chunk.content}
         return { questions: parsed.slice(0, count) };
       }
     } catch (e: any) {
+      // AI 外部服务不可用 → 冒泡（503 友好提示）；其余错误静默返回空
+      if (e instanceof AiUnavailableException) throw e;
       this.logger.warn(`[AI出题] 块 #${chunkId} 出题失败: ${e.message}`);
     }
     return { questions: [] };
@@ -174,6 +179,8 @@ ${chunk.content.slice(0, 600)}
         return { pairs: parsed.length };
       }
     } catch (e: any) {
+      // AI 外部服务不可用 → 冒泡（503 友好提示）；其余错误静默返回空
+      if (e instanceof AiUnavailableException) throw e;
       this.logger.warn(`[Q&A生成] 块 #${chunkId} 失败: ${e.message}`);
     }
     return { pairs: 0 };
@@ -235,7 +242,8 @@ ${chunk.content.slice(0, 600)}
       return data.choices?.[0]?.message?.content || '';
     } catch (e: any) {
       clearTimeout(timeout);
-      throw e;
+      // 降级：AI 外部调用失败统一 503 友好提示
+      throw new AiUnavailableException(e?.message);
     }
   }
 
