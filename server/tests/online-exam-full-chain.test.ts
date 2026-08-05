@@ -162,6 +162,29 @@ describe('线上考试全链路', () => {
     expect(data.isPassed).toBeNull();
   });
 
+  it('Step 5.5: 交卷幂等——重复提交被拒且成绩不变（串行 + 并发）', async () => {
+    const body = {
+      answers: [
+        { questionId: questionObjId, paperQuestionId: pqObjId, answer: 'B' }, // 试图篡改答案
+      ],
+    };
+    // 串行重复提交 → 400
+    const r1 = await api('POST', `/student/exams/${examId}/submit`, body, studentToken);
+    expect(r1.status).toBe(400);
+    // 并发重复提交（模拟双开标签页/网络重试）→ 全部 400
+    const rs = await Promise.all([
+      api('POST', `/student/exams/${examId}/submit`, body, studentToken),
+      api('POST', `/student/exams/${examId}/submit`, body, studentToken),
+      api('POST', `/student/exams/${examId}/submit`, body, studentToken),
+    ]);
+    for (const r of rs) expect(r.status).toBe(400);
+    // ★ 功能结果断言：答案未被篡改，客观题得分不变
+    const check = await api('GET', `/grading/${examId}/${studentUserId}`);
+    const answers: any[] = check.data.answers || check.data.items || [];
+    const obj = answers.find((a: any) => a.paperQuestionId === pqObjId);
+    expect(obj.score).toBe(OBJ_SCORE);
+  });
+
   it('Step 6: 管理员阅卷主观题给分 → 总分 45，判定通过', async () => {
     // 取该学员的答卷列表，定位主观题答案 ID
     const { status, data } = await api('GET', `/grading/${examId}/${studentUserId}`);

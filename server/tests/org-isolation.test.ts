@@ -73,30 +73,31 @@ describe('组织隔离', () => {
     stuOrgBId = r2.data.id;
   });
 
-  it('学员列表隔离：机构A 只见本组织学员，看不到机构B 的', async () => {
+  // 隔离规则（组织树语义）：父组织可见自身+子孙；子组织只见自身，不可见父/兄弟。
+  // 本地/CI 账号 orgB(6) 是 orgA(5) 的子组织，因此 A 可见 B 的学员、B 不可见 A 的学员。
+  it('学员列表隔离：机构A（父）可见本组织+子组织学员', async () => {
     const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgAToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
-    // ★ 功能结果断言：本组织学员可见，对方组织学员不可见
     expect(ids).toContain(stuOrgAId);
-    expect(ids).not.toContain(stuOrgBId);
+    expect(ids).toContain(stuOrgBId); // orgB 是 orgA 子组织，父可见子
   });
 
-  it('学员列表隔离：机构B 只见本组织学员，看不到机构A 的', async () => {
+  it('学员列表隔离：机构B（子）只见本组织，看不到父组织学员', async () => {
     const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgBToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
     expect(ids).toContain(stuOrgBId);
-    expect(ids).not.toContain(stuOrgAId);
+    expect(ids).not.toContain(stuOrgAId); // ★ 子不可见父
   });
 
-  it('跨组织按 ID 直读学员详情被拒（防 IDOR）', async () => {
-    // 机构A 管理员读机构B 学员 → 404（不泄露存在性）
-    const r1 = await api('GET', `/students/${stuOrgBId}`, undefined, orgAToken);
-    expect(r1.status).toBe(404);
-    // 反向同理
+  it('跨组织按 ID 直读学员详情：子读父被拒（防 IDOR）', async () => {
+    // 机构B（子）读机构A（父）学员 → 404（不泄露存在性）
     const r2 = await api('GET', `/students/${stuOrgAId}`, undefined, orgBToken);
     expect(r2.status).toBe(404);
+    // 父读子学员 → 200（树语义允许）
+    const r1 = await api('GET', `/students/${stuOrgBId}`, undefined, orgAToken);
+    expect(r1.status).toBe(200);
   });
 
   it('题库平台统一模式：机构管理员无法自建题库/组卷（无机构私有数据可泄露）', async () => {

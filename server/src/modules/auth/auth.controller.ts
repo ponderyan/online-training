@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { CaptchaService } from './captcha.service.js';
 import { Public } from '../../common/decorators/public.decorator.js';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('api/auth')
 export class AuthController {
@@ -19,6 +20,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: Number(process.env.REGISTER_THROTTLE_LIMIT ?? 10) } })
   @Post('register')
   @HttpCode(200)
   register(@Body() data: { username: string; displayName: string; password: string; phone?: string; email?: string }) {
@@ -26,6 +28,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: Number(process.env.LOGIN_THROTTLE_LIMIT ?? 5) } })
   @Post('login')
   @HttpCode(200)
   login(@Body() data: { username: string; password: string; captchaId?: string; captchaAnswer?: string }) {

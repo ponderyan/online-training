@@ -97,6 +97,10 @@ jobs:
           DATABASE_URL: mysql://root:root@localhost:3306/foxlearn_test
           JWT_SECRET: ci-test-secret
           NODE_ENV: test
+          # 测试环境放宽限流（vitest/e2e 会多次登录）
+          LOGIN_THROTTLE_LIMIT: 100
+          REGISTER_THROTTLE_LIMIT: 100
+          THROTTLE_LIMIT: 1000
         run: node dist/main.js &
 
       - name: Wait for server

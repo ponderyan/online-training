@@ -87,6 +87,20 @@ export class ResourceAccessService {
     return this.checkOrg({ id: material.id, orgId }, '教材', userOrgId, userRoles);
   }
 
+  // ─── 学员（User.orgId 直接隔离）───
+  async assertStudentAccess(
+    studentId: number,
+    userOrgId?: number | null,
+    userRoles?: string[],
+  ): Promise<{ id: number; orgId: number | null }> {
+    const entity = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true, orgId: true },
+    });
+    if (!entity) throw new NotFoundException('学员不存在');
+    return this.checkOrg(entity, '学员', userOrgId, userRoles);
+  }
+
   // ─── 通用：获取可见组织 ID 列表（供列表过滤使用）───
   async getVisibleOrgIds(userOrgId: number): Promise<number[]> {
     const org = await this.prisma.organization.findUnique({

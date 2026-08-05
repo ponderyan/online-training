@@ -482,6 +482,18 @@ export class ExamsService {
     }
     // remainingTime<=0 时不拒绝：前端倒计时归零会触发交卷，后端应接受（heartbeat 可能尚未同步）
 
+    // ★ 交卷幂等（竞态防护）：用条件更新作原子锁——只有第一个把状态推进到
+    // SUBMITTED 的请求能继续，并发重复提交（双开标签页/网络重试/崩溃恢复）
+    // 在 updateMany.count===0 时被拒，保证 autoGrade 只执行一次。
+    const claimed = await this.prisma.examSession.updateMany({
+      where: { id: session.id, status: { not: 'SUBMITTED' } },
+      data: {
+        status: 'SUBMITTED', submittedAt: new Date(), scoringStatus: 'PENDING',
+        violationLog: tabSwitchLog ? tabSwitchLog as any : undefined,
+      },
+    });
+    if (claimed.count === 0) throw new BadRequestException('已提交，不可重复提交');
+
     for (const ans of (answers || [])) {
       await this.prisma.examAnswer.upsert({
         where: { sessionId_paperQuestionId: { sessionId: session.id, paperQuestionId: ans.paperQuestionId } },
@@ -489,15 +501,6 @@ export class ExamsService {
         update: { answer: ans.answer },
       });
     }
-
-    // 先标记为已交卷 + 待评阅（PENDING 兜底，含主观题时保持此状态等人工）
-    await this.prisma.examSession.update({
-      where: { id: session.id },
-      data: {
-        status: 'SUBMITTED', submittedAt: new Date(), scoringStatus: 'PENDING',
-        violationLog: tabSwitchLog ? tabSwitchLog as any : undefined,
-      },
-    });
 
     // autoGrade 在最后执行：纯客观题设 GRADED，AUTO 模式设 PUBLISHED，覆盖上面的 PENDING；
     // 含主观题时 autoGrade 不碰 scoringStatus，保留 PENDING（待人工评阅）。

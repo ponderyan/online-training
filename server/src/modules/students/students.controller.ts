@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query, Res, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { StudentsService } from './students.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 
 @Controller('api/students')
 export class StudentsController {
-  constructor(private service: StudentsService) {}
+  constructor(private service: StudentsService, private resourceAccess: ResourceAccessService) {}
 
   // ═══ 放在 :id 前面，避免路由冲突 ═══
 
@@ -14,6 +15,7 @@ export class StudentsController {
   @RequirePermission(Permissions.STUDENT_IMPORT)
   async exportCsv(
     @Res() res: Response,
+    @Req() req: any,
     @Query('keyword') keyword?: string,
     @Query('groupId') groupId?: string,
     @Query('feeStatus') feeStatus?: string,
@@ -22,6 +24,8 @@ export class StudentsController {
       keyword,
       groupId: groupId ? parseInt(groupId) : undefined,
       feeStatus,
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
@@ -65,6 +69,7 @@ export class StudentsController {
   @Get()
   @RequirePermission(Permissions.STUDENT_CREATE)
   findAll(
+    @Req() req: any,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('keyword') keyword?: string,
@@ -81,6 +86,8 @@ export class StudentsController {
       groupId: groupId ? parseInt(groupId) : undefined,
       status,
       allRoles: allRoles === 'true',
+      userOrgId: req?.user?.orgId ?? null,
+      userRoles: req?.user?.roles,
     });
   }
 
@@ -88,59 +95,70 @@ export class StudentsController {
 
   @Get(':id/profile')
   @RequirePermission(Permissions.STUDENT_CREATE)
-  getProfile(@Param('id', ParseIntPipe) id: number) {
+  async getProfile(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.getProfile(id);
   }
 
   @Get(':id/exam-history')
   @RequirePermission(Permissions.STUDENT_CREATE)
-  getExamHistory(
+  async getExamHistory(
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.getExamHistory(id, page ? parseInt(page) : undefined, pageSize ? parseInt(pageSize) : undefined);
   }
 
   @Get(':id/certificates')
   @RequirePermission(Permissions.STUDENT_CREATE)
-  getCertificates(@Param('id', ParseIntPipe) id: number) {
+  async getCertificates(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.getCertificates(id);
   }
 
   @Get(':id/fee-records')
   @RequirePermission(Permissions.STUDENT_CREATE)
-  getFeeRecords(@Param('id', ParseIntPipe) id: number) {
+  async getFeeRecords(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.getFeeRecords(id);
   }
 
   @Post(':id/fee-records')
   @RequirePermission(Permissions.STUDENT_EDIT)
-  addFeeRecord(
+  async addFeeRecord(
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { examId?: number; type: string; amount: number; status: string; paidAt?: string; method?: string; invoiceNo?: string; note?: string },
   ) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.addFeeRecord({ ...data, studentId: id });
   }
 
   @Put(':id/fee-status')
   @RequirePermission(Permissions.STUDENT_EDIT)
-  updateFeeStatus(
+  async updateFeeStatus(
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() data: { feeStatus: string },
   ) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.updateFeeStatus(id, data.feeStatus);
   }
 
   @Post(':id/reset-password')
   @RequirePermission(Permissions.STUDENT_EDIT)
-  resetPassword(@Param('id', ParseIntPipe) id: number) {
+  async resetPassword(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.resetPassword(id);
   }
 
   @Get(':id')
   @RequirePermission(Permissions.STUDENT_CREATE)
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.findOne(id);
   }
 
@@ -152,7 +170,8 @@ export class StudentsController {
 
   @Put(':id')
   @RequirePermission(Permissions.STUDENT_EDIT)
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: any) {
+  async update(@Req() req: any, @Param('id', ParseIntPipe) id: number, @Body() data: any) {
+    await this.resourceAccess.assertStudentAccess(id, req?.user?.orgId ?? null, req?.user?.roles);
     return this.service.update(id, data);
   }
 }

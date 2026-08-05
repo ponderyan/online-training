@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ResourceAccessService } from '../../common/services/resource-access.service.js';
 import * as bcryptjs from 'bcryptjs';
 
 // 可查询的所有学员字段
@@ -24,12 +25,13 @@ const USER_SELECT = {
 
 @Injectable()
 export class StudentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private resourceAccess: ResourceAccessService) {}
 
   async findAll(params: {
     page?: number; pageSize?: number; keyword?: string;
     groupId?: number; status?: string; source?: string; feeStatus?: string;
     allRoles?: boolean;
+    userOrgId?: number | null; userRoles?: string[];
   }) {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
@@ -52,6 +54,12 @@ export class StudentsService {
     if (params.feeStatus) where.feeStatus = params.feeStatus;
     if (params.status === 'active') where.isActive = true;
     else if (params.status === 'inactive') where.isActive = false;
+    // 组织隔离：非超管只见可见组织（自身+子孙）的学员
+    const sRoles = params.userRoles ?? [];
+    if (!sRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.orgId = { in: visIds };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -272,7 +280,7 @@ export class StudentsService {
   }
 
   /** 批量导出（CSV 简单版） */
-  async exportCsv(params: { keyword?: string; groupId?: number; feeStatus?: string }) {
+  async exportCsv(params: { keyword?: string; groupId?: number; feeStatus?: string; userOrgId?: number | null; userRoles?: string[] }) {
     const where: any = { roleAssignments: { some: { role: { code: 'STUDENT' } } } };
     if (params.keyword) {
       where.OR = [
@@ -284,6 +292,12 @@ export class StudentsService {
     }
     if (params.groupId) where.batchId = params.groupId;
     if (params.feeStatus) where.feeStatus = params.feeStatus;
+    // 组织隔离：同 findAll
+    const eRoles = params.userRoles ?? [];
+    if (!eRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
+      const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
+      where.orgId = { in: visIds };
+    }
 
     const users = await this.prisma.user.findMany({ where, orderBy: { createdAt: 'desc' } });
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
@@ -49,6 +50,8 @@ import { ExamAccessModule } from './common/services/exam-access.module.js';
 
 @Module({
   imports: [
+    // 全局限流兜底：100次/分钟/IP，可 THROTTLE_LIMIT 环境变量调节（CI 设大值避免误伤）
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: Number(process.env.THROTTLE_LIMIT ?? 100) }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
@@ -96,6 +99,8 @@ import { ExamAccessModule } from './common/services/exam-access.module.js';
     StatsModule,
   ],
   providers: [
+    // ThrottlerGuard 放最前：超限请求在鉴权前直接拒绝
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
   ],
 })
