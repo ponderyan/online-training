@@ -178,6 +178,7 @@ export default function AuditLogsPage() {
         <div className="card"><EmptyState icon="📋" title="暂无审计日志" description="所有操作变更记录都会在这里留痕" /></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead>
               <tr>
@@ -233,6 +234,7 @@ export default function AuditLogsPage() {
               ))}
             </tbody>
           </table>
+          </div>
           {expandedRow && (() => {
             const log = logs.find(l => l.id === expandedRow);
             if (!log) return null;

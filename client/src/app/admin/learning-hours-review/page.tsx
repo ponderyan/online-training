@@ -121,6 +121,7 @@ export default function LearningHoursReviewPage() {
         ) : (
           <>
             <div className="card p-0 overflow-hidden mb-4">
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr>
                   <th><input type="checkbox" checked={selected.size === pendingHours.length} onChange={selectAll} className="accent-[var(--fox)]" /></th>
@@ -141,6 +142,7 @@ export default function LearningHoursReviewPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={handleApprove} disabled={selected.size === 0}
@@ -158,6 +160,7 @@ export default function LearningHoursReviewPage() {
           <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>暂无已审核记录</p></div>
         ) : (
           <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr>
                 <th>学员</th><th>培训班</th><th>学时</th><th>结果</th><th>审核意见</th><th>审核时间</th>
@@ -183,6 +186,7 @@ export default function LearningHoursReviewPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}

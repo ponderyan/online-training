@@ -212,12 +212,12 @@ export default function StudentsPage() {
 
   return (
     <AppLayout>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
         <div>
           <h1 className="page-title flex items-center gap-2"><Users size={22} className="text-[var(--fox)]" /> 学员管理</h1>
           <p className="page-subtitle">共 {total} 名学员{totalPages > 1 && <span className="ml-2 text-xs opacity-50">第 {page}/{totalPages} 页</span>}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={async () => {
             try {
               const token = localStorage.getItem('token');

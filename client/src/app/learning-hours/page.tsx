@@ -146,6 +146,7 @@ export default function LearningHoursPage() {
           {stats?.programStats?.length > 0 && (
             <div className="card p-0 overflow-hidden mb-6">
               <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>培训班汇总</div>
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>培训班</th><th>学时</th></tr></thead>
                 <tbody>
@@ -157,6 +158,7 @@ export default function LearningHoursPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -164,6 +166,7 @@ export default function LearningHoursPage() {
           {certificates.length > 0 && (
             <div className="card p-0 overflow-hidden mb-6">
               <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学时证明</div>
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>证明编号</th><th>培训班</th><th>总学时</th><th>状态</th><th>申请时间</th><th>操作</th></tr></thead>
                 <tbody>
@@ -208,6 +211,7 @@ export default function LearningHoursPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -216,6 +220,7 @@ export default function LearningHoursPage() {
             {records.length === 0 ? (
               <EmptyState icon="🕐" title="暂无学习记录" description="观看视频或申报学时后，记录会出现在这里" size="small" />
             ) : (
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead>
                   <tr>
@@ -247,6 +252,7 @@ export default function LearningHoursPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </>

@@ -103,6 +103,7 @@ export default function AgenciesPage() {
         <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>暂无招生机构</div>
       ) : (
         <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr><th>机构名称</th><th>所属组织</th><th>简称</th><th>联系人</th><th>联系电话</th><th>学员数</th><th>招生数</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>{agencies.map((a: any) => (
@@ -128,6 +129,7 @@ export default function AgenciesPage() {
               </tr>
             ))}</tbody>
           </table>
+          </div>
         </div>
       )}
 

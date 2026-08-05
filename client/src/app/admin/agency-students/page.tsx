@@ -198,6 +198,7 @@ export default function AgencyStudentsPage() {
             <>
               {activeTab === 'students' && (
                 <div className="card p-0 overflow-hidden">
+                  <div className="overflow-x-auto">
                   <table className="list-table">
                     <thead><tr><th>姓名</th><th>用户名</th><th>手机号</th><th>邮箱</th><th>学号</th><th>操作</th></tr></thead>
                     <tbody>
@@ -218,11 +219,13 @@ export default function AgencyStudentsPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
               {activeTab === 'progress' && (
                 <div className="card p-0 overflow-hidden">
+                  <div className="overflow-x-auto">
                   <table className="list-table">
                     <thead><tr><th>姓名</th><th>学号</th><th>总学时</th><th>报名培训班</th><th>证书数</th></tr></thead>
                     <tbody>
@@ -239,6 +242,7 @@ export default function AgencyStudentsPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
@@ -261,6 +265,7 @@ export default function AgencyStudentsPage() {
                     <div className="card p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无机构成员</div>
                   ) : (
                     <div className="card p-0 overflow-hidden">
+                      <div className="overflow-x-auto">
                       <table className="list-table">
                         <thead><tr><th>姓名</th><th>用户名</th><th>手机号</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
                         <tbody>
@@ -283,6 +288,7 @@ export default function AgencyStudentsPage() {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -217,7 +217,7 @@ export default function LoginPage() {
           </div>
 
           {/* 登录卡片 */}
-          <div className="bg-[var(--paper-bright)] border border-[var(--ink-100)] rounded-2xl p-10 shadow-[0_4px_24px_rgba(26,23,18,0.06),0_1px_4px_rgba(26,23,18,0.04)]">
+          <div className="bg-[var(--paper-bright)] border border-[var(--ink-100)] rounded-2xl p-6 sm:p-10 shadow-[0_4px_24px_rgba(26,23,18,0.06),0_1px_4px_rgba(26,23,18,0.04)]">
             <div className="mb-8">
               <h2 className="font-serif text-[22px] font-bold text-[var(--ink-800)] mb-1.5">欢迎回来</h2>
               <p className="text-[13px] text-[var(--ink-300)]">请登录您的账号</p>

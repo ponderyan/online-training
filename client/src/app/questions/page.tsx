@@ -199,7 +199,7 @@ export default function QuestionsPage() {
   return (
     <AppLayout>
       {/* ── 页面标题 ── */}
-      <div className="flex items-start justify-between mb-7">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-7">
         <div>
           <h1 className="page-title flex items-center gap-2"><Pencil size={22} className="text-[var(--fox)]" /> 题库管理</h1>
           <p className="page-subtitle">共 {total} 道试题 · 6 种题型 · {subjects.length} 个科目</p>

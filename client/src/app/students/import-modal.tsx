@@ -115,6 +115,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
         {/* Preview */}
         {preview.length > 0 && (
           <div className="mb-4 overflow-x-auto">
+            <div className="overflow-x-auto">
             <table className="list-table text-xs">
               <thead><tr>{HEADERS.map(h => <th key={h}>{h}</th>)}</tr></thead>
               <tbody>
@@ -125,6 +126,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
                 ))}
               </tbody>
             </table>
+            </div>
             {file && <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>已解析 {preview.length} 行（前10行预览）</p>}
           </div>
         )}

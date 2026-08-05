@@ -6,7 +6,7 @@ import Sidebar from './sidebar';
 import ErrorBoundary from './error-boundary';
 import NotificationBell from './notification-bell';
 import { usePathname } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Menu, X } from 'lucide-react';
 import { GlobalSearch } from './global-search';
 
 export default function AppLayout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
@@ -14,6 +14,10 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false); // 移动端侧栏抽屉
+
+  // 路由切换后自动收起移动端抽屉
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   // 面包屑路径映射
   const BREADCRUMB_MAP: Record<string, string> = {
@@ -90,14 +94,37 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar user={user} />
+      {/* 桌面端侧栏 */}
+      <div className="hidden md:block">
+        <Sidebar user={user} />
+      </div>
+      {/* 移动端抽屉（D1：侧栏抽屉化） */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-[rgba(26,23,18,0.45)]" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute left-0 top-0 h-full max-w-[280px] w-[80%] shadow-xl">
+            <Sidebar user={user} forceExpanded />
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="absolute top-4 -right-11 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--paper-bright)] text-[var(--ink-500)] border border-[var(--ink-100)] cursor-pointer"
+              aria-label="关闭菜单"
+            ><X size={18} /></button>
+          </div>
+        </div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top header bar */}
-        <header className="flex items-center justify-between px-6 py-2.5" style={{
+        <header className="flex items-center justify-between px-3 sm:px-6 py-2.5" style={{
           background: 'var(--topbar-bg)',
           borderBottom: '1px solid var(--topbar-border)',
           minHeight: 48,
         }}>
+          {/* 移动端汉堡按钮 */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-[var(--ink-500)] hover:bg-[var(--paper-dark)] cursor-pointer border-none bg-transparent"
+            aria-label="打开菜单"
+          ><Menu size={20} /></button>
           {/* 面包屑 */}
           <nav className="flex items-center gap-1.5 text-xs text-[var(--ink-400)]">
             <span className="text-[var(--ink-300)]">FoxLearn</span>
@@ -105,9 +132,9 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
             <span className="text-[var(--ink-700)] font-medium">{currentLabel}</span>
           </nav>
 
-          {/* 右侧：搜索 + 通知 */}
+          {/* 右侧：搜索 + 通知（移动端隐藏全局搜索，避免挤压） */}
           <div className="flex items-center gap-3">
-            <GlobalSearch />
+            <div className="hidden sm:block"><GlobalSearch /></div>
             <NotificationBell user={user} />
           </div>
         </header>
@@ -117,7 +144,7 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
             <ErrorBoundary>{children}</ErrorBoundary>
           </main>
         ) : (
-          <main className="main-content flex-1 overflow-y-auto min-h-0 p-6 md:p-8 xl:p-10">
+          <main className="main-content flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 md:p-8 xl:p-10">
             <div className="max-w-7xl mx-auto">
               <ErrorBoundary>{children}</ErrorBoundary>
             </div>

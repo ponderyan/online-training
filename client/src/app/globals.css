@@ -361,6 +361,10 @@
 
   /*── 表格 ──*/
   .list-table { width: 100%; border-collapse: collapse; }
+  /* D4 移动端：表格保持可读列宽，由外层 overflow-x-auto 横滚 */
+  @media (max-width: 640px) {
+    .list-table { min-width: 560px; }
+  }
   .list-table th {
     text-align: left; font-size: 0.72rem; font-weight: 600;
     color: var(--color-ink-400); padding: 10px 14px;

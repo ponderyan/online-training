@@ -113,6 +113,7 @@ export default function EvaluationsPage() {
 
       {/* 评价列表 */}
       <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="list-table">
           <thead>
             <tr>
@@ -171,6 +172,7 @@ export default function EvaluationsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {!loading && evaluations.length > 0 && (

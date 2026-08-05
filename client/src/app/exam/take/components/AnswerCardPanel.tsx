@@ -33,7 +33,7 @@ export default function AnswerCardPanel({
   })();
 
   return (
-    <div className="w-[230px] flex-shrink-0 overflow-y-auto">
+    <div className="w-full lg:w-[230px] flex-shrink-0 overflow-y-auto">
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-semibold font-serif text-[var(--ink-700)]">答题卡</p>

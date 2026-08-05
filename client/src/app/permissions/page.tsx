@@ -507,6 +507,7 @@ export default function PermissionsPage() {
                     <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</div>
                   ) : (
                     <div className="card overflow-hidden flex-1">
+                      <div className="overflow-x-auto">
                       <table className="list-table">
                         <thead><tr><th>用户名</th><th>姓名</th><th>机构</th><th>分配时间</th><th>操作</th></tr></thead>
                         <tbody>
@@ -529,6 +530,7 @@ export default function PermissionsPage() {
                           )}
                         </tbody>
                       </table>
+                      </div>
                     </div>
                   )}
                 </div>

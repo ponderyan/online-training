@@ -74,6 +74,8 @@ export default function ExamTake() {
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showAnswerCard, setShowAnswerCard] = useState(false); // 移动端答题卡抽屉
+
   const [alertModal, setAlertModal] = useState<{type: 'FORCE_END'|'TAB_WARN'|'TIME_REMINDER'; message: string} | null>(null);
   const alertConfirmRef = useRef<(() => void) | null>(null);
   const [cardFilter, setCardFilter] = useState<'all' | 'unanswered' | 'marked'>('all');
@@ -393,6 +395,7 @@ export default function ExamTake() {
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
       `}</style>
 
       {/* 监考消息 */}
@@ -439,12 +442,39 @@ export default function ExamTake() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex max-w-[1100px] mx-auto w-full px-6 py-5 gap-5 overflow-hidden">
-        <AnswerCardPanel
-          questions={exam.questions} answers={answers} markedQuestions={markedQuestions}
-          currentQ={currentQ} cardFilter={cardFilter} onFilterChange={setCardFilter}
-          onGoToQuestion={goToQuestion} typeNames={TYPE_NAMES}
-        />
+      <div className="flex-1 flex max-w-[1100px] mx-auto w-full px-3 sm:px-6 py-3 sm:py-5 gap-3 sm:gap-5 overflow-hidden">
+        {/* 桌面答题卡（移动端收入底部抽屉，见下） */}
+        <div className="hidden lg:block">
+          <AnswerCardPanel
+            questions={exam.questions} answers={answers} markedQuestions={markedQuestions}
+            currentQ={currentQ} cardFilter={cardFilter} onFilterChange={setCardFilter}
+            onGoToQuestion={goToQuestion} typeNames={TYPE_NAMES}
+          />
+        </div>
+        {showAnswerCard && (
+          <div className="lg:hidden fixed inset-0 z-[60]">
+            <div className="absolute inset-0 bg-[rgba(26,23,18,0.45)]" onClick={() => setShowAnswerCard(false)} />
+            <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-[var(--paper-bright)] rounded-t-2xl border-t border-[var(--ink-100)] p-4 pb-6 overflow-y-auto" style={{ animation: 'slideUp 0.25s ease-out' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold font-serif text-[var(--ink-700)]">答题卡</span>
+                <button onClick={() => setShowAnswerCard(false)} className="text-xs px-3 py-1.5 rounded-lg cursor-pointer bg-[var(--paper-dark)] text-[var(--ink-500)] border-none">收起</button>
+              </div>
+              <AnswerCardPanel
+                questions={exam.questions} answers={answers} markedQuestions={markedQuestions}
+                currentQ={currentQ} cardFilter={cardFilter} onFilterChange={setCardFilter}
+                onGoToQuestion={(i) => { goToQuestion(i); setShowAnswerCard(false); }} typeNames={TYPE_NAMES}
+              />
+            </div>
+          </div>
+        )}
+        {/* 移动端浮动答题卡按钮 */}
+        <button
+          onClick={() => setShowAnswerCard(true)}
+          className="lg:hidden fixed bottom-5 right-4 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[var(--ink-900)] text-white text-sm shadow-lg cursor-pointer border-none"
+        >
+          <span>🗂️</span>
+          <span className="tabular-nums">{answeredCount}/{totalQuestions}</span>
+        </button>
 
         {/* Question area */}
         <div className="flex-1 flex flex-col overflow-hidden">

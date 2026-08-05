@@ -133,6 +133,7 @@ export default function LearningHourCertificates() {
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead>
               <tr>
@@ -194,6 +195,7 @@ export default function LearningHourCertificates() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

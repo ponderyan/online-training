@@ -113,6 +113,7 @@ export default function LearningHourTypesPage() {
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead>
               <tr>
@@ -169,6 +170,7 @@ export default function LearningHourTypesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

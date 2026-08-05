@@ -59,6 +59,7 @@ export default function AdminExamResultsPage() {
 
           {/* Student list */}
           <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr>
                 <th>姓名</th><th>成绩</th><th>结果</th><th>评分状态</th><th>申诉</th><th>操作</th>
@@ -76,6 +77,7 @@ export default function AdminExamResultsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}

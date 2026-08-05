@@ -54,6 +54,12 @@ export default defineConfig({
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
+      name: 'mobile-smoke',
+      testMatch: /mobile-smoke\.spec\.ts/,
+      dependencies: ['setup-admin'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
+    {
       name: 'certificate-hours',
       testMatch: /certificate-hours\.spec\.ts/,
       dependencies: ['setup-admin', 'setup-student'],

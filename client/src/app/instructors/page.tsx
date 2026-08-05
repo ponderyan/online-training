@@ -88,6 +88,7 @@ export default function InstructorsPage() {
         <div className="card"><EmptyState icon="👨‍🏫" title="暂无讲师" description="添加讲师后，可分派阅卷和授课" /></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead>
               <tr>
@@ -132,6 +133,7 @@ export default function InstructorsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AppLayout>

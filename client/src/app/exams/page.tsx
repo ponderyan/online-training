@@ -58,7 +58,7 @@ export default function ExamList() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="page-title flex items-center gap-2"><ClipboardList size={22} className="text-[var(--fox)]" /> 考试管理</h1>
           <p className="page-subtitle">共 {total} 场 · 创建和管理在线考试</p>

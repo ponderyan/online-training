@@ -215,6 +215,7 @@ export default function AccountsPage() {
         <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
       ) : (
         <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead>
               <tr>
@@ -273,6 +274,7 @@ export default function AccountsPage() {
               )}
             </tbody>
           </table>
+          </div>
           {/* Pagination */}
           {total > 50 && (
             <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>

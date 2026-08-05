@@ -120,6 +120,7 @@ export default function AiConfigsPage() {
         <div className="card p-12 text-center"><p className="text-4xl mb-4">🤖</p><p style={{ color: 'var(--ink-300)' }}>暂无 AI 配置</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr>
               <th>名称</th><th>Provider</th><th>模型版本</th><th>API 地址</th><th>API Key</th><th>状态</th><th>操作</th>
@@ -147,6 +148,7 @@ export default function AiConfigsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

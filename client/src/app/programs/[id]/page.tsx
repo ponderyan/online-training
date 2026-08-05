@@ -328,6 +328,7 @@ export default function ProgramDetailPage() {
             <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无学员报名</div>
           ) : (
             <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr>
                   <th>序号</th>
@@ -365,6 +366,7 @@ export default function ProgramDetailPage() {
                   );
                 })}</tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
@@ -389,6 +391,7 @@ export default function ProgramDetailPage() {
             {schedules.length === 0 ? (
               <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无排课记录</div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead>
                   <tr>
@@ -418,6 +421,7 @@ export default function ProgramDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -441,6 +445,7 @@ export default function ProgramDetailPage() {
             </div>
           )}
           <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr><th>学员</th><th>时间</th><th>内容</th><th>讲师</th><th>总体</th><th>评语</th></tr></thead>
               <tbody>
@@ -457,6 +462,7 @@ export default function ProgramDetailPage() {
                 {evals.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无评价</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -529,6 +535,7 @@ export default function ProgramDetailPage() {
             ) : attendanceRecords.length === 0 ? (
               <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无出勤记录，请先添加学员和排课</div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>序号</th><th>姓名</th><th>推荐单位</th><th>总天数</th><th>实际出勤</th><th>出勤率</th><th>操作</th></tr></thead>
                 <tbody>
@@ -574,6 +581,7 @@ export default function ProgramDetailPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -609,6 +617,7 @@ export default function ProgramDetailPage() {
             ) : evidences.length === 0 ? (
               <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无证据文件</div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>文件名</th><th>类型</th><th>上传者</th><th>上传时间</th><th>备注</th><th>操作</th></tr></thead>
                 <tbody>
@@ -633,6 +642,7 @@ export default function ProgramDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 

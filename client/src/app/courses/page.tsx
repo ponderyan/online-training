@@ -109,6 +109,7 @@ export default function CoursesPage() {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead>
                 <tr>
@@ -172,6 +173,7 @@ export default function CoursesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

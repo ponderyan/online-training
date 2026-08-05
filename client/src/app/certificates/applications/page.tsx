@@ -79,6 +79,7 @@ export default function CertificateApplications() {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <table className="list-table">
             <thead>
               <tr>
@@ -118,6 +119,7 @@ export default function CertificateApplications() {
               )}
             </tbody>
           </table>
+          </div>
           </div>
         </div>
       )}

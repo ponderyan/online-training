@@ -49,7 +49,7 @@ export default function PracticePage() {
 
         {/* 统计数据 — 四格方块 */}
         {loading ? (
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
                 <SkeletonBar width="50%" height={26} />
@@ -59,7 +59,7 @@ export default function PracticePage() {
             ))}
           </div>
         ) : stats && (
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <div className="bg-[var(--paper-bright)] rounded-xl p-3.5 shadow-sm">
               <div className="text-2xl font-bold text-[var(--ink-700)]">{stats.total}</div>
               <div className="text-xs text-[var(--ink-300)]">总练习</div>

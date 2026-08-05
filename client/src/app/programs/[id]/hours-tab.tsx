@@ -35,6 +35,7 @@ export default function HoursTab({ programId }: { programId: string }) {
   return (
     <div className="card p-0 overflow-hidden">
       <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学员学时统计</div>
+      <div className="overflow-x-auto">
       <table className="list-table">
         <thead><tr><th>序号</th><th>姓名</th><th>学号</th><th>🎬 视频</th><th>🏢 线下</th><th>⏳ 待审核</th><th>✅ 已通过</th><th>❌ 已驳回</th><th>合计</th></tr></thead>
         <tbody>
@@ -52,6 +53,7 @@ export default function HoursTab({ programId }: { programId: string }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

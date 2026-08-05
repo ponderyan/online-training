@@ -341,6 +341,7 @@ export default function GradingDetail() {
             })()}
           </div>
           <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr><th>学员</th><th>原因</th><th>说明</th><th>原分</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
@@ -365,6 +366,7 @@ export default function GradingDetail() {
                 {appeals.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无申诉记录</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
           {appealReviewing && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAppealReviewing(null)}>
@@ -639,6 +641,7 @@ export default function GradingDetail() {
             <div className="mt-6">
               <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-700)' }}>🔍 复核管理</h3>
               <div className="card overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="list-table">
                   <thead><tr><th>学员</th><th>原因</th><th>原分</th><th>状态</th><th>操作</th></tr></thead>
                   <tbody>
@@ -662,6 +665,7 @@ export default function GradingDetail() {
                     {reviews.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>暂无复核记录</td></tr>}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}

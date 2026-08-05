@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Noto_Serif_SC } from 'next/font/google';
 import './globals.css';
 import { SiteSettingsProvider } from '@/hooks/use-site-settings';
@@ -12,6 +12,13 @@ const notoSerifSC = Noto_Serif_SC({
   variable: '--font-serif-sc',
   display: 'swap',
 });
+
+// 移动端视口：D1 基建——没有它所有响应式断点都失效（桌面宽度渲染）
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: '狐学 · 智能在线培训考试平台',

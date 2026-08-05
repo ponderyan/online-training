@@ -89,6 +89,7 @@ export default function FilingPage() {
         <div className="card p-12 text-center"><p className="text-4xl mb-4">🏢</p><p style={{ color: 'var(--ink-300)' }}>暂无备案记录</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr><th>培训班</th><th>机构名称</th><th>联系人</th><th>状态</th><th>提交时间</th><th>操作</th></tr></thead>
             <tbody>
@@ -108,6 +109,7 @@ export default function FilingPage() {
               ))}
             </tbody>
           </table>
+          </div>
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>

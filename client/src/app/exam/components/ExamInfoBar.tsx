@@ -79,7 +79,7 @@ export default function ExamInfoBar({
   return (
     <div className="flex-shrink-0 text-white bg-gradient-to-r from-[var(--ink-900)] to-[var(--ink-800)]">
       {/* 第一行：考生信息 / 考试名 / 计时+交卷 */}
-      <div className="flex items-center justify-between h-16 px-6">
+      <div className="flex items-center justify-between h-14 md:h-16 px-3 sm:px-6">
         {/* 左区：考生信息 */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[var(--fox-glow-strong)] text-[var(--fox-light)]">
@@ -91,7 +91,7 @@ export default function ExamInfoBar({
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{studentDisplayName}</div>
-            {studentNumber && <div className="text-xs text-[var(--ink-300)]">{studentNumber}</div>}
+            {studentNumber && <div className="text-xs text-[var(--ink-300)] hidden sm:block">{studentNumber}</div>}
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export default function ExamInfoBar({
           <div className="flex items-center gap-2">
             <span className="text-base">🕐</span>
             <div className="flex flex-col items-end leading-none">
-              <span className={`font-serif text-2xl font-bold tabular-nums tracking-wide ${
+              <span className={`font-serif text-xl md:text-2xl font-bold tabular-nums tracking-wide ${
                 urgent ? 'text-[var(--verm-light)] animate-pulse'
                 : warning ? 'text-[var(--verm-light)]'
                 : 'text-white'
@@ -125,18 +125,18 @@ export default function ExamInfoBar({
           <button onClick={onShowSubmitModal}
             disabled={!canSubmit}
             title={submitTooltip}
-            className={`text-sm font-semibold px-5 py-2 rounded-lg border-none transition-all ${
+            className={`text-sm font-semibold px-3 sm:px-5 py-2 rounded-lg border-none transition-all whitespace-nowrap ${
               canSubmit
                 ? 'cursor-pointer text-white bg-[var(--fox)] hover:bg-[var(--fox-dark)] hover:shadow-[0_4px_12px_var(--fox-glow)]'
                 : 'cursor-not-allowed text-[var(--ink-300)] bg-[rgba(255,255,255,0.08)]'
             }`}>
-            {canSubmit ? '交卷' : `交卷（${earlyExitMinutes}分钟后可用）`}
+            {canSubmit ? '交卷' : <><span className="sm:hidden">交卷</span><span className="hidden sm:inline">交卷（{earlyExitMinutes}分钟后可用）</span></>}
           </button>
         </div>
       </div>
 
       {/* 第二行：计时进度条 + 题目信息 */}
-      <div className="px-6 pb-2.5 flex items-center gap-4">
+      <div className="px-3 sm:px-6 pb-2.5 flex items-center gap-2 sm:gap-4 overflow-x-auto">
         {/* 计时进度条 */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-28 h-1.5 rounded-full overflow-hidden bg-[rgba(255,255,255,0.12)]">

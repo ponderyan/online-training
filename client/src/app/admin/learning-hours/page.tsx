@@ -114,6 +114,7 @@ export default function AdminLearningHoursPage() {
         <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>暂无学时记录</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr>
               <th>学员</th><th>培训班</th><th>来源</th><th>学时类型</th><th>学时</th><th>状态</th><th>审核信息</th><th>记录时间</th>
@@ -147,6 +148,7 @@ export default function AdminLearningHoursPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AppLayout>

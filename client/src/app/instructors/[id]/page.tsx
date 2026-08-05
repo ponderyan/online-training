@@ -89,6 +89,7 @@ export default function InstructorDetail() {
       {stats?.schedules?.length > 0 && (
         <div className="card p-0 overflow-hidden">
           <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-100)' }}>📅 授课记录</div>
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr><th>课程</th><th>培训班</th><th>时间</th><th>课时</th></tr></thead>
             <tbody>
@@ -104,6 +105,7 @@ export default function InstructorDetail() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AppLayout>

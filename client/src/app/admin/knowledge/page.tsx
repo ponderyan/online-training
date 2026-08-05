@@ -152,6 +152,7 @@ export default function KnowledgePage() {
             </div>
           ) : (
             <div className="card p-0 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr>
                   <th>文档名称</th><th>关联科目</th><th>知识块</th><th>版本</th><th>状态</th><th>上传时间</th><th>操作</th>
@@ -178,6 +179,7 @@ export default function KnowledgePage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </>

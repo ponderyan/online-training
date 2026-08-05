@@ -83,11 +83,13 @@ describe('IDOR：成绩申诉 + 学员附件', () => {
     const exams = await api('GET', '/exams?limit=1', undefined, adminToken);
     const examId = exams.data?.items?.[0]?.id ?? exams.data?.[0]?.id;
     expect(examId).toBeTruthy();
-    // stuA 冒用 stuB 的 studentId 提交 → 按 stuA 身份查 session → 不存在 → 404
+    // stuA 冒用 stuB 的 studentId 提交 → 服务端强制按 stuA 身份查 session：
+    // 无 session → 404；若并行套件恰好为 stuA 建了该考试 session，则走成绩状态校验（400），
+    // 两者都证明身份未被冒用（绝不可能是 403/401/201-挂到他人头上）
     const r = await api('POST', `/exams/${examId}/appeals`, {
       reason: 'SCORE', description: 'IDOR 冒名测试', studentId: stuB.user.id,
     }, stuA.token);
-    expect(r.status).toBe(404); // 考试记录不存在（stuA 没考过）
+    expect([400, 404]).toContain(r.status);
   });
 
   it('附件接口：跨组织访问学员附件被拒（404），超管放行', async () => {

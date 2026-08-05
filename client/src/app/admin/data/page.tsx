@@ -86,6 +86,7 @@ export default function DataArchivePage() {
           {exportLogs.length === 0 ? (
             <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无导出记录</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr><th>时间</th><th>模块</th><th>导出条数</th><th>操作人</th></tr></thead>
               <tbody>
@@ -99,6 +100,7 @@ export default function DataArchivePage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

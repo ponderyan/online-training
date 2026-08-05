@@ -39,6 +39,7 @@ export default function QuestionTable({
 }: Props) {
   return (
     <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
       <table className="list-table">
         <thead>
           <tr>
@@ -162,6 +163,7 @@ export default function QuestionTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

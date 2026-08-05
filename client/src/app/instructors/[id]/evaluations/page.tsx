@@ -45,6 +45,7 @@ export default function InstructorEvaluationsPage() {
           </div>
 
           <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="list-table">
               <thead><tr><th>学员</th><th>教学评分</th><th>总体评分</th><th>评语</th><th>时间</th></tr></thead>
               <tbody>
@@ -60,6 +61,7 @@ export default function InstructorEvaluationsPage() {
                 {(!data.evaluations || data.evaluations.length === 0) && <tr><td colSpan={5} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无评价</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       ) : (

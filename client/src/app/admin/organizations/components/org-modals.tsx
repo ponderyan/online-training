@@ -104,6 +104,7 @@ export function ImportModal({ open, importRows, importing, importResult, onClose
             <div>
               <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>预览（前 5 行，共 {importRows.length} 行）</div>
               <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--ink-100)' }}>
+                <div className="overflow-x-auto">
                 <table className="list-table">
                   <thead><tr><th>组织名称</th><th>上级组织</th><th>排序</th></tr></thead>
                   <tbody>
@@ -112,6 +113,7 @@ export function ImportModal({ open, importRows, importing, importResult, onClose
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}

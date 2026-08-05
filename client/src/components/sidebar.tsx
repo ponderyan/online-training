@@ -174,7 +174,7 @@ const AGENCY_ADMIN_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export default function Sidebar({ user }: { user: any }) {
+export default function Sidebar({ user, forceExpanded = false }: { user: any; forceExpanded?: boolean }) {
   const pathname = usePathname();
   const settings = useSiteSettings();
   const router = useRouter();
@@ -190,6 +190,8 @@ export default function Sidebar({ user }: { user: any }) {
       return !prev;
     });
   };
+  // 移动端抽屉强制展开（不受桌面端折叠偏好影响）
+  const effCollapsed = forceExpanded ? false : collapsed;
 
   useEffect(() => {
     // 非 SUPER_ADMIN 才需要检查开关；SUPER_ADMIN 始终看到题库
@@ -244,12 +246,12 @@ export default function Sidebar({ user }: { user: any }) {
     .filter(g => g.items.length > 0);
 
   return (
-    <aside className={`${collapsed ? 'w-[64px]' : 'w-[240px]'} flex-shrink-0 flex flex-col h-screen sticky top-0 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] transition-all duration-200`}>
+    <aside className={`${effCollapsed ? 'w-[64px]' : 'w-[240px]'} flex-shrink-0 flex flex-col h-screen sticky top-0 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] transition-all duration-200`}>
       {/* Logo */}
-      <div className={`${collapsed ? 'px-3' : 'px-5'} py-6 border-b border-[var(--sidebar-border)]`}>
+      <div className={`${effCollapsed ? 'px-3' : 'px-5'} py-6 border-b border-[var(--sidebar-border)]`}>
         <div className="flex items-center gap-3">
-          <FoxLogo size={collapsed ? 30 : 36} />
-          {!collapsed && (
+          <FoxLogo size={effCollapsed ? 30 : 36} />
+          {!effCollapsed && (
             <div className="font-serif font-bold leading-tight tracking-wider text-[var(--sidebar-brand-text)]">
               {settings?.siteName || 'FoxLearn'}
             </div>
@@ -261,7 +263,7 @@ export default function Sidebar({ user }: { user: any }) {
       <nav className="sidebar-nav flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {visibleGroups.map(group => (
           <div key={group.title}>
-            {!isStudent && !collapsed && (
+            {!isStudent && !effCollapsed && (
               <div className="px-4 py-2 text-[10px] uppercase tracking-wider font-semibold text-[var(--sidebar-group)]">
                 {group.title}
               </div>
@@ -277,15 +279,15 @@ export default function Sidebar({ user }: { user: any }) {
                 )
               );
               return (
-                <Link key={item.path + item.label} href={item.path} title={collapsed ? item.label : undefined}
-                  className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-2.5 rounded-lg cursor-pointer text-sm transition-all no-underline ${
+                <Link key={item.path + item.label} href={item.path} title={effCollapsed ? item.label : undefined}
+                  className={`flex items-center ${effCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-2.5 rounded-lg cursor-pointer text-sm transition-all no-underline ${
                     isActive
                       ? 'bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)]'
                       : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-active-text)]'
                   }`}>
                   <span className="flex-shrink-0">{(() => { const Icon = ICON_MAP[item.icon] || ClipboardList; return <Icon size={18} className="opacity-80" />; })()}</span>
-                  {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-                  {isActive && !collapsed && (
+                  {!effCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+                  {isActive && !effCollapsed && (
                     <span className="w-1 h-4 rounded-full flex-shrink-0 bg-[var(--fox)]" />
                   )}
                 </Link>
@@ -297,13 +299,18 @@ export default function Sidebar({ user }: { user: any }) {
 
       {/* Collapse toggle */}
       <div className="px-3 py-2 border-t border-[rgba(196,188,176,0.08)]">
+
+        {!forceExpanded && (
+
         <button onClick={toggleCollapsed}
           className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] text-[var(--sidebar-group)] hover:text-[var(--sidebar-active-text)] hover:bg-[var(--sidebar-hover-bg)] transition-colors bg-transparent border-none cursor-pointer">
-          {collapsed ? '»' : '« 收起'}
+          {effCollapsed ? '»' : '« 收起'}
         </button>
+
+        )}
       </div>
       {/* Theme switcher */}
-      {!collapsed && (
+      {!effCollapsed && (
         <div className="px-4 py-1.5 border-t border-[var(--sidebar-border)]">
           <button
             onClick={() => { const ids = THEMES.map(t=>t.id); const next = ids[(ids.indexOf(theme)+1)%ids.length]; setTheme(next); }}
@@ -316,12 +323,12 @@ export default function Sidebar({ user }: { user: any }) {
         </div>
       )}
       {/* User info + logout */}
-      <div className={`${collapsed ? 'px-2' : 'px-5'} py-4 border-t border-[rgba(196,188,176,0.08)]`}>
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+      <div className={`${effCollapsed ? 'px-2' : 'px-5'} py-4 border-t border-[rgba(196,188,176,0.08)]`}>
+        <div className={`flex items-center ${effCollapsed ? 'justify-center' : 'gap-3'}`}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[var(--fox-glow-strong)] text-[var(--fox-light)]">
             {user?.displayName?.[0] || '🦊'}
           </div>
-          {!collapsed && (
+          {!effCollapsed && (
             <>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-[var(--sidebar-text)] truncate">{user?.displayName || ''}</div>

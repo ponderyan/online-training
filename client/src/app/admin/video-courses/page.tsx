@@ -244,6 +244,7 @@ export default function VideoCoursesPage() {
         <div className="card p-12 text-center"><p className="text-4xl mb-4">🎬</p><p style={{ color: 'var(--ink-300)' }}>暂无视频课程</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr>
               <th>视频</th><th>类型</th><th>讲师</th><th>时长</th><th>发布状态</th><th>视频状态</th><th>关联课程</th><th>操作</th>
@@ -342,6 +343,7 @@ export default function VideoCoursesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

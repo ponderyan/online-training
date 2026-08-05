@@ -216,6 +216,7 @@ export default function AssignPage() {
             </span>
           )}
         </div>
+        <div className="overflow-x-auto">
         <table className="list-table">
           <thead>
             <tr>
@@ -251,6 +252,7 @@ export default function AssignPage() {
             )}
           </tbody>
         </table>
+        </div>
         {assignments.length > 0 && (
           <div className="px-4 py-3 flex gap-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
             {[...new Set(assignments.map((a: any) => a.graderId))].map(gid => {
