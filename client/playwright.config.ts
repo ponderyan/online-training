@@ -32,13 +32,13 @@ export default defineConfig({
     {
       name: 'exam-flow',
       testMatch: /exam-flow\.spec\.ts/,
-      dependencies: ['setup-admin', 'setup-student'],
+      dependencies: ['setup-admin', 'setup-student', 'setup-exam-officer'],
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
       name: 'grading-flow',
       testMatch: /grading-flow\.spec\.ts/,
-      dependencies: ['setup-admin', 'setup-student'],
+      dependencies: ['setup-admin', 'setup-student', 'setup-lecturer'],
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
