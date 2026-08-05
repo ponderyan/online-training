@@ -15,7 +15,8 @@ let orgAId: number;       // branch_admin 的 orgId（从登录响应动态获�
 let orgBId: number;
 
 let stuOrgAId: number;    // 动态创建的机构A学员
-let stuOrgBId: number;    // 动态创建的机构B学员
+let stuOrgBId: number;
+let bIsChildOfA = false; // orgB 是否为 orgA 的子组织（动态判定，兼容不同环境组织树）    // 动态创建的机构B学员
 const suffix = Date.now();
 const usernameOrg5 = `isotest_a_${suffix}`;
 const usernameOrg6 = `isotest_b_${suffix}`;
@@ -71,33 +72,56 @@ describe('组织隔离', () => {
     });
     expect([200, 201]).toContain(r2.status);
     stuOrgBId = r2.data.id;
+
+    // 动态判定 orgB 是否为 orgA 子孙（本地/CI 组织树不同，断言据此分支）。
+    // 组织接口返回扁平列表，用 path 前缀判定（B.path 以 A.path 开头即为子孙）；
+    // path 缺失的环境回退为逐层 parentId 上溯。
+    const orgList = await api('GET', '/organizations', undefined, adminToken);
+    const orgs: any[] = Array.isArray(orgList.data) ? orgList.data : (orgList.data?.items || []);
+    const orgAInfo = orgs.find((o: any) => o.id === orgAId);
+    const orgBInfo = orgs.find((o: any) => o.id === orgBId);
+    if (orgAInfo?.path && orgBInfo?.path) {
+      bIsChildOfA = orgBInfo.path.startsWith(orgAInfo.path) && orgBInfo.id !== orgAInfo.id;
+    } else {
+      // path 缺失：沿 parentId 上溯
+      let cur = orgBInfo, guard = 0;
+      while (cur?.parentId && guard++ < 20) {
+        if (cur.parentId === orgAId) { bIsChildOfA = true; break; }
+        cur = orgs.find((o: any) => o.id === cur.parentId);
+      }
+    }
   });
 
   // 隔离规则（组织树语义）：父组织可见自身+子孙；子组织只见自身，不可见父/兄弟。
-  // 本地/CI 账号 orgB(6) 是 orgA(5) 的子组织，因此 A 可见 B 的学员、B 不可见 A 的学员。
-  it('学员列表隔离：机构A（父）可见本组织+子组织学员', async () => {
+  // orgB 与 orgA 的层级关系因环境而异（本地 orgB 是 orgA 子组织，CI 平级），
+  // beforeAll 动态判定 bIsChildOfA，断言据此分支。
+  it('学员列表隔离：机构A 可见本组织学员；对机构B 学员按树语义可见/不可见', async () => {
     const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgAToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
     expect(ids).toContain(stuOrgAId);
-    expect(ids).toContain(stuOrgBId); // orgB 是 orgA 子组织，父可见子
+    if (bIsChildOfA) {
+      expect(ids).toContain(stuOrgBId); // 父可见子
+    } else {
+      expect(ids).not.toContain(stuOrgBId); // 平级互不可见
+    }
   });
 
-  it('学员列表隔离：机构B（子）只见本组织，看不到父组织学员', async () => {
+  it('学员列表隔离：机构B 只见本组织，看不到机构A 学员', async () => {
     const { status, data } = await api('GET', '/students?pageSize=100', undefined, orgBToken);
     expect(status).toBe(200);
     const ids = (data.items || []).map((s: any) => s.id);
     expect(ids).toContain(stuOrgBId);
-    expect(ids).not.toContain(stuOrgAId); // ★ 子不可见父
+    expect(ids).not.toContain(stuOrgAId); // 无论 B 是否为 A 的子，子不可见父/平级互不可见
   });
 
-  it('跨组织按 ID 直读学员详情：子读父被拒（防 IDOR）', async () => {
-    // 机构B（子）读机构A（父）学员 → 404（不泄露存在性）
+  it('跨组织按 ID 直读学员详情被拒（防 IDOR）', async () => {
+    // B 读 A 的学员 → 一律 404（子不可见父 / 平级互不可见）
     const r2 = await api('GET', `/students/${stuOrgAId}`, undefined, orgBToken);
     expect(r2.status).toBe(404);
-    // 父读子学员 → 200（树语义允许）
+    // A 读 B 的学员 → 按树语义：父读子 200，平级 404
     const r1 = await api('GET', `/students/${stuOrgBId}`, undefined, orgAToken);
-    expect(r1.status).toBe(200);
+    expect(r1.status).toBe(bIsChildOfA ? 200 : 404);
   });
 
   it('题库平台统一模式：机构管理员无法自建题库/组卷（无机构私有数据可泄露）', async () => {
