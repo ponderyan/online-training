@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, ParseIntPipe, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, ParseIntPipe, Query, Req, UnauthorizedException } from '@nestjs/common';
 import { ScoreAppealService } from './score-appeal.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -15,13 +15,16 @@ export class ScoreAppealController {
     private examAccess: ExamAccessService,
   ) {}
 
-  /** 学员提交申诉 */
+  /** 学员提交申诉（IDOR 修复：studentId 强制取 token 身份，不信任前端传参） */
   @Post(':examId/appeals')
   async create(
     @Param('examId', ParseIntPipe) examId: number,
-    @Body() data: { reason: string; description: string; studentId: number },
+    @Body() data: { reason: string; description: string; studentId?: number },
+    @Req() req: any,
   ) {
-    const result = await this.service.create(examId, data.studentId, data);
+    const studentId = req.user?.id || req.user?.sub;
+    if (!studentId) throw new UnauthorizedException('请先登录');
+    const result = await this.service.create(examId, studentId, data);
 
     // ← 通知有 GRADING_PUBLISH 权限的管理员
     void (async () => {
@@ -63,9 +66,11 @@ export class ScoreAppealController {
     return this.service.findByExam(examId, status);
   }
 
-  /** 学员：查看自己的申诉列表 */
+  /** 学员：查看自己的申诉列表（IDOR 修复：忽略前端 studentId，强制用 token 身份） */
   @Get('appeals/my')
-  async findMy(@Query('studentId', ParseIntPipe) studentId: number) {
+  async findMy(@Req() req: any) {
+    const studentId = req.user?.id || req.user?.sub;
+    if (!studentId) throw new UnauthorizedException('请先登录');
     return this.service.findMy(studentId);
   }
 

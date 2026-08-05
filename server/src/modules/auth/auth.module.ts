@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'foxlearn-dev-secret-key-2026';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: JWT_SECRET,
-      signOptions: { expiresIn: '24h' },
+      signOptions: { expiresIn: (process.env.ACCESS_TOKEN_TTL || '2h') as any },
     }),
     PrismaModule,
   ],

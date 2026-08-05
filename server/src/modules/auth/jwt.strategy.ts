@@ -28,6 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // refresh token 不可用于访问受保护接口（只能换 token）
+    if ((payload as any).type === 'refresh') {
+      throw new UnauthorizedException('token 类型错误');
+    }
     // 从数据库验证用户仍然存在且激活
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user?.isActive) {

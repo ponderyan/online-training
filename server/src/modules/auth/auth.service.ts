@@ -68,8 +68,13 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: JWT_SECRET,
-      expiresIn: '24h',
+      expiresIn: (process.env.ACCESS_TOKEN_TTL || '2h') as any,
     });
+    // refresh token：7 天，type 标记区分（防止被当作 access token 使用）
+    const refreshToken = this.jwtService.sign(
+      { ...payload, type: 'refresh', jti: crypto.randomBytes(16).toString('hex') },
+      { secret: JWT_SECRET, expiresIn: (process.env.REFRESH_TOKEN_TTL || '7d') as any },
+    );
 
     // 更新登录统计
     await this.prisma.user.update({
@@ -82,6 +87,7 @@ export class AuthService {
 
     return {
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         username: user.username,
@@ -93,6 +99,42 @@ export class AuthService {
         permissions: userPermissions,
       },
     };
+  }
+
+  /**
+   * 静默续期：用 refreshToken 换取新的 accessToken（并轮换 refreshToken）。
+   * 解决"考试中 JWT 过期被踢出"问题——前端 401 时自动调用。
+   */
+  async refresh(refreshToken: string) {
+    if (!refreshToken) throw new UnauthorizedException('缺少 refreshToken');
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(refreshToken, { secret: JWT_SECRET });
+    } catch {
+      throw new UnauthorizedException('refreshToken 无效或已过期');
+    }
+    if (payload.type !== 'refresh') throw new UnauthorizedException('token 类型错误');
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user?.isActive) throw new UnauthorizedException('用户不存在或已禁用');
+
+    // 角色以数据库为准（refresh 期间角色可能变更）
+    const roleAssignments = await this.prisma.userRoleAssignment.findMany({
+      where: { userId: user.id },
+      include: { role: true },
+    });
+    const roleCodes = roleAssignments.map(r => r.role.code);
+
+    const newPayload = { sub: user.id, username: user.username, orgId: user.orgId, primaryAgencyId: user.primaryAgencyId, roles: roleCodes };
+    const accessToken = this.jwtService.sign(newPayload, {
+      secret: JWT_SECRET,
+      expiresIn: (process.env.ACCESS_TOKEN_TTL || '2h') as any,
+    });
+    const newRefreshToken = this.jwtService.sign(
+      { ...newPayload, type: 'refresh', jti: crypto.randomBytes(16).toString('hex') },
+      { secret: JWT_SECRET, expiresIn: (process.env.REFRESH_TOKEN_TTL || '7d') as any },
+    );
+    return { accessToken, refreshToken: newRefreshToken };
   }
 
   async register(data: { username: string; displayName: string; password: string; phone?: string; email?: string }) {

@@ -28,6 +28,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: Number(process.env.REFRESH_THROTTLE_LIMIT ?? 60) } })
+  @Post('refresh')
+  @HttpCode(200)
+  refresh(@Body() data: { refreshToken: string }) {
+    return this.authService.refresh(data.refreshToken);
+  }
+
+  @Public()
   @Throttle({ default: { ttl: 60_000, limit: Number(process.env.LOGIN_THROTTLE_LIMIT ?? 5) } })
   @Post('login')
   @HttpCode(200)

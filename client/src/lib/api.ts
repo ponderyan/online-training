@@ -20,12 +20,45 @@ function getToken(): string | null {
 function redirectToLogin() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   localStorage.removeItem('userPermissions');
   window.dispatchEvent(new CustomEvent('auth:redirect-login'));
 }
 
-async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
+// ─── 静默续期（refresh token）───
+// 多个并发请求同时 401 时只发起一次 refresh（single-flight），
+// 成功后所有请求用新 token 重试一次；失败则跳登录页。
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const rt = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+  if (!rt) return false;
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: rt }),
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (!data.accessToken) return false;
+        localStorage.setItem('token', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+  return refreshPromise;
+}
+
+async function request<T = any>(path: string, options?: RequestInit, isRetry = false): Promise<T> {
   const token = getToken();
   const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
@@ -44,6 +77,10 @@ async function request<T = any>(path: string, options?: RequestInit): Promise<T>
   });
 
   if (res.status === 401) {
+    // ★ 静默续期：access token 过期时用 refresh token 换新，原请求重试一次
+    if (!isRetry && (await tryRefreshToken())) {
+      return request<T>(path, options, true);
+    }
     redirectToLogin();
     throw new Error('登录已过期，请重新登录');
   }
@@ -66,8 +103,9 @@ export const api = {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     if (!res.ok) throw new Error('登录失败');
-    // 保存 token + 用户信息
+    // 保存 token + 用户信息（refreshToken 用于 401 静默续期）
     localStorage.setItem('token', data.accessToken);
+    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.user));
 
     // 登录后获取权限并缓存

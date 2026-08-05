@@ -41,6 +41,8 @@ export class PermissionGuard implements CanActivate {
     if (token) {
       try {
         const payload = this.jwtService.verify(token, { secret: JWT_SECRET });
+        // refresh token 不可用于访问接口（只能换取新 token）
+        if ((payload as any).type === 'refresh') throw new Error('refresh token');
         (request as any).user = { id: payload.sub, ...payload };
       } catch {
         if (requiredPermission) {
