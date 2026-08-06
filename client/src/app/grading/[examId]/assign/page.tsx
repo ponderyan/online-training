@@ -49,7 +49,10 @@ export default function AssignPage() {
       setAssignments(aList);
       setAssignSummary(aData?.summary || null);
 
-      setGraders(await gradersRes.json() || []);
+      // 防御：接口失败（401/403）时返回的是错误对象而非数组，直接 map 会崩
+      const gData = gradersRes.ok ? await gradersRes.json() : null;
+      if (!gradersRes.ok) toast.error(`加载阅卷人列表失败（${gradersRes.status}），请刷新或重新登录`);
+      setGraders(Array.isArray(gData) ? gData : []);
     } catch (e: any) { console.error('加载数据失败:', e); toast.error('加载数据失败：' + (e.message || '未知错误')); }
     setLoading(false);
   };

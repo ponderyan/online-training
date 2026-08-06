@@ -202,22 +202,22 @@ export default function VideoPlayPage() {
     return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--ink-900)', color: 'var(--neutral-400)' }}>加载中… 🦊</div>;
-  if (error) return <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--ink-900)', color: 'var(--neutral-400)' }}>{error}</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#16161d', color: '#9ca3af' }}>加载中… 🦊</div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#16161d', color: '#9ca3af' }}>{error}</div>;
   if (!video) return null;
 
   return (
-    <div style={{ background: 'var(--ink-900)', minHeight: '100vh', color: 'var(--neutral-100)' }}>
+    <div style={{ background: '#16161d', minHeight: '100vh', color: '#e5e7eb' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3" style={{ background: 'var(--ink-900)', borderBottom: '1px solid var(--ink-200)' }}>
+      <div className="flex items-center justify-between px-6 py-3" style={{ background: '#16161d', borderBottom: '1px solid #3f3f46' }}>
         <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: 'var(--fox)', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
-        <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>🦊 狐学</span>
+        <span style={{ fontSize: 12, color: '#9ca3af' }}>🦊 狐学</span>
       </div>
 
       <div className="flex" style={{ maxWidth: 1400, margin: '0 auto' }}>
         {/* Left: Player */}
         <div className="flex-1 p-4">
-          <div className="bg-[var(--ink-900)] rounded-lg overflow-hidden">
+          <div className="bg-[#16161d] rounded-lg overflow-hidden">
             <div style={{ position: 'relative', paddingTop: '56.25%' }}>
               <video ref={videoRef} controls autoPlay playsInline
                 poster={video.coverUrl ? mediaURL(video.coverUrl) : undefined}
@@ -229,7 +229,7 @@ export default function VideoPlayPage() {
 
           {/* 弹题覆盖层 */}
           {activeQuiz && (
-            <div className="mt-3 p-4 rounded-lg" style={{ background: 'var(--ink-900)', border: '1px solid #444' }}>
+            <div className="mt-3 p-4 rounded-lg" style={{ background: '#16161d', border: '1px solid #444' }}>
               <p className="text-sm font-medium mb-3" style={{ color: '#fff' }}>📋 {activeQuiz.question}</p>
               <div className="space-y-2">
                 {(JSON.parse(activeQuiz.options) as string[]).map((opt, idx) => (
@@ -237,7 +237,7 @@ export default function VideoPlayPage() {
                     className="block w-full text-left px-3 py-2 rounded text-sm transition-colors"
                     style={{
                       background: quizAnswer === idx ? (idx === activeQuiz.correctIndex ? 'var(--sage)' : 'var(--error)') : 'var(--neutral-800)',
-                      color: 'var(--neutral-100)', border: '1px solid #444', cursor: 'pointer',
+                      color: '#e5e7eb', border: '1px solid #444', cursor: 'pointer',
                     }}>
                     {String.fromCharCode(65 + idx)}. {opt}
                   </button>
@@ -324,7 +324,7 @@ export default function VideoPlayPage() {
                             <div className="bg-[var(--neutral-600)] flex-1 h-1 rounded-full">
                               <div className="h-full rounded-full" style={{ width: `${rpct}%`, background: rpct >= 80 ? 'var(--sage-light)' : 'var(--fox)' }} />
                             </div>
-                            <span className="text-[var(--neutral-500)] text-[10px]">{rpct}%</span>
+                            <span className="text-[#9ca3af] text-[10px]">{rpct}%</span>
                           </div>
                         )}
                       </div>

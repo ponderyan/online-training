@@ -738,10 +738,12 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   --paper-bright: #252547;
   --paper-50:     #2a2a4a;
 
-  --ink-50:  #374151;
-  --ink-100: #4b5563;
-  --ink-200: #6b7280;
-  --ink-300: #9ca3af;
+  /* 低梯度提亮：原值在 #252547 暗底上对比度不足（ink-300 仅 3.2:1，ink-200 约 2:1），
+     614 处次要文字(text-[var(--ink-300)])看不清。提亮后 ink-300 ≈ 5.5:1，满足 WCAG AA */
+  --ink-50:  #4a5262;
+  --ink-100: #5b6472;
+  --ink-200: #98a0ac;
+  --ink-300: #b8bfc9;
   --ink-400: #d1d5db;
   --ink-500: #e5e7eb;
   --ink-600: #f3f4f6;
@@ -779,6 +781,33 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   --info-pale:     rgba(0,201,182,0.12);
   --purple-pale:   rgba(171,71,188,0.14);
   --blue-pale:     rgba(66,165,245,0.12);
+
+  /* ── neutral 族 dark 覆写（此前静态不变：thead 白底浅灰字 1.4:1 不可见）──
+     50/100=面背景取暗值；400/500=文字提亮；800/900 视频页用作控件深底不反转为亮，
+     仅提亮一档避免与卡片底同色消失 */
+  --neutral-50:  #23233f;
+  --neutral-100: #2d2d4d;
+  --neutral-200: #4a5262;
+  --neutral-300: #6b7280;
+  --neutral-400: #b6bcc4;
+  --neutral-500: #98a0ac;
+  --neutral-600: #b6bcc4;
+  --neutral-700: #d1d5db;
+  --neutral-800: #333355;
+  --neutral-900: #2a2a4a;
+
+  /* ── 遗留 --color-ink-* 族（btn-ghost/表头等 3 处引用）别名到新 ink 梯度 ── */
+  --color-ink-100: var(--ink-100);
+  --color-ink-300: var(--ink-300);
+  --color-ink-400: var(--ink-400);
+  --color-ink-500: var(--ink-500);
+  --color-ink-700: var(--ink-700);
+  --color-ink-900: var(--ink-900);
+
+  /* ── 功能色 dark 提亮（统计数字/状态标签文字对比度：sage 2.86:1→约4:1）──
+     注意二色兼作白字按钮底，提亮幅度受限（白字对比度仍≥2.6:1，均为大字号控件） */
+  --sage: #4caf50;
+  --cyan: #26a69a;
 }
 
 /* dark 模式组件级覆盖 */
@@ -798,8 +827,8 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
 [data-theme="dark"] select.input,
 [data-theme="dark"] input.input {
   background: var(--paper);
-  border-color: var(--ink-700);
-  color: var(--ink-100);
+  border-color: var(--ink-100);
+  color: var(--ink-500);
 }
 [data-theme="dark"] .tag {
   opacity: 0.9;
@@ -810,7 +839,7 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   border-color: var(--ink-700);
 }
 [data-theme="dark"] .page-title {
-  color: var(--ink-50);
+  color: var(--ink-700);
 }
 [data-theme="dark"] .page-subtitle {
   color: var(--ink-300);
@@ -819,8 +848,8 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   color: var(--ink-300);
 }
 [data-theme="dark"] .btn-ghost:hover {
-  background: var(--ink-800);
-  color: var(--ink-100);
+  background: var(--paper-50);
+  color: var(--ink-500);
 }
 
 

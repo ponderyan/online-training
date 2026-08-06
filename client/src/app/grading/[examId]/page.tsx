@@ -189,7 +189,9 @@ export default function GradingDetail() {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/grading-reviews/${examId}`, { headers: { Authorization: `Bearer ${token}` } });
-      setReviews(await res.json() || []);
+      // 防御：接口失败返回错误对象而非数组（同 assign 页 401 崩溃问题）
+      const rData = res.ok ? await res.json() : null;
+      setReviews(Array.isArray(rData) ? rData : []);
     } catch (e: any) { console.error('加载复核记录失败:', e); toast.error('加载复核记录失败：' + (e.message || '未知错误')); }
   };
 
