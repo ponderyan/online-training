@@ -49,7 +49,7 @@ export default function VerifyCertificatePage() {
   const isRevoked = cert?.isRevoked === true;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)', fontFamily: 'var(--font-sans, "PingFang SC","Microsoft YaHei",sans-serif)' }}>
+    <div className="min-h-dvh-fb flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)', fontFamily: 'var(--font-sans, "PingFang SC","Microsoft YaHei",sans-serif)' }}>
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />

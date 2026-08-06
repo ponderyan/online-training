@@ -246,7 +246,7 @@ export default function Sidebar({ user, forceExpanded = false }: { user: any; fo
     .filter(g => g.items.length > 0);
 
   return (
-    <aside className={`${effCollapsed ? 'w-[64px]' : 'w-[240px]'} flex-shrink-0 flex flex-col h-screen sticky top-0 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] transition-all duration-200`}>
+    <aside className={`${effCollapsed ? 'w-[64px]' : 'w-[240px]'} flex-shrink-0 flex flex-col h-dvh-fb sticky top-0 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] transition-all duration-200`}>
       {/* Logo */}
       <div className={`${effCollapsed ? 'px-3' : 'px-5'} py-6 border-b border-[var(--sidebar-border)]`}>
         <div className="flex items-center gap-3">

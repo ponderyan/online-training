@@ -375,13 +375,13 @@ export default function ExamTake() {
     }} />
   );
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p>加载中…</p></div>;
+  if (loading) return <div className="min-h-dvh-fb flex items-center justify-center bg-[var(--paper)]"><p>加载中…</p></div>;
   if (!exam) return null;
-  if (!exam.questions || exam.questions.length === 0) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">该考试暂无题目</p></div>;
+  if (!exam.questions || exam.questions.length === 0) return <div className="min-h-dvh-fb flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">该考试暂无题目</p></div>;
   if (!examReady) return <ExamPreCheck exam={exam} onStart={() => setExamReady(true)} />;
 
   const q = exam.questions[currentQ];
-  if (!q) return <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">题目加载异常，请刷新页面</p></div>;
+  if (!q) return <div className="min-h-dvh-fb flex items-center justify-center bg-[var(--paper)]"><p className="text-[var(--ink-400)]">题目加载异常，请刷新页面</p></div>;
 
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = exam.questions.length;
@@ -389,7 +389,7 @@ export default function ExamTake() {
 
   // === Main render ===
   return (
-    <div className="h-screen flex flex-col bg-[var(--paper)] overflow-hidden">
+    <div className="h-dvh-fb flex flex-col bg-[var(--paper)] overflow-hidden">
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
@@ -454,7 +454,7 @@ export default function ExamTake() {
         {showAnswerCard && (
           <div className="lg:hidden fixed inset-0 z-[60]">
             <div className="absolute inset-0 bg-[rgba(26,23,18,0.45)]" onClick={() => setShowAnswerCard(false)} />
-            <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-[var(--paper-bright)] rounded-t-2xl border-t border-[var(--ink-100)] p-4 pb-6 overflow-y-auto" style={{ animation: 'slideUp 0.25s ease-out' }}>
+            <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-[var(--paper-bright)] rounded-t-2xl border-t border-[var(--ink-100)] p-4 overflow-y-auto" style={{ animation: 'slideUp 0.25s ease-out', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold font-serif text-[var(--ink-700)]">答题卡</span>
                 <button onClick={() => setShowAnswerCard(false)} className="text-xs px-3 py-1.5 rounded-lg cursor-pointer bg-[var(--paper-dark)] text-[var(--ink-500)] border-none">收起</button>
@@ -470,7 +470,8 @@ export default function ExamTake() {
         {/* 移动端浮动答题卡按钮 */}
         <button
           onClick={() => setShowAnswerCard(true)}
-          className="lg:hidden fixed bottom-5 right-4 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[var(--ink-900)] text-white text-sm shadow-lg cursor-pointer border-none"
+          className="lg:hidden fixed right-4 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[var(--ink-900)] text-white text-sm shadow-lg cursor-pointer border-none"
+          style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <span>🗂️</span>
           <span className="tabular-nums">{answeredCount}/{totalQuestions}</span>
@@ -525,7 +526,7 @@ export default function ExamTake() {
       </div>
 
       {/* Shortcut hint */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10">
+      <div className="hidden [@media(pointer:fine)]:block fixed bottom-4 left-1/2 -translate-x-1/2 z-10">
         <div className="px-4 py-2 rounded-full text-[10px] backdrop-blur-md select-none bg-[rgba(26,23,18,0.65)] text-white/60">
           ← → 切换题目 · A~D 快速选择 · Ctrl+Enter 交卷
         </div>

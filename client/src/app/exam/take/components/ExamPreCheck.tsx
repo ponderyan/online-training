@@ -19,7 +19,7 @@ interface ExamPreCheckProps {
  */
 export default function ExamPreCheck({ exam, onStart }: ExamPreCheckProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
+    <div className="min-h-dvh-fb flex items-center justify-center p-4 bg-[var(--paper)]">
       <div className="max-w-lg w-full bg-[var(--paper-bright)] rounded-2xl border border-[var(--ink-100)] shadow-lg p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-3">📋</div>

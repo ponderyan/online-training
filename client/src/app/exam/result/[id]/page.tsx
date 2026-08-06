@@ -167,7 +167,7 @@ export default function ExamResult() {
   // 成绩尚未发布
   if (result && result.published === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
+      <div className="min-h-dvh-fb flex items-center justify-center p-4 bg-[var(--paper)]">
         <div className="max-w-md w-full text-center">
           <div className="text-5xl mb-4">⏳</div>
           <h1 className="text-xl font-bold mb-2 text-[var(--ink-700)]">成绩尚未发布</h1>
@@ -180,7 +180,7 @@ export default function ExamResult() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--paper)]">
+    <div className="min-h-dvh-fb flex flex-col items-center justify-center bg-[var(--paper)]">
       <div className="text-4xl mb-4 animate-pulse">🦊</div>
       <p className="text-[var(--ink-300)]">加载中…</p>
     </div>
@@ -213,7 +213,7 @@ export default function ExamResult() {
   return (
     <>
       <title>考试结果 · 狐学</title>
-      <div className="min-h-screen bg-[var(--paper)]">
+      <div className="min-h-dvh-fb bg-[var(--paper)]">
         {/* Header - hidden in print */}
         <div className="sticky top-0 z-10 backdrop-blur-md no-print bg-[rgba(246,241,232,0.92)] border-b border-[var(--ink-100)]">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">

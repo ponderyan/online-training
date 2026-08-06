@@ -96,7 +96,7 @@ export default function ExamList() {
   const sortedHistory = [...historyExams].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
   if (loading) return (
-    <div className="bg-[var(--paper)] min-h-screen">
+    <div className="bg-[var(--paper)] min-h-dvh-fb">
       <div style={styles.container}>
         <div className="card" style={{ marginBottom: 40 }}><div className="card-body"><SkeletonList count={3} /></div></div>
         <div className="card"><div className="card-body"><SkeletonList count={4} /></div></div>
@@ -105,7 +105,7 @@ export default function ExamList() {
   );
 
   if (error) return (
-    <div className="bg-[var(--paper)] min-h-screen">
+    <div className="bg-[var(--paper)] min-h-dvh-fb">
       <div style={styles.container}>
         <div className="card"><ErrorCard message={error} onRetry={load} /></div>
       </div>
@@ -115,7 +115,7 @@ export default function ExamList() {
   const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0 || missedExams.length > 0;
 
   return (
-    <div className="bg-[var(--paper)] min-h-screen">
+    <div className="bg-[var(--paper)] min-h-dvh-fb">
       <div className="sticky top-0 z-10 backdrop-blur-md" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">

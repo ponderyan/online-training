@@ -19,7 +19,7 @@ export default function StudentExamsPrototype() {
   const filtered = exams.filter(e => e.status === activeTab);
 
   return (
-    <div className="bg-[var(--paper)] min-h-screen">
+    <div className="bg-[var(--paper)] min-h-dvh-fb">
       {/* Top bar — student header */}
       <header className="sticky top-0 z-10 border-b" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">

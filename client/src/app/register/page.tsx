@@ -101,9 +101,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh-fb">
       {/* ═══ 左侧品牌展示区（与登录页一致）═══ */}
-      <div className="hidden lg:flex w-[46%] flex-col items-center justify-center relative overflow-hidden min-h-screen"
+      <div className="hidden lg:flex w-[46%] flex-col items-center justify-center relative overflow-hidden min-h-dvh-fb"
         style={{ background: 'linear-gradient(160deg, #1a1712 0%, #231f1a 40%, #2c261e 70%, #1a1712 100%)' }}>
         {/* 背景纹理 */}
         <div className="absolute inset-0 pointer-events-none"

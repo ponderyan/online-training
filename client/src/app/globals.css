@@ -365,6 +365,16 @@
   @media (max-width: 640px) {
     .list-table { min-width: 560px; }
   }
+
+  /* ══ 移动端深度适配二期（跨平台 iOS+Android）══ */
+  /* 触屏通用：去除 Android/iOS 点击高亮 */
+  html { -webkit-tap-highlight-color: transparent; }
+  /* 动态视口单位（带 vh 兜底）：治 Android Chrome 底部工具栏/iOS Safari 地址栏导致的 100vh 偏大 */
+  .h-dvh-fb  { height: 100vh; height: 100dvh; }
+  .min-h-dvh-fb { min-height: 100vh; min-height: 100dvh; }
+  /* 安全区底部间距：iOS Home 条/Android 手势条区域（无刘海设备 env=0 自动退化为普通间距） */
+  .pb-safe { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+  .bottom-safe { bottom: env(safe-area-inset-bottom, 0px); }
   .list-table th {
     text-align: left; font-size: 0.72rem; font-weight: 600;
     color: var(--color-ink-400); padding: 10px 14px;

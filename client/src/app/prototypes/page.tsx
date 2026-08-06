@@ -33,7 +33,7 @@ export default function PrototypesPage() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8"
+    <div className="min-h-dvh-fb flex items-center justify-center p-8"
       style={{ background: 'linear-gradient(135deg, var(--paper-light) 0%, var(--paper) 50%, var(--paper-dark) 100%)' }}>
       <div className="max-w-3xl w-full animate-fadeSlide">
         <div className="text-center mb-10">

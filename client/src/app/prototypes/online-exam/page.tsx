@@ -85,7 +85,7 @@ export default function OnlineExamPrototype() {
   // Submitted state
   if (examSubmitted) {
     return (
-      <div className="bg-[var(--paper)] min-h-screen flex items-center justify-center">
+      <div className="bg-[var(--paper)] min-h-dvh-fb flex items-center justify-center">
         <div className="card max-w-md w-full p-10 text-center animate-fadeSlide">
           <div className="text-5xl mb-5">✅</div>
           <h2 className="text-[var(--ink-800)] font-serif font-bold text-lg mb-2">答卷已提交</h2>
@@ -113,7 +113,7 @@ export default function OnlineExamPrototype() {
   }
 
   return (
-    <div className="bg-[var(--paper)] min-h-screen flex flex-col">
+    <div className="bg-[var(--paper)] min-h-dvh-fb flex flex-col">
       {/* Top bar */}
       <header className="border-b flex-shrink-0" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">

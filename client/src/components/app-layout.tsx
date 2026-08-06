@@ -93,7 +93,7 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
   if (loading) return null;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh-fb">
       {/* 桌面端侧栏 */}
       <div className="hidden md:block">
         <Sidebar user={user} />
@@ -106,7 +106,7 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
             <Sidebar user={user} forceExpanded />
             <button
               onClick={() => setDrawerOpen(false)}
-              className="absolute top-4 -right-11 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--paper-bright)] text-[var(--ink-500)] border border-[var(--ink-100)] cursor-pointer"
+              className="absolute top-4 -right-12 w-11 h-11 flex items-center justify-center rounded-full bg-[var(--paper-bright)] text-[var(--ink-500)] border border-[var(--ink-100)] cursor-pointer"
               aria-label="关闭菜单"
             ><X size={18} /></button>
           </div>
@@ -122,7 +122,7 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
           {/* 移动端汉堡按钮 */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-[var(--ink-500)] hover:bg-[var(--paper-dark)] cursor-pointer border-none bg-transparent"
+            className="md:hidden w-11 h-11 -my-1.5 flex items-center justify-center rounded-lg text-[var(--ink-500)] hover:bg-[var(--paper-dark)] active:bg-[var(--paper-dark)] cursor-pointer border-none bg-transparent"
             aria-label="打开菜单"
           ><Menu size={20} /></button>
           {/* 面包屑 */}

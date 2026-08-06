@@ -202,8 +202,8 @@ export default function VideoPlayPage() {
     return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#16161d', color: '#9ca3af' }}>加载中… 🦊</div>;
-  if (error) return <div className="flex items-center justify-center min-h-screen" style={{ background: '#16161d', color: '#9ca3af' }}>{error}</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-dvh-fb" style={{ background: '#16161d', color: '#9ca3af' }}>加载中… 🦊</div>;
+  if (error) return <div className="flex items-center justify-center min-h-dvh-fb" style={{ background: '#16161d', color: '#9ca3af' }}>{error}</div>;
   if (!video) return null;
 
   return (

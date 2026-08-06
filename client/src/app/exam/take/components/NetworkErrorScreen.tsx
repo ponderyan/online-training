@@ -9,7 +9,7 @@ interface NetworkErrorScreenProps {
  */
 export default function NetworkErrorScreen({ onRetry }: NetworkErrorScreenProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--paper)]">
+    <div className="min-h-dvh-fb flex items-center justify-center p-4 bg-[var(--paper)]">
       <div className="text-center max-w-md">
         <div className="text-4xl mb-4">⚠️</div>
         <h2 className="text-lg font-bold mb-2 text-[var(--ink-700)]">网络连接异常</h2>

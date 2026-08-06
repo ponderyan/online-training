@@ -46,7 +46,7 @@ export default function VerifyHoursPage() {
   const isRevoked = cert?.isRevoked === true || cert?.approvalStatus === 'REVOKED';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}>
+    <div className="min-h-dvh-fb flex flex-col" style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}>
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
