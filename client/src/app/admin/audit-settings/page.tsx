@@ -59,7 +59,7 @@ export default function AuditSettingsPage() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="page-title text-xl font-bold mb-6" style={{ color: 'var(--ink-700)' }}>
+        <h1 className="text-[var(--ink-700)] page-title text-xl font-bold mb-6">
           📋 审计日志管理
         </h1>
 
@@ -67,34 +67,34 @@ export default function AuditSettingsPage() {
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>
+              <div className="text-[var(--fox)] text-2xl font-bold">
                 {stats.total.toLocaleString()}
               </div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>日志总量</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">日志总量</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: 'var(--cyan)' }}>
+              <div className="text-[var(--cyan)] text-2xl font-bold">
                 {stats.last30Days.toLocaleString()}
               </div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>近30天新增</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">近30天新增</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-sm font-medium" style={{ color: 'var(--ink-500)' }}>
+              <div className="text-[var(--ink-500)] text-sm font-medium">
                 {stats.oldestAt ? new Date(stats.oldestAt).toLocaleDateString('zh-CN') : '—'}
               </div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>最早记录</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">最早记录</div>
             </div>
           </div>
         )}
 
         {/* 操作区 */}
         <div className="card p-6 mb-6">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-600)' }}>归档操作</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-4">归档操作</h2>
           
-          <div className="flex items-center justify-between p-4 rounded-lg" style={{ background: 'var(--fox-pale)' }}>
+          <div className="bg-[var(--fox-pale)] flex items-center justify-between p-4 rounded-lg">
             <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>立即清理超期日志</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+              <p className="text-[var(--ink-600)] text-sm font-medium">立即清理超期日志</p>
+              <p className="text-[var(--ink-400)] text-xs mt-1">
                 根据配置中心「审计日志」分组的保留天数执行清理
               </p>
             </div>
@@ -109,8 +109,8 @@ export default function AuditSettingsPage() {
           </div>
 
           {/* 配置入口 */}
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-            <p className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>归档策略配置（保留天数、自动清理开关）：</p>
+          <div className="border-[var(--ink-100)] mt-4 pt-4 border-t">
+            <p className="text-[var(--ink-400)] text-xs mb-2">归档策略配置（保留天数、自动清理开关）：</p>
             <Link 
               href="/admin/system-config"
               className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
@@ -137,8 +137,8 @@ export default function AuditSettingsPage() {
 
         {/* 说明 */}
         <div className="card p-4 mt-6">
-          <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--ink-500)' }}>说明</h3>
-          <ul className="text-xs space-y-1.5" style={{ color: 'var(--ink-400)' }}>
+          <h3 className="text-[var(--ink-500)] text-xs font-semibold mb-2">说明</h3>
+          <ul className="text-[var(--ink-400)] text-xs space-y-1.5">
             <li>• 定时清理任务在每天凌晨 3:00 自动执行（需在配置中心启用）</li>
             <li>• 清理操作为物理删除，不可恢复，请确认保留天数满足合规要求</li>
             <li>• 建议保留期限不低于 2 年（730 天），以满足审计追溯需求</li>

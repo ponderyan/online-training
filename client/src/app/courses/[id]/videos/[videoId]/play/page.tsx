@@ -129,7 +129,7 @@ export default function VideoPlayPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
   if (!video) return null;
 
   return (
@@ -159,7 +159,7 @@ export default function VideoPlayPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">{video.title}</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+            <p className="text-[var(--ink-400)] text-xs mt-1">
               时长 {formatDuration(video.duration)} · 完成条件：需观看 {video.requiredPct}%
             </p>
           </div>
@@ -174,10 +174,10 @@ export default function VideoPlayPage() {
         {progress && (
           <div className="mt-3">
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+              <div className="bg-[var(--ink-100)] flex-1 h-1.5 rounded-full">
                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, progress.progress || 0)}%`, background: 'var(--fox)', transition: 'width 0.3s' }} />
               </div>
-              <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{Math.round(progress.progress || 0)}%</span>
+              <span className="text-[var(--ink-400)] text-xs font-mono">{Math.round(progress.progress || 0)}%</span>
             </div>
           </div>
         )}
@@ -186,8 +186,8 @@ export default function VideoPlayPage() {
       {/* Other Videos */}
       {videos.length > 1 && (
         <div className="card p-0 overflow-hidden" style={{ maxWidth: 960 }}>
-          <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>播放列表（{videos.length}）</div>
-          <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+          <div className="border-[var(--ink-200)] px-5 py-3 border-b text-sm font-semibold">播放列表（{videos.length}）</div>
+          <div className="border-[var(--ink-100)] divide-y">
             {videos.map((v: any) => (
               <div key={v.id} className={`flex items-center gap-3 px-5 py-2.5 ${v.id === videoId ? '' : 'cursor-pointer hover:bg-black/5'}`}
                 style={v.id === videoId ? { background: 'var(--fox)', color: '#fff' } : {}}

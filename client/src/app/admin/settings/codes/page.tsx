@@ -117,7 +117,7 @@ export default function OrgCodesSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── 左栏：编码预览 + 配置入口 ── */}
         <div className="card p-5 space-y-4">
-          <h2 className="text-sm font-bold" style={{ color: 'var(--ink-600)' }}>编码预览</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-bold">编码预览</h2>
           
           <select value={previewParentId || ''} onChange={e => setPreviewParentId(e.target.value ? Number(e.target.value) : null)}
             className="input text-xs mb-2" style={{ width: '100%' }}>
@@ -136,23 +136,23 @@ export default function OrgCodesSettingsPage() {
           )}
 
           {/* 编码规则配置 */}
-          <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-            <p className="text-xs font-bold mb-2" style={{ color: 'var(--ink-600)' }}>编码规则</p>
+          <div className="border-[var(--ink-100)] pt-4 border-t">
+            <p className="text-[var(--ink-600)] text-xs font-bold mb-2">编码规则</p>
             {rules ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-500)' }}>
+                <div className="text-[var(--ink-500)] flex items-center gap-2 text-xs">
                   <span style={{ width: 64 }}>分隔符</span>
                   <input value={rules.separator} maxLength={2}
                     onChange={e => setRules({ ...rules, separator: e.target.value.replace(/[^\w.@/]/g, '') })}
                     className="input text-xs" style={{ width: 56, padding: '2px 6px' }} />
-                  <span style={{ color: 'var(--ink-300)' }}>父编码与缩写之间的连接符</span>
+                  <span className="text-[var(--ink-300)]">父编码与缩写之间的连接符</span>
                 </div>
-                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+                <label className="text-[var(--ink-500)] flex items-center gap-2 text-xs cursor-pointer">
                   <input type="checkbox" checked={rules.autoGenerate}
                     onChange={e => setRules({ ...rules, autoGenerate: e.target.checked })} />
                   新建组织时自动生成编码
                 </label>
-                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+                <label className="text-[var(--ink-500)] flex items-center gap-2 text-xs cursor-pointer">
                   <input type="checkbox" checked={rules.includeLevel}
                     onChange={e => setRules({ ...rules, includeLevel: e.target.checked })} />
                   编码体现层级（拼接父组织编码）
@@ -162,17 +162,17 @@ export default function OrgCodesSettingsPage() {
                 </button>
               </div>
             ) : (
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>规则加载中…</p>
+              <p className="text-[var(--ink-300)] text-xs">规则加载中…</p>
             )}
           </div>
         </div>
 
         {/* ── 中栏：缩写词典 ── */}
         <div className="card p-5">
-          <h2 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-600)' }}>缩写词典（{abbreviations.length}）</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-bold mb-3">缩写词典（{abbreviations.length}）</h2>
           <div className="max-h-[420px] overflow-y-auto space-y-1 mb-4">
             {abbreviations.map(a => (
-              <div key={a.id} className="flex items-center gap-2 text-xs p-2 rounded" style={{ background: 'var(--paper)' }}>
+              <div key={a.id} className="bg-[var(--paper)] flex items-center gap-2 text-xs p-2 rounded">
                 {editId === a.id ? (
                   <>
                     <input value={editKeyword} onChange={e => setEditKeyword(e.target.value)} className="input text-xs" style={{ width: 80, padding: '2px 6px' }} />
@@ -182,8 +182,8 @@ export default function OrgCodesSettingsPage() {
                   </>
                 ) : (
                   <>
-                    <span className="font-medium flex-1" style={{ color: 'var(--ink-600)' }}>{a.keyword}</span>
-                    <span className="font-mono font-bold" style={{ color: 'var(--gold)' }}>{a.abbr}</span>
+                    <span className="text-[var(--ink-600)] font-medium flex-1">{a.keyword}</span>
+                    <span className="text-[var(--gold)] font-mono font-bold">{a.abbr}</span>
                     <span className="tag tag-ink" style={{ fontSize: 9 }}>{a.category || '—'}</span>
                     <button onClick={() => { setEditId(a.id); setEditKeyword(a.keyword); setEditAbbr(a.abbr); }}
                       className="bg-transparent border-none cursor-pointer text-xs" style={{ color: 'var(--ink-300)' }}>✎</button>
@@ -195,7 +195,7 @@ export default function OrgCodesSettingsPage() {
             ))}
           </div>
           {/* 新增行 */}
-          <div className="flex items-center gap-2 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+          <div className="border-[var(--ink-100)] flex items-center gap-2 pt-3 border-t">
             <input value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="关键词" className="input text-xs" style={{ width: 80, padding: '4px 8px' }} />
             <input value={newAbbr} onChange={e => setNewAbbr(e.target.value)} placeholder="缩写" className="input text-xs" style={{ width: 60, padding: '4px 8px' }} />
             <select value={newCategory} onChange={e => setNewCategory(e.target.value)} className="input text-xs" style={{ width: 90, padding: '4px 6px' }}>
@@ -209,12 +209,12 @@ export default function OrgCodesSettingsPage() {
 
         {/* ── 右栏：编码总览 ── */}
         <div className="card p-5">
-          <h2 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-600)' }}>编码总览（{allOrgs.length}）</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-bold mb-3">编码总览（{allOrgs.length}）</h2>
           <div className="max-h-[500px] overflow-y-auto space-y-0.5">
             {allOrgs.map(o => (
               <div key={o.id} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded" style={{ paddingLeft: 8 + o.depth * 16 }}>
                 <span className="font-mono font-bold" style={{ color: 'var(--cyan)', minWidth: 100 }}>{o.code}</span>
-                <span style={{ color: 'var(--ink-500)' }}>{o.name}</span>
+                <span className="text-[var(--ink-500)]">{o.name}</span>
                 <span className="tag tag-ink ml-auto" style={{ fontSize: 9 }}>{o.orgType}</span>
               </div>
             ))}

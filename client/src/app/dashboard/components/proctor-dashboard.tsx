@@ -25,7 +25,7 @@ export default function ProctorDashboard({ stats, loading }: any) {
           <h3 className="text-sm font-semibold mb-3 text-[var(--ink-700)]">即将开始的考试</h3>
           <div className="space-y-2">
             {d.upcomingExams.map((e: any) => (
-              <div key={e.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
+              <div key={e.id} className="bg-[var(--paper-dark)] flex items-center justify-between p-3 rounded-lg">
                 <span className="text-sm text-[var(--ink-600)]">{e.title}</span>
                 <span className="text-xs text-[var(--ink-300)]">
                   {new Date(e.startTime).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

@@ -18,10 +18,10 @@ export default function OldVideoManagementPage() {
   return (
     <AppLayout>
       <div className="text-center py-16">
-        <p className="text-sm mb-2" style={{ color: 'var(--ink-400)' }}>
+        <p className="text-[var(--ink-400)] text-sm mb-2">
           📹 视频管理已迁移到「视频课程管理」
         </p>
-        <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
+        <p className="text-[var(--ink-300)] text-xs">
           3秒后自动返回课程详情页…
         </p>
       </div>

@@ -30,10 +30,10 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
         case 'UPLOADED':
           return m.errorMessage
             ? <button className="btn btn-verm btn-xs" onClick={() => onDelete(m)}>删除</button>
-            : <span className="text-xs" style={{ color: 'var(--ink-300)' }}>⏳ 等待处理…</span>;
+            : <span className="text-[var(--ink-300)] text-xs">⏳ 等待处理…</span>;
         case 'PROCESSING':
         case 'GENERATING':
-          return <span className="text-xs" style={{ color: 'var(--gold)' }}>⏳ 处理中…</span>;
+          return <span className="text-[var(--gold)] text-xs">⏳ 处理中…</span>;
         case 'OCR_DONE':
           return <button className="btn btn-fox btn-xs" onClick={() => router.push(`/materials/${m.id}`)}>📋 复核章节结构</button>;
         case 'STRUCTURED':
@@ -55,14 +55,14 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <span className="flex-shrink-0">{FILE_ICONS[m.fileType] || '📄'}</span>
-            <h3 className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>{m.name}</h3>
+            <h3 className="text-[var(--ink-700)] text-sm font-medium truncate">{m.name}</h3>
             {showArchivedBadge && <span className="tag tag-ink text-[10px]">已归档</span>}
           </div>
           <span className={`tag flex-shrink-0 ${(STATUS[m.status]?.cls) || 'tag-ink'}`}>
             {STATUS[m.status]?.label || m.status}
           </span>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mb-2" style={{ color: 'var(--ink-400)' }}>
+        <div className="text-[var(--ink-400)] flex flex-wrap gap-x-3 gap-y-0.5 text-xs mb-2">
           <span>{m.fileType?.toUpperCase() || '—'}</span>
           {m.totalPages && <span>{m.totalPages} 页</span>}
           <span>{new Date(m.createdAt).toLocaleDateString('zh-CN')}</span>
@@ -88,7 +88,7 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
         )}
 
         {/* 操作栏 */}
-        <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+        <div className="border-[var(--ink-100)] flex gap-2 pt-2 border-t">
           {actionBtn}
           <div className="flex-1" />
           {m.archivedAt ? (

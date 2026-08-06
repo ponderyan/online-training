@@ -57,10 +57,10 @@ FoxLogo.Light = function FoxLogoLight({ size = 40 }: { size?: number }) {
     <div className="flex items-center gap-2.5">
       <FoxSVG size={size} />
       <div>
-        <div className="font-serif font-bold leading-tight tracking-wider" style={{ color: 'var(--ink-800)' }}>
+        <div className="text-[var(--ink-800)] font-serif font-bold leading-tight tracking-wider">
           FoxLearn
         </div>
-        <div className="text-[10px] tracking-[0.15em]" style={{ color: 'var(--fox)' }}>
+        <div className="text-[var(--fox)] text-[10px] tracking-[0.15em]">
           狐学
         </div>
       </div>

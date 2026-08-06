@@ -43,7 +43,7 @@ export default function ReferencedPapersModal({ data, loading, onClose }: Props)
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-center py-4" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--ink-300)] text-sm text-center py-4">
                 该试题暂未被任何试卷引用
               </p>
             )}

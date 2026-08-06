@@ -81,7 +81,7 @@ export default function EvaluatePage() {
     setSubmitting(false);
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -92,26 +92,26 @@ export default function EvaluatePage() {
           <div className="text-center mb-4">
             <p className="text-4xl mb-2">✅</p>
             <p className="font-semibold">您已评价过该培训班</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>提交时间：{new Date(existing.createdAt).toLocaleString('zh-CN')}</p>
+            <p className="text-[var(--ink-300)] text-xs mt-1">提交时间：{new Date(existing.createdAt).toLocaleString('zh-CN')}</p>
           </div>
           <div className="space-y-2 text-sm">
             <div>课程内容：{'★'.repeat(existing.contentRating)}</div>
             <div>讲师教学：{'★'.repeat(existing.instructorRating)}</div>
             {existing.organizationRating && <div>组织服务：{'★'.repeat(existing.organizationRating)}</div>}
             <div>总体评分：{'★'.repeat(existing.overallRating)}</div>
-            {existing.comment && <div className="text-xs" style={{ color: 'var(--ink-300)' }}>评语：{existing.comment}</div>}
+            {existing.comment && <div className="text-[var(--ink-300)] text-xs">评语：{existing.comment}</div>}
           </div>
         </div>
       ) : submitted ? (
         <div className="card p-6 max-w-lg text-center">
           <p className="text-4xl mb-4">✅</p>
           <p className="font-semibold text-sm mb-1">评价已提交</p>
-          <p className="text-xs" style={{ color: 'var(--ink-300)' }}>感谢您的反馈！</p>
+          <p className="text-[var(--ink-300)] text-xs">感谢您的反馈！</p>
         </div>
       ) : !canEvaluate ? (
         <div className="card p-6 max-w-lg text-center">
           <p className="text-4xl mb-4">📋</p>
-          <p style={{ color: 'var(--ink-300)' }}>该培训班暂未开课或已取消，无法评价</p>
+          <p className="text-[var(--ink-300)]">该培训班暂未开课或已取消，无法评价</p>
         </div>
       ) : (
         <div className="card p-6 max-w-lg">
@@ -120,11 +120,11 @@ export default function EvaluatePage() {
 
           <div className="space-y-5">
             <div>
-              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>课程内容质量 *</label>
+              <label className="text-[var(--ink-500)] text-xs mb-1.5 block font-medium">课程内容质量 *</label>
               <RatingInput value={form.contentRating} onChange={v => setForm({ ...form, contentRating: v })} />
             </div>
             <div>
-              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>讲师教学水平 *</label>
+              <label className="text-[var(--ink-500)] text-xs mb-1.5 block font-medium">讲师教学水平 *</label>
               {instructors.length === 0 ? (
                 <RatingInput value={form.instructorRating} onChange={v => setForm({ ...form, instructorRating: v })} />
               ) : (
@@ -140,15 +140,15 @@ export default function EvaluatePage() {
               )}
             </div>
             <div>
-              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>组织服务（选填）</label>
+              <label className="text-[var(--ink-500)] text-xs mb-1.5 block font-medium">组织服务（选填）</label>
               <RatingInput value={form.organizationRating} onChange={v => setForm({ ...form, organizationRating: v })} />
             </div>
             <div>
-              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>总体评分 *</label>
+              <label className="text-[var(--ink-500)] text-xs mb-1.5 block font-medium">总体评分 *</label>
               <RatingInput value={form.overallRating} onChange={v => setForm({ ...form, overallRating: v })} />
             </div>
             <div>
-              <label className="text-xs mb-1.5 block font-medium" style={{ color: 'var(--ink-500)' }}>评语（选填）</label>
+              <label className="text-[var(--ink-500)] text-xs mb-1.5 block font-medium">评语（选填）</label>
               <textarea value={form.comment} onChange={e => setForm({ ...form, comment: e.target.value })} className="input w-full" rows={4} placeholder="分享您的学习体验…" />
             </div>
             <div className="flex items-center gap-2">

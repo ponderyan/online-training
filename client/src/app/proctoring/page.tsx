@@ -85,7 +85,7 @@ export default function ProctoringHome() {
           <div key={i} className="card p-4 text-center" style={s.highlight ? { border: '2px solid var(--sage)' } : {}}>
             <div className="text-sm mb-1 flex justify-center" style={{ color: s.color }}>{s.icon}</div>
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+            <div className="text-[var(--ink-400)] text-[10px] mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -99,15 +99,15 @@ export default function ProctoringHome() {
           <div className="flex items-center gap-3">
             <Radio size={24} className="text-[var(--error)] animate-pulse" />
             <div>
-              <p className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>
+              <p className="text-[var(--ink-700)] font-semibold text-sm">
                 {stats.inProgress} 场考试正在进行
               </p>
-              <p className="text-[10px]" style={{ color: 'var(--ink-400)' }}>
+              <p className="text-[var(--ink-400)] text-[10px]">
                 共计 {stats.totalStudents} 名考生 · 需实时监考
               </p>
             </div>
           </div>
-          <span className="text-xs animate-pulse" style={{ color: 'var(--error)' }}>● 实时</span>
+          <span className="text-[var(--error)] text-xs animate-pulse">● 实时</span>
         </div>
       )}
 
@@ -174,7 +174,7 @@ export default function ProctoringHome() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
+                      <h3 className="text-[var(--ink-700)] font-semibold text-sm">{exam.title}</h3>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{
                         background: isLive ? 'var(--fox-glow)' : isPending ? 'rgba(21,101,192,0.09)' : 'rgba(136,136,136,0.09)',
                         color: isLive ? 'var(--fox)' : isPending ? 'var(--blue)' : 'var(--neutral-400)',
@@ -183,11 +183,11 @@ export default function ProctoringHome() {
                       </span>
                     </div>
 
-                    <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                    <p className="text-[var(--ink-400)] text-xs">
                       📄 {exam.paper?.name || '—'}
                     </p>
 
-                    <div className="flex gap-4 mt-2 text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <div className="text-[var(--ink-300)] flex gap-4 mt-2 text-xs">
                       <span>👥 考生 {total}人</span>
                       <span>✅ 已交卷 {submitted}人</span>
                       <span>⏱ {exam.durationMinutes || '—'}分钟</span>
@@ -199,13 +199,13 @@ export default function ProctoringHome() {
                     {/* Progress bar */}
                     {total > 0 && (
                       <div className="mt-3 flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                        <div className="bg-[var(--ink-100)] flex-1 h-1.5 rounded-full">
                           <div className="h-full rounded-full" style={{
                             width: `${Math.min(100, (submitted / total) * 100)}%`,
                             background: submitted === total ? 'var(--sage)' : 'var(--fox)',
                           }} />
                         </div>
-                        <span className="text-[10px] font-mono" style={{ color: 'var(--ink-300)' }}>
+                        <span className="text-[var(--ink-300)] text-[10px] font-mono">
                           {Math.round((submitted / total) * 100)}%
                         </span>
                       </div>
@@ -218,7 +218,7 @@ export default function ProctoringHome() {
                         ⚠️ {exam.abnormalCount} 异常
                       </span>
                     )}
-                    <span className="text-xs font-medium mt-1 group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--fox)' }}>
+                    <span className="text-[var(--fox)] text-xs font-medium mt-1 group-hover:translate-x-0.5 transition-transform">
                       进入监考 →
                     </span>
                   </div>

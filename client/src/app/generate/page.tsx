@@ -310,8 +310,8 @@ function GeneratePageContent() {
 
           {/* 预设模板 */}
           {templates.length > 0 && (
-            <div className="mb-5 p-4 rounded-lg" style={{ background: 'var(--paper)' }}>
-              <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>预设模板</label>
+            <div className="bg-[var(--paper)] mb-5 p-4 rounded-lg">
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-2">预设模板</label>
               <div className="flex gap-2">
                 <select onChange={e => {
                   const tpl = templates.find(t => t.id === Number(e.target.value));
@@ -329,7 +329,7 @@ function GeneratePageContent() {
           {/* 科目 + 名称 */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试科目</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试科目</label>
               <select value={subjectId} onChange={e => {
                 const id = Number(e.target.value);
                 setSubjectId(id);
@@ -340,7 +340,7 @@ function GeneratePageContent() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>试卷名称</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">试卷名称</label>
               <input value={paperName} onChange={e => setPaperName(e.target.value)} className="input" />
             </div>
           </div>
@@ -348,21 +348,21 @@ function GeneratePageContent() {
           {/* 分值 + 时间 + 开闭卷 + 平行卷数 */}
           <div className="grid grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>总分值</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">总分值</label>
               <input value={String(totalScore)} onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; setTotalScore(v); }} className="input" inputMode="numeric" />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试时间（分）</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试时间（分）</label>
               <input value={String(duration)} onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; setDuration(v); }} className="input" inputMode="numeric" />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>开卷/闭卷</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">开卷/闭卷</label>
               <select value={isOpenBook ? 'open' : 'closed'} onChange={e => setIsOpenBook(e.target.value === 'open')} className="input select">
                 <option value="closed">闭卷</option><option value="open">开卷</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>平行卷数</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">平行卷数</label>
               <select value={String(paperCount)} onChange={e => setPaperCount(Number(e.target.value))} className="input select">
                 <option value="1">1 套</option><option value="2">2 套（A/B卷）</option><option value="3">3 套</option><option value="4">4 套</option><option value="5">5 套</option>
               </select>
@@ -371,7 +371,7 @@ function GeneratePageContent() {
 
           {/* 章节策略 */}
           <div className="mb-4">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>章节分布策略</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">章节分布策略</label>
             <select value={chapterStrategy} onChange={e => setChapterStrategy(e.target.value)} className="input select">
               <option value="EVEN">均匀分布（每章约均分题量）</option>
               <option value="WEIGHTED">按权重分布（需设置章节权重）</option>
@@ -403,7 +403,7 @@ function GeneratePageContent() {
                   </span>
                   <span>{TYPE_NAMES[t]}</span>
                   {lockedTypes.includes(t) && (
-                    <span className="text-[10px] ml-auto whitespace-nowrap flex-shrink-0" style={{ color: 'var(--fox)' }}>
+                    <span className="text-[var(--fox)] text-[10px] ml-auto whitespace-nowrap flex-shrink-0">
                       📌 含必选题
                     </span>
                   )}
@@ -415,16 +415,16 @@ function GeneratePageContent() {
           {/* 题型参数 */}
           {enabledTypes.map(t => (
             <div key={t} className="border border-[var(--ink-100)] rounded-lg mb-2 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'var(--paper)' }}>
-                <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{TYPE_NAMES[t]}</span>
-                <span className="text-xs" style={{ color: 'var(--ink-400)' }}>小计 {subtotal(t)} 分</span>
+              <div className="bg-[var(--paper)] flex items-center justify-between px-4 py-2.5">
+                <span className="text-[var(--ink-700)] text-sm font-medium">{TYPE_NAMES[t]}</span>
+                <span className="text-[var(--ink-400)] text-xs">小计 {subtotal(t)} 分</span>
               </div>
               <div className="grid grid-cols-[1fr_1fr_1fr_60px] gap-3 p-4 border-t border-[var(--ink-100)]">
                 <div>
-                  <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>
+                  <label className="text-[var(--ink-400)] block text-xs mb-0.5">
                     题数
                     {lockedCounts[t] > 0 && (
-                      <span className="ml-1 text-[10px]" style={{ color: 'var(--fox)' }}>
+                      <span className="text-[var(--fox)] ml-1 text-[10px]">
                         （最低 {lockedCounts[t]} 题）
                       </span>
                     )}
@@ -435,7 +435,7 @@ function GeneratePageContent() {
                     style={lockedCounts[t] > 0 && (typeConfigs[t]?.count || 0) < lockedCounts[t] ? { borderColor: 'var(--verm)' } : {}} />
                 </div>
                 <div>
-                  <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>
+                  <label className="text-[var(--ink-400)] block text-xs mb-0.5">
                     {t === 'FILL_BLANK' ? '每空分值' : '每题分值'}
                   </label>
                   <input value={String(typeConfigs[t]?.score ?? 0)}
@@ -443,13 +443,13 @@ function GeneratePageContent() {
                 </div>
                 {t === 'FILL_BLANK' && (
                   <div>
-                    <label className="block text-xs mb-0.5" style={{ color: 'var(--ink-400)' }}>每空数</label>
+                    <label className="text-[var(--ink-400)] block text-xs mb-0.5">每空数</label>
                     <input value={String(typeConfigs[t]?.blanksPerQ ?? 1)}
                       onChange={e => updateTypeConfig(t, 'blanksPerQ', parseInt(e.target.value.replace(/\D/g, ''), 10) || 1)} className="input" inputMode="numeric" />
                   </div>
                 )}
                 <div className="flex items-end pb-1.5">
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                  <span className="text-[var(--ink-300)] text-xs">
                     {t === 'FILL_BLANK' ? '题×空×分' : '题×分'}
                   </span>
                 </div>
@@ -475,7 +475,7 @@ function GeneratePageContent() {
           {/* 难度配置 */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-medium" style={{ color: 'var(--ink-500)' }}>
+              <label className="text-[var(--ink-500)] block text-xs font-medium">
                 难度比例配置
               </label>
               <div className="flex gap-1.5">
@@ -505,12 +505,12 @@ function GeneratePageContent() {
               {DIFFS.map((d, i) => (
                 <div key={d} className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded flex-shrink-0" style={{ backgroundColor: DIFF_COLORS[i] }} />
-                  <span className="text-xs" style={{ color: 'var(--ink-500)' }}>{DIFF_LABELS[i]}</span>
+                  <span className="text-[var(--ink-500)] text-xs">{DIFF_LABELS[i]}</span>
                   <input type="number" min={0} max={100} value={difficulty[d]}
                     onChange={e => setDifficultyValue(d, Number(e.target.value))}
                     className="w-14 text-xs text-center rounded border border-solid py-0.5"
                     style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-700)', background: 'var(--paper)' }} />
-                  <span className="text-xs" style={{ color: 'var(--ink-400)' }}>%</span>
+                  <span className="text-[var(--ink-400)] text-xs">%</span>
                 </div>
               ))}
               <span className="text-xs font-semibold ml-1" style={{ color: difficultyTotal === 100 ? 'var(--cyan)' : 'var(--verm)' }}>
@@ -521,7 +521,7 @@ function GeneratePageContent() {
 
           {/* 来源比例 */}
           <div className="mb-5">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>试题来源比例</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">试题来源比例</label>
             <div className="flex items-center gap-3">
               <span className="tag tag-gold flex-shrink-0">
                 {subjects.find(s => s.id === subjectId)?.code || '科目'} 专用
@@ -535,13 +535,13 @@ function GeneratePageContent() {
             {questionCounts && !countsLoading && (
               <div className="mt-2 space-y-1">
                 {sourceMix > 0 && questionCounts.subject === 0 && (
-                  <div className="text-xs" style={{ color: 'var(--verm)' }}>⚠ 当前科目没有已发布的试题</div>
+                  <div className="text-[var(--verm)] text-xs">⚠ 当前科目没有已发布的试题</div>
                 )}
                 {sourceMix < 100 && questionCounts.public === 0 && (
-                  <div className="text-xs" style={{ color: 'var(--verm)' }}>⚠ 公共题库为空</div>
+                  <div className="text-[var(--verm)] text-xs">⚠ 公共题库为空</div>
                 )}
                 {questionCounts.subject > 0 && (
-                  <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] text-xs">
                     题库：{questionCounts.subject} 题 / 公共：{questionCounts.public} 题
                   </div>
                 )}
@@ -549,7 +549,7 @@ function GeneratePageContent() {
             )}
           </div>
 
-          {error && <div className="text-sm mb-3" style={{ color: 'var(--verm)' }}>{error}</div>}
+          {error && <div className="text-[var(--verm)] text-sm mb-3">{error}</div>}
 
           <button onClick={handleGenerate} disabled={generating || !scoreValid}
             className="btn btn-fox w-full py-3 text-sm">
@@ -561,7 +561,7 @@ function GeneratePageContent() {
         <div className="space-y-4">
           <div className="card p-6">
             <h3 className="section-title mb-4">试卷预览</h3>
-            <div className="space-y-3" style={{ color: 'var(--ink-700)' }}>
+            <div className="text-[var(--ink-700)] space-y-3">
               {[
                 { label: '试卷名称', value: paperName },
                 { label: '总分值', value: `${totalScore} 分` },
@@ -570,7 +570,7 @@ function GeneratePageContent() {
                 { label: '来源比例', value: `专用${sourceMix}% / 公共${100 - sourceMix}%` },
               ].map((item, i) => (
                 <div key={i} className="flex justify-between py-2 border-b border-dashed border-[var(--ink-100)] last:border-b-0">
-                  <span style={{ color: 'var(--ink-400)' }} className="text-sm">{item.label}</span>
+                  <span className="text-[var(--ink-400)] text-sm">{item.label}</span>
                   <span className="text-sm font-medium text-right">{item.value}</span>
                 </div>
               ))}
@@ -580,8 +580,8 @@ function GeneratePageContent() {
           {/* 生成结果提示 */}
           {generated && (
             <div className="card p-6 text-center animate-fadeSlide" style={{ borderLeft: '3px solid var(--cyan)' }}>
-              <p className="text-sm mb-2" style={{ color: 'var(--cyan)' }}>✅ 试卷已生成，即将跳转到编辑页面</p>
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--cyan)] text-sm mb-2">✅ 试卷已生成，即将跳转到编辑页面</p>
+              <p className="text-[var(--ink-300)] text-xs">
                 编号：{generated.paperNumber} · {generated.questions?.length || 0} 题
               </p>
             </div>
@@ -592,7 +592,7 @@ function GeneratePageContent() {
             <div className="card p-4" style={{ borderLeft: '3px solid var(--fox)', background: 'var(--fox-pale)' }}>
               <div className="flex items-center gap-2 text-sm">
                 <span>📌</span>
-                <span style={{ color: 'var(--fox-dark)' }}>
+                <span className="text-[var(--fox-dark)]">
                   已从题库选定 <strong>{includeIds.length}</strong> 道必选题，将优先放入试卷
                 </span>
                 <button onClick={() => setIncludeIds([])} className="btn btn-ghost btn-xs ml-auto"
@@ -609,7 +609,7 @@ function GeneratePageContent() {
                 className="btn btn-outline btn-xs">{savingTemplate ? '保存…' : '+ 保存当前'}</button>
             </div>
             {templates.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无模板</p>
+              <p className="text-[var(--ink-300)] text-xs">暂无模板</p>
             ) : (
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {templates.map(t => (
@@ -628,7 +628,7 @@ function GeneratePageContent() {
                 ))}
               </div>
             )}
-            <p className="text-xs mt-3" style={{ color: 'var(--ink-300)' }}>
+            <p className="text-[var(--ink-300)] text-xs mt-3">
               模板不含试卷名称，应用后可按需调整。
             </p>
           </div>
@@ -640,7 +640,7 @@ function GeneratePageContent() {
 
 export default function GeneratePage() {
   return (
-    <Suspense fallback={<div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>}>
+    <Suspense fallback={<div className="text-[var(--ink-300)] text-center py-16">加载中…</div>}>
       <GeneratePageContent />
     </Suspense>
   );

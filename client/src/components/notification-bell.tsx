@@ -123,9 +123,9 @@ export default function NotificationBell({ user }: { user: any }) {
         <div className="absolute right-0 top-full mt-2 w-80 rounded-xl overflow-hidden shadow-xl"
           style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--ink-100)' }}>
-            <span className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>消息通知</span>
+            <span className="text-[var(--ink-700)] text-sm font-semibold">消息通知</span>
             {unreadCount > 0 && (
-              <button onClick={handleMarkAllRead} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+              <button onClick={handleMarkAllRead} className="text-[var(--fox)] text-xs bg-transparent border-none cursor-pointer">
                 全部标为已读
               </button>
             )}
@@ -133,9 +133,9 @@ export default function NotificationBell({ user }: { user: any }) {
 
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              <div className="text-[var(--ink-300)] p-8 text-center text-xs">加载中…</div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无通知</div>
+              <div className="text-[var(--ink-300)] p-8 text-center text-xs">暂无通知</div>
             ) : (
               notifications.map((n: any) => (
                 <div key={n.id} onClick={() => handleClickNotification(n)}
@@ -146,10 +146,10 @@ export default function NotificationBell({ user }: { user: any }) {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium" style={{ color: n.isRead ? 'var(--ink-500)' : 'var(--ink-700)' }}>
                         {n.title}
-                        {!n.isRead && <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--fox)' }} />}
+                        {!n.isRead && <span className="bg-[var(--fox)] ml-1.5 inline-block w-1.5 h-1.5 rounded-full" />}
                       </div>
-                      <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--ink-300)' }}>{n.message}</div>
-                      <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-200)' }}>{timeAgo(n.createdAt)}</div>
+                      <div className="text-[var(--ink-300)] text-[11px] mt-0.5 truncate">{n.message}</div>
+                      <div className="text-[var(--ink-200)] text-[10px] mt-0.5">{timeAgo(n.createdAt)}</div>
                     </div>
                   </div>
                 </div>

@@ -34,11 +34,11 @@ export default function MyAppealsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : appeals.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">⚖️</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无申诉记录</p>
+          <p className="text-[var(--ink-300)]">暂无申诉记录</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -47,19 +47,19 @@ export default function MyAppealsPage() {
             return (
               <div key={a.id} className="card p-5">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{a.exam?.title || '考试'}</h3>
-                  <span className="tag text-[10px]" style={{ background: `${st.color}18`, color: st.color }}>{st.text}</span>
+                  <h3 className="text-[var(--ink-700)] font-semibold text-sm">{a.exam?.title || '考试'}</h3>
+                  <span className="tag text-[10px]" style={{ background: `color-mix(in srgb, ${st.color} 10%, transparent)`, color: st.color }}>{st.text}</span>
                 </div>
-                <div className="flex gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+                <div className="text-[var(--ink-400)] flex gap-4 text-xs">
                   <span>原因：{a.reason}</span>
                   <span>原分：{a.oldScore ?? '—'}</span>
                   <span>时间：{new Date(a.createdAt).toLocaleString('zh-CN')}</span>
                 </div>
                 {a.status === 'APPROVED' && a.newScore && (
-                  <div className="mt-2 text-xs" style={{ color: 'var(--sage)' }}>✅ 调整后分数：{a.newScore}</div>
+                  <div className="text-[var(--sage)] mt-2 text-xs">✅ 调整后分数：{a.newScore}</div>
                 )}
                 {a.reviewNote && (
-                  <div className="mt-1 text-xs" style={{ color: 'var(--ink-300)' }}>审核意见：{a.reviewNote}</div>
+                  <div className="text-[var(--ink-300)] mt-1 text-xs">审核意见：{a.reviewNote}</div>
                 )}
               </div>
             );

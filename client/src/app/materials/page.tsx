@@ -124,12 +124,12 @@ export default function MaterialsPage() {
         className="card p-4 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md min-w-[140px]"
         style={{ borderColor: hasIssues > 0 ? 'var(--verm-glow)' : 'var(--ink-100)' }}>
         <div className="text-lg mb-1">{subject.code}</div>
-        <div className="text-xs font-medium truncate" style={{ color: 'var(--ink-600)' }}>{subject.name}</div>
+        <div className="text-[var(--ink-600)] text-xs font-medium truncate">{subject.name}</div>
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-sm font-bold" style={{ color: 'var(--fox)' }}>{total}</span>
-          <span className="text-xs" style={{ color: 'var(--ink-300)' }}>本教材</span>
+          <span className="text-[var(--fox)] text-sm font-bold">{total}</span>
+          <span className="text-[var(--ink-300)] text-xs">本教材</span>
         </div>
-        {hasIssues > 0 && <div className="text-xs mt-1" style={{ color: 'var(--verm)' }}>● {hasIssues} 待处理</div>}
+        {hasIssues > 0 && <div className="text-[var(--verm)] text-xs mt-1">● {hasIssues} 待处理</div>}
       </div>
     );
   };
@@ -187,9 +187,9 @@ export default function MaterialsPage() {
                       <span className="text-xs mt-1" style={{ color: isActive ? 'var(--ink-700)' : 'var(--ink-300)' }}>
                         {['上传', '识别', '复核', '出题', '审核'][idx]}
                       </span>
-                      {count > 0 && <span className="text-[10px] font-bold" style={{ color: 'var(--fox)' }}>{count}份</span>}
+                      {count > 0 && <span className="text-[var(--fox)] text-[10px] font-bold">{count}份</span>}
                     </div>
-                    {idx < 4 && <div className="w-6 h-px mx-1 mb-4" style={{ background: 'var(--ink-100)' }} />}
+                    {idx < 4 && <div className="bg-[var(--ink-100)] w-6 h-px mx-1 mb-4" />}
                   </div>
                 );
               })}
@@ -200,7 +200,7 @@ export default function MaterialsPage() {
           <div className="space-y-6">
             {pipelineGroups.filter(g => g.items.length > 0).map(g => (
               <div key={g.key}>
-                <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--ink-500)' }}>
+                <h3 className="text-[var(--ink-500)] text-sm font-medium mb-3">
                   {g.label} · {g.items.length} 份
                 </h3>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
@@ -247,7 +247,7 @@ export default function MaterialsPage() {
             ].filter(s => s.count > 0 || s.label === '全部教材').map(s => (
               <div key={s.label} className="card px-4 py-3 text-center min-w-[100px]">
                 <div className="text-xl font-bold" style={{ color: s.color }}>{s.count}</div>
-                <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+                <div className="text-[var(--ink-400)] text-xs mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
@@ -255,7 +255,7 @@ export default function MaterialsPage() {
           {/* 科目卡片网格 */}
           {subjects.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--ink-500)' }}>按科目浏览</h3>
+              <h3 className="text-[var(--ink-500)] text-sm font-medium mb-3">按科目浏览</h3>
               <div className="flex gap-3 flex-wrap">
                 {subjects.map(renderSubjectCard)}
               </div>
@@ -265,12 +265,12 @@ export default function MaterialsPage() {
           {/* 全部教材列表（按科目分组） */}
           {materials.length > 0 ? (
             <div>
-              <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--ink-500)' }}>全部教材</h3>
+              <h3 className="text-[var(--ink-500)] text-sm font-medium mb-3">全部教材</h3>
               {Object.entries(materialsBySubject).map(([sid, items]) => {
                 const subject = subjects.find((s: any) => s.id === Number(sid));
                 return (
                   <div key={sid} className="mb-6">
-                    <h4 className="text-xs font-semibold mb-2 px-1" style={{ color: 'var(--ink-400)' }}>
+                    <h4 className="text-[var(--ink-400)] text-xs font-semibold mb-2 px-1">
                       {subject?.code || '其他'} — {subject?.name || '未分类'} · {items.length} 本
                     </h4>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">

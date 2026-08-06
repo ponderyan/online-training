@@ -31,10 +31,10 @@ export default function AuditorDashboard({ stats, loading }: any) {
           <div className="space-y-1">
             {d.recentLogs.map((log: any) => (
               <div key={log.id} className="flex items-center gap-3 p-2 rounded text-xs text-[var(--ink-500)]">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--fox)' }} />
+                <span className="bg-[var(--fox)] w-2 h-2 rounded-full flex-shrink-0" />
                 <span>{log.action}</span>
                 <span className="text-[10px] text-[var(--ink-300)]">{log.entityType || '—'}</span>
-                <span className="ml-auto text-[10px]" style={{ color: 'var(--ink-200)' }}>
+                <span className="text-[var(--ink-200)] ml-auto text-[10px]">
                   {new Date(log.createdAt).toLocaleString('zh-CN')}
                 </span>
               </div>

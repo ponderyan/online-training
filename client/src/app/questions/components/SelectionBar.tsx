@@ -31,9 +31,8 @@ export default function SelectionBar({ selectedIds, onGenerate, onClear, onDone 
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 mt-4 p-3 rounded-lg animate-fadeSlide flex-wrap"
-      style={{ background: 'var(--fox-glow)' }}>
-      <span className="text-sm font-medium" style={{ color: 'var(--fox-dark)' }}>
+    <div className="bg-[var(--fox-glow)] flex items-center justify-center gap-3 mt-4 p-3 rounded-lg animate-fadeSlide flex-wrap">
+      <span className="text-[var(--fox-dark)] text-sm font-medium">
         已选 <strong>{selectedIds.size}</strong> 道试题
       </span>
       <button onClick={onGenerate} className="btn btn-fox btn-sm">选题组卷 →</button>

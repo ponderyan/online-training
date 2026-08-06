@@ -117,7 +117,7 @@ export default function DashboardTab({ programId }: { programId: string }) {
   if (error) {
     return (
       <div className="card p-8 text-center" style={CARD_STYLE}>
-        <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
+        <div className="text-[var(--error)] text-sm">加载失败</div>
         <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
         <button onClick={load} className="btn btn-fox btn-xs mt-3">重试</button>
       </div>
@@ -209,7 +209,7 @@ export default function DashboardTab({ programId }: { programId: string }) {
                       {t.rate}%
                     </span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--ink-100)' }}>
+                  <div className="bg-[var(--ink-100)] h-2 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-300" style={{
                       width: `${t.rate}%`,
                       background: t.rate >= 70 ? SAGE : t.rate >= 40 ? FOX : ROSE,
@@ -261,7 +261,7 @@ export default function DashboardTab({ programId }: { programId: string }) {
                 </thead>
                 <tbody>
                   {leaderboard.map((row) => (
-                    <tr key={row.rank} className="border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                    <tr key={row.rank} className="border-[var(--ink-100)] border-t">
                       <td className="py-2 pr-3">
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${
                           row.rank <= 3 ? 'text-white' : ''

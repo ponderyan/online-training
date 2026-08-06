@@ -105,7 +105,7 @@ export default function EvaluationsPage() {
           ].map((s, i) => (
             <div key={i} className="card p-4 text-center">
               <div className="text-sm font-bold" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">{s.label}</div>
             </div>
           ))}
         </div>
@@ -129,32 +129,32 @@ export default function EvaluationsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={canManage ? 8 : 7} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</td></tr>
+              <tr><td colSpan={canManage ? 8 : 7} className="text-[var(--ink-300)] text-center py-8 text-xs">加载中…</td></tr>
             ) : evaluations.length === 0 ? (
-              <tr><td colSpan={canManage ? 8 : 7} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无评价数据</td></tr>
+              <tr><td colSpan={canManage ? 8 : 7} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无评价数据</td></tr>
             ) : evaluations.map((e: any) => (
               <tr key={e.id}>
                 <td className="text-xs">
                   <div className="font-medium">{e.program?.name || '—'}</div>
-                  {e.program?.code && <div style={{ color: 'var(--ink-300)' }}>{e.program.code}</div>}
+                  {e.program?.code && <div className="text-[var(--ink-300)]">{e.program.code}</div>}
                 </td>
                 <td>{e.isAnonymous ? '匿名学员' : e.student?.displayName || '—'}</td>
-                <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
+                <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
                 <td className="text-center" title={`${e.contentRating}/5`}>
-                  <span style={{ color: 'var(--fox)' }}>{'★'.repeat(e.contentRating)}</span>
+                  <span className="text-[var(--fox)]">{'★'.repeat(e.contentRating)}</span>
                 </td>
                 <td className="text-center">
                   {e.instructorRatings && e.instructorRatings.length > 0 ? (
                     <div className="text-xs space-y-0.5">
                       {e.instructorRatings.map((ir: any) => (
                         <div key={ir.id} title={`${ir.instructor?.realName}: ${ir.rating}/5`}>
-                          <span style={{ color: 'var(--ink-500)' }}>{ir.instructor?.realName}</span>{' '}
-                          <span style={{ color: 'var(--cyan)' }}>{'★'.repeat(ir.rating)}</span>
+                          <span className="text-[var(--ink-500)]">{ir.instructor?.realName}</span>{' '}
+                          <span className="text-[var(--cyan)]">{'★'.repeat(ir.rating)}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <span style={{ color: 'var(--cyan)' }} title={`${e.instructorRating}/5`}>{'★'.repeat(e.instructorRating)}</span>
+                    <span className="text-[var(--cyan)]" title={`${e.instructorRating}/5`}>{'★'.repeat(e.instructorRating)}</span>
                   )}
                 </td>
                 <td className="text-center">
@@ -162,7 +162,7 @@ export default function EvaluationsPage() {
                     {e.overallRating}/5
                   </strong>
                 </td>
-                <td className="text-xs max-w-[200px] truncate" style={{ color: 'var(--ink-400)' }}>{e.comment || '—'}</td>
+                <td className="text-[var(--ink-400)] text-xs max-w-[200px] truncate">{e.comment || '—'}</td>
                 {canManage && (
                   <td>
                     <button onClick={() => handleDelete(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
@@ -176,7 +176,7 @@ export default function EvaluationsPage() {
       </div>
 
       {!loading && evaluations.length > 0 && (
-        <p className="text-xs mt-3" style={{ color: 'var(--ink-300)' }}>共 {evaluations.length} 条评价</p>
+        <p className="text-[var(--ink-300)] text-xs mt-3">共 {evaluations.length} 条评价</p>
       )}
     </AppLayout>
   );

@@ -211,7 +211,7 @@ export default function PaperDetailPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中…</div>
       </AppLayout>
     );
   }
@@ -219,7 +219,7 @@ export default function PaperDetailPage() {
   if (error || !paper) {
     return (
       <AppLayout>
-        <div className="text-center py-16" style={{ color: 'var(--verm)' }}>{error || '试卷不存在'}</div>
+        <div className="text-[var(--verm)] text-center py-16">{error || '试卷不存在'}</div>
       </AppLayout>
     );
   }
@@ -273,7 +273,7 @@ export default function PaperDetailPage() {
         <div className="flex items-start justify-between mb-3">
           <div>
             <h1 className="page-title">{paper.name}</h1>
-            <div className="flex items-center flex-wrap gap-3 mt-2 text-sm" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[var(--ink-400)] flex items-center flex-wrap gap-3 mt-2 text-sm">
               <span className={`tag ${paper.status === 'OFFICIAL' ? 'tag-verm' : paper.status === 'FINALIZED' ? 'tag-cyan' : paper.status === 'PENDING_REVIEW' ? 'tag-gold' : 'tag-ink'}`}>
                 {statusLabel(paper.status)}
               </span>
@@ -284,10 +284,10 @@ export default function PaperDetailPage() {
               <span>{paper.isOpenBook ? '开卷' : '闭卷'}</span>
             </div>
             {canEdit && (
-              <span className="text-xs mt-1 inline-block" style={{ color: 'var(--fox)' }}>✏️ 草稿状态，可编辑试题</span>
+              <span className="text-[var(--fox)] text-xs mt-1 inline-block">✏️ 草稿状态，可编辑试题</span>
             )}
             {canReview && (
-              <span className="text-xs mt-1 inline-block" style={{ color: 'var(--gold-dark)' }}>⏳ 待审核状态，等待审题人确认</span>
+              <span className="text-[var(--gold-dark)] text-xs mt-1 inline-block">⏳ 待审核状态，等待审题人确认</span>
             )}
           </div>
         </div>
@@ -300,8 +300,8 @@ export default function PaperDetailPage() {
           <div className="flex flex-wrap gap-3">
             {paper.chapterDistribution.map((ch: any) => (
               <div key={ch.chapterId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
-                <span style={{ color: 'var(--ink-600)' }}>{ch.chapterName}</span>
-                <span className="font-bold" style={{ color: 'var(--fox)' }}>{ch.count}题</span>
+                <span className="text-[var(--ink-600)]">{ch.chapterName}</span>
+                <span className="text-[var(--fox)] font-bold">{ch.count}题</span>
               </div>
             ))}
           </div>
@@ -329,24 +329,24 @@ export default function PaperDetailPage() {
             className={`btn btn-sm ${showAnswer ? 'btn-verm' : 'btn-outline'}`}>
             {showAnswer ? '隐藏答案' : '显示答案'}
           </button>
-          <span className="text-xs" style={{ color: 'var(--ink-300)' }}>答案仅供命题人查阅</span>
+          <span className="text-[var(--ink-300)] text-xs">答案仅供命题人查阅</span>
         </div>
       </div>
 
       {/* Questions content */}
       <div className="card p-6">
         {Object.entries(groups).length === 0 ? (
-          <div className="text-center py-10" style={{ color: 'var(--ink-300)' }}>此试卷暂无试题</div>
+          <div className="text-[var(--ink-300)] text-center py-10">此试卷暂无试题</div>
         ) : (
           <div className="space-y-8">
             {Object.entries(groups).map(([section, items]) => (
               <div key={section}>
-                <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b-2" style={{ borderColor: 'var(--ink-900)' }}>
+                <div className="border-[var(--ink-900)] flex items-center justify-between gap-4 mb-4 pb-3 border-b-2">
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-bold px-3 py-0.5 rounded" style={{ background: 'var(--ink-900)', color: 'var(--paper-bright)' }}>
                       {TYPE_NAMES[section] || section}
                     </span>
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <span className="text-[var(--ink-300)] text-xs">
                       {items.length} 题 · 每题{items[0]?.score || '—'}分 · 共{items.reduce((s, pq) => s + pq.score, 0)}分
                     </span>
                   </div>
@@ -362,11 +362,11 @@ export default function PaperDetailPage() {
                     if (!q) return null;
 
                     return (
-                      <div key={pq.id} className="pb-5 border-b border-dashed group last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
+                      <div key={pq.id} className="border-[var(--ink-100)] pb-5 border-b border-dashed group last:border-b-0">
                         <div className="flex items-start gap-3 mb-3">
-                          <span className="text-sm font-bold min-w-[24px]" style={{ color: 'var(--ink-800)' }}>{i + 1}.</span>
+                          <span className="text-[var(--ink-800)] text-sm font-bold min-w-[24px]">{i + 1}.</span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm leading-relaxed mb-2" style={{ color: 'var(--ink-800)' }}>{q.content}</div>
+                            <div className="text-[var(--ink-800)] text-sm leading-relaxed mb-2">{q.content}</div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs px-2 py-0.5 rounded" style={{ background: DIFF_BG[q.difficulty] || 'transparent', color: DIFF_COLORS[q.difficulty] || 'var(--ink-500)' }}>
                                 {DIFF_LABELS[q.difficulty] || q.difficulty}
@@ -383,7 +383,7 @@ export default function PaperDetailPage() {
                               )}
                             </div>
                           </div>
-                          <span className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-300)' }}>({pq.score}分)</span>
+                          <span className="text-[var(--ink-300)] text-xs whitespace-nowrap">({pq.score}分)</span>
                         </div>
 
                         {/* Options */}
@@ -396,7 +396,7 @@ export default function PaperDetailPage() {
                                   {o.label}
                                 </span>
                                 <span style={{ color: showAnswer && o.isCorrect ? 'var(--cyan)' : 'var(--ink-500)', fontWeight: showAnswer && o.isCorrect ? 500 : 400 }}>{o.content}</span>
-                                {showAnswer && o.isCorrect && <span className="text-xs font-medium" style={{ color: 'var(--cyan)' }}>✓</span>}
+                                {showAnswer && o.isCorrect && <span className="text-[var(--cyan)] text-xs font-medium">✓</span>}
                               </div>
                             ))}
                           </div>
@@ -407,11 +407,11 @@ export default function PaperDetailPage() {
                           <div className="ml-9 space-y-1 mb-3">
                             {q.blanks.map((b: any) => (
                               <div key={b.id} className="text-sm">
-                                <span style={{ color: 'var(--ink-300)' }}>填空 {b.blankIndex + 1}：</span>
+                                <span className="text-[var(--ink-300)]">填空 {b.blankIndex + 1}：</span>
                                 {showAnswer ? (
                                   <span className="font-medium border-b border-dashed" style={{ color: 'var(--cyan)', borderColor: 'var(--cyan)' }}>{b.answer}</span>
                                 ) : (
-                                  <span className="border-b border-dashed px-8" style={{ borderColor: 'var(--ink-100)' }}>______</span>
+                                  <span className="border-[var(--ink-100)] border-b border-dashed px-8">______</span>
                                 )}
                               </div>
                             ))}
@@ -419,11 +419,11 @@ export default function PaperDetailPage() {
                         )}
 
                         {q.subQuestions?.length > 0 && (
-                          <div className="ml-9 space-y-2 mt-3 p-4 rounded" style={{ background: 'var(--paper)' }}>
+                          <div className="bg-[var(--paper)] ml-9 space-y-2 mt-3 p-4 rounded">
                             {q.subQuestions.map((sq: any, si: number) => (
                               <div key={sq.id} className="text-sm">
-                                <span style={{ color: 'var(--ink-300)' }}>({si + 1})</span> {sq.content}
-                                {showAnswer && sq.answer && <div className="text-sm mt-1" style={{ color: 'var(--cyan)' }}>答：{sq.answer}</div>}
+                                <span className="text-[var(--ink-300)]">({si + 1})</span> {sq.content}
+                                {showAnswer && sq.answer && <div className="text-[var(--cyan)] text-sm mt-1">答：{sq.answer}</div>}
                               </div>
                             ))}
                           </div>
@@ -442,7 +442,7 @@ export default function PaperDetailPage() {
       {showAnswer && (
         <div className="card p-5 mt-4" style={{ borderColor: 'var(--verm)', borderWidth: '2px' }}>
           <h3 className="section-title mb-3">
-            <span style={{ color: 'var(--verm)' }}>☰</span> 参考答案
+            <span className="text-[var(--verm)]">☰</span> 参考答案
             <span className="tag tag-verm">仅供命题人查阅</span>
           </h3>
           {paper.questions?.length > 0 ? (
@@ -462,9 +462,9 @@ export default function PaperDetailPage() {
                       else if (q?.type === 'FILL_BLANK') { answer = q.blanks?.map((b: any) => b.answer).join('；') || '—'; }
                       else { answer = '见试题详情'; }
                       return (
-                        <div key={pq.id} className="flex gap-2 text-xs py-1 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
-                          <span style={{ color: 'var(--ink-300)' }}>{i + 1}.</span>
-                          <span className="font-medium" style={{ color: 'var(--cyan)' }}>{answer}</span>
+                        <div key={pq.id} className="border-[var(--ink-100)] flex gap-2 text-xs py-1 border-b border-dashed last:border-b-0">
+                          <span className="text-[var(--ink-300)]">{i + 1}.</span>
+                          <span className="text-[var(--cyan)] font-medium">{answer}</span>
                         </div>
                       );
                     })}
@@ -472,12 +472,12 @@ export default function PaperDetailPage() {
                 </div>
               ))}
             </div>
-          ) : <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无试题</p>}
+          ) : <p className="text-[var(--ink-300)] text-xs">暂无试题</p>}
         </div>
       )}
 
       {/* Bottom actions */}
-      <div className="flex items-center justify-between mt-6 pt-5 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+      <div className="border-[var(--ink-100)] flex items-center justify-between mt-6 pt-5 border-t">
         <button onClick={() => router.push('/papers')} className="btn btn-ghost btn-sm">← 返回试卷列表</button>
         <div className="flex gap-3">
           {canPromote && (
@@ -495,7 +495,7 @@ export default function PaperDetailPage() {
               <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             {!replaceTarget && (
-              <label className="flex items-center gap-2 px-4 pt-2 pb-1 text-xs" style={{ color: 'var(--ink-400)' }}>
+              <label className="text-[var(--ink-400)] flex items-center gap-2 px-4 pt-2 pb-1 text-xs">
                 <input type="checkbox" checked={addToPractice} onChange={e => setAddToPractice(e.target.checked)}
                   className="checkbox checkbox-sm accent-[var(--fox)]" />
                 选中题目自动加入练习模式（学员在练习中可见）
@@ -503,7 +503,7 @@ export default function PaperDetailPage() {
             )}
             <div className="modal-body max-h-[400px] overflow-y-auto">
               {availableQuestions.length === 0 ? (
-                <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无可选试题（所有同类试题可能已在试卷中）</p>
+                <p className="text-[var(--ink-300)] text-sm text-center py-8">暂无可选试题（所有同类试题可能已在试卷中）</p>
               ) : (
                 <div className="space-y-2">
                   {availableQuestions.map((q: any) => (
@@ -512,9 +512,9 @@ export default function PaperDetailPage() {
                       style={{ background: 'var(--paper)' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--fox-glow)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'var(--paper)'}>
-                      <p className="line-clamp-2" style={{ color: 'var(--ink-700)' }}>{q.content}</p>
+                      <p className="text-[var(--ink-700)] line-clamp-2">{q.content}</p>
                       <div className="flex gap-3 mt-1">
-                        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>难度：{DIFF_LABELS[q.difficulty] || q.difficulty}</span>
+                        <span className="text-[var(--ink-300)] text-xs">难度：{DIFF_LABELS[q.difficulty] || q.difficulty}</span>
                         <span className="text-xs" style={{ color: (q.usageCount || 0) >= 5 ? 'var(--verm)' : 'var(--ink-300)' }}>已使用 {q.usageCount || 0} 次{(q.usageCount || 0) >= 5 ? ' ⚠' : ''}</span>
                       </div>
                     </div>

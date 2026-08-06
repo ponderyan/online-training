@@ -208,7 +208,7 @@ export default function BatchGeneratePage() {
             <p style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 12 }}>共 {rows.length} 条数据，Excel 列：{headers.join(', ')}</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: 'var(--neutral-50)' }}>
+                <tr className="bg-[var(--neutral-50)]">
                   <th style={thStyle}>模板变量</th>
                   <th style={thStyle}>对应 Excel 列</th>
                 </tr>
@@ -240,7 +240,7 @@ export default function BatchGeneratePage() {
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>预览前 3 条数据</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
               <thead>
-                <tr style={{ background: 'var(--neutral-50)' }}>
+                <tr className="bg-[var(--neutral-50)]">
                   {Object.keys(mappedPreview[0] || {}).filter(k => mappedPreview[0][k]).map(k => <th key={k} style={thStyle}>{k}</th>)}
                 </tr>
               </thead>

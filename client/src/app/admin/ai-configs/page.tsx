@@ -115,9 +115,9 @@ export default function AiConfigsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : configs.length === 0 ? (
-        <div className="card p-12 text-center"><p className="text-4xl mb-4">🤖</p><p style={{ color: 'var(--ink-300)' }}>暂无 AI 配置</p></div>
+        <div className="card p-12 text-center"><p className="text-4xl mb-4">🤖</p><p className="text-[var(--ink-300)]">暂无 AI 配置</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
@@ -130,9 +130,9 @@ export default function AiConfigsPage() {
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
                   <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{PROVIDER_NAMES[c.provider] || c.provider}</span></td>
-                  <td className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{c.modelVersion || '—'}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{c.apiBaseUrl || '—'}</td>
-                  <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{maskKey(c.apiKey)}</td>
+                  <td className="text-[var(--ink-400)] text-xs font-mono">{c.modelVersion || '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{c.apiBaseUrl || '—'}</td>
+                  <td className="text-[var(--ink-300)] text-xs font-mono">{maskKey(c.apiKey)}</td>
                   <td>
                     <span className="tag" style={{ background: c.isActive ? 'var(--sage-glow)' : 'var(--fox-glow)', color: c.isActive ? 'var(--sage)' : 'var(--ink-300)', fontSize: '10px' }}>
                       {c.isActive ? '活跃' : '停用'}
@@ -160,40 +160,40 @@ export default function AiConfigsPage() {
             <h3 className="font-semibold text-base mb-4">{editId ? '编辑 AI 配置' : '新建 AI 配置'}</h3>
             <form className="space-y-3" autoComplete="off" onSubmit={e => e.preventDefault()}>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>配置名称 *</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">配置名称 *</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input w-full" placeholder="例如：DeepSeek 主配置" autoComplete="off" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>Provider</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">Provider</label>
                   <select value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })} className="input select w-full">
                     {Object.entries(PROVIDER_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>模型版本</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">模型版本</label>
                   <input value={form.modelVersion} onChange={e => setForm({ ...form, modelVersion: e.target.value })} className="input w-full" placeholder="deepseek-chat" autoComplete="off" />
                 </div>
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>API 地址</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">API 地址</label>
                 <input value={form.apiBaseUrl} onChange={e => setForm({ ...form, apiBaseUrl: e.target.value })} className="input w-full" placeholder="https://api.deepseek.com" autoComplete="off" />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>API Key *</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">API Key *</label>
                 <input value={form.apiKey} onChange={e => setForm({ ...form, apiKey: e.target.value })} className="input w-full" type="password" placeholder={editId ? '留空则保持不变' : 'sk-...'} autoComplete="new-password" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>Temperature</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">Temperature</label>
                   <input value={form.temperature} onChange={e => setForm({ ...form, temperature: e.target.value })} className="input w-full" type="number" step="0.1" autoComplete="off" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>Top P</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">Top P</label>
                   <input value={form.topP} onChange={e => setForm({ ...form, topP: e.target.value })} className="input w-full" type="number" step="0.1" autoComplete="off" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>Max Tokens</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">Max Tokens</label>
                   <input value={form.maxTokens} onChange={e => setForm({ ...form, maxTokens: e.target.value })} className="input w-full" type="number" autoComplete="off" />
                 </div>
               </div>

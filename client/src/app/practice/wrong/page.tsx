@@ -20,12 +20,12 @@ export default function WrongReviewPage() {
           <h1 className="page-title mb-4">❌ 错题重练</h1>
           {wrongCount === 0 ? (
             <>
-              <p className="mb-4" style={{ color: 'var(--ink-300)' }}>暂无错题，继续保持！</p>
+              <p className="text-[var(--ink-300)] mb-4">暂无错题，继续保持！</p>
               <button onClick={() => window.history.back()} className="btn btn-outline btn-sm">返回</button>
             </>
           ) : (
             <>
-              <p className="mb-6" style={{ color: 'var(--ink-500)' }}>共 <strong>{wrongCount}</strong> 道错题待复习</p>
+              <p className="text-[var(--ink-500)] mb-6">共 <strong>{wrongCount}</strong> 道错题待复习</p>
               <button onClick={() => setStarted(true)} className="btn btn-verm">开始重练</button>
             </>
           )}

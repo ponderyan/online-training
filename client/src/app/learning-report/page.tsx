@@ -290,11 +290,11 @@ export default function LearningReportPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-base">🦊</span>
-                  <span className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                  <span className="text-[var(--ink-700)] text-sm font-semibold">
                     学习画像摘要
                   </span>
                 </div>
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                <span className="text-[var(--ink-300)] text-xs">
                   最近30天 · {data.recent30DayActive} 天活跃
                 </span>
               </div>
@@ -302,43 +302,43 @@ export default function LearningReportPage() {
                 <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">📅</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>累计学习天数</span>
+                    <span className="text-[var(--ink-400)] text-xs">累计学习天数</span>
                   </div>
                   <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
                     {streak?.totalActiveDays ?? 0}
-                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>天</span>
+                    <span className="text-[var(--ink-400)] text-xs font-normal ml-1">天</span>
                   </div>
                 </div>
                 <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">✏️</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>练习数量</span>
+                    <span className="text-[var(--ink-400)] text-xs">练习数量</span>
                   </div>
                   <div className="stat-card-value" style={{ fontSize: '1.5rem' }}>
                     {practiceCount}
-                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>题</span>
+                    <span className="text-[var(--ink-400)] text-xs font-normal ml-1">题</span>
                   </div>
                 </div>
                 <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">🎯</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>平均正确率</span>
+                    <span className="text-[var(--ink-400)] text-xs">平均正确率</span>
                   </div>
                   <div className="stat-card-value" style={{ fontSize: '1.5rem', color: 'var(--fox)' }}>
                     {avgAccuracy}
-                    <span className="text-xs font-normal ml-1" style={{ color: 'var(--ink-400)' }}>%</span>
+                    <span className="text-[var(--ink-400)] text-xs font-normal ml-1">%</span>
                   </div>
                 </div>
                 <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">⚠️</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>薄弱环节</span>
+                    <span className="text-[var(--ink-400)] text-xs">薄弱环节</span>
                   </div>
                   <div className="text-sm font-semibold truncate" style={{ color: weakAreas[0] ? 'var(--verm)' : 'var(--ink-400)' }} title={weakName}>
                     {weakName}
                   </div>
                   {weakAreas[0] && (
-                    <div className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                    <div className="text-[var(--ink-300)] text-xs mt-0.5">
                       掌握率 {weakAreas[0].rate}%
                     </div>
                   )}
@@ -353,54 +353,51 @@ export default function LearningReportPage() {
           {/* 考试通过率 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 📋
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 考试通过率
               </span>
             </div>
             <div className="stat-card-value">
               {summary ? summary.passRate : 0}%
             </div>
-            <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>通过 <strong style={{ color: 'var(--sage)' }}>{summary?.passed || 0}</strong></span>
-              <span>未通过 <strong style={{ color: 'var(--error)' }}>{summary?.failed || 0}</strong></span>
-              <span>待评分 <strong style={{ color: 'var(--fox)' }}>{summary?.pending || 0}</strong></span>
+            <div className="text-[var(--ink-400)] flex gap-3 mt-2 text-xs">
+              <span>通过 <strong className="text-[var(--sage)]">{summary?.passed || 0}</strong></span>
+              <span>未通过 <strong className="text-[var(--error)]">{summary?.failed || 0}</strong></span>
+              <span>待评分 <strong className="text-[var(--fox)]">{summary?.pending || 0}</strong></span>
             </div>
           </div>
 
           {/* 总学时 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 🕐
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 总学时
               </span>
             </div>
             <div className="stat-card-value">
               {summary?.totalHours || 0}
-              <span className="text-base font-normal ml-1" style={{ color: 'var(--ink-400)' }}>h</span>
+              <span className="text-[var(--ink-400)] text-base font-normal ml-1">h</span>
             </div>
-            <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>已审核 <strong style={{ color: 'var(--sage)' }}>{summary?.approvedHours || 0}</strong></span>
-              <span>待审核 <strong style={{ color: 'var(--fox)' }}>{summary?.pendingHours || 0}</strong></span>
-              <span>已驳回 <strong style={{ color: 'var(--error)' }}>{summary?.rejectedHours || 0}</strong></span>
+            <div className="text-[var(--ink-400)] flex gap-3 mt-2 text-xs">
+              <span>已审核 <strong className="text-[var(--sage)]">{summary?.approvedHours || 0}</strong></span>
+              <span>待审核 <strong className="text-[var(--fox)]">{summary?.pendingHours || 0}</strong></span>
+              <span>已驳回 <strong className="text-[var(--error)]">{summary?.rejectedHours || 0}</strong></span>
             </div>
           </div>
 
           {/* 证书 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 🏅
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 证书数
               </span>
             </div>
@@ -418,17 +415,16 @@ export default function LearningReportPage() {
           {/* 平均分 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 📊
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 平均分
               </span>
             </div>
             <div className="stat-card-value">
               {summary?.avgScore ?? 0}
-              <span className="text-base font-normal ml-1" style={{ color: 'var(--ink-400)' }}>分</span>
+              <span className="text-[var(--ink-400)] text-base font-normal ml-1">分</span>
             </div>
           </div>
         </div>
@@ -659,8 +655,8 @@ export default function LearningReportPage() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="text-center text-xs mt-2" style={{ color: 'var(--ink-400)' }}>
-                  总审核学时 <strong style={{ color: 'var(--ink-700)' }}>{summary?.approvedHours || 0}</strong> h
+                <div className="text-[var(--ink-400)] text-center text-xs mt-2">
+                  总审核学时 <strong className="text-[var(--ink-700)]">{summary?.approvedHours || 0}</strong> h
                 </div>
               </>
             )}
@@ -681,7 +677,7 @@ export default function LearningReportPage() {
                     style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>
+                      <span className="text-[var(--ink-700)] text-sm font-medium">
                         {idx + 1}. {kp.kpName}
                       </span>
                       <span
@@ -695,7 +691,7 @@ export default function LearningReportPage() {
                         {kp.level}
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full" style={{ background: 'var(--paper-dark)' }}>
+                    <div className="bg-[var(--paper-dark)] w-full h-2 rounded-full">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
@@ -708,7 +704,7 @@ export default function LearningReportPage() {
                         }}
                       />
                     </div>
-                    <div className="text-right text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+                    <div className="text-[var(--ink-400)] text-right text-xs mt-1">
                       掌握率 {kp.rate}%
                     </div>
                   </div>
@@ -732,19 +728,19 @@ export default function LearningReportPage() {
             <div className="flex items-start gap-6 flex-wrap">
               <div className="text-center">
                 <div className="stat-card-value">{streak?.totalActiveDays ?? 0}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>累计活跃天数</div>
+                <div className="text-[var(--ink-400)] text-xs mt-1">累计活跃天数</div>
               </div>
               <div className="text-center">
-                <div className="stat-card-value" style={{ color: 'var(--fox)' }}>{streak?.currentStreak ?? 0}</div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>当前连续</div>
+                <div className="text-[var(--fox)] stat-card-value">{streak?.currentStreak ?? 0}</div>
+                <div className="text-[var(--ink-400)] text-xs mt-1">当前连续</div>
               </div>
               <div className="text-center">
-                <div className="text-sm font-medium" style={{ color: 'var(--ink-500)' }}>
+                <div className="text-[var(--ink-500)] text-sm font-medium">
                   {streak?.lastActiveDate
                     ? new Date(streak.lastActiveDate).toLocaleDateString('zh-CN')
                     : '—'}
                 </div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>最近活跃</div>
+                <div className="text-[var(--ink-400)] text-xs mt-1">最近活跃</div>
               </div>
             </div>
           </div>
@@ -759,7 +755,7 @@ export default function LearningReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr style={{ color: 'var(--ink-400)' }}>
+                      <tr className="text-[var(--ink-400)]">
                         <th className="text-left pb-2 font-medium">日期</th>
                         <th className="text-center pb-2 font-medium">考试</th>
                         <th className="text-center pb-2 font-medium">学时</th>
@@ -770,19 +766,19 @@ export default function LearningReportPage() {
                     <tbody>
                       {last7Days.map((day, idx) => (
                         <tr key={day.date} className="border-t" style={{ borderColor: 'rgba(139,129,116,0.12)' }}>
-                          <td className="py-2 pr-2 font-medium" style={{ color: 'var(--ink-600)' }}>
+                          <td className="text-[var(--ink-600)] py-2 pr-2 font-medium">
                             {day.label}
                           </td>
-                          <td className="py-2 text-center" style={{ color: 'var(--ink-400)' }}>
+                          <td className="text-[var(--ink-400)] py-2 text-center">
                             {day.activity && day.activity.examCount > 0 ? day.activity.examCount : '—'}
                           </td>
-                          <td className="py-2 text-center" style={{ color: 'var(--ink-400)' }}>
+                          <td className="text-[var(--ink-400)] py-2 text-center">
                             {day.activity && day.activity.studyHours > 0 ? `${day.activity.studyHours}h` : '—'}
                           </td>
-                          <td className="py-2 text-center" style={{ color: 'var(--ink-400)' }}>
+                          <td className="text-[var(--ink-400)] py-2 text-center">
                             {day.activity && day.activity.videoHours > 0 ? `${day.activity.videoHours}h` : '—'}
                           </td>
-                          <td className="py-2 text-center" style={{ color: 'var(--ink-400)' }}>
+                          <td className="text-[var(--ink-400)] py-2 text-center">
                             {day.activity && day.activity.practiceCount > 0 ? day.activity.practiceCount : '—'}
                           </td>
                         </tr>
@@ -790,8 +786,8 @@ export default function LearningReportPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-3 text-right text-xs" style={{ color: 'var(--ink-400)' }}>
-                  + 近30天共活跃 <strong style={{ color: 'var(--ink-600)' }}>{data?.recent30DayActive ?? 0}</strong> 天
+                <div className="text-[var(--ink-400)] mt-3 text-right text-xs">
+                  + 近30天共活跃 <strong className="text-[var(--ink-600)]">{data?.recent30DayActive ?? 0}</strong> 天
                 </div>
               </>
             )}
@@ -809,10 +805,10 @@ export default function LearningReportPage() {
                   className="p-4 rounded-lg"
                   style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}
                 >
-                  <div className="text-sm font-medium mb-2" style={{ color: 'var(--ink-700)' }}>
+                  <div className="text-[var(--ink-700)] text-sm font-medium mb-2">
                     {prog.programName}
                   </div>
-                  <div className="w-full h-2 rounded-full mb-2" style={{ background: 'var(--paper-dark)' }}>
+                  <div className="bg-[var(--paper-dark)] w-full h-2 rounded-full mb-2">
                     <div
                       className="h-full rounded-full"
                       style={{
@@ -825,10 +821,10 @@ export default function LearningReportPage() {
                       }}
                     />
                   </div>
-                  <div className="flex justify-between text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] flex justify-between text-xs">
                     <span>进度 {prog.progressRate}%</span>
                     <span>
-                      <strong style={{ color: 'var(--ink-600)' }}>{prog.completedCourses}</strong> / {prog.totalCourses} 课程
+                      <strong className="text-[var(--ink-600)]">{prog.completedCourses}</strong> / {prog.totalCourses} 课程
                     </span>
                   </div>
                 </div>

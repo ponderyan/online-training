@@ -252,7 +252,7 @@ export default function QuestionsPage() {
       <SelectionBar selectedIds={selectedIds} onGenerate={goGenerateWithSelected} onClear={clearSelection} onDone={load} />
 
       {/* ── 分页 ── */}
-      <div className="flex flex-col items-center mt-4 gap-2" style={{ color: 'var(--ink-400)' }}>
+      <div className="text-[var(--ink-400)] flex flex-col items-center mt-4 gap-2">
         <div className="flex items-center gap-2 text-xs">
           <span>显示</span>
           <input value={pageSize} onChange={e => {
@@ -261,7 +261,7 @@ export default function QuestionsPage() {
           }}
             className="input text-xs text-center" style={{ width: '56px', padding: '4px 6px' }} inputMode="numeric" />
           <span>条 / 页，共 {total} 条</span>
-          <span className="ml-2" style={{ color: 'var(--ink-200)' }}>
+          <span className="text-[var(--ink-200)] ml-2">
             （第 {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} 条）
           </span>
         </div>

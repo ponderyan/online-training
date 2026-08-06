@@ -85,26 +85,26 @@ export default function OnlineExamPrototype() {
   // Submitted state
   if (examSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--paper)' }}>
+      <div className="bg-[var(--paper)] min-h-screen flex items-center justify-center">
         <div className="card max-w-md w-full p-10 text-center animate-fadeSlide">
           <div className="text-5xl mb-5">✅</div>
-          <h2 className="font-serif font-bold text-lg mb-2" style={{ color: 'var(--ink-800)' }}>答卷已提交</h2>
-          <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>你的答卷已成功提交，客观题部分已自动判分。</p>
-          <div className="p-4 rounded-lg mb-5 text-left" style={{ background: 'var(--paper)' }}>
+          <h2 className="text-[var(--ink-800)] font-serif font-bold text-lg mb-2">答卷已提交</h2>
+          <p className="text-[var(--ink-400)] text-sm mb-4">你的答卷已成功提交，客观题部分已自动判分。</p>
+          <div className="bg-[var(--paper)] p-4 rounded-lg mb-5 text-left">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>已答</span>
-                <p className="font-bold" style={{ color: 'var(--ink-800)' }}>{answeredCount}/{totalQuestions} 题</p>
+                <span className="text-[var(--ink-300)] text-xs">已答</span>
+                <p className="text-[var(--ink-800)] font-bold">{answeredCount}/{totalQuestions} 题</p>
               </div>
               <div>
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>用时</span>
-                <p className="font-bold" style={{ color: 'var(--ink-800)' }}>{formatTime(7200 - timeLeft)}</p>
+                <span className="text-[var(--ink-300)] text-xs">用时</span>
+                <p className="text-[var(--ink-800)] font-bold">{formatTime(7200 - timeLeft)}</p>
               </div>
             </div>
           </div>
           <button onClick={() => { setExamSubmitted(false); setAnswers({}); setCurrentQ(0); setTimeLeft(7200); }}
             className="btn btn-ink btn-sm">返回考试列表</button>
-          <p className="text-xs mt-4" style={{ color: 'var(--ink-300)' }}>
+          <p className="text-[var(--ink-300)] text-xs mt-4">
             🦊 主观题将由阅卷人人工判分，请耐心等待。
           </p>
         </div>
@@ -113,21 +113,21 @@ export default function OnlineExamPrototype() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+    <div className="bg-[var(--paper)] min-h-screen flex flex-col">
       {/* Top bar */}
       <header className="border-b flex-shrink-0" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-serif font-bold text-sm" style={{ color: 'var(--ink-800)' }}>🦊 FoxLearn</span>
+            <span className="text-[var(--ink-800)] font-serif font-bold text-sm">🦊 FoxLearn</span>
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>考试中</span>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>进度</span>
-              <div className="w-32 h-1.5 rounded-full" style={{ background: 'var(--paper-dark)' }}>
+              <span className="text-[var(--ink-300)] text-xs">进度</span>
+              <div className="bg-[var(--paper-dark)] w-32 h-1.5 rounded-full">
                 <div className="h-1.5 rounded-full transition-all" style={{ width: `${(answeredCount / totalQuestions) * 100}%`, background: 'var(--fox)' }} />
               </div>
-              <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{answeredCount}/{totalQuestions}</span>
+              <span className="text-[var(--fox)] text-xs font-medium">{answeredCount}/{totalQuestions}</span>
             </div>
             <div className="flex items-center gap-2 text-sm font-bold" style={{ color: timeLeft < 300 ? 'var(--verm)' : 'var(--ink-800)' }}>
               <span>⏱</span>
@@ -143,7 +143,7 @@ export default function OnlineExamPrototype() {
           {/* Question card */}
           <div className="card flex-1 p-8 flex flex-col min-h-0 overflow-y-auto">
             {/* Question header */}
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+            <div className="border-[var(--ink-100)] flex items-center gap-3 mb-6 pb-4 border-b">
               <span className={`text-xs px-2.5 py-1 rounded font-medium ${
                 q.type === 'SINGLE_CHOICE' ? 'tag-cyan' :
                 q.type === 'MULTIPLE_CHOICE' ? 'tag-gold' :
@@ -152,9 +152,9 @@ export default function OnlineExamPrototype() {
               }`}>
                 {q.typeLabel}
               </span>
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>第 {currentQ + 1} 题 · 共 {totalQuestions} 题</span>
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>难度：{q.difficulty}</span>
-              <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{q.score}分</span>
+              <span className="text-[var(--ink-300)] text-xs">第 {currentQ + 1} 题 · 共 {totalQuestions} 题</span>
+              <span className="text-[var(--ink-300)] text-xs">难度：{q.difficulty}</span>
+              <span className="text-[var(--fox)] text-xs font-medium">{q.score}分</span>
               <button onClick={() => {
                 const next = new Set(flagged);
                 if (next.has(currentQ)) next.delete(currentQ); else next.add(currentQ);
@@ -206,7 +206,7 @@ export default function OnlineExamPrototype() {
                           style={{ color: selected ? 'var(--fox-dark)' : 'var(--ink-600)' }}>
                           {opt.content}
                         </span>
-                        {selected && <span className="ml-auto text-sm" style={{ color: 'var(--fox)' }}>✓</span>}
+                        {selected && <span className="text-[var(--fox)] ml-auto text-sm">✓</span>}
                       </div>
                     );
                   })}
@@ -243,7 +243,7 @@ export default function OnlineExamPrototype() {
             </div>
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between pt-6 mt-6 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+            <div className="border-[var(--ink-100)] flex items-center justify-between pt-6 mt-6 border-t">
               <button onClick={() => setCurrentQ(Math.max(0, currentQ - 1))} disabled={currentQ === 0}
                 className="btn btn-ghost btn-sm" style={{ opacity: currentQ === 0 ? 0.3 : 1 }}>
                 ← 上一题
@@ -263,7 +263,7 @@ export default function OnlineExamPrototype() {
         {/* Right sidebar — question navigator */}
         <div className="w-56 flex-shrink-0">
           <div className="card p-4 sticky" style={{ top: '1rem' }}>
-            <h4 className="text-xs font-semibold mb-3" style={{ color: 'var(--ink-400)' }}>答题卡</h4>
+            <h4 className="text-[var(--ink-400)] text-xs font-semibold mb-3">答题卡</h4>
             <div className="grid grid-cols-5 gap-1.5">
               {questions.map((q, i) => (
                 <button key={i} onClick={() => setCurrentQ(i)}
@@ -283,15 +283,15 @@ export default function OnlineExamPrototype() {
             {/* Legend */}
             <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t text-xs" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-300)' }}>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ background: 'var(--fox)' }} />
+                <span className="bg-[var(--fox)] w-3 h-3 rounded" />
                 <span>已作答</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ background: 'var(--paper-dark)' }} />
+                <span className="bg-[var(--paper-dark)] w-3 h-3 rounded" />
                 <span>未作答</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ background: 'var(--gold-glow)' }} />
+                <span className="bg-[var(--gold-glow)] w-3 h-3 rounded" />
                 <span>已标记</span>
               </div>
             </div>
@@ -313,19 +313,19 @@ export default function OnlineExamPrototype() {
               <button onClick={() => setShowSubmitModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-4">
-              <div className="p-4 rounded-lg" style={{ background: 'var(--paper)' }}>
+              <div className="bg-[var(--paper)] p-4 rounded-lg">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <div className="text-lg font-bold" style={{ color: 'var(--ink-800)' }}>{answeredCount}</div>
-                    <div className="text-xs" style={{ color: 'var(--ink-300)' }}>已作答</div>
+                    <div className="text-[var(--ink-800)] text-lg font-bold">{answeredCount}</div>
+                    <div className="text-[var(--ink-300)] text-xs">已作答</div>
                   </div>
                   <div>
-                    <div className="text-lg font-bold" style={{ color: 'var(--gold-dark)' }}>{flagged.size}</div>
-                    <div className="text-xs" style={{ color: 'var(--ink-300)' }}>已标记</div>
+                    <div className="text-[var(--gold-dark)] text-lg font-bold">{flagged.size}</div>
+                    <div className="text-[var(--ink-300)] text-xs">已标记</div>
                   </div>
                   <div>
-                    <div className="text-lg font-bold" style={{ color: 'var(--verm)' }}>{totalQuestions - answeredCount}</div>
-                    <div className="text-xs" style={{ color: 'var(--ink-300)' }}>未作答</div>
+                    <div className="text-[var(--verm)] text-lg font-bold">{totalQuestions - answeredCount}</div>
+                    <div className="text-[var(--ink-300)] text-xs">未作答</div>
                   </div>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export default function OnlineExamPrototype() {
                 </div>
               )}
 
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--ink-300)] text-xs">
                 交卷后客观题自动判分，主观题由阅卷人评分。
               </p>
             </div>

@@ -58,7 +58,7 @@ export default function AppealPage() {
     setSubmitting(false);
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -74,49 +74,49 @@ export default function AppealPage() {
               <div className="font-semibold text-sm">
                 {existingAppeal.status === 'PENDING' ? '申诉已提交，等待审核' : existingAppeal.status === 'APPROVED' ? '申诉已批准' : '申诉已驳回'}
               </div>
-              <div className="text-xs" style={{ color: 'var(--ink-300)' }}>提交时间：{new Date(existingAppeal.createdAt).toLocaleString('zh-CN')}</div>
+              <div className="text-[var(--ink-300)] text-xs">提交时间：{new Date(existingAppeal.createdAt).toLocaleString('zh-CN')}</div>
             </div>
           </div>
           <div className="space-y-2 text-sm">
-            <div><span style={{ color: 'var(--ink-400)' }}>原因：</span>{existingAppeal.reason}</div>
-            <div><span style={{ color: 'var(--ink-400)' }}>说明：</span>{existingAppeal.description}</div>
-            {existingAppeal.oldScore && <div><span style={{ color: 'var(--ink-400)' }}>原分数：</span>{existingAppeal.oldScore}</div>}
-            {existingAppeal.newScore && <div><span style={{ color: 'var(--ink-400)' }}>调整后：</span><strong style={{ color: 'var(--sage)' }}>{existingAppeal.newScore}</strong></div>}
-            {existingAppeal.reviewNote && <div><span style={{ color: 'var(--ink-400)' }}>审核意见：</span>{existingAppeal.reviewNote}</div>}
+            <div><span className="text-[var(--ink-400)]">原因：</span>{existingAppeal.reason}</div>
+            <div><span className="text-[var(--ink-400)]">说明：</span>{existingAppeal.description}</div>
+            {existingAppeal.oldScore && <div><span className="text-[var(--ink-400)]">原分数：</span>{existingAppeal.oldScore}</div>}
+            {existingAppeal.newScore && <div><span className="text-[var(--ink-400)]">调整后：</span><strong className="text-[var(--sage)]">{existingAppeal.newScore}</strong></div>}
+            {existingAppeal.reviewNote && <div><span className="text-[var(--ink-400)]">审核意见：</span>{existingAppeal.reviewNote}</div>}
           </div>
         </div>
       ) : submitted ? (
         <div className="card p-6 max-w-lg text-center">
           <p className="text-4xl mb-4">✅</p>
           <p className="font-semibold text-sm mb-2">申诉已提交</p>
-          <p className="text-xs mb-4" style={{ color: 'var(--ink-300)' }}>等待管理员审核</p>
+          <p className="text-[var(--ink-300)] text-xs mb-4">等待管理员审核</p>
           <button onClick={() => router.push('/exams/appeals')} className="btn btn-fox btn-sm">查看申诉记录</button>
         </div>
       ) : (
         <div className="card p-6 max-w-lg">
           {result?.session ? (
             <>
-              <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
+              <div className="bg-[var(--paper-dark)] mb-4 p-3 rounded-lg">
                 <div className="text-sm">当前成绩：<strong>{result.session.totalScore ?? result.session.finalScore ?? '—'}</strong></div>
-                <div className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>状态：{result.session.scoringStatus === 'PUBLISHED' ? '已发布' : result.session.scoringStatus}</div>
+                <div className="text-[var(--ink-300)] text-xs mt-1">状态：{result.session.scoringStatus === 'PUBLISHED' ? '已发布' : result.session.scoringStatus}</div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>申诉原因 *</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">申诉原因 *</label>
                   <select value={reason} onChange={e => setReason(e.target.value)} className="input select w-full">
                     <option value="">请选择…</option>
                     {REASON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>详细说明 *</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">详细说明 *</label>
                   <textarea value={description} onChange={e => setDescription(e.target.value)} className="input w-full" rows={5} placeholder="请详细描述申诉理由，如有需要说明的评分问题、漏评题目等" />
                 </div>
                 <button onClick={handleSubmit} disabled={submitting || !reason || !description} className="btn btn-fox">{submitting ? '提交中…' : '提交申诉'}</button>
               </div>
             </>
           ) : (
-            <p className="text-sm" style={{ color: 'var(--ink-300)' }}>未找到该考试的记录</p>
+            <p className="text-[var(--ink-300)] text-sm">未找到该考试的记录</p>
           )}
         </div>
       )}

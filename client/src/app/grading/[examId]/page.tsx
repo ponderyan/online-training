@@ -335,7 +335,7 @@ export default function GradingDetail() {
               ].map((s, i) => (
                 <div key={i} className="card p-4 text-center">
                   <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-1">{s.label}</div>
                 </div>
               ));
             })()}
@@ -349,7 +349,7 @@ export default function GradingDetail() {
                   <tr key={a.id}>
                     <td className="font-medium">{a.student?.displayName || '—'}</td>
                     <td><span className="tag tag-cyan text-[10px]">{a.reason}</span></td>
-                    <td className="text-xs max-w-[200px] truncate" style={{ color: 'var(--ink-400)' }}>{a.description}</td>
+                    <td className="text-[var(--ink-400)] text-xs max-w-[200px] truncate">{a.description}</td>
                     <td>{a.oldScore ?? '—'}</td>
                     <td><span className={`tag ${a.status === 'PENDING' ? 'tag-gold' : a.status === 'APPROVED' ? 'tag-cyan' : 'tag-ink'}`}>{a.status === 'PENDING' ? '待处理' : a.status === 'APPROVED' ? '已批准' : '已驳回'}</span></td>
                     <td>
@@ -358,12 +358,12 @@ export default function GradingDetail() {
                           <button onClick={() => { setAppealReviewing(appealReviewing === a.id ? null : a.id); setAppealNewScore(''); setAppealReviewNote(''); }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>审核</button>
                         </div>
                       ) : (
-                        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{a.reviewNote || '—'}</span>
+                        <span className="text-[var(--ink-300)] text-xs">{a.reviewNote || '—'}</span>
                       )}
                     </td>
                   </tr>
                 ))}
-                {appeals.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无申诉记录</td></tr>}
+                {appeals.length === 0 && <tr><td colSpan={6} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无申诉记录</td></tr>}
               </tbody>
             </table>
             </div>
@@ -378,11 +378,11 @@ export default function GradingDetail() {
                     <button onClick={() => { handleReviewAppeal(appealReviewing, 'REJECTED'); }} className="btn btn-sm flex-1" style={{ border: '1px solid var(--ink-200)' }}>❌ 驳回</button>
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>新分数（批准时必填）</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">新分数（批准时必填）</label>
                     <input type="number" value={appealNewScore} onChange={e => setAppealNewScore(e.target.value)} className="input w-full" placeholder="调整后分数" />
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>审核意见</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">审核意见</label>
                     <textarea value={appealReviewNote} onChange={e => setAppealReviewNote(e.target.value)} className="input w-full" rows={3} placeholder="审核意见" />
                   </div>
                   <button onClick={() => setAppealReviewing(null)} className="btn btn-outline btn-sm w-full">取消</button>
@@ -404,7 +404,7 @@ export default function GradingDetail() {
           <div className="w-64 flex-shrink-0">
             <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
               <div className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>已提交学员</div>
-              <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] divide-y">
                 {filteredStudents.map((s: any, idx: number) => {
                   const si = scoringStatusLabel(s.scoringStatus, s.pendingCount || 0);
                   const score = s.finalScore ?? s.totalScore;
@@ -422,20 +422,20 @@ export default function GradingDetail() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.1)', color: 'var(--sage)' }}>已分派</span>
                         )}
                       </div>
-                      <div className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--ink-400)' }}>
+                      <div className="text-[var(--ink-400)] text-xs mt-0.5 flex items-center gap-1.5">
                         <span style={{ color: 'var(--ink-600)', fontWeight: 600 }}>得分：{score ?? '-'}/{maxScore || '-'}</span>
                         {objScore !== null && subjScore !== null && (
-                          <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>客观{objScore} + 主观{subjScore}</span>
+                          <span className="text-[var(--ink-300)] text-[10px]">客观{objScore} + 主观{subjScore}</span>
                         )}
                       </div>
                       {pendingCount > 0 && (
-                        <div className="text-[10px] mt-0.5" style={{ color: 'var(--gold-dark)' }}>⏳ 待评 {pendingCount} 题</div>
+                        <div className="text-[var(--gold-dark)] text-[10px] mt-0.5">⏳ 待评 {pendingCount} 题</div>
                       )}
                       <div className="text-[10px] mt-0.5 font-medium" style={{ color: si.color }}>{si.text}</div>
                     </div>
                   );
                 })}
-                {filteredStudents.length === 0 && <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
+                {filteredStudents.length === 0 && <div className="text-[var(--ink-300)] px-4 py-8 text-center text-xs">
                   {viewFilter === 'mine' ? '暂无分派给你的学员' : '暂无已提交学员'}
                 </div>}
               </div>
@@ -446,7 +446,7 @@ export default function GradingDetail() {
             {!selectedStudent ? (
               <div className="rounded-xl p-12 text-center" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                 <p className="text-4xl mb-4">📝</p>
-                <p style={{ color: 'var(--ink-300)' }}>选择一个学员开始阅卷</p>
+                <p className="text-[var(--ink-300)]">选择一个学员开始阅卷</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -471,36 +471,36 @@ export default function GradingDetail() {
                     <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <span style={{ width: 4, height: 16, background: 'var(--fox)', borderRadius: 2, display: 'inline-block' }} />
-                        <h3 className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>得分汇总</h3>
+                        <h3 className="text-[var(--ink-700)] text-sm font-semibold">得分汇总</h3>
                       </div>
                       <div className="grid grid-cols-4 gap-3">
-                        <div className="text-center p-3 rounded-lg" style={{ background: 'var(--cyan-glow)' }}>
-                          <div className="text-lg font-bold" style={{ color: 'var(--cyan)' }}>{objScore}/{objMax}</div>
-                          <div className="text-[11px] mt-0.5" style={{ color: 'var(--ink-400)' }}>客观题</div>
-                          <div className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--sage)' }}>✅ 自动判分</div>
+                        <div className="bg-[var(--cyan-glow)] text-center p-3 rounded-lg">
+                          <div className="text-[var(--cyan)] text-lg font-bold">{objScore}/{objMax}</div>
+                          <div className="text-[var(--ink-400)] text-[11px] mt-0.5">客观题</div>
+                          <div className="text-[var(--sage)] text-[10px] mt-0.5 font-medium">✅ 自动判分</div>
                         </div>
                         <div className="text-center p-3 rounded-lg" style={{ background: pendingSubj.length > 0 ? 'var(--gold-glow)' : 'var(--cyan-glow)' }}>
                           <div className="text-lg font-bold" style={{ color: pendingSubj.length > 0 ? 'var(--gold-dark)' : 'var(--cyan)' }}>{subjScore}/{subjMax}</div>
-                          <div className="text-[11px] mt-0.5" style={{ color: 'var(--ink-400)' }}>主观题</div>
+                          <div className="text-[var(--ink-400)] text-[11px] mt-0.5">主观题</div>
                           <div className="text-[10px] mt-0.5 font-medium" style={{ color: pendingSubj.length > 0 ? 'var(--gold-dark)' : 'var(--sage)' }}>
                             {pendingSubj.length > 0 ? '⏳ 待评 ' + pendingSubj.length + '题' : '✅ 已评完'}
                           </div>
                         </div>
                         <div className="text-center p-3 rounded-lg" style={{ background: isPassed ? 'var(--sage-glow)' : 'var(--verm-glow)' }}>
                           <div className="text-lg font-bold" style={{ color: isPassed ? 'var(--sage)' : 'var(--verm)' }}>{totalScore}/{totalMax}</div>
-                          <div className="text-[11px] mt-0.5" style={{ color: 'var(--ink-400)' }}>总分</div>
+                          <div className="text-[var(--ink-400)] text-[11px] mt-0.5">总分</div>
                           <div className="text-[10px] mt-0.5 font-medium" style={{ color: isPassed ? 'var(--sage)' : 'var(--verm)' }}>
                             {!allGraded ? '⏳ 评阅中' : isPassed ? '✅ 已及格' : '❌ 未及格'}
                           </div>
                         </div>
-                        <div className="text-center p-3 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
-                          <div className="text-lg font-bold" style={{ color: 'var(--ink-600)' }}>{passScore}分</div>
-                          <div className="text-[11px] mt-0.5" style={{ color: 'var(--ink-400)' }}>及格线</div>
-                          <div className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--ink-400)' }}>{passRate}%</div>
+                        <div className="bg-[var(--paper-dark)] text-center p-3 rounded-lg">
+                          <div className="text-[var(--ink-600)] text-lg font-bold">{passScore}分</div>
+                          <div className="text-[var(--ink-400)] text-[11px] mt-0.5">及格线</div>
+                          <div className="text-[var(--ink-400)] text-[10px] mt-0.5 font-medium">{passRate}%</div>
                         </div>
                       </div>
                       {pendingSubj.length > 0 && (
-                        <p className="text-xs mt-3" style={{ color: 'var(--gold-dark)' }}>
+                        <p className="text-[var(--gold-dark)] text-xs mt-3">
                           待评：{pendingSubj.length} 道主观题（{pendingSubj.map(a => typeNames[a.type]).join('、')}）
                         </p>
                       )}
@@ -534,9 +534,9 @@ export default function GradingDetail() {
                           }} className="text-xs ml-1 px-2 py-0.5 rounded" style={{ border: '1px solid var(--sage)', color: 'var(--sage)' }}>✏️ 改分</button>
                         </>}
                       </div>
-                      <p className="text-sm mb-3" style={{ color: 'var(--ink-600)' }}>{a.content}</p>
+                      <p className="text-[var(--ink-600)] text-sm mb-3">{a.content}</p>
                       <div className="text-sm p-3 rounded-lg mb-3" style={{ background: isSub ? 'var(--fox-pale)' : 'var(--paper-alt)', borderLeft: `3px solid ${isSub ? 'var(--fox-light)' : 'var(--ink-200)'}` }}>
-                        <p className="flex items-center gap-1" style={{ color: 'var(--ink-500)' }}>
+                        <p className="text-[var(--ink-500)] flex items-center gap-1">
                           {isSub ? '✍️ 学员答案：' : '☑️ 学员答案：'}
                         </p>
                         <p className="mt-1 font-medium" style={{ color: 'var(--ink-700)', maxHeight: isSub && String(a.yourAnswer ?? '').length > 200 ? undefined : undefined }}>
@@ -556,7 +556,7 @@ export default function GradingDetail() {
                 <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-3">
                     <span style={{ width: 4, height: 14, background: 'var(--fox)', borderRadius: 2, display: 'inline-block' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--ink-600)' }}>阅卷操作</span>
+                    <span className="text-[var(--ink-600)] text-xs font-semibold">阅卷操作</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <button onClick={() => { setShowReviews(!showReviews); if (!showReviews) loadReviews(); }} className="btn btn-outline btn-sm">🔍 标记复核 ({reviews.filter((r: any) => r.status === 'PENDING').length})</button>
@@ -569,7 +569,7 @@ export default function GradingDetail() {
                   <div className="rounded-xl p-5" style={{ background: 'var(--fox-glow)', border: '1px solid var(--fox-light)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <span style={{ width: 4, height: 14, background: 'var(--gold-dark)', borderRadius: 2, display: 'inline-block' }} />
-                      <span className="text-xs font-semibold" style={{ color: 'var(--gold-dark)' }}>考试管理</span>
+                      <span className="text-[var(--gold-dark)] text-xs font-semibold">考试管理</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setAdjustOpen(!adjustOpen)} className="btn btn-outline btn-sm">⚖️ 成绩调整</button>
@@ -584,10 +584,10 @@ export default function GradingDetail() {
 
                 {adjustOpen && (
                   <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: '1px solid var(--gold-light)' }}>
-                    <p className="text-sm font-medium mb-3" style={{ color: 'var(--ink-600)' }}>成绩调整（将记录审计日志）</p>
+                    <p className="text-[var(--ink-600)] text-sm font-medium mb-3">成绩调整（将记录审计日志）</p>
                     <div className="flex gap-3 items-end">
-                      <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>调整后分数</label><input type="number" value={adjustScore} onChange={e => setAdjustScore(e.target.value)} className="input w-24" min={0} max={100} /></div>
-                      <div className="flex-1"><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>调整原因 *</label><input type="text" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder="如：主观题评分争议复核" className="input" /></div>
+                      <div><label className="text-[var(--ink-400)] block text-xs mb-1">调整后分数</label><input type="number" value={adjustScore} onChange={e => setAdjustScore(e.target.value)} className="input w-24" min={0} max={100} /></div>
+                      <div className="flex-1"><label className="text-[var(--ink-400)] block text-xs mb-1">调整原因 *</label><input type="text" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder="如：主观题评分争议复核" className="input" /></div>
                       <button onClick={handleAdjust} disabled={!adjustReason || !adjustScore} className="btn text-sm px-4 py-2" style={{ background: 'var(--fox)', color: 'white', opacity: !adjustReason || !adjustScore ? 0.5 : 1 }}>确认调整</button>
                     </div>
                   </div>
@@ -602,27 +602,27 @@ export default function GradingDetail() {
                       </div>
                       <div className="modal-body text-sm space-y-3">
                         {allConf ? (
-                          <p style={{ color: 'var(--ink-600)' }}>成绩已发布过。<strong style={{ color: 'var(--verm)' }}>已发布的成绩和证书将被覆盖</strong>。确认重新发布？</p>
+                          <p className="text-[var(--ink-600)]">成绩已发布过。<strong className="text-[var(--verm)]">已发布的成绩和证书将被覆盖</strong>。确认重新发布？</p>
                         ) : (
                           <>
-                            <p style={{ color: 'var(--ink-600)' }}>
+                            <p className="text-[var(--ink-600)]">
                               本次考试共 <strong>{students.length}</strong> 名学员，发布后将自动发送成绩通知并生成证书。
                             </p>
-                            <div className="p-3 rounded-lg grid grid-cols-2 gap-2" style={{ background: 'var(--fox-glow)' }}>
+                            <div className="bg-[var(--fox-glow)] p-3 rounded-lg grid grid-cols-2 gap-2">
                               <div className="text-center">
-                                <div className="text-lg font-bold" style={{ color: 'var(--sage)' }}>
+                                <div className="text-[var(--sage)] text-lg font-bold">
                                   {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= (exam?.passingScore ?? 60)).length}
                                 </div>
-                                <div className="text-xs" style={{ color: 'var(--ink-400)' }}>获证书</div>
+                                <div className="text-[var(--ink-400)] text-xs">获证书</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-lg font-bold" style={{ color: 'var(--verm)' }}>
+                                <div className="text-[var(--verm)] text-lg font-bold">
                                   {students.filter(s => (s.finalScore ?? s.totalScore ?? 0) < (exam?.passingScore ?? 60)).length}
                                 </div>
-                                <div className="text-xs" style={{ color: 'var(--ink-400)' }}>未达及格线</div>
+                                <div className="text-[var(--ink-400)] text-xs">未达及格线</div>
                               </div>
                             </div>
-                            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>成绩发布后学员端将立即看到成绩和证书。</p>
+                            <p className="text-[var(--ink-300)] text-xs">成绩发布后学员端将立即看到成绩和证书。</p>
                           </>
                         )}
                       </div>
@@ -639,7 +639,7 @@ export default function GradingDetail() {
 
           {showReviews && (
             <div className="mt-6">
-              <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-700)' }}>🔍 复核管理</h3>
+              <h3 className="text-[var(--ink-700)] text-sm font-bold mb-3">🔍 复核管理</h3>
               <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
                 <table className="list-table">
@@ -648,7 +648,7 @@ export default function GradingDetail() {
                     {reviews.map((r: any) => (
                       <tr key={r.id}>
                         <td className="font-medium">{r.session?.student?.displayName || '—'}</td>
-                        <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{r.reason}</td>
+                        <td className="text-[var(--ink-400)] text-xs">{r.reason}</td>
                         <td>{r.originalScore}</td>
                         <td><span className={`tag ${r.status === 'PENDING' ? 'tag-gold' : r.status === 'RESOLVED' ? 'tag-cyan' : 'tag-ink'}`}>{r.status}</span></td>
                         <td>
@@ -658,11 +658,11 @@ export default function GradingDetail() {
                               <button onClick={() => handleResolveReview(r.id, 'DISMISSED')} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>驳回</button>
                             </div>
                           )}
-                          {r.status !== 'PENDING' && <span className="text-xs" style={{ color: 'var(--ink-300)' }}>已处理</span>}
+                          {r.status !== 'PENDING' && <span className="text-[var(--ink-300)] text-xs">已处理</span>}
                         </td>
                       </tr>
                     ))}
-                    {reviews.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>暂无复核记录</td></tr>}
+                    {reviews.length === 0 && <tr><td colSpan={5} className="text-[var(--ink-300)] text-center py-4 text-xs">暂无复核记录</td></tr>}
                   </tbody>
                 </table>
                 </div>
@@ -680,9 +680,9 @@ export default function GradingDetail() {
               <button onClick={() => setReviewModal(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-3">
-              <p className="text-xs" style={{ color: 'var(--ink-400)' }}>当前得分：{reviewModal.score}</p>
+              <p className="text-[var(--ink-400)] text-xs">当前得分：{reviewModal.score}</p>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>复核原因 *</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">复核原因 *</label>
                 <textarea value={reviewReason} onChange={e => setReviewReason(e.target.value)} className="input textarea" rows={3} placeholder="如：评分标准有疑义，需二审确认" />
               </div>
             </div>
@@ -699,13 +699,13 @@ export default function GradingDetail() {
           <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-4">改分</h3>
             <div className="space-y-3">
-              <p className="text-xs" style={{ color: 'var(--ink-400)' }}>当前得分：{reGrade.currentScore}/{reGrade.maxScore}</p>
+              <p className="text-[var(--ink-400)] text-xs">当前得分：{reGrade.currentScore}/{reGrade.maxScore}</p>
               <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>新分数（/{reGrade.maxScore}）</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">新分数（/{reGrade.maxScore}）</label>
                 <input type="number" id="reGradeScore" className="input w-full" min={0} max={reGrade.maxScore} defaultValue={reGrade.currentScore} />
               </div>
               <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评语</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">评语</label>
                 <input type="text" id="reGradeNote" className="input w-full" placeholder="改分原因" defaultValue={reGrade.currentNote} />
               </div>
               <div className="flex gap-3">
@@ -751,9 +751,9 @@ function GradingForm({ answerId, maxScore, onGrade, onNextStudent }: { answerId:
   };
   return (
     <div className="flex gap-2 items-end">
-      <div><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评分（/{maxScore}）</label><input type="number" value={score} onChange={e => setScore(e.target.value)} className="input w-20" min={0} max={maxScore}
+      <div><label className="text-[var(--ink-400)] block text-xs mb-1">评分（/{maxScore}）</label><input type="number" value={score} onChange={e => setScore(e.target.value)} className="input w-20" min={0} max={maxScore}
         onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} /></div>
-      <div className="flex-1"><label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>评语</label><input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="扣分原因" className="input"
+      <div className="flex-1"><label className="text-[var(--ink-400)] block text-xs mb-1">评语</label><input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="扣分原因" className="input"
         onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} /></div>
       <button onClick={handleSubmit}
         disabled={!score || submitting} className="btn text-xs px-3 py-2" style={{ background: 'var(--sage)', color: 'white', opacity: !score || submitting ? 0.5 : 1 }}>

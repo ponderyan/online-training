@@ -39,13 +39,13 @@ export default function AdminStudentResultPage() {
     <AppLayout>
       <button onClick={() => router.push(`/admin/exam-results/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-3" style={{ color: 'var(--fox)' }}>← 返回</button>
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : !result ? (
-        <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>记录不存在</p></div>
+        <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">记录不存在</p></div>
       ) : (
         <>
           <h1 className="page-title mb-4">📋 考生答题详情</h1>
-          <div className="card p-4 mb-6 text-sm" style={{ background: 'var(--paper)' }}>
+          <div className="bg-[var(--paper)] card p-4 mb-6 text-sm">
             <p><strong>{result.examTitle}</strong> · 总分: {result.finalScore ?? '—'} · {result.isPassed ? '✅ 通过' : '❌ 未通过'}</p>
           </div>
 
@@ -56,11 +56,11 @@ export default function AdminStudentResultPage() {
                 <div key={i} className="card p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: a.isCorrect ? 'var(--sage-glow)' : 'var(--verm-glow)', color: a.isCorrect ? 'var(--sage)' : 'var(--error)' }}>{a.isCorrect ? '✅' : '❌'} {a.score ?? '?'}/{a.maxScore}分</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{a.type}</span>
+                    <span className="text-[var(--ink-300)] text-xs">{a.type}</span>
                   </div>
-                  <p className="text-sm mb-2" style={{ color: 'var(--ink-700)' }}>{a.content}</p>
+                  <p className="text-[var(--ink-700)] text-sm mb-2">{a.content}</p>
                   {a.options?.map((o: any) => (<div key={o.id} className="text-xs py-0.5" style={{ color: o.isCorrect ? 'var(--sage)' : 'var(--ink-400)' }}>{o.label}. {o.content} {o.isCorrect ? '✓' : ''}</div>))}
-                  <div className="text-xs mt-2" style={{ color: 'var(--ink-400)' }}>你的答案：{JSON.stringify(a.yourAnswer)} · 正确答案：{JSON.stringify(a.correctAnswer)}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-2">你的答案：{JSON.stringify(a.yourAnswer)} · 正确答案：{JSON.stringify(a.correctAnswer)}</div>
                   {a.analysis && <div className="text-xs mt-1 p-2 rounded" style={{ background: 'var(--paper)', color: 'var(--ink-500)' }}>解析：{a.analysis}</div>}
                 </div>
               ))}
@@ -70,7 +70,7 @@ export default function AdminStudentResultPage() {
           {appeals.map((ap: any) => (
             <div key={ap.id} className="card p-4">
               <h3 className="section-title mb-3">📝 申诉处理</h3>
-              <div className="text-sm mb-3 p-3 rounded" style={{ background: 'var(--warning-pale)' }}><p className="font-medium">考生申诉理由：</p><p className="text-xs mt-1">{ap.reason}</p></div>
+              <div className="bg-[var(--warning-pale)] text-sm mb-3 p-3 rounded"><p className="font-medium">考生申诉理由：</p><p className="text-xs mt-1">{ap.reason}</p></div>
               {ap.status === 'PENDING' ? (
                 <>
                   <div className="mb-3"><label className="text-xs mb-1 block">调整分数</label><input value={adjustScore} onChange={e => setAdjustScore(e.target.value)} type="number" className="input" style={{ width: 120 }} placeholder="新分数" /></div>

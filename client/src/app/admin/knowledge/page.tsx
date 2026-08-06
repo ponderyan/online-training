@@ -143,12 +143,12 @@ export default function KnowledgePage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+            <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
           ) : documents.length === 0 ? (
             <div className="card p-12 text-center">
               <p className="text-4xl mb-4">📚</p>
-              <p style={{ color: 'var(--ink-300)' }}>暂无知识文档</p>
-              <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>点击「上传文档」添加教材，系统将自动分块建立知识库</p>
+              <p className="text-[var(--ink-300)]">暂无知识文档</p>
+              <p className="text-[var(--ink-300)] text-xs mt-2">点击「上传文档」添加教材，系统将自动分块建立知识库</p>
             </div>
           ) : (
             <div className="card p-0 overflow-hidden">
@@ -164,15 +164,15 @@ export default function KnowledgePage() {
                         <Link href={`/admin/knowledge/${d.id}`} style={{ color: 'var(--fox)', textDecoration: 'none' }}>
                           {d.name}
                         </Link>
-                        <span className="text-xs ml-2" style={{ color: 'var(--ink-300)' }}>.{d.fileType}</span>
+                        <span className="text-[var(--ink-300)] text-xs ml-2">.{d.fileType}</span>
                       </td>
-                      <td style={{ color: 'var(--ink-400)' }} className="text-xs">{d.subject?.name || '—'}</td>
+                      <td className="text-[var(--ink-400)] text-xs">{d.subject?.name || '—'}</td>
                       <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{d.chunkCount} 块</span></td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>v{d.version}</td>
+                      <td className="text-[var(--ink-300)] text-xs">v{d.version}</td>
                       <td>{statusBadge(d.status)}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{d.createdAt ? new Date(d.createdAt).toLocaleString('zh-CN') : '—'}</td>
+                      <td className="text-[var(--ink-300)] text-xs">{d.createdAt ? new Date(d.createdAt).toLocaleString('zh-CN') : '—'}</td>
                       <td className="flex gap-2">
-                        <Link href={`/admin/knowledge/${d.id}`} className="text-xs" style={{ color: 'var(--fox)' }}>分块</Link>
+                        <Link href={`/admin/knowledge/${d.id}`} className="text-[var(--fox)] text-xs">分块</Link>
                         <button onClick={() => handleDelete(d.id, d.name)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                       </td>
                     </tr>
@@ -203,7 +203,7 @@ export default function KnowledgePage() {
             </div>
             {testKeywords.length > 0 && (
               <div className="flex gap-1 mt-3 flex-wrap">
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>提取关键词：</span>
+                <span className="text-[var(--ink-300)] text-xs">提取关键词：</span>
                 {testKeywords.map((kw, i) => (
                   <span key={i} className="tag" style={{ fontSize: '10px', background: 'var(--blue-pale)', color: 'var(--blue)' }}>{kw}</span>
                 ))}
@@ -213,14 +213,14 @@ export default function KnowledgePage() {
 
           {testResults.length > 0 ? (
             <div className="space-y-3">
-              <p className="text-xs" style={{ color: 'var(--ink-300)' }}>命中 {testResults.length} 个知识块</p>
+              <p className="text-[var(--ink-300)] text-xs">命中 {testResults.length} 个知识块</p>
               {testResults.map((r: any, i: number) => (
                 <div key={r.id} className="card p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>#{i + 1} {r.documentName || r.title}</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>块 #{r.chunkIndex}</span>
+                    <span className="text-[var(--fox)] text-xs font-medium">#{i + 1} {r.documentName || r.title}</span>
+                    <span className="text-[var(--ink-300)] text-xs">块 #{r.chunkIndex}</span>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-600)' }}
+                  <p className="text-[var(--ink-600)] text-sm leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: highlightKeywords((r.content || '').slice(0, 300), r.matchedKeywords || []) }} />
                   {r.matchedKeywords?.length > 0 && (
                     <div className="flex gap-1 mt-2">
@@ -234,8 +234,8 @@ export default function KnowledgePage() {
             </div>
           ) : testKeywords.length > 0 && !testing ? (
             <div className="card p-8 text-center">
-              <p style={{ color: 'var(--ink-300)' }}>未命中任何知识块 😅</p>
-              <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>尝试上传相关教材或调整问法</p>
+              <p className="text-[var(--ink-300)]">未命中任何知识块 😅</p>
+              <p className="text-[var(--ink-300)] text-xs mt-2">尝试上传相关教材或调整问法</p>
             </div>
           ) : null}
         </div>
@@ -248,14 +248,14 @@ export default function KnowledgePage() {
             <h3 className="text-base font-semibold mb-4">📤 上传知识文档</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>关联科目 *</label>
+                <label className="text-[var(--ink-400)] text-xs font-medium">关联科目 *</label>
                 <select value={uploadSubjectId} onChange={e => setUploadSubjectId(e.target.value)} className="input mt-1 w-full">
                   <option value="">请选择科目</option>
                   {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>文档名称（可选，默认取文件名）</label>
+                <label className="text-[var(--ink-400)] text-xs font-medium">文档名称（可选，默认取文件名）</label>
                 <input value={uploadName} onChange={e => setUploadName(e.target.value)} className="input mt-1 w-full" placeholder="如：安全生产法教程" />
               </div>
               <div
@@ -266,12 +266,12 @@ export default function KnowledgePage() {
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors"
                 style={{ borderColor: dragOver ? 'var(--fox)' : 'var(--border)', background: dragOver ? 'var(--fox-bg)' : 'transparent' }}>
                 <p className="text-2xl mb-2">📄</p>
-                <p className="text-sm" style={{ color: 'var(--ink-400)' }}>拖拽文件到此处，或点击选择</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>支持 PDF / TXT / MD / DOCX，最大 100MB</p>
+                <p className="text-[var(--ink-400)] text-sm">拖拽文件到此处，或点击选择</p>
+                <p className="text-[var(--ink-300)] text-xs mt-1">支持 PDF / TXT / MD / DOCX，最大 100MB</p>
                 <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.docx" className="hidden"
                   onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
               </div>
-              {uploading && <p className="text-sm text-center" style={{ color: 'var(--fox)' }}>⏳ 上传中…</p>}
+              {uploading && <p className="text-[var(--fox)] text-sm text-center">⏳ 上传中…</p>}
             </div>
             <div className="flex justify-end gap-2 mt-5">
               <button onClick={() => setShowUpload(false)} className="btn btn-outline btn-sm">取消</button>

@@ -195,7 +195,7 @@ export default function PapersPage() {
       {/* 批量操作栏 */}
       {selectedIds.length > 0 && (
         <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg" style={{ background: 'var(--fox-glow)', border: '1px solid var(--fox)' }}>
-          <span className="text-xs font-medium" style={{ color: 'var(--fox-dark)' }}>已选 {selectedIds.length} 套</span>
+          <span className="text-[var(--fox-dark)] text-xs font-medium">已选 {selectedIds.length} 套</span>
           <button onClick={() => handleBatchStatus('FINALIZED')} className="btn btn-xs btn-outline">批量定稿</button>
           <button onClick={() => handleBatchStatus('ARCHIVED')} className="btn btn-xs btn-outline">批量归档</button>
           <button onClick={handleBatchDelete} className="btn btn-xs" style={{ color: 'var(--verm)', borderColor: 'var(--verm)' }}>批量删除</button>
@@ -221,7 +221,7 @@ export default function PapersPage() {
                 <div className="flex items-start gap-2">
                   <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => toggleSelect(p.id)}
                     className="mt-1 w-3.5 h-3.5 accent-[var(--fox)] cursor-pointer flex-shrink-0" />
-                  <h3 className="font-serif font-bold text-sm leading-snug" style={{ color: 'var(--ink-800)' }}>{p.name}</h3>
+                  <h3 className="text-[var(--ink-800)] font-serif font-bold text-sm leading-snug">{p.name}</h3>
                 </div>
                 <span className={`tag ${
                   p.status === 'OFFICIAL' ? 'tag-verm' :
@@ -236,15 +236,15 @@ export default function PapersPage() {
                 )}
               </div>
 
-              <p className="text-xs mb-3" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</p>
+              <p className="text-[var(--ink-300)] text-xs mb-3">{p.paperNumber}</p>
 
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mb-4" style={{ color: 'var(--ink-400)' }}>
+              <div className="text-[var(--ink-400)] flex flex-wrap gap-x-4 gap-y-1 text-xs mb-4">
                 <span>{new Date(p.createdAt).toLocaleDateString('zh-CN')}</span>
                 <span>{p.creator?.displayName || '—'}</span>
                 <span>{p.totalScore}分 · {p._count?.questions || 0}题</span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] flex flex-wrap items-center gap-2 pt-4 border-t">
                 <button onClick={() => router.push(`/papers/${p.id}`)} className="btn btn-ink btn-xs">查看</button>
                 <button onClick={() => handleAnswerSheet(p.id)} className="btn btn-fox btn-xs">答题卡</button>
                 <button onClick={() => openAnswer(p)} className="btn btn-outline btn-xs">答案</button>
@@ -268,7 +268,7 @@ export default function PapersPage() {
                       {p.status === 'ARCHIVED' && (
                         <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--cyan)' }}>恢复为草稿</button>
                       )}
-                      <hr className="my-1" style={{ borderColor: 'var(--ink-100)' }} />
+                      <hr className="border-[var(--ink-100)] my-1" />
                       <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--verm)' }}>删除</button>
                     </div>
                   )}
@@ -276,8 +276,8 @@ export default function PapersPage() {
               </div>
 
               {(p.status === 'FINALIZED' || p.status === 'OFFICIAL') && (
-                <div className="mt-3 pt-3 border-t border-dashed" style={{ borderColor: 'var(--ink-100)' }}>
-                  <label className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                <div className="border-[var(--ink-100)] mt-3 pt-3 border-t border-dashed">
+                  <label className="text-[var(--ink-300)] text-xs">
                     <span className="cursor-pointer hover:text-[var(--gold)] transition-colors">↑ 上传编辑版 Word 生成印刷 PDF</span>
                     <input type="file" accept=".docx" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadWord(f, p.id); }} />
@@ -299,7 +299,7 @@ export default function PapersPage() {
             <div className="modal-header">
               <div>
                 <h3 className="font-serif font-bold text-base">试卷答案</h3>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>{showAnswer.name} · {showAnswer.paperNumber}</p>
+                <p className="text-[var(--ink-300)] text-xs mt-1">{showAnswer.name} · {showAnswer.paperNumber}</p>
               </div>
               <span className="tag tag-verm">仅供命题人查阅</span>
             </div>
@@ -314,7 +314,7 @@ export default function PapersPage() {
                 });
                 return Object.entries(grouped).map(([section, items]) => (
                   <div key={section} className="mb-4">
-                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--ink-500)' }}>{section}</h4>
+                    <h4 className="text-[var(--ink-500)] text-sm font-semibold mb-2">{section}</h4>
                     <div className="space-y-1">
                       {items.map((pq: any, i: number) => {
                         const q = pq.question;
@@ -333,9 +333,9 @@ export default function PapersPage() {
                           answer = '见参考答案详情';
                         }
                         return (
-                          <div key={pq.id} className="flex gap-3 text-xs py-1 border-b border-dashed last:border-b-0" style={{ borderColor: 'var(--ink-100)' }}>
-                            <span style={{ color: 'var(--ink-300)' }}>{i + 1}.</span>
-                            <span style={{ color: 'var(--cyan)' }}>{answer}</span>
+                          <div key={pq.id} className="border-[var(--ink-100)] flex gap-3 text-xs py-1 border-b border-dashed last:border-b-0">
+                            <span className="text-[var(--ink-300)]">{i + 1}.</span>
+                            <span className="text-[var(--cyan)]">{answer}</span>
                           </div>
                         );
                       })}

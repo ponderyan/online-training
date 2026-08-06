@@ -165,7 +165,7 @@ export default function CreateExam() {
         {/* ── 步骤1：场景选择 ── */}
         {step === 'scenario' && (
           <div className="space-y-4">
-            <p className="text-sm font-medium" style={{ color: 'var(--ink-500)' }}>选择考试场景</p>
+            <p className="text-[var(--ink-500)] text-sm font-medium">选择考试场景</p>
             <div className="grid grid-cols-3 gap-4">
               {SCENARIOS.map(s => (
                 <div key={s.id} onClick={() => selectScenario(s.id)}
@@ -173,8 +173,8 @@ export default function CreateExam() {
                   style={{ borderColor: 'var(--ink-100)' }}>
                   <div className="text-3xl mb-3">{s.icon}</div>
                   <h3 className="text-sm font-bold mb-1">{s.title}</h3>
-                  <p className="text-xs" style={{ color: 'var(--ink-400)' }}>{s.desc}</p>
-                  <div className="mt-3 text-[10px] space-y-0.5" style={{ color: 'var(--ink-300)' }}>
+                  <p className="text-[var(--ink-400)] text-xs">{s.desc}</p>
+                  <div className="text-[var(--ink-300)] mt-3 text-[10px] space-y-0.5">
                     <div>时间：{s.preset.timeMode === 'FIXED' ? '统一开考' : '随到随考'}</div>
                     <div>试卷：{s.preset.paperMode === 'SAME' ? '统一试卷' : '随机抽题'}</div>
                     <div>防作弊：{s.preset.tabSwitchLimit > 0 ? `切屏${s.preset.tabSwitchLimit}次限制` : '无限制'}</div>
@@ -199,19 +199,19 @@ export default function CreateExam() {
             <div className="card p-6 space-y-5">
               {/* 基础信息 */}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试名称 *</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试名称 *</label>
                 <input value={title} onChange={e => setTitle(e.target.value)} className="input" placeholder="如：2026年第一期期末考试" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>选择试卷 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">选择试卷 *</label>
                   <select value={paperId} onChange={e => setPaperId(e.target.value)} className="input select">
                     <option value="">— 请选择 —</option>
                     {papers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>关联培训班</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">关联培训班</label>
                   <select value={programId} onChange={e => setProgramId(e.target.value)} className="input select">
                     <option value="">— 不关联 —</option>
                     {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -220,8 +220,8 @@ export default function CreateExam() {
               </div>
 
               {/* ⏰ 时间模式 */}
-              <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 时间模式</label>
+              <div className="border-[var(--ink-100)] pt-4 border-t">
+                <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">⏰ 时间模式</label>
                 <div className="flex gap-4 mb-4">
                   {[
                     { value: 'FIXED', label: '统一开考', desc: '所有考生同一时间开考' },
@@ -236,53 +236,53 @@ export default function CreateExam() {
                         className="mt-0.5 accent-[var(--fox)]" />
                       <div>
                         <div className="text-sm font-medium">{t.label}</div>
-                        <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{t.desc}</div>
+                        <div className="text-[var(--ink-400)] text-xs mt-0.5">{t.desc}</div>
                       </div>
                     </label>
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
                       {timeMode === 'FIXED' ? '开考时间 *' : '开放开始'}
                     </label>
                     <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} className="input" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
                       {timeMode === 'FIXED' ? '结束时间' : '开放结束'}
                     </label>
                     <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} className="input" />
                   </div>
                 </div>
                 <div className="mt-3">
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>答题时长（分钟）</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">答题时长（分钟）</label>
                   <input type="number" value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} className="input" min={1} style={{ width: '120px' }} />
                 </div>
 </div>
 
               {/* ⏰ 考试规则 */}
-              <div className="pt-4 border-t mt-4" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>⏰ 考试规则</label>
+              <div className="border-[var(--ink-100)] pt-4 border-t mt-4">
+                <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">⏰ 考试规则</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>迟到禁入（分钟）</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">迟到禁入（分钟）</label>
                     <input type="number" value={lateEntryMinutes} onChange={e => setLateEntryMinutes(e.target.value)}
                       className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考N分钟后禁止入场，0=不限制，留空=使用系统默认</p>
+                    <p className="text-[var(--ink-300)] text-[10px] mt-1">开考N分钟后禁止入场，0=不限制，留空=使用系统默认</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>最早交卷（分钟）</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">最早交卷（分钟）</label>
                     <input type="number" value={earlyExitMinutes} onChange={e => setEarlyExitMinutes(e.target.value)}
                       className="input" min={0} placeholder="系统默认(30)" style={{ width: '100%' }} />
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>开考N分钟内不允许交卷，0=不限制，留空=使用系统默认</p>
+                    <p className="text-[var(--ink-300)] text-[10px] mt-1">开考N分钟内不允许交卷，0=不限制，留空=使用系统默认</p>
                   </div>
                 </div>
               </div>
 
               {/* 📄 试卷模式 */}
-              <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>📄 试卷模式</label>
+              <div className="border-[var(--ink-100)] pt-4 border-t">
+                <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">📄 试卷模式</label>
                 <div className="flex gap-4 mb-3">
                   {[
                     { value: 'SAME', label: '统一试卷', desc: '所有考生做同一套题' },
@@ -297,7 +297,7 @@ export default function CreateExam() {
                         className="mt-0.5 accent-[var(--fox)]" />
                       <div>
                         <div className="text-sm font-medium">{t.label}</div>
-                        <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{t.desc}</div>
+                        <div className="text-[var(--ink-400)] text-xs mt-0.5">{t.desc}</div>
                       </div>
                     </label>
                   ))}
@@ -306,30 +306,30 @@ export default function CreateExam() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={shuffleQuestions} onChange={e => setShuffleQuestions(e.target.checked)}
                       className="accent-[var(--fox)]" />
-                    <span className="text-xs" style={{ color: 'var(--ink-500)' }}>题序乱序</span>
+                    <span className="text-[var(--ink-500)] text-xs">题序乱序</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={shuffleOptions} onChange={e => setShuffleOptions(e.target.checked)}
                       className="accent-[var(--fox)]" />
-                    <span className="text-xs" style={{ color: 'var(--ink-500)' }}>选项乱序</span>
+                    <span className="text-[var(--ink-500)] text-xs">选项乱序</span>
                   </label>
                 </div>}
               </div>
 
               {/* 🛡️ 防作弊设置（仅线上） */}
-              {examMode === 'ONLINE' && <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🛡️ 防作弊设置</label>
+              {examMode === 'ONLINE' && <div className="border-[var(--ink-100)] pt-4 border-t">
+                <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">🛡️ 防作弊设置</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-                      切屏限制 <span className="font-normal" style={{ color: 'var(--ink-300)' }}>（0=不限制）</span>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+                      切屏限制 <span className="text-[var(--ink-300)] font-normal">（0=不限制）</span>
                     </label>
                     <input type="number" value={tabSwitchLimit} onChange={e => setTabSwitchLimit(Number(e.target.value))}
                       className="input" min={0} style={{ width: '100px' }} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-                      自动保存 <span className="font-normal" style={{ color: 'var(--ink-300)' }}>（秒）</span>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+                      自动保存 <span className="text-[var(--ink-300)] font-normal">（秒）</span>
                     </label>
                     <input type="number" value={autoSaveInterval} onChange={e => setAutoSaveInterval(Number(e.target.value))}
                       className="input" min={0} style={{ width: '100px' }} />
@@ -338,33 +338,33 @@ export default function CreateExam() {
                 <label className="flex items-center gap-2 mt-3 cursor-pointer">
                   <input type="checkbox" checked={copyProtection} onChange={e => setCopyProtection(e.target.checked)}
                     className="accent-[var(--fox)]" />
-                  <span className="text-xs" style={{ color: 'var(--ink-500)' }}>禁止复制粘贴</span>
+                  <span className="text-[var(--ink-500)] text-xs">禁止复制粘贴</span>
                 </label>
               </div>}
 
               {/* 🏫 考场信息（仅线下） */}
               {examMode === 'OFFLINE' && (
-                <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                  <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>🏫 考场信息</label>
+                <div className="border-[var(--ink-100)] pt-4 border-t">
+                  <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">🏫 考场信息</label>
                   {locations.map((loc, idx) => (
                     <div key={idx} className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>考场名称</label>
+                        <label className="text-[var(--ink-400)] block text-xs mb-1">考场名称</label>
                         <input value={loc.name} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], name: e.target.value }; setLocations(arr); }}
                           className="input" placeholder="如：A栋301" />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>地址</label>
+                        <label className="text-[var(--ink-400)] block text-xs mb-1">地址</label>
                         <input value={loc.address} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], address: e.target.value }; setLocations(arr); }}
                           className="input" placeholder="详细地址" />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>监考人</label>
+                        <label className="text-[var(--ink-400)] block text-xs mb-1">监考人</label>
                         <input value={loc.proctor} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], proctor: e.target.value }; setLocations(arr); }}
                           className="input" placeholder="监考人姓名" />
                       </div>
                       <div>
-                        <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>容纳人数</label>
+                        <label className="text-[var(--ink-400)] block text-xs mb-1">容纳人数</label>
                         <input type="number" value={loc.capacity || ''} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], capacity: Number(e.target.value) }; setLocations(arr); }}
                           className="input" placeholder="0" min={0} />
                       </div>
@@ -380,18 +380,18 @@ export default function CreateExam() {
               )}
 
               {/* 其他设置 */}
-              <div className="pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--ink-500)' }}>其他设置</label>
+              <div className="border-[var(--ink-100)] pt-4 border-t">
+                <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">其他设置</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>合格线（分）</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">合格线（分）</label>
                     <input type="number" value={passingScore} onChange={e => setPassingScore(e.target.value)}
                       className="input" placeholder="默认60%" min={0} />
                   </div>
 
           {/* 成绩发布模式 */}
           <div className="col-span-2">
-            <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>成绩发布方式</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-2">成绩发布方式</label>
             <div className="flex gap-3">
               {[
                 { value: 'MANUAL', label: '手动发布', desc: '评分完成后，由考务员手动发布成绩' },
@@ -408,14 +408,14 @@ export default function CreateExam() {
                     checked={scorePublishMode === m.value}
                     onChange={() => { setScorePublishMode(m.value); if (m.value !== 'SCHEDULED') setPublishAt(''); }}
                     className="accent-[var(--fox)] mr-2" />
-                  <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{m.label}</span>
-                  <p className="text-[10px] mt-1" style={{ color: 'var(--ink-400)' }}>{m.desc}</p>
+                  <span className="text-[var(--ink-700)] text-sm font-medium">{m.label}</span>
+                  <p className="text-[var(--ink-400)] text-[10px] mt-1">{m.desc}</p>
                 </label>
               ))}
             </div>
             {scorePublishMode === 'SCHEDULED' && (
               <div className="mt-3">
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>发布时间 *</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">发布时间 *</label>
                 <input type="datetime-local" value={publishAt}
                   onChange={e => setPublishAt(e.target.value)}
                   className="input" />

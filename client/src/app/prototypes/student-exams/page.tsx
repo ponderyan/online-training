@@ -19,21 +19,21 @@ export default function StudentExamsPrototype() {
   const filtered = exams.filter(e => e.status === activeTab);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+    <div className="bg-[var(--paper)] min-h-screen">
       {/* Top bar — student header */}
       <header className="sticky top-0 z-10 border-b" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--fox-glow)' }}>
+            <div className="bg-[var(--fox-glow)] w-8 h-8 rounded-lg flex items-center justify-center">
               <span className="text-sm">🦊</span>
             </div>
-            <span className="font-serif font-bold text-sm" style={{ color: 'var(--ink-800)' }}>FoxLearn · 我的学习</span>
+            <span className="text-[var(--ink-800)] font-serif font-bold text-sm">FoxLearn · 我的学习</span>
           </div>
-          <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+          <div className="text-[var(--ink-400)] flex items-center gap-4 text-xs">
             <span className="cursor-pointer hover:text-[var(--fox)]">📚 我的课程</span>
-            <span className="cursor-pointer hover:text-[var(--fox)] font-medium" style={{ color: 'var(--fox)' }}>📋 我的考试</span>
+            <span className="text-[var(--fox)] cursor-pointer hover:text-[var(--fox)] font-medium">📋 我的考试</span>
             <span className="cursor-pointer hover:text-[var(--fox)]">📊 我的成绩</span>
-            <span className="w-px h-4" style={{ background: 'var(--ink-100)' }} />
+            <span className="bg-[var(--ink-100)] w-px h-4" />
             <span className="flex items-center gap-1.5 cursor-pointer">
               <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>张</span>
               张三
@@ -45,14 +45,14 @@ export default function StudentExamsPrototype() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-xl font-serif font-bold" style={{ color: 'var(--ink-800)' }}>我的考试</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ink-400)' }}>
+          <h1 className="text-[var(--ink-800)] text-xl font-serif font-bold">我的考试</h1>
+          <p className="text-[var(--ink-400)] text-sm mt-1">
             小狐狸提醒你：共 {exams.length} 场考试，{exams.filter(e => e.status === 'pending').length} 场待参加
           </p>
         </div>
 
         {/* Tab */}
-        <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+        <div className="border-[var(--ink-100)] flex gap-1 mb-6 border-b">
           {[
             { key: 'pending', label: '待参加', count: exams.filter(e => e.status === 'pending').length },
             { key: 'ongoing', label: '进行中', count: exams.filter(e => e.status === 'ongoing').length },
@@ -80,49 +80,49 @@ export default function StudentExamsPrototype() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-serif font-bold text-sm" style={{ color: 'var(--ink-800)' }}>{e.name}</h3>
+                    <h3 className="text-[var(--ink-800)] font-serif font-bold text-sm">{e.name}</h3>
                     {e.type === '随到随考' && (
                       <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: 'var(--cyan-glow)', color: 'var(--cyan)' }}>随到随考</span>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] flex flex-wrap gap-x-5 gap-y-1 text-xs">
                     <span>📄 {e.paper}</span>
                     <span>⏱ {e.duration}分钟</span>
                     <span>{e.totalScore}分 · {e.questionCount}题</span>
                     {e.status === 'pending' && e.type === '统一开考' && (
-                      <span style={{ color: 'var(--gold-dark)' }}>🕐 {e.startTime} — {e.endTime}</span>
+                      <span className="text-[var(--gold-dark)]">🕐 {e.startTime} — {e.endTime}</span>
                     )}
                     {e.status === 'pending' && e.type === '随到随考' && (
-                      <span style={{ color: 'var(--cyan)' }}>🕐 灵活时段 · 截至 {e.endTime}</span>
+                      <span className="text-[var(--cyan)]">🕐 灵活时段 · 截至 {e.endTime}</span>
                     )}
                   </div>
 
                   {e.status === 'ongoing' && (
                     <div className="mt-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--paper-dark)' }}>
+                        <div className="bg-[var(--paper-dark)] flex-1 h-1.5 rounded-full">
                           <div className="h-1.5 rounded-full transition-all" style={{ width: `${e.progress}%`, background: 'var(--fox)' }} />
                         </div>
-                        <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{e.progress}%</span>
+                        <span className="text-[var(--fox)] text-xs font-medium">{e.progress}%</span>
                       </div>
-                      <p className="text-xs mt-1.5" style={{ color: 'var(--fox)' }}>
+                      <p className="text-[var(--fox)] text-xs mt-1.5">
                         ✍️ 上次做到第9题，继续答题？
                       </p>
                     </div>
                   )}
 
                   {e.status === 'finished' && (
-                    <div className="mt-3 pt-3 border-t border-dashed" style={{ borderColor: 'var(--ink-100)' }}>
+                    <div className="border-[var(--ink-100)] mt-3 pt-3 border-t border-dashed">
                       <div className="flex items-center gap-5">
                         <div>
                           <span className="text-lg font-serif font-bold" style={{ color: (e.score || 0) >= 60 ? 'var(--cyan)' : 'var(--verm)' }}>{e.score}</span>
-                          <span className="text-xs ml-0.5" style={{ color: 'var(--ink-300)' }}>/{e.totalScore}分</span>
+                          <span className="text-[var(--ink-300)] text-xs ml-0.5">/{e.totalScore}分</span>
                         </div>
-                        <div className="flex gap-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+                        <div className="text-[var(--ink-400)] flex gap-4 text-xs">
                           <span>✅ 正确 {(e.correctCount as number) || 0}</span>
-                          <span style={{ color: 'var(--verm)' }}>❌ 错误 {(e.wrongCount as number) || 0}</span>
-                          {(e.pendingCount as number) > 0 && <span style={{ color: 'var(--gold)' }}>⏳ 待判 {(e.pendingCount as number) || 0}</span>}
+                          <span className="text-[var(--verm)]">❌ 错误 {(e.wrongCount as number) || 0}</span>
+                          {(e.pendingCount as number) > 0 && <span className="text-[var(--gold)]">⏳ 待判 {(e.pendingCount as number) || 0}</span>}
                         </div>
                       </div>
                     </div>
@@ -134,7 +134,7 @@ export default function StudentExamsPrototype() {
                     <div className="flex flex-col gap-2 items-end">
                       <button onClick={() => setShowExamInstructions(true)}
                         className="btn btn-fox btn-sm">进入考场</button>
-                      <button className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>查看详情</button>
+                      <button className="text-[var(--ink-300)] btn btn-ghost btn-xs">查看详情</button>
                     </div>
                   )}
                   {e.status === 'ongoing' && (
@@ -144,7 +144,7 @@ export default function StudentExamsPrototype() {
                   {e.status === 'finished' && (
                     <div className="flex flex-col gap-2 items-end">
                       <button className="btn btn-outline btn-sm">查看成绩</button>
-                      <button className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>错题回顾</button>
+                      <button className="text-[var(--ink-300)] btn btn-ghost btn-xs">错题回顾</button>
                     </div>
                   )}
                 </div>
@@ -163,17 +163,17 @@ export default function StudentExamsPrototype() {
               <button onClick={() => setShowExamInstructions(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-4">
-              <div className="p-4 rounded-lg" style={{ background: 'var(--fox-glow)' }}>
-                <h4 className="font-serif font-bold text-sm mb-2" style={{ color: 'var(--fox-dark)' }}>DTM 数智化管理师 模拟考（一）</h4>
-                <div className="flex gap-4 text-xs" style={{ color: 'var(--fox-dark)' }}>
+              <div className="bg-[var(--fox-glow)] p-4 rounded-lg">
+                <h4 className="text-[var(--fox-dark)] font-serif font-bold text-sm mb-2">DTM 数智化管理师 模拟考（一）</h4>
+                <div className="text-[var(--fox-dark)] flex gap-4 text-xs">
                   <span>⏱ 120分钟</span>
                   <span>📄 48题</span>
                   <span>💯 100分</span>
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm" style={{ color: 'var(--ink-600)' }}>
-                <p className="font-semibold" style={{ color: 'var(--ink-800)' }}>考试规则</p>
+              <div className="text-[var(--ink-600)] space-y-2 text-sm">
+                <p className="text-[var(--ink-800)] font-semibold">考试规则</p>
                 <p>1. 本次考试为闭卷考试，不得查阅任何资料。</p>
                 <p>2. 总时长 120 分钟，考试开始后不得中途退出。</p>
                 <p>3. 考试期间切屏超过 <strong>3</strong> 次，系统将自动交卷。</p>
@@ -181,9 +181,9 @@ export default function StudentExamsPrototype() {
                 <p>5. 如遇技术问题，请联系监考老师。</p>
               </div>
 
-              <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer" style={{ background: 'var(--paper)' }}>
+              <label className="bg-[var(--paper)] flex items-center gap-3 p-3 rounded-lg cursor-pointer">
                 <input type="checkbox" className="w-4 h-4" style={{ accentColor: 'var(--fox)' }} />
-                <span className="text-sm" style={{ color: 'var(--ink-600)' }}>我已阅读并同意以上考试规则</span>
+                <span className="text-[var(--ink-600)] text-sm">我已阅读并同意以上考试规则</span>
               </label>
             </div>
             <div className="modal-footer gap-3">

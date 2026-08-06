@@ -74,7 +74,7 @@ export default function CourseDetailPage() {
 
   const videoLinks = course?.videoCourseLinks || [];
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
   if (!course) return null;
 
   return (
@@ -85,7 +85,7 @@ export default function CourseDetailPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="page-title mb-0">{course.name}</h1>
-            <span className="tag" style={{ background: `${TYPE_COLORS[course.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[course.type] || 'var(--neutral-400)', fontSize: '11px' }}>
+            <span className="tag" style={{ background: `color-mix(in srgb, ${TYPE_COLORS[course.type] || 'var(--neutral-400)'} 10%, transparent)`, color: TYPE_COLORS[course.type] || 'var(--neutral-400)', fontSize: '11px' }}>
               {TYPE_NAMES[course.type] || course.type}
             </span>
           </div>
@@ -100,42 +100,42 @@ export default function CourseDetailPage() {
       {course.description && (
         <div className="card p-4 mb-6">
           <h3 className="text-sm font-semibold mb-2">课程简介</h3>
-          <p className="text-sm" style={{ color: 'var(--ink-400)' }}>{course.description}</p>
+          <p className="text-[var(--ink-400)] text-sm">{course.description}</p>
         </div>
       )}
 
       {/* 关联视频课程 */}
       <div className="card p-0 overflow-hidden">
-        <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--ink-200)' }}>
+        <div className="border-[var(--ink-200)] px-5 py-3 border-b flex items-center justify-between">
           <h3 className="font-semibold text-sm">关联视频课程（{videoLinks.length}）</h3>
           <button onClick={openLinkModal} className="text-xs px-3 py-1 rounded-md border cursor-pointer" style={{ borderColor: 'var(--fox)', color: 'var(--fox)', background: 'transparent' }}>
             管理关联
           </button>
         </div>
         {videoLinks.length === 0 ? (
-          <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
+          <div className="text-[var(--ink-300)] p-8 text-center text-xs">
             暂无关联视频课程，点击「管理关联」添加
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+          <div className="border-[var(--ink-100)] divide-y">
             {videoLinks.map((link: any, i: number) => {
               const vc = link.videoCourse;
               return (
                 <div key={link.id} className="flex items-center gap-4 px-5 py-3">
-                  <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{i + 1}</span>
+                  <span className="text-[var(--ink-300)] text-xs font-mono">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{vc?.name || '未命名视频'}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                    <p className="text-[var(--ink-400)] text-xs mt-0.5">
                       {vc?.duration ? formatDuration(vc.duration) : '—'}
                       {vc?.hours ? ` · ${vc.hours} 学时` : ''}
                       {vc?.type && (
-                        <span className="ml-2 tag" style={{ background: `${VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)'}18`, color: VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)', fontSize: '10px' }}>
+                        <span className="ml-2 tag" style={{ background: `color-mix(in srgb, ${VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)'} 10%, transparent)`, color: VC_TYPE_COLORS[vc.type] || 'var(--neutral-400)', fontSize: '10px' }}>
                           {VC_TYPE_NAMES[vc.type] || vc.type}
                         </span>
                       )}
                     </p>
                   </div>
-                  {vc?.url && <span className="text-xs" style={{ color: 'var(--ink-300)' }}>已上传</span>}
+                  {vc?.url && <span className="text-[var(--ink-300)] text-xs">已上传</span>}
                   <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: vc?.status === 'PUBLISHED' ? 'var(--sage-glow)' : 'var(--verm-glow)', color: vc?.status === 'PUBLISHED' ? 'var(--sage)' : 'var(--error)' }}>
                     {vc?.status === 'PUBLISHED' ? '已上架' : '已下架'}
                   </span>
@@ -150,13 +150,13 @@ export default function CourseDetailPage() {
       {linkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-[var(--paper-bright)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
-            <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--ink-200)' }}>
+            <div className="border-[var(--ink-200)] px-5 py-4 border-b">
               <h3 className="font-semibold text-sm">管理关联视频课程</h3>
-              <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>勾选要关联到「{course.name}」的视频课程</p>
+              <p className="text-[var(--ink-400)] text-xs mt-1">勾选要关联到「{course.name}」的视频课程</p>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-3">
               {allVideos.length === 0 ? (
-                <p className="text-xs text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无已上架的视频课程</p>
+                <p className="text-[var(--ink-300)] text-xs text-center py-8">暂无已上架的视频课程</p>
               ) : (
                 <div className="space-y-1">
                   {allVideos.map((v: any) => (
@@ -169,7 +169,7 @@ export default function CourseDetailPage() {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{v.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                        <p className="text-[var(--ink-400)] text-xs">
                           {v.duration ? formatDuration(v.duration) : '—'}
                           {v.hours ? ` · ${v.hours}学时` : ''}
                           <span className="ml-2" style={{ color: VC_TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>
@@ -182,7 +182,7 @@ export default function CourseDetailPage() {
                 </div>
               )}
             </div>
-            <div className="px-5 py-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--ink-200)' }}>
+            <div className="border-[var(--ink-200)] px-5 py-3 border-t flex justify-end gap-2">
               <button onClick={() => setLinkModalOpen(false)} className="px-4 py-1.5 text-xs rounded-md border cursor-pointer" style={{ borderColor: 'var(--ink-300)', color: 'var(--ink-400)', background: 'var(--paper-bright)' }}>
                 取消
               </button>

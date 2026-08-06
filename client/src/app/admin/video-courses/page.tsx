@@ -237,11 +237,11 @@ export default function VideoCoursesPage() {
         </select>
       </div>
 
-      <p className="text-[10px] mb-2" style={{ color: 'var(--ink-300)' }}>💡 双击视频行可快速预览</p>
+      <p className="text-[var(--ink-300)] text-[10px] mb-2">💡 双击视频行可快速预览</p>
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : videos.length === 0 ? (
-        <div className="card p-12 text-center"><p className="text-4xl mb-4">🎬</p><p style={{ color: 'var(--ink-300)' }}>暂无视频课程</p></div>
+        <div className="card p-12 text-center"><p className="text-4xl mb-4">🎬</p><p className="text-[var(--ink-300)]">暂无视频课程</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
@@ -261,28 +261,28 @@ export default function VideoCoursesPage() {
                       )}
                       <div>
                         <div className="text-sm font-medium">{v.name}</div>
-                        {v.hours ? <div className="text-xs" style={{ color: 'var(--ink-300)' }}>{v.hours}h {v.duration ? `· ${fmtDuration(v.duration)}` : ''}</div> : ''}
+                        {v.hours ? <div className="text-[var(--ink-300)] text-xs">{v.hours}h {v.duration ? `· ${fmtDuration(v.duration)}` : ''}</div> : ''}
                       </div>
                     </div>
                     {/* hover 浮动信息 */}
                     <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}>
                       <p className="font-semibold text-sm mb-1">{v.name}</p>
-                      {v.description && <p className="mb-1.5" style={{ color: 'var(--ink-400)' }}>{v.description.length > 80 ? v.description.slice(0, 80) + '…' : v.description}</p>}
-                      <div className="flex gap-4" style={{ color: 'var(--ink-400)' }}>
+                      {v.description && <p className="text-[var(--ink-400)] mb-1.5">{v.description.length > 80 ? v.description.slice(0, 80) + '…' : v.description}</p>}
+                      <div className="text-[var(--ink-400)] flex gap-4">
                         <span>讲师：{v.instructorName || '—'}</span>
                         {v.instructorLevel && <span>职称：{v.instructorLevel}</span>}
                       </div>
-                      {v.courseLinks?.length > 0 && <p className="mt-1" style={{ color: 'var(--ink-300)' }}>关联课程：{v.courseLinks.map((cl: any) => cl.course?.name).join('、')}</p>}
+                      {v.courseLinks?.length > 0 && <p className="text-[var(--ink-300)] mt-1">关联课程：{v.courseLinks.map((cl: any) => cl.course?.name).join('、')}</p>}
                     </div>
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${TYPE_COLORS[v.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>{TYPE_NAMES[v.type] || v.type}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${TYPE_COLORS[v.type] || 'var(--neutral-400)'} 10%, transparent)`, color: TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>{TYPE_NAMES[v.type] || v.type}</span>
                       {v.isContinuingEducation && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>继续教育</span>}
                     </div>
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{v.instructorName || '—'}{v.instructorLevel ? ` (${v.instructorLevel})` : ''}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{v.duration ? fmtDuration(v.duration) : '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{v.instructorName || '—'}{v.instructorLevel ? ` (${v.instructorLevel})` : ''}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{v.duration ? fmtDuration(v.duration) : '—'}</td>
                   <td>
                     <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: (STATUS_COLORS[v.status] || 'var(--neutral-400)') + '18', color: STATUS_COLORS[v.status] || 'var(--neutral-400)' }}>
                       {STATUS_NAMES[v.status] || v.status || 'DRAFT'}
@@ -299,7 +299,7 @@ export default function VideoCoursesPage() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--ink-300)' }}>⏳ 待上传</span>
                     )}
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <td className="text-[var(--ink-400)] text-xs">
                     {v.courseLinks?.length > 0
                       ? `${v.courseLinks.slice(0, 2).map((cl: any) => cl.course?.name).join('、')}${v.courseLinks.length > 2 ? `…(+${v.courseLinks.length - 2})` : ''}`
                       : '—'}
@@ -336,7 +336,7 @@ export default function VideoCoursesPage() {
                         }
                         if (confirm('确定删除该视频课程吗？')) { await api.videoCourses.delete(v.id); load(); }
                       }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
-                      <span className="text-[10px] ml-1 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0" style={{ color: 'var(--ink-300)' }}>双击预览</span>
+                      <span className="text-[var(--ink-300)] text-[10px] ml-1 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0">双击预览</span>
                     </div>
                   </td>
                 </tr>
@@ -356,20 +356,20 @@ export default function VideoCoursesPage() {
             <h3 className="font-semibold text-base mb-4">{editId ? '编辑视频课程' : '新建视频课程'}</h3>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>视频课程名称 *</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">视频课程名称 *</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input w-full" placeholder="例如：数字化转型概论" />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>内容简介</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">内容简介</label>
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="input w-full" rows={2} placeholder="视频课程内容简介" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>讲师姓名</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">讲师姓名</label>
                   <input value={form.instructorName} onChange={e => setForm({ ...form, instructorName: e.target.value })} className="input w-full" placeholder="自由填写" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>职称</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">职称</label>
                   <select value={form.instructorLevel} onChange={e => setForm({ ...form, instructorLevel: e.target.value })} className="input select w-full">
                     <option value="">请选择</option>
                     <option value="初级工程师">初级工程师</option>
@@ -382,18 +382,18 @@ export default function VideoCoursesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课时数（小时）</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">课时数（小时）</label>
                   <input value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })} className="input w-full" type="number" step="0.5" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>视频时长</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">视频时长</label>
                   <input value={form.duration} readOnly className="input w-full" style={{ background: 'var(--paper)', color: form.duration ? 'var(--ink-600)' : 'var(--ink-300)' }} placeholder="上传视频后自动提取" />
                 </div>
               </div>
               {/* 视频文件 — 渐进式交互 */}
               <div>
-                <label className="text-xs mb-1 flex items-center gap-1" style={{ color: 'var(--ink-400)' }}>
-                  视频文件 <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>（MP4/AVI/MKV 等，最大 500MB）</span>
+                <label className="text-[var(--ink-400)] text-xs mb-1 flex items-center gap-1">
+                  视频文件 <span className="text-[var(--ink-300)] text-[10px]">（MP4/AVI/MKV 等，最大 500MB）</span>
                 </label>
                 <input ref={videoFileRef} type="file" accept="video/*" style={{ display: 'none' }}
                   onChange={e => {
@@ -419,13 +419,13 @@ export default function VideoCoursesPage() {
                     }
                   }} />
                 {uploadingVideo ? (
-                  <p className="text-xs" style={{ color: 'var(--fox)' }}>正在上传视频…</p>
+                  <p className="text-[var(--fox)] text-xs">正在上传视频…</p>
                 ) : uploadFile ? (
                   <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                     <span className="text-base">📹</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs truncate font-medium">{uploadFile.name}</p>
-                      <p className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{(uploadFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                      <p className="text-[var(--ink-300)] text-[10px]">{(uploadFile.size / 1024 / 1024).toFixed(1)} MB</p>
                     </div>
                     <button onClick={() => setUploadFile(null)} className="text-xs bg-transparent border-none cursor-pointer flex-shrink-0" style={{ color: 'var(--verm)' }}>✕</button>
                   </div>
@@ -456,8 +456,8 @@ export default function VideoCoursesPage() {
 
               {/* 视频封面 — 渐进式交互 */}
               <div>
-                <label className="text-xs mb-1 flex items-center gap-1" style={{ color: 'var(--ink-400)' }}>
-                  视频封面 <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>（JPG/PNG，最大 5MB）</span>
+                <label className="text-[var(--ink-400)] text-xs mb-1 flex items-center gap-1">
+                  视频封面 <span className="text-[var(--ink-300)] text-[10px]">（JPG/PNG，最大 5MB）</span>
                 </label>
                 <input ref={coverFileRef} type="file" accept="image/*" style={{ display: 'none' }}
                   onChange={async e => {
@@ -478,7 +478,7 @@ export default function VideoCoursesPage() {
                     setUploadingCover(false);
                   }} />
                 {uploadingCover ? (
-                  <p className="text-xs" style={{ color: 'var(--fox)' }}>正在上传封面…</p>
+                  <p className="text-[var(--fox)] text-xs">正在上传封面…</p>
                 ) : showCoverUrlInput ? (
                   <div className="flex items-center gap-2">
                     <input value={coverUrlInput} onChange={e => setCoverUrlInput(e.target.value)}
@@ -513,16 +513,16 @@ export default function VideoCoursesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>类型</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">类型</label>
                   <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value, courseIds: [] })} className="input select w-full">
                     <option value="PUBLIC">公共课（所有学员可见）</option>
                     <option value="SPECIALIZED">专项课（需关联课程）</option>
                   </select>
                   {form.type === 'PUBLIC' && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>公共课默认对所有学员开放，不绑定特定课程</p>
+                    <p className="text-[var(--ink-300)] text-xs mt-1">公共课默认对所有学员开放，不绑定特定课程</p>
                   )}
                   {form.type === 'SPECIALIZED' && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>专项课必须关联 ≥1 门课程，仅对应课程范围内的学员可见</p>
+                    <p className="text-[var(--ink-300)] text-xs mt-1">专项课必须关联 ≥1 门课程，仅对应课程范围内的学员可见</p>
                   )}
                 </div>
                 <div>
@@ -536,10 +536,10 @@ export default function VideoCoursesPage() {
 
               {form.type === 'SPECIALIZED' && (
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>关联课程（可多选）</label>
-                  <div className="border rounded-lg p-3 max-h-40 overflow-y-auto" style={{ borderColor: 'var(--ink-200)' }}>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">关联课程（可多选）</label>
+                  <div className="border-[var(--ink-200)] border rounded-lg p-3 max-h-40 overflow-y-auto">
                     {courses.length === 0 ? (
-                      <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无课程数据</p>
+                      <p className="text-[var(--ink-300)] text-xs">暂无课程数据</p>
                     ) : (
                       <div className="grid grid-cols-2 gap-1">
                         {courses.map((c: any) => (
@@ -547,7 +547,7 @@ export default function VideoCoursesPage() {
                             <input type="checkbox" checked={form.courseIds.includes(c.id)}
                               onChange={() => toggleCourseId(c.id)} className="w-3.5 h-3.5" />
                             <span className="truncate">{c.name}</span>
-                            <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                            <span className="text-[var(--ink-300)] text-xs">
                               ({c.type === 'STANDARD' ? '标准' : '定制'})
                             </span>
                           </label>
@@ -579,7 +579,7 @@ export default function VideoCoursesPage() {
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>类型</span>
+                  <span className="text-[var(--ink-300)] text-xs block">类型</span>
                   <span className="tag mt-1" style={{
                     background: detailVideo.type === 'PUBLIC' ? 'var(--cyan-glow)' : 'rgba(21,101,192,0.09)',
                     color: detailVideo.type === 'PUBLIC' ? 'var(--info)' : 'var(--blue)',
@@ -587,7 +587,7 @@ export default function VideoCoursesPage() {
                   }}>{detailVideo.type === 'PUBLIC' ? '公共课' : '专项课'}</span>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>继续教育学时</span>
+                  <span className="text-[var(--ink-300)] text-xs block">继续教育学时</span>
                   <span className="tag mt-1" style={{
                     background: detailVideo.isContinuingEducation ? 'var(--sage-glow)' : 'var(--fox-glow)',
                     color: detailVideo.isContinuingEducation ? 'var(--sage)' : 'var(--ink-300)',
@@ -595,23 +595,23 @@ export default function VideoCoursesPage() {
                   }}>{detailVideo.isContinuingEducation ? '是' : '否'}</span>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>讲师</span>
+                  <span className="text-[var(--ink-300)] text-xs block">讲师</span>
                   <p className="mt-0.5">{detailVideo.instructorName || '—'}{detailVideo.instructorLevel ? ` (${detailVideo.instructorLevel})` : ''}</p>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>课时 / 时长</span>
+                  <span className="text-[var(--ink-300)] text-xs block">课时 / 时长</span>
                   <p className="mt-0.5">{detailVideo.hours ? `${detailVideo.hours}h` : '—'} · {detailVideo.duration ? `${detailVideo.duration}秒` : '—'}</p>
                 </div>
               </div>
               {detailVideo.description && (
                 <div>
-                  <span className="text-xs block mb-1" style={{ color: 'var(--ink-300)' }}>简介</span>
-                  <p className="text-sm" style={{ color: 'var(--ink-600)' }}>{detailVideo.description}</p>
+                  <span className="text-[var(--ink-300)] text-xs block mb-1">简介</span>
+                  <p className="text-[var(--ink-600)] text-sm">{detailVideo.description}</p>
                 </div>
               )}
               {detailVideo.courseLinks?.length > 0 && (
                 <div>
-                  <span className="text-xs block mb-1" style={{ color: 'var(--ink-300)' }}>关联课程</span>
+                  <span className="text-[var(--ink-300)] text-xs block mb-1">关联课程</span>
                   <div className="flex flex-wrap gap-1">
                     {detailVideo.courseLinks.map((cl: any) => (
                       <span key={cl.id} className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>
@@ -621,28 +621,28 @@ export default function VideoCoursesPage() {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 pt-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] grid grid-cols-2 gap-x-6 gap-y-3 pt-2 border-t">
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>创建时间</span>
-                  <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--ink-400)' }}>
+                  <span className="text-[var(--ink-300)] text-xs block">创建时间</span>
+                  <p className="text-[var(--ink-400)] text-xs mt-0.5 font-mono">
                     {new Date(detailVideo.createdAt).toLocaleString('zh-CN')}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>最后修改</span>
-                  <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--ink-400)' }}>
+                  <span className="text-[var(--ink-300)] text-xs block">最后修改</span>
+                  <p className="text-[var(--ink-400)] text-xs mt-0.5 font-mono">
                     {new Date(detailVideo.updatedAt).toLocaleString('zh-CN')}
                   </p>
                 </div>
                 {detailVideo.url && (
                   <div className="col-span-2">
-                    <span className="text-xs block" style={{ color: 'var(--ink-300)' }}>视频文件</span>
-                    <p className="text-xs mt-0.5 font-mono truncate" style={{ color: 'var(--ink-400)' }}>{detailVideo.url}</p>
+                    <span className="text-[var(--ink-300)] text-xs block">视频文件</span>
+                    <p className="text-[var(--ink-400)] text-xs mt-0.5 font-mono truncate">{detailVideo.url}</p>
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-5 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+            <div className="border-[var(--ink-100)] flex gap-2 mt-5 pt-3 border-t">
               <button onClick={() => { setDetailVideo(null); openEdit(detailVideo); }} className="btn btn-fox btn-sm">修改</button>
               <button onClick={() => { setDetailVideo(null); setPreviewVideo(detailVideo); }} className="btn btn-outline btn-sm">▶ 播放</button>
               <button onClick={() => { setDetailVideo(null); openLogs(detailVideo); }} className="btn btn-outline btn-sm">日志</button>
@@ -654,13 +654,13 @@ export default function VideoCoursesPage() {
       {/* Preview Modal */}
       {previewVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPreviewVideo(null)}>
-          <div className="rounded-xl overflow-hidden w-full max-w-3xl" style={{ background: 'var(--ink-900)' }}
+          <div className="bg-[var(--ink-900)] rounded-xl overflow-hidden w-full max-w-3xl"
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3" style={{ background: 'var(--ink-900)' }}>
+            <div className="bg-[var(--ink-900)] flex items-center justify-between px-5 py-3">
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-white truncate block">{previewVideo.name}</span>
                 {previewVideo.description && (
-                  <span className="text-xs mt-0.5 block" style={{ color: 'var(--neutral-300)' }}>{previewVideo.description}</span>
+                  <span className="text-[var(--neutral-300)] text-xs mt-0.5 block">{previewVideo.description}</span>
                 )}
               </div>
               <button onClick={() => setPreviewVideo(null)} className="text-white/60 hover:text-white bg-transparent border-none cursor-pointer text-lg ml-3 flex-shrink-0">✕</button>
@@ -683,23 +683,23 @@ export default function VideoCoursesPage() {
               <button onClick={() => setLogModal(false)} className="text-sm bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             {logs.length === 0 ? (
-              <p className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无操作记录</p>
+              <p className="text-[var(--ink-300)] py-8 text-center text-xs">暂无操作记录</p>
             ) : (
               <div className="relative pl-8">
-                <div className="absolute left-3.5 top-2 bottom-2 w-0.5" style={{ background: 'var(--ink-200)' }} />
+                <div className="bg-[var(--ink-200)] absolute left-3.5 top-2 bottom-2 w-0.5" />
                 {logs.map((log: any) => (
                   <div key={log.id} className="relative pb-5">
                     <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
                       style={{ background: 'var(--paper)', borderColor: 'var(--fox)' }} />
-                    <div className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <div className="text-[var(--ink-300)] text-xs">
                       {new Date(log.createdAt).toLocaleString('zh-CN')}
                     </div>
                     <div className="text-sm mt-0.5">{log.action}</div>
                     {log.operator && (
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>操作人：{log.operator.displayName}</div>
+                      <div className="text-[var(--ink-400)] text-xs mt-0.5">操作人：{log.operator.displayName}</div>
                     )}
                     {log.detail && (
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>{log.detail}</div>
+                      <div className="text-[var(--ink-400)] text-xs mt-0.5">{log.detail}</div>
                     )}
                   </div>
                 ))}

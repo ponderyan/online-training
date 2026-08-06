@@ -55,16 +55,16 @@ export default function LearningCenterPage() {
       {data?.stats && !loading && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{data.stats.totalVideos}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>视频课程</div>
+            <div className="text-[var(--fox)] text-2xl font-bold">{data.stats.totalVideos}</div>
+            <div className="text-[var(--ink-400)] text-xs mt-1">视频课程</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>{data.stats.completedVideos}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成</div>
+            <div className="text-[var(--info)] text-2xl font-bold">{data.stats.completedVideos}</div>
+            <div className="text-[var(--ink-400)] text-xs mt-1">已完成</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{data.stats.totalHours}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>累计学时（小时）</div>
+            <div className="text-[var(--blue)] text-2xl font-bold">{data.stats.totalHours}</div>
+            <div className="text-[var(--ink-400)] text-xs mt-1">累计学时（小时）</div>
           </div>
         </div>
       )}
@@ -77,7 +77,7 @@ export default function LearningCenterPage() {
         if (recent.length === 0) return null;
         return (
           <div className="mb-6">
-            <h2 className="text-sm font-bold mb-3" style={{ color: 'var(--ink-600)' }}>📖 最近学习</h2>
+            <h2 className="text-[var(--ink-600)] text-sm font-bold mb-3">📖 最近学习</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {recent.map((v: any) => {
                 const pct = Math.min(100, Math.round(v.progress.progress || 0));
@@ -97,7 +97,7 @@ export default function LearningCenterPage() {
                     <div className="p-3">
                       <h3 className="font-medium text-sm truncate">{v.name}</h3>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>{pct}%</span>
+                        <span className="text-[var(--fox)] text-xs font-medium">{pct}%</span>
                         <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
                           继续学习 →
                         </span>
@@ -185,7 +185,7 @@ export default function LearningCenterPage() {
                 <div className="p-3">
                   <h3 className="font-medium text-sm truncate">{v.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <span className="text-[var(--ink-300)] text-xs">
                       {v.instructorName || '—'}
                       {v.hours ? ` · ${v.hours}h` : ''}
                       {v.duration ? ` · ${formatDuration(v.duration)}` : ''}
@@ -198,7 +198,7 @@ export default function LearningCenterPage() {
                   ) : (
                     <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--cyan-glow)', color: 'var(--info)' }}>未开始</span>
                   )}
-                  <span className="block mt-2 text-xs font-medium" style={{ color: 'var(--fox)' }}>
+                  <span className="text-[var(--fox)] block mt-2 text-xs font-medium">
                     {completed ? '复习查看 →' : pct > 0 ? '继续学习 →' : '开始学习 →'}
                   </span>
                 </div>

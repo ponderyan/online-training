@@ -128,7 +128,7 @@ export default function ExamList() {
                       <BarChart3 size={10} /> 查看结果
                     </span>
                     <span className="text-xs font-medium px-3 py-1 rounded-full" style={{
-                      background: `${EXAM_STATUS_COLORS[exam.status]}18`,
+                      background: `color-mix(in srgb, ${EXAM_STATUS_COLORS[exam.status]} 10%, transparent)`,
                       color: EXAM_STATUS_COLORS[exam.status],
                     }}>{EXAM_STATUS_LABELS[exam.status] || exam.status}</span>
                     {exam.orgId && (

@@ -129,7 +129,7 @@ export default function LearningCenterPlayPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
   if (!video) return null;
 
   return (
@@ -162,7 +162,7 @@ export default function LearningCenterPlayPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-lg">{video.name}</h2>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+                <p className="text-[var(--ink-400)] text-xs mt-1">
                   {video.instructorName && `${video.instructorName}${video.instructorLevel ? ` (${video.instructorLevel})` : ''}`}
                   {video.duration ? ` · ${formatDuration(video.duration)}` : ''}
                   {video.hours ? ` · ${video.hours} 课时` : ''}
@@ -170,7 +170,7 @@ export default function LearningCenterPlayPage() {
                 </p>
                 {/* 关联课程/培训班信息 */}
                 {video.courseLinks?.length > 0 && (
-                  <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+                  <p className="text-[var(--ink-300)] text-xs mt-1">
                     📎 关联课程：{video.courseLinks.map((cl: any) => cl.course?.name).filter(Boolean).join('、')}
                   </p>
                 )}
@@ -184,19 +184,19 @@ export default function LearningCenterPlayPage() {
               </div>
             </div>
             {video.description && (
-              <p className="text-sm mt-3" style={{ color: 'var(--ink-400)' }}>{video.description}</p>
+              <p className="text-[var(--ink-400)] text-sm mt-3">{video.description}</p>
             )}
             {progress && (
               <div className="mt-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                  <div className="bg-[var(--ink-100)] flex-1 h-1.5 rounded-full">
                     <div className="h-full rounded-full" style={{
                       width: `${Math.min(100, progress.progress || 0)}%`,
                       background: completed ? 'var(--sage)' : 'var(--fox)',
                       transition: 'width 0.3s',
                     }} />
                   </div>
-                  <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>{Math.round(progress.progress || 0)}%</span>
+                  <span className="text-[var(--ink-400)] text-xs font-mono">{Math.round(progress.progress || 0)}%</span>
                 </div>
               </div>
             )}
@@ -212,7 +212,7 @@ export default function LearningCenterPlayPage() {
         {showSidebar && allVideos.length > 0 && (
           <aside className="w-[240px] flex-shrink-0 hidden lg:block">
             <div className="sticky top-24 card p-3 max-h-[calc(100vh-120px)] overflow-y-auto">
-              <h3 className="text-xs font-bold mb-3" style={{ color: 'var(--ink-500)' }}>课程列表</h3>
+              <h3 className="text-[var(--ink-500)] text-xs font-bold mb-3">课程列表</h3>
               <div className="space-y-0.5">
                 {allVideos.map((v: any) => {
                   const isCurrent = v.id === videoId;
@@ -244,7 +244,7 @@ export default function LearningCenterPlayPage() {
       {/* Mobile sidebar (below video when toggled) */}
       {showSidebar && allVideos.length > 0 && (
         <div className="lg:hidden card p-3 mb-6">
-          <h3 className="text-xs font-bold mb-3" style={{ color: 'var(--ink-500)' }}>课程列表</h3>
+          <h3 className="text-[var(--ink-500)] text-xs font-bold mb-3">课程列表</h3>
           <div className="space-y-0.5">
             {allVideos.map((v: any) => {
               const isCurrent = v.id === videoId;

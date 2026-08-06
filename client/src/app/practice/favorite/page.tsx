@@ -20,13 +20,13 @@ export default function FavoritePracticePage() {
           <h1 className="page-title mb-4">📌 收藏练习</h1>
           {favCount === 0 ? (
             <>
-              <p className="mb-4" style={{ color: 'var(--ink-300)' }}>暂无收藏题目</p>
-              <p className="text-xs mb-6" style={{ color: 'var(--ink-300)' }}>在练习中点击 ☆ 收藏题目</p>
+              <p className="text-[var(--ink-300)] mb-4">暂无收藏题目</p>
+              <p className="text-[var(--ink-300)] text-xs mb-6">在练习中点击 ☆ 收藏题目</p>
               <button onClick={() => window.history.back()} className="btn btn-outline btn-sm">返回</button>
             </>
           ) : (
             <>
-              <p className="mb-6" style={{ color: 'var(--ink-500)' }}>共 <strong>{favCount}</strong> 道收藏题待练习</p>
+              <p className="text-[var(--ink-500)] mb-6">共 <strong>{favCount}</strong> 道收藏题待练习</p>
               <button onClick={() => setStarted(true)} className="btn btn-fox">开始练习</button>
             </>
           )}

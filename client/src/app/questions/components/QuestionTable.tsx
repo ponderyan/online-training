@@ -48,15 +48,15 @@ export default function QuestionTable({
                 style={{ cursor: 'pointer', accentColor: 'var(--fox)' }} />
             </th>
             <th style={{ width: '38px', textAlign: 'center' }}>#</th>
-            <th style={{ width: '30%' }}>试题内容</th>
-            <th style={{ width: '7%' }}>题型</th>
-            <th style={{ width: '7%' }}>难度</th>
-            <th style={{ width: '6%' }}>科目</th>
-            <th style={{ width: '7%' }}>来源</th>
-            <th style={{ width: '8%' }}>创建时间</th>
-            <th style={{ width: '5%' }}>状态</th>
-            <th style={{ width: '5%' }}>引用</th>
-            <th style={{ width: '14%' }}>操作</th>
+            <th className="w-[30%]">试题内容</th>
+            <th className="w-[7%]">题型</th>
+            <th className="w-[7%]">难度</th>
+            <th className="w-[6%]">科目</th>
+            <th className="w-[7%]">来源</th>
+            <th className="w-[8%]">创建时间</th>
+            <th className="w-[5%]">状态</th>
+            <th className="w-[5%]">引用</th>
+            <th className="w-[14%]">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -96,7 +96,7 @@ export default function QuestionTable({
               <td><span className="tag tag-gold">{q.subject?.code}</span></td>
               <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 0, overflow: 'hidden' }}>
                 {q.materialName ? (
-                  <span className="truncate block" style={{ maxWidth: '100%' }} title={`${q.materialName}${q.chapterTitle ? ` > ${q.chapterTitle}` : ''}`}>
+                  <span className="max-w-[100%] truncate block" title={`${q.materialName}${q.chapterTitle ? ` > ${q.chapterTitle}` : ''}`}>
                     📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}
                   </span>
                 ) : q.orgId ? (
@@ -110,7 +110,7 @@ export default function QuestionTable({
                   q.source === 'MANUAL' ? '手动' : q.source === 'AI_IMPORT' ? 'AI' : '批量导入'
                 )}
               </td>
-              <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
+              <td className="text-[var(--ink-400)] text-xs">
                 {q.createdAt ? new Date(q.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) : '—'}
               </td>
               <td>

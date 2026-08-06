@@ -80,11 +80,11 @@ export default function NewProgramPage() {
 
   const Field = ({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) => (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-        {label} {required && <span style={{ color: 'var(--verm)' }}>*</span>}
+      <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+        {label} {required && <span className="text-[var(--verm)]">*</span>}
       </label>
       {children}
-      {error && <p className="text-xs mt-0.5" style={{ color: 'var(--verm)' }}>{error}</p>}
+      {error && <p className="text-[var(--verm)] text-xs mt-0.5">{error}</p>}
     </div>
   );
 
@@ -107,7 +107,7 @@ export default function NewProgramPage() {
 
         {/* 基本信息 */}
         <div className="card p-6 mb-5">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-600)' }}>📄 基本信息</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-4">📄 基本信息</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Field label="培训班名称" required error={errors.name}>
@@ -164,8 +164,8 @@ export default function NewProgramPage() {
 
         {/* 费用信息 */}
         <div className="card p-6 mb-5">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-600)' }}>💰 费用信息</h2>
-          <p className="text-xs mb-3" style={{ color: 'var(--ink-300)' }}>留空或填 0 表示该项目免费或不收取</p>
+          <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-4">💰 费用信息</h2>
+          <p className="text-[var(--ink-300)] text-xs mb-3">留空或填 0 表示该项目免费或不收取</p>
           <div className="grid grid-cols-3 gap-4">
             <Field label="培训费（元/人）">
               <input type="number" min={0} value={form.tuitionFee} onChange={e => setForm({...form, tuitionFee: e.target.value})}
@@ -181,7 +181,7 @@ export default function NewProgramPage() {
             </Field>
           </div>
           {form.tuitionFee || form.examFee || form.certFee ? (
-            <div className="mt-3 text-xs" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[var(--ink-400)] mt-3 text-xs">
               合计：<strong>¥{(
                 (parseFloat(form.tuitionFee) || 0) +
                 (parseFloat(form.examFee) || 0) +
@@ -193,7 +193,7 @@ export default function NewProgramPage() {
 
         {/* 招生设置 */}
         <div className="card p-6 mb-5">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-600)' }}>📢 招生设置</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-4">📢 招生设置</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Field label="报名开始">
@@ -218,7 +218,7 @@ export default function NewProgramPage() {
 
         {/* 备注 */}
         <div className="card p-6 mb-5">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-600)' }}>📝 备注</h2>
+          <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-4">📝 备注</h2>
           <Field label="内部备注（仅管理员可见）">
             <textarea value={form.remark} onChange={e => setForm({...form, remark: e.target.value})}
               className="input textarea" rows={2} placeholder="任何需要记录的补充信息" />

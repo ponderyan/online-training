@@ -53,7 +53,7 @@ export default function OrgNodeView({ node, depth, selectedId, expanded, onSelec
         <span className="tag text-[9px] flex-shrink-0" style={{ background: 'var(--paper-dark)', color: ORG_TYPE_COLORS[node.orgType || ''] || 'var(--ink-400)' }}>
           {ORG_TYPE_LABELS[node.orgType || ''] || LEVEL_LABELS[node.level] || `L${node.level}`}
         </span>
-        <span className="text-[9px] flex-shrink-0" style={{ color: 'var(--ink-300)' }}>
+        <span className="text-[var(--ink-300)] text-[9px] flex-shrink-0">
           {node.childOrgCount > 0 && `🏢${node.childOrgCount}`}
           {node.userCount > 0 && ` 👥${node.userCount}`}
         </span>

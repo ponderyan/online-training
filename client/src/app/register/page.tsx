@@ -45,7 +45,7 @@ function Field({ label, icon, children, required }: { label: string; icon: React
   return (
     <div>
       <label className="block text-xs font-medium text-[var(--ink-500)] mb-1.5 tracking-[0.02em]">
-        {label} {required && <span style={{ color: 'var(--verm)' }}>*</span>}
+        {label} {required && <span className="text-[var(--verm)]">*</span>}
       </label>
       <div className="relative">
         {children}
@@ -178,9 +178,8 @@ export default function RegisterPage() {
               {success ? (
                 /* 注册成功反馈 */
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-                    style={{ background: 'var(--sage-glow)' }}>
-                    <span className="text-3xl" style={{ color: 'var(--sage)' }}>✓</span>
+                  <div className="bg-[var(--sage-glow)] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <span className="text-[var(--sage)] text-3xl">✓</span>
                   </div>
                   <h2 className="font-serif text-xl font-bold text-[var(--ink-800)] mb-2">注册成功</h2>
                   <p className="text-sm text-[var(--ink-400)]">正在进入工作台…</p>

@@ -107,7 +107,7 @@ export default function AssignPage() {
     } catch (e: any) { toast.error('删除失败：' + e.message); }
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -129,7 +129,7 @@ export default function AssignPage() {
               <span className="text-[10px]">全选</span>
             </label>
           </div>
-          <div className="max-h-[400px] overflow-y-auto divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+          <div className="border-[var(--ink-100)] max-h-[400px] overflow-y-auto divide-y">
             {students.map((s: any) => (
               <label key={s.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--fox-pale)] transition-colors">
                 <input type="checkbox" checked={selectedSessionIds.includes(s.id)}
@@ -139,12 +139,12 @@ export default function AssignPage() {
                   }}
                   className="accent-[var(--fox)]" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate" style={{ color: 'var(--ink-600)' }}>{s.student?.displayName || '未知'}</div>
-                  <div className="text-xs" style={{ color: 'var(--ink-300)' }}>得分：{s.finalScore ?? s.totalScore ?? '-'}</div>
+                  <div className="text-[var(--ink-600)] text-sm font-medium truncate">{s.student?.displayName || '未知'}</div>
+                  <div className="text-[var(--ink-300)] text-xs">得分：{s.finalScore ?? s.totalScore ?? '-'}</div>
                 </div>
               </label>
             ))}
-            {students.length === 0 && <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无已提交学员</div>}
+            {students.length === 0 && <div className="text-[var(--ink-300)] px-4 py-8 text-center text-xs">暂无已提交学员</div>}
           </div>
         </div>
 
@@ -171,22 +171,22 @@ export default function AssignPage() {
                     }}
                     className="accent-[var(--fox)]" />
                   <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{typeName}</span>
-                  <span className="text-sm truncate flex-1" style={{ color: 'var(--ink-600)' }}>{pq.question?.content || `题目 #${pq.id}`}</span>
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{pq.score}分</span>
+                  <span className="text-[var(--ink-600)] text-sm truncate flex-1">{pq.question?.content || `题目 #${pq.id}`}</span>
+                  <span className="text-[var(--ink-300)] text-xs">{pq.score}分</span>
                 </label>
               );
             })}
-            {paperQuestions.length === 0 && <div className="px-4 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>本场无主观题</div>}
+            {paperQuestions.length === 0 && <div className="text-[var(--ink-300)] px-4 py-8 text-center text-xs">本场无主观题</div>}
           </div>
         </div>
 
         {/* 右栏：操作区 */}
         <div className="w-56 space-y-4">
           <div className="card p-4">
-            <h3 className="text-xs font-medium mb-3" style={{ color: 'var(--ink-500)' }}>分配操作</h3>
+            <h3 className="text-[var(--ink-500)] text-xs font-medium mb-3">分配操作</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>选择阅卷员</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">选择阅卷员</label>
                 <select value={graderId} onChange={e => setGraderId(e.target.value)} className="input select w-full">
                   <option value="">— 请选择 —</option>
                   {graders.map((g: any) => (
@@ -196,7 +196,7 @@ export default function AssignPage() {
               </div>
               <button onClick={handleAssign} disabled={!graderId}
                 className="btn btn-fox btn-sm w-full">{`📋 分配（${selectedSessionIds.length}人 × ${selectedQuestionIds.length || '全部'}题）`}</button>
-              <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+              <div className="text-[var(--ink-300)] text-[10px]">
                 {selectedSessionIds.length === 0 && selectedQuestionIds.length === 0
                   ? '至少选择学员或题型'
                   : `将生成 ${Math.max(selectedSessionIds.length, 1) * Math.max(selectedQuestionIds.length, 1)} 条分派记录`}
@@ -211,7 +211,7 @@ export default function AssignPage() {
         <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
           <span>已有分派（{assignments.length} 条）</span>
           {assignSummary && (
-            <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+            <span className="text-[var(--ink-300)] text-[10px]">
               {assignSummary.totalGraders} 位阅卷员 · {assignSummary.totalStudents} 名学员
             </span>
           )}
@@ -232,14 +232,14 @@ export default function AssignPage() {
             {assignments.map((a: any) => (
               <tr key={a.id}>
                 <td className="font-medium">{a.grader?.displayName || '—'}</td>
-                <td style={{ color: 'var(--ink-400)' }}>{a.session?.student?.displayName || '全部学员'}</td>
-                <td style={{ color: 'var(--ink-400)' }}>{a.paperQuestionId ? `题目 #${a.paperQuestionId}` : '全部主观题'}</td>
+                <td className="text-[var(--ink-400)]">{a.session?.student?.displayName || '全部学员'}</td>
+                <td className="text-[var(--ink-400)]">{a.paperQuestionId ? `题目 #${a.paperQuestionId}` : '全部主观题'}</td>
                 <td>
                   <span className={`tag ${a.status === 'COMPLETED' ? 'tag-cyan' : a.status === 'IN_PROGRESS' ? 'tag-gold' : 'tag-ink'}`}>
                     {a.status === 'COMPLETED' ? '已完成' : a.status === 'IN_PROGRESS' ? '阅卷中' : '待阅卷'}
                   </span>
                 </td>
-                <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(a.assignedAt).toLocaleDateString('zh-CN')}</td>
+                <td className="text-[var(--ink-300)] text-xs">{new Date(a.assignedAt).toLocaleDateString('zh-CN')}</td>
                 <td>
                   <div className="flex gap-2">
                     <button onClick={() => handleRemove(a.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>移除</button>
@@ -248,13 +248,13 @@ export default function AssignPage() {
               </tr>
             ))}
             {assignments.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无分派</td></tr>
+              <tr><td colSpan={6} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无分派</td></tr>
             )}
           </tbody>
         </table>
         </div>
         {assignments.length > 0 && (
-          <div className="px-4 py-3 flex gap-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+          <div className="border-[var(--ink-100)] px-4 py-3 flex gap-2 border-t">
             {[...new Set(assignments.map((a: any) => a.graderId))].map(gid => {
               const grader = assignments.find((a: any) => a.graderId === gid)?.grader;
               const count = assignments.filter((a: any) => a.graderId === gid).length;

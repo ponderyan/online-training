@@ -330,7 +330,7 @@ export default function PermissionsPage() {
     } catch { setRemoveRoleUserTarget(null); }
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -338,7 +338,7 @@ export default function PermissionsPage() {
         {/* Left: Role List */}
         <div className="w-56 flex-shrink-0 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-sm" style={{ color: 'var(--ink-700)' }}>🔐 角色</h2>
+            <h2 className="text-[var(--ink-700)] font-bold text-sm">🔐 角色</h2>
             <button onClick={() => { setShowRoleModal(true); setEditRoleData(null); setRoleForm({ name: '', code: '', description: '', color: 'var(--info-light)', copyFromRoleId: 0 }); }}
               className="btn btn-fox btn-xs">+ 新建</button>
           </div>
@@ -368,7 +368,7 @@ export default function PermissionsPage() {
                     )}
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                    <span className="text-[var(--ink-300)] text-[10px]">
                       {role?.userCount ?? 0} 人 · {grantedCount} 权限
                     </span>
                     <button onClick={e => { e.stopPropagation(); setEditRoleData(role); setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || 'var(--info-light)', copyFromRoleId: 0 }); setShowRoleModal(true); }}
@@ -390,12 +390,12 @@ export default function PermissionsPage() {
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ background: selectedRow.color || 'var(--neutral-400)' }} />
-                  <h2 className="font-bold text-base" style={{ color: 'var(--ink-700)' }}>{selectedRole.name || selectedRole.code}</h2>
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{selectedRole.isSystem ? '系统角色' : '自定义角色'}</span>
+                  <h2 className="text-[var(--ink-700)] font-bold text-base">{selectedRole.name || selectedRole.code}</h2>
+                  <span className="text-[var(--ink-300)] text-xs">{selectedRole.isSystem ? '系统角色' : '自定义角色'}</span>
                 </div>
               </div>
 
-              <div className="flex gap-3 mb-4 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] flex gap-3 mb-4 border-b">
                 <button onClick={() => setActiveTab('perms')}
                   className="px-3 py-2 text-xs font-medium border-none bg-transparent cursor-pointer transition-all"
                   style={{ color: activeTab === 'perms' ? 'var(--fox)' : 'var(--ink-400)', borderBottom: activeTab === 'perms' ? '2px solid var(--fox)' : '2px solid transparent' }}>
@@ -415,7 +415,7 @@ export default function PermissionsPage() {
                   <div className="flex items-center gap-3 mb-4 flex-wrap">
                     <input value={searchText} onChange={e => setSearchText(e.target.value)}
                       placeholder="🔍 搜索权限…" className="input text-xs" style={{ width: 200, height: 32 }} />
-                    <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: 'var(--ink-400)' }}>
+                    <label className="text-[var(--ink-400)] flex items-center gap-1.5 text-xs cursor-pointer">
                       <input type="checkbox" checked={showEnabledOnly} onChange={e => setShowEnabledOnly(e.target.checked)}
                         className="accent-[var(--fox)] w-3 h-3" />
                       仅显示已启用
@@ -439,8 +439,7 @@ export default function PermissionsPage() {
                       const isCollapsed = collapsedGroups.has(group.key);
                       return (
                         <div key={group.key} className="card overflow-hidden">
-                          <div className="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none"
-                            style={{ background: 'var(--paper-dark)' }}
+                          <div className="bg-[var(--paper-dark)] flex items-center justify-between px-4 py-2.5 cursor-pointer select-none"
                             onClick={() => {
                               const next = new Set(collapsedGroups);
                               isCollapsed ? next.delete(group.key) : next.add(group.key);
@@ -449,7 +448,7 @@ export default function PermissionsPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-xs transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
                               <span className="text-sm font-medium">{group.icon} {group.key}</span>
-                              <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>({grantedCount}/{group.children.length})</span>
+                              <span className="text-[var(--ink-300)] text-[10px]">({grantedCount}/{group.children.length})</span>
                             </div>
                             <div className="flex items-center gap-2">
                               {grantedCount === group.children.length ? (
@@ -470,7 +469,7 @@ export default function PermissionsPage() {
                                     <label key={child.permission}
                                       className="flex items-center gap-1.5 px-2.5 py-1 rounded cursor-pointer text-xs transition-all"
                                       style={{
-                                        background: granted ? `${selectedRow.color || 'var(--fox)'}18` : 'var(--paper)',
+                                        background: granted ? `color-mix(in srgb, ${selectedRow.color || 'var(--fox)'} 10%, transparent)` : 'var(--paper)',
                                         border: `1px solid ${granted ? (selectedRow.color || 'var(--fox)') : 'var(--ink-100)'}`,
                                         color: granted ? (selectedRow.color || 'var(--fox-dark)') : 'var(--ink-400)',
                                       }}>
@@ -498,13 +497,13 @@ export default function PermissionsPage() {
                       onKeyDown={e => e.key === 'Enter' && loadRoleUsers(selectedRoleId!, 1, memberSearch)} />
                     <button onClick={() => loadRoleUsers(selectedRoleId!, 1, memberSearch)}
                       className="btn btn-ghost btn-xs">搜索</button>
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {roleUsersTotal} 人</span>
+                    <span className="text-[var(--ink-300)] text-xs">共 {roleUsersTotal} 人</span>
                     <div className="flex-1" />
                     <button onClick={() => { setShowAddMember(true); setAddMemberQ(''); setAddMemberResults([]); }}
                       className="btn btn-fox btn-xs">➕ 添加成员</button>
                   </div>
                   {memberLoading ? (
-                    <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                    <div className="text-[var(--ink-300)] text-center py-8">加载中…</div>
                   ) : (
                     <div className="card overflow-hidden flex-1">
                       <div className="overflow-x-auto">
@@ -513,10 +512,10 @@ export default function PermissionsPage() {
                         <tbody>
                           {roleUsers.map((u: any) => (
                             <tr key={u.id}>
-                              <td style={{ color: 'var(--ink-400)' }}>{u.username}</td>
+                              <td className="text-[var(--ink-400)]">{u.username}</td>
                               <td className="font-medium">{u.displayName}</td>
-                              <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{u.orgName}</td>
-                              <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                              <td className="text-[var(--ink-300)] text-xs">{u.orgName}</td>
+                              <td className="text-[var(--ink-300)] text-xs">
                                 {u.assignedAt ? new Date(u.assignedAt).toLocaleDateString('zh-CN') : '—'}
                               </td>
                               <td>
@@ -526,7 +525,7 @@ export default function PermissionsPage() {
                             </tr>
                           ))}
                           {roleUsers.length === 0 && (
-                            <tr><td colSpan={5} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无成员</td></tr>
+                            <tr><td colSpan={5} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无成员</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -538,7 +537,7 @@ export default function PermissionsPage() {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center"><p className="text-5xl mb-4">🔐</p><p style={{ color: 'var(--ink-300)' }}>请从左侧选择一个角色</p></div>
+              <div className="text-center"><p className="text-5xl mb-4">🔐</p><p className="text-[var(--ink-300)]">请从左侧选择一个角色</p></div>
             </div>
           )}
         </div>
@@ -556,21 +555,21 @@ export default function PermissionsPage() {
             <div className="modal-body space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>角色名称 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色名称 *</label>
                   <input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} className="input" placeholder="如：巡考官" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>角色标识 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色标识 *</label>
                   <input value={roleForm.code} onChange={e => setRoleForm({...roleForm, code: e.target.value.toUpperCase()})} className="input"
                     placeholder="如：PATROL" disabled={!!editRoleData} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>描述</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">描述</label>
                 <textarea value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} className="input textarea" rows={2} />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>颜色</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">颜色</label>
                 <div className="flex gap-2">
                   {PRESET_COLORS.map(c => (
                     <button key={c} onClick={() => setRoleForm({...roleForm, color: c})}
@@ -581,7 +580,7 @@ export default function PermissionsPage() {
               </div>
               {!editRoleData && (
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>复制权限自（可选）</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">复制权限自（可选）</label>
                   <select value={roleForm.copyFromRoleId} onChange={e => setRoleForm({...roleForm, copyFromRoleId: parseInt(e.target.value)})}
                     className="input select">
                     <option value={0}>不复制</option>
@@ -590,7 +589,7 @@ export default function PermissionsPage() {
                     ))}
                   </select>
                   {roleForm.copyFromRoleId > 0 && (
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--fox)' }}>新建的角色将获得与所选角色相同的权限</p>
+                    <p className="text-[var(--fox)] text-[10px] mt-1">新建的角色将获得与所选角色相同的权限</p>
                   )}
                 </div>
               )}
@@ -616,20 +615,20 @@ export default function PermissionsPage() {
               <input value={addMemberQ} onChange={e => searchAddMember(e.target.value)}
                 autoFocus placeholder="🔍 输入用户名或姓名搜索…" className="input" />
               {addMemberLoading && (
-                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>搜索中…</div>
+                <div className="text-[var(--ink-300)] text-center py-4 text-xs">搜索中…</div>
               )}
               {!addMemberLoading && addMemberQ.trim() && addMemberResults.length === 0 && (
-                <div className="text-center py-4 text-xs" style={{ color: 'var(--ink-300)' }}>未找到匹配用户</div>
+                <div className="text-[var(--ink-300)] text-center py-4 text-xs">未找到匹配用户</div>
               )}
               <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
                 {addMemberResults.map(u => (
                   <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
                     style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                     <div className="min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: 'var(--ink-700)' }}>
-                        {u.displayName} <span className="text-xs font-normal" style={{ color: 'var(--ink-300)' }}>({u.username})</span>
+                      <div className="text-[var(--ink-700)] text-sm font-medium truncate">
+                        {u.displayName} <span className="text-[var(--ink-300)] text-xs font-normal">({u.username})</span>
                       </div>
-                      <div className="text-[11px]" style={{ color: 'var(--ink-300)' }}>{u.orgName}</div>
+                      <div className="text-[var(--ink-300)] text-[11px]">{u.orgName}</div>
                     </div>
                     {u.hasRole ? (
                       <span className="text-[11px] px-2 py-1 rounded" style={{ color: 'var(--sage)', background: 'var(--sage-glow)' }}>✓ 已是该角色</span>

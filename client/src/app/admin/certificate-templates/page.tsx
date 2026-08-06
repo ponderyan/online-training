@@ -265,7 +265,7 @@ export default function CertificateTemplatesPage() {
             ))}
             <div style={{ flex: 1 }} />
             <span style={{ fontSize: 12.5, color: 'var(--color-ink-300)' }}>
-              共 <b style={{ color: 'var(--color-ink-600)' }}>{visible.length}</b> 个模板
+              共 <b className="text-[var(--color-ink-600)]">{visible.length}</b> 个模板
             </span>
           </div>
         </div>

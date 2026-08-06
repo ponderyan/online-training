@@ -96,7 +96,7 @@ export default function ExamList() {
   const sortedHistory = [...historyExams].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
 
   if (loading) return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+    <div className="bg-[var(--paper)] min-h-screen">
       <div style={styles.container}>
         <div className="card" style={{ marginBottom: 40 }}><div className="card-body"><SkeletonList count={3} /></div></div>
         <div className="card"><div className="card-body"><SkeletonList count={4} /></div></div>
@@ -105,7 +105,7 @@ export default function ExamList() {
   );
 
   if (error) return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+    <div className="bg-[var(--paper)] min-h-screen">
       <div style={styles.container}>
         <div className="card"><ErrorCard message={error} onRetry={load} /></div>
       </div>
@@ -115,12 +115,12 @@ export default function ExamList() {
   const hasCurrent = sortedActive.length > 0 || sortedPending.length > 0 || missedExams.length > 0;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
+    <div className="bg-[var(--paper)] min-h-screen">
       <div className="sticky top-0 z-10 backdrop-blur-md" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FoxLogo.Light size={32} />
-            <span className="font-semibold" style={{ color: 'var(--ink-700)' }}>我的考试</span>
+            <span className="text-[var(--ink-700)] font-semibold">我的考试</span>
           </div>
           <button onClick={() => router.push('/dashboard')}
             className="text-xs px-3 py-1.5 rounded-md bg-transparent border-none cursor-pointer"
@@ -268,7 +268,7 @@ export default function ExamList() {
         </section>
       </div>
 
-      <p className="text-center text-xs py-6" style={{ color: 'var(--ink-200)' }}>FoxLearn · 跟着小狐狸，知识不迷路 🐾</p>
+      <p className="text-[var(--ink-200)] text-center text-xs py-6">FoxLearn · 跟着小狐狸，知识不迷路 🐾</p>
     </div>
   );
 }

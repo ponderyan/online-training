@@ -68,11 +68,10 @@ function ReportCard({ result }: { result: ExamResult }) {
         style={{ borderBottom: '2px solid var(--fox)' }}>
         <FoxLogo.Light size={36} />
         <div className="text-right">
-          <h1 className="text-xl font-bold tracking-wide"
-            style={{ color: 'var(--ink-800)' }}>
+          <h1 className="text-[var(--ink-800)] text-xl font-bold tracking-wide">
             考试成绩单
           </h1>
-          <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>
+          <p className="text-[var(--ink-400)] text-[10px] mt-0.5">
             Examination Score Report
           </p>
         </div>
@@ -80,30 +79,30 @@ function ReportCard({ result }: { result: ExamResult }) {
 
       {/* ===== 考试信息 ===== */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-600)' }}>
+        <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-3">
           考试信息
         </h2>
         <table className="w-full text-xs">
           <tbody>
             <tr>
-              <td className="py-1.5 pr-4 w-24" style={{ color: 'var(--ink-400)' }}>考试名称</td>
-              <td className="py-1.5 font-medium" style={{ color: 'var(--ink-700)' }}>{result.examTitle}</td>
+              <td className="text-[var(--ink-400)] py-1.5 pr-4 w-24">考试名称</td>
+              <td className="text-[var(--ink-700)] py-1.5 font-medium">{result.examTitle}</td>
             </tr>
             <tr>
-              <td className="py-1.5 pr-4" style={{ color: 'var(--ink-400)' }}>试卷名称</td>
-              <td className="py-1.5" style={{ color: 'var(--ink-600)' }}>{result.paperName}</td>
+              <td className="text-[var(--ink-400)] py-1.5 pr-4">试卷名称</td>
+              <td className="text-[var(--ink-600)] py-1.5">{result.paperName}</td>
             </tr>
             <tr>
-              <td className="py-1.5 pr-4" style={{ color: 'var(--ink-400)' }}>交卷时间</td>
-              <td className="py-1.5" style={{ color: 'var(--ink-600)' }}>
+              <td className="text-[var(--ink-400)] py-1.5 pr-4">交卷时间</td>
+              <td className="text-[var(--ink-600)] py-1.5">
                 {result.submittedAt
                   ? new Date(result.submittedAt).toLocaleString('zh-CN')
                   : '—'}
               </td>
             </tr>
             <tr>
-              <td className="py-1.5 pr-4" style={{ color: 'var(--ink-400)' }}>打印日期</td>
-              <td className="py-1.5" style={{ color: 'var(--ink-600)' }}>{today}</td>
+              <td className="text-[var(--ink-400)] py-1.5 pr-4">打印日期</td>
+              <td className="text-[var(--ink-600)] py-1.5">{today}</td>
             </tr>
           </tbody>
         </table>
@@ -111,40 +110,40 @@ function ReportCard({ result }: { result: ExamResult }) {
 
       {/* ===== 成绩明细 ===== */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-600)' }}>
+        <h2 className="text-[var(--ink-600)] text-sm font-semibold mb-3">
           成绩明细
         </h2>
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr style={{ background: 'var(--paper-dark)' }}>
-              <th className="text-left py-2.5 px-3 font-medium" style={{ color: 'var(--ink-500)' }}>项目</th>
-              <th className="text-right py-2.5 px-3 font-medium" style={{ color: 'var(--ink-500)' }}>得分</th>
-              <th className="text-right py-2.5 px-3 font-medium" style={{ color: 'var(--ink-500)' }}>满分</th>
-              <th className="text-right py-2.5 px-3 font-medium" style={{ color: 'var(--ink-500)' }}>备注</th>
+            <tr className="bg-[var(--paper-dark)]">
+              <th className="text-[var(--ink-500)] text-left py-2.5 px-3 font-medium">项目</th>
+              <th className="text-[var(--ink-500)] text-right py-2.5 px-3 font-medium">得分</th>
+              <th className="text-[var(--ink-500)] text-right py-2.5 px-3 font-medium">满分</th>
+              <th className="text-[var(--ink-500)] text-right py-2.5 px-3 font-medium">备注</th>
             </tr>
           </thead>
           <tbody>
             <tr style={{ borderBottom: '1px solid var(--ink-100)' }}>
-              <td className="py-2.5 px-3" style={{ color: 'var(--ink-600)' }}>客观题得分</td>
-              <td className="py-2.5 px-3 text-right font-medium" style={{ color: 'var(--ink-700)' }}>
+              <td className="text-[var(--ink-600)] py-2.5 px-3">客观题得分</td>
+              <td className="text-[var(--ink-700)] py-2.5 px-3 text-right font-medium">
                 {objScore !== null ? objScore : '—'}
               </td>
-              <td className="py-2.5 px-3 text-right" style={{ color: 'var(--ink-400)' }}>
+              <td className="text-[var(--ink-400)] py-2.5 px-3 text-right">
                 {result.totalScore ?? '—'}
               </td>
-              <td className="py-2.5 px-3 text-right text-[10px]" style={{ color: 'var(--ink-300)' }}>
+              <td className="text-[var(--ink-300)] py-2.5 px-3 text-right text-[10px]">
                 共 {correctCount + wrongCount} 题
               </td>
             </tr>
             <tr style={{ borderBottom: '1px solid var(--ink-100)' }}>
-              <td className="py-2.5 px-3" style={{ color: 'var(--ink-600)' }}>主观题得分</td>
-              <td className="py-2.5 px-3 text-right font-medium" style={{ color: 'var(--ink-700)' }}>
+              <td className="text-[var(--ink-600)] py-2.5 px-3">主观题得分</td>
+              <td className="text-[var(--ink-700)] py-2.5 px-3 text-right font-medium">
                 {result.subjectiveScore !== null ? result.subjectiveScore : '—'}
               </td>
-              <td className="py-2.5 px-3 text-right" style={{ color: 'var(--ink-400)' }}>
+              <td className="text-[var(--ink-400)] py-2.5 px-3 text-right">
                 {result.totalScore ?? '—'}
               </td>
-              <td className="py-2.5 px-3 text-right text-[10px]" style={{ color: 'var(--ink-300)' }}>
+              <td className="text-[var(--ink-300)] py-2.5 px-3 text-right text-[10px]">
                 {result.subjectiveScore !== null ? '已评分' : '待评分'}
               </td>
             </tr>
@@ -152,12 +151,12 @@ function ReportCard({ result }: { result: ExamResult }) {
               background: isPassed ? 'var(--success-pale)' : 'var(--error-pale)',
               borderTop: '2px solid var(--ink-200)',
             }}>
-              <td className="py-3 px-3 font-bold" style={{ color: 'var(--ink-700)' }}>总分</td>
+              <td className="text-[var(--ink-700)] py-3 px-3 font-bold">总分</td>
               <td className="py-3 px-3 text-right font-bold text-base"
                 style={{ color: isPassed ? 'var(--sage)' : 'var(--error)' }}>
                 {result.finalScore ?? '—'}
               </td>
-              <td className="py-3 px-3 text-right font-medium" style={{ color: 'var(--ink-400)' }}>
+              <td className="text-[var(--ink-400)] py-3 px-3 text-right font-medium">
                 {result.totalScore ?? '—'}
               </td>
               <td className="py-3 px-3 text-right">
@@ -183,10 +182,9 @@ function ReportCard({ result }: { result: ExamResult }) {
             value: result.finalScore !== null ? '已发布' : '待发布',
             color: result.finalScore !== null ? 'var(--sage)' : 'var(--warning)' },
         ].map((s, i) => (
-          <div key={i} className="text-center py-3 rounded-lg"
-            style={{ background: 'var(--paper-dark)' }}>
+          <div key={i} className="bg-[var(--paper-dark)] text-center py-3 rounded-lg">
             <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+            <div className="text-[var(--ink-400)] text-[10px] mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -251,8 +249,7 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
       {open && (
         <div className="score-report-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,23,18,0.45)', backdropFilter: 'blur(2px)' }}>
-          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl"
-            style={{ background: 'var(--paper-bright)' }}>
+          <div className="bg-[var(--paper-bright)] relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
             
             {/* 预览 */}
             <div className="p-8">

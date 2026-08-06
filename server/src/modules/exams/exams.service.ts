@@ -495,11 +495,7 @@ export class ExamsService {
     if (claimed.count === 0) throw new BadRequestException('已提交，不可重复提交');
 
     for (const ans of (answers || [])) {
-      await this.prisma.examAnswer.upsert({
-        where: { sessionId_paperQuestionId: { sessionId: session.id, paperQuestionId: ans.paperQuestionId } },
-        create: { sessionId: session.id, questionId: ans.questionId, paperQuestionId: ans.paperQuestionId, answer: ans.answer },
-        update: { answer: ans.answer },
-      });
+      await this.upsertAnswerSafe(session.id, ans);
     }
 
     // autoGrade 在最后执行：纯客观题设 GRADED，AUTO 模式设 PUBLISHED，覆盖上面的 PENDING；
@@ -515,6 +511,33 @@ export class ExamsService {
       select: { totalScore: true, subjectiveScore: true, finalScore: true, scoringStatus: true, isPassed: true },
     });
     return { success: true, ...updatedSession };
+  }
+
+  /**
+   * 竞态安全的答案 upsert：并发写同一 (session, paperQuestion) 时，
+   * Prisma upsert 的"查-插"两步可能双双判不存在 → 撞唯一键 P2002。
+   * 捕获后回退为纯 update 重试一次（压测实证：20 并发存答 5 个 500 → 修复后 0）。
+   */
+  private async upsertAnswerSafe(
+    sessionId: number,
+    payload: { questionId: number; paperQuestionId: number; answer: any },
+  ) {
+    try {
+      await this.prisma.examAnswer.upsert({
+        where: { sessionId_paperQuestionId: { sessionId, paperQuestionId: payload.paperQuestionId } },
+        create: { sessionId, questionId: payload.questionId, paperQuestionId: payload.paperQuestionId, answer: payload.answer },
+        update: { answer: payload.answer },
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        await this.prisma.examAnswer.update({
+          where: { sessionId_paperQuestionId: { sessionId, paperQuestionId: payload.paperQuestionId } },
+          data: { answer: payload.answer },
+        });
+      } else {
+        throw e;
+      }
+    }
   }
 
   async saveSingleAnswer(
@@ -533,11 +556,7 @@ export class ExamsService {
       throw new BadRequestException('考试时间已到');
     }
 
-    await this.prisma.examAnswer.upsert({
-      where: { sessionId_paperQuestionId: { sessionId: session.id, paperQuestionId: data.paperQuestionId } },
-      create: { sessionId: session.id, questionId: data.questionId, paperQuestionId: data.paperQuestionId, answer: data.answer },
-      update: { answer: data.answer },
-    });
+    await this.upsertAnswerSafe(session.id, data);
 
     return { success: true, savedAt: new Date().toISOString() };
   }

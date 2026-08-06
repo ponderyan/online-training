@@ -91,9 +91,9 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
         <h2 className="text-lg font-semibold mb-4">📥 导入学员</h2>
 
         {/* Step 1: Download template */}
-        <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--paper)' }}>
+        <div className="bg-[var(--paper)] mb-4 p-3 rounded-lg">
           <button onClick={downloadTemplate} className="btn btn-outline btn-sm">📄 下载导入模板</button>
-          <span className="text-xs ml-2" style={{ color: 'var(--ink-300)' }}>.xlsx 格式，含 11 列表头</span>
+          <span className="text-[var(--ink-300)] text-xs ml-2">.xlsx 格式，含 11 列表头</span>
         </div>
 
         {/* Step 2: Upload */}
@@ -104,11 +104,11 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
         {/* Validation errors */}
         {errors.length > 0 && (
           <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--error-pale)', border: '1px solid var(--verm)' }}>
-            <p className="text-xs font-medium mb-1" style={{ color: 'var(--error)' }}>⚠️ 发现 {errors.length} 个问题</p>
+            <p className="text-[var(--error)] text-xs font-medium mb-1">⚠️ 发现 {errors.length} 个问题</p>
             {errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-xs" style={{ color: 'var(--error)' }}>第{e.row}行：{e.message}</p>
+              <p key={i} className="text-[var(--error)] text-xs">第{e.row}行：{e.message}</p>
             ))}
-            {errors.length > 5 && <p className="text-xs" style={{ color: 'var(--error)' }}>…还有 {errors.length - 5} 个错误</p>}
+            {errors.length > 5 && <p className="text-[var(--error)] text-xs">…还有 {errors.length - 5} 个错误</p>}
           </div>
         )}
 
@@ -127,7 +127,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
               </tbody>
             </table>
             </div>
-            {file && <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>已解析 {preview.length} 行（前10行预览）</p>}
+            {file && <p className="text-[var(--ink-300)] text-xs mt-1">已解析 {preview.length} 行（前10行预览）</p>}
           </div>
         )}
 
@@ -136,7 +136,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
           <div className="mb-4 p-3 rounded-lg" style={{ background: result.fail > 0 ? 'var(--error-pale)' : 'var(--success-pale)' }}>
             <p className="text-sm">✅ 成功 {result.success} 行{result.fail > 0 ? ` · ❌ 失败 ${result.fail} 行` : ''}</p>
             {result.errors.slice(0, 3).map((e, i) => (
-              <p key={i} className="text-xs" style={{ color: 'var(--error)' }}>第{e.row}行：{e.message}</p>
+              <p key={i} className="text-[var(--error)] text-xs">第{e.row}行：{e.message}</p>
             ))}
           </div>
         )}

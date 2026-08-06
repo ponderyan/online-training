@@ -118,39 +118,39 @@ export default function AuditLogsPage() {
       <div className="card p-4 mb-5">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>实体类型</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">实体类型</label>
             <select value={filters.entityType} onChange={e => setFilters({ ...filters, entityType: e.target.value })} className="input select text-xs" style={{ width: 130 }}>
               <option value="">全部</option>
               {ENTITY_TYPES.filter(Boolean).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>操作</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">操作</label>
             <select value={filters.action} onChange={e => setFilters({ ...filters, action: e.target.value })} className="input select text-xs" style={{ width: 110 }}>
               <option value="">全部</option>
               {ACTIONS.filter(Boolean).map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>操作人</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">操作人</label>
             <input type="text" value={filters.operatorName} onChange={e => setFilters({ ...filters, operatorName: e.target.value })}
               className="input text-xs" style={{ width: 150 }} placeholder="搜索用户名/姓名" />
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>实体ID</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">实体ID</label>
             <input type="text" value={filters.entityId} onChange={e => setFilters({ ...filters, entityId: e.target.value })}
               className="input text-xs" style={{ width: 130 }} placeholder="输入实体ID" />
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>开始</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">开始</label>
             <input type="date" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="input text-xs" style={{ width: 140 }} />
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>结束</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">结束</label>
             <input type="date" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="input text-xs" style={{ width: 140 }} />
           </div>
           <div>
-            <label className="text-[10px] mb-0.5 block" style={{ color: 'var(--ink-400)' }}>变更原因</label>
+            <label className="text-[var(--ink-400)] text-[10px] mb-0.5 block">变更原因</label>
             <input type="text" value={filters.changeReason} onChange={e => setFilters({ ...filters, changeReason: e.target.value })}
               className="input text-xs" style={{ width: 140 }} placeholder="搜索原因…" />
           </div>
@@ -158,7 +158,7 @@ export default function AuditLogsPage() {
             <input type="checkbox" checked={filters.includeArchived}
               onChange={e => { setFilters(f => ({ ...f, includeArchived: e.target.checked, startDate: e.target.checked ? '' : f.startDate })); setPage(1); }}
               className="accent-[var(--fox)] w-3.5 h-3.5" />
-            <span style={{ color: 'var(--ink-500)' }}>含归档</span>
+            <span className="text-[var(--ink-500)]">含归档</span>
           </label>
           <button onClick={() => { setPage(1); }} className="btn btn-fox btn-xs">搜索</button>
           <button onClick={() => {
@@ -196,19 +196,19 @@ export default function AuditLogsPage() {
             <tbody>
               {logs.map((log: any) => (
                 <tr key={log.id}>
-                  <td className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-400)' }}>{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
+                  <td className="text-[var(--ink-400)] text-xs whitespace-nowrap">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
                   <td className="text-xs">
                     {log.operatorName ? (
-                      <span>{log.operatorName}<span className="font-mono" style={{ color: 'var(--ink-300)' }}> ({log.operatorId})</span></span>
+                      <span>{log.operatorName}<span className="text-[var(--ink-300)] font-mono"> ({log.operatorId})</span></span>
                     ) : log.operatorId ? (
-                      <span className="font-mono" style={{ color: 'var(--ink-300)' }}>用户 #{log.operatorId}</span>
+                      <span className="text-[var(--ink-300)] font-mono">用户 #{log.operatorId}</span>
                     ) : (
-                      <span style={{ color: 'var(--ink-300)' }}>—</span>
+                      <span className="text-[var(--ink-300)]">—</span>
                     )}
                   </td>
                   <td><span className="tag tag-cyan text-[10px]">{log.entityType}</span></td>
                   <td className="font-mono text-xs">{log.entityId}</td>
-                  <td><span className="tag text-[10px]" style={{ background: `${ACTION_COLORS[log.action] || 'var(--neutral-400)'}18`, color: ACTION_COLORS[log.action] || 'var(--neutral-400)' }}>{log.action}</span></td>
+                  <td><span className="tag text-[10px]" style={{ background: `color-mix(in srgb, ${ACTION_COLORS[log.action] || 'var(--neutral-400)'} 10%, transparent)`, color: ACTION_COLORS[log.action] || 'var(--neutral-400)' }}>{log.action}</span></td>
                   <td className="text-[10px]">{
                     log.eventSource === 'SYSTEM' ? '🤖 系统' :
                     log.eventSource === 'MANUAL' ? '✋ 手动' :
@@ -219,16 +219,16 @@ export default function AuditLogsPage() {
                   <td className="text-xs" style={{ color: 'var(--ink-500)', maxWidth: 160 }}>
                     {log.changeReason ? (
                       <span className="truncate block" style={{ maxWidth: 160 }} title={log.changeReason}>{log.changeReason}</span>
-                    ) : <span style={{ color: 'var(--ink-300)' }}>—</span>}
+                    ) : <span className="text-[var(--ink-300)]">—</span>}
                   </td>
-                  <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{log.ip || '—'}</td>
+                  <td className="text-[var(--ink-300)] text-xs font-mono">{log.ip || '—'}</td>
                   <td>
                     {(log.before || log.after) ? (
                       <button onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
                         className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
                         {expandedRow === log.id ? '收起' : '查看'}
                       </button>
-                    ) : <span className="text-xs" style={{ color: 'var(--ink-300)' }}>—</span>}
+                    ) : <span className="text-[var(--ink-300)] text-xs">—</span>}
                   </td>
                 </tr>
               ))}
@@ -242,13 +242,13 @@ export default function AuditLogsPage() {
               <div className="p-4 border-t" style={{ borderColor: 'var(--ink-100)', background: 'var(--paper-dark)' }}>
                 <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                   <div>
-                    <div className="font-medium text-[10px] mb-1" style={{ color: 'var(--ink-400)' }}>变更前 (before):</div>
+                    <div className="text-[var(--ink-400)] font-medium text-[10px] mb-1">变更前 (before):</div>
                     <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.before, null, 2) || '—'}
                     </pre>
                   </div>
                   <div>
-                    <div className="font-medium text-[10px] mb-1" style={{ color: 'var(--ink-400)' }}>变更后 (after):</div>
+                    <div className="text-[var(--ink-400)] font-medium text-[10px] mb-1">变更后 (after):</div>
                     <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.after, null, 2) || '—'}
                     </pre>
@@ -263,7 +263,7 @@ export default function AuditLogsPage() {
       {/* Pagination — 居中 */}
       <div className="flex flex-col items-center gap-3 mt-6">
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>共 {total} 条</span>
+          <span className="text-[var(--ink-400)] text-xs">共 {total} 条</span>
           <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
             className="input select text-xs" style={{ width: 70 }}>
             <option value={20}>20</option>
@@ -271,7 +271,7 @@ export default function AuditLogsPage() {
             <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
-          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>条/页</span>
+          <span className="text-[var(--ink-400)] text-xs">条/页</span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setPage(1)} disabled={page === 1}
@@ -280,7 +280,7 @@ export default function AuditLogsPage() {
             className="btn btn-outline btn-xs" style={{ opacity: page === 1 ? 0.3 : 1 }}>上一页</button>
           {generatePageNumbers(page, totalPages).map((p, i) =>
             p === '...' ? (
-              <span key={`dots-${i}`} className="text-xs px-1" style={{ color: 'var(--ink-300)' }}>…</span>
+              <span key={`dots-${i}`} className="text-[var(--ink-300)] text-xs px-1">…</span>
             ) : (
               <button key={p} onClick={() => setPage(p as number)}
                 className="btn btn-xs px-2"

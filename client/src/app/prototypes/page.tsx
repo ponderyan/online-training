@@ -38,13 +38,13 @@ export default function PrototypesPage() {
       <div className="max-w-3xl w-full animate-fadeSlide">
         <div className="text-center mb-10">
           <div className="text-4xl mb-3">🦊</div>
-          <h1 className="text-xl font-serif font-bold" style={{ color: 'var(--ink-800)' }}>FoxLearn 二期 · 交互原型</h1>
-          <p className="text-sm mt-2" style={{ color: 'var(--ink-400)' }}>
+          <h1 className="text-[var(--ink-800)] text-xl font-serif font-bold">FoxLearn 二期 · 交互原型</h1>
+          <p className="text-[var(--ink-400)] text-sm mt-2">
             点击查看高保真原型 · 每个原型包含模拟数据和可交互流程
           </p>
           <div className="flex items-center justify-center gap-2 mt-3">
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>二期规划中</span>
-            <span className="text-xs" style={{ color: 'var(--ink-300)' }}>待需求确认后进入开发</span>
+            <span className="text-[var(--ink-300)] text-xs">待需求确认后进入开发</span>
           </div>
         </div>
 
@@ -59,14 +59,14 @@ export default function PrototypesPage() {
                 <div className="text-3xl mt-0.5 flex-shrink-0">{item.icon}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h2 className="font-serif font-bold text-base" style={{ color: 'var(--ink-800)' }}>{item.title}</h2>
+                    <h2 className="text-[var(--ink-800)] font-serif font-bold text-base">{item.title}</h2>
                     <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: item.tag === '管理端' ? 'var(--fox-glow)' : 'var(--cyan-glow)', color: item.tag === '管理端' ? 'var(--fox-dark)' : 'var(--cyan)' }}>
                       {item.tag}
                     </span>
                   </div>
-                  <p className="text-sm" style={{ color: 'var(--ink-400)' }}>{item.desc}</p>
+                  <p className="text-[var(--ink-400)] text-sm">{item.desc}</p>
                 </div>
-                <span className="text-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--fox)' }}>→</span>
+                <span className="text-[var(--fox)] text-lg opacity-0 group-hover:opacity-100 transition-opacity">→</span>
               </div>
             </div>
           ))}

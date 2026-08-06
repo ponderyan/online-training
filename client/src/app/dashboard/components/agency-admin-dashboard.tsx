@@ -33,7 +33,7 @@ export default function AgencyAdminDashboard({ stats, loading }: any) {
           ) : (
             <div className="space-y-2">
               {d.recentEnrollments.map((e: any) => (
-                <div key={e.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
+                <div key={e.id} className="bg-[var(--paper-dark)] flex items-center justify-between p-2.5 rounded-lg">
                   <span className="text-sm text-[var(--ink-600)]">👤 {e.student?.displayName || '—'}</span>
                   <span className="text-xs text-[var(--ink-400)]">{e.program?.name || ''}</span>
                   <span className="text-xs text-[var(--ink-300)]">{new Date(e.createdAt).toLocaleDateString('zh-CN')}</span>

@@ -32,7 +32,7 @@ export default function StudentDetailPage() {
     }).catch(() => router.push('/students')).finally(() => setLoading(false));
   }, [studentId]);
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
   if (!profile) return null;
 
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('zh-CN') : '—';
@@ -67,7 +67,7 @@ export default function StudentDetailPage() {
                 {profile.isActive ? '正常' : '已停用'}
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-xs" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[var(--ink-400)] grid grid-cols-3 gap-x-6 gap-y-1 text-xs">
               <span>学号：{profile.studentNumber || '—'}</span>
               <span>用户名：{profile.username}</span>
               <span>手机：{profile.phone || '—'}</span>
@@ -86,17 +86,17 @@ export default function StudentDetailPage() {
           </div>
           {/* Stats */}
           <div className="flex gap-4 flex-shrink-0">
-            <div className="text-center px-4 py-2 rounded-lg" style={{ background: 'var(--paper)' }}>
-              <div className="text-lg font-bold" style={{ color: 'var(--fox)' }}>{profile.stats?.examCount || 0}</div>
-              <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>考试</div>
+            <div className="bg-[var(--paper)] text-center px-4 py-2 rounded-lg">
+              <div className="text-[var(--fox)] text-lg font-bold">{profile.stats?.examCount || 0}</div>
+              <div className="text-[var(--ink-300)] text-[10px]">考试</div>
             </div>
-            <div className="text-center px-4 py-2 rounded-lg" style={{ background: 'var(--paper)' }}>
-              <div className="text-lg font-bold" style={{ color: 'var(--cyan)' }}>{profile.stats?.passedCount || 0}</div>
-              <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>通过</div>
+            <div className="bg-[var(--paper)] text-center px-4 py-2 rounded-lg">
+              <div className="text-[var(--cyan)] text-lg font-bold">{profile.stats?.passedCount || 0}</div>
+              <div className="text-[var(--ink-300)] text-[10px]">通过</div>
             </div>
-            <div className="text-center px-4 py-2 rounded-lg" style={{ background: 'var(--paper)' }}>
-              <div className="text-lg font-bold" style={{ color: 'var(--gold)' }}>{profile.stats?.certCount || 0}</div>
-              <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>证书</div>
+            <div className="bg-[var(--paper)] text-center px-4 py-2 rounded-lg">
+              <div className="text-[var(--gold)] text-lg font-bold">{profile.stats?.certCount || 0}</div>
+              <div className="text-[var(--ink-300)] text-[10px]">证书</div>
             </div>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function StudentDetailPage() {
       {activeTab === 'exams' && (
         <div className="card p-0 overflow-hidden">
           {exams.length === 0 ? (
-            <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无考试记录</div>
+            <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无考试记录</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -136,9 +136,9 @@ export default function StudentDetailPage() {
                   <th className="text-left px-4 py-3 font-medium">提交时间</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+              <tbody className="border-[var(--ink-100)] divide-y">
                 {exams.map((e: any) => (
-                  <tr key={e.id} style={{ color: 'var(--ink-600)' }}>
+                  <tr className="text-[var(--ink-600)]" key={e.id}>
                     <td className="px-4 py-3">{e.exam?.title || '—'}</td>
                     <td className="px-4 py-3">{e.finalScore ?? e.totalScore ?? '—'}</td>
                     <td className="px-4 py-3">
@@ -159,7 +159,7 @@ export default function StudentDetailPage() {
       {activeTab === 'certificates' && (
         <div className="card p-0 overflow-hidden">
           {certificates.length === 0 ? (
-            <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无证书</div>
+            <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无证书</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -170,9 +170,9 @@ export default function StudentDetailPage() {
                   <th className="text-left px-4 py-3 font-medium">状态</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+              <tbody className="border-[var(--ink-100)] divide-y">
                 {certificates.map((c: any) => (
-                  <tr key={c.id} style={{ color: 'var(--ink-600)' }}>
+                  <tr className="text-[var(--ink-600)]" key={c.id}>
                     <td className="px-4 py-3 font-mono text-xs">{c.certificateNo}</td>
                     <td className="px-4 py-3 text-xs">{c.courseName}</td>
                     <td className="px-4 py-3 text-xs">{fmtDate(c.issueDate)}</td>
@@ -193,7 +193,7 @@ export default function StudentDetailPage() {
       {activeTab === 'fees' && (
         <div className="card p-0 overflow-hidden">
           {feeRecords.length === 0 ? (
-            <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无缴费记录</div>
+            <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无缴费记录</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -205,9 +205,9 @@ export default function StudentDetailPage() {
                   <th className="text-left px-4 py-3 font-medium">时间</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+              <tbody className="border-[var(--ink-100)] divide-y">
                 {feeRecords.map((f: any) => (
-                  <tr key={f.id} style={{ color: 'var(--ink-600)' }}>
+                  <tr className="text-[var(--ink-600)]" key={f.id}>
                     <td className="px-4 py-3 text-xs">{f.type === 'TRAINING_FEE' ? '培训费' : f.type === 'EXAM_FEE' ? '考试费' : '证书费'}</td>
                     <td className="px-4 py-3">{f.amount}元</td>
                     <td className="px-4 py-3">

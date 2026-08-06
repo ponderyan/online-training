@@ -137,7 +137,7 @@ export default function CoursesPage() {
                     </td>
                     <td>
                       <span className="tag" style={{
-                        background: `${TYPE_COLORS[c.type] || 'var(--neutral-400)'}18`,
+                        background: `color-mix(in srgb, ${TYPE_COLORS[c.type] || 'var(--neutral-400)'} 10%, transparent)`,
                         color: TYPE_COLORS[c.type] || 'var(--neutral-400)', fontSize: '11px',
                       }}>
                         {TYPE_NAMES[c.type] || c.type}
@@ -150,7 +150,7 @@ export default function CoursesPage() {
                     </td>
                     <td>
                       <span className="tag" style={{
-                        background: `${STATUS_COLORS[c.status] || 'var(--neutral-400)'}18`,
+                        background: `color-mix(in srgb, ${STATUS_COLORS[c.status] || 'var(--neutral-400)'} 10%, transparent)`,
                         color: STATUS_COLORS[c.status] || 'var(--neutral-400)',
                       }}>
                         {STATUS_NAMES[c.status] || c.status}
@@ -187,7 +187,7 @@ export default function CoursesPage() {
             .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
             .map((p, idx, arr) => (
               <span key={p} className="flex items-center">
-                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="mx-1 text-xs" style={{ color: 'var(--ink-300)' }}>…</span>}
+                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="text-[var(--ink-300)] mx-1 text-xs">…</span>}
                 <button onClick={() => load(p)}
                   className={`btn btn-xs ${p === page ? 'btn-fox' : 'btn-ghost'}`}>{p}</button>
               </span>

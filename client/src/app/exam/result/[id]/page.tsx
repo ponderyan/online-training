@@ -279,9 +279,9 @@ export default function ExamResult() {
             <div className="flex flex-col items-center">
               <DonutChart correct={correctCount} wrong={wrongCount} pending={pendingCount} />
               <div className="flex gap-3 mt-3 text-[10px]">
-                <span style={{ color: 'var(--sage)' }}>● {correctCount} 正确</span>
-                <span style={{ color: 'var(--verm)' }}>● {wrongCount} 错误</span>
-                {pendingCount > 0 && <span style={{ color: 'var(--gold)' }}>● {pendingCount} 待判</span>}
+                <span className="text-[var(--sage)]">● {correctCount} 正确</span>
+                <span className="text-[var(--verm)]">● {wrongCount} 错误</span>
+                {pendingCount > 0 && <span className="text-[var(--gold)]">● {pendingCount} 待判</span>}
               </div>
               <div className="flex gap-2 mt-3 no-print">
                 <button onClick={() => setShowPrintModal(true)}
@@ -310,7 +310,7 @@ export default function ExamResult() {
             <span className="text-xl">⏳</span>
             <div>
               <p className="font-semibold text-sm">主观题阅卷中</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--gold-dark)' }}>客观题得分已出，主观题由人工判分中，请耐心等待</p>
+              <p className="text-[var(--gold-dark)] text-xs mt-0.5">客观题得分已出，主观题由人工判分中，请耐心等待</p>
             </div>
           </div>
         )}
@@ -364,7 +364,7 @@ export default function ExamResult() {
                 </div>
                 <div className="w-12 text-right">
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{
-                    background: `${(LEVEL_COLORS[kp.level] || 'var(--gold)')}18`,
+                    background: `color-mix(in srgb, ${(LEVEL_COLORS[kp.level] || 'var(--gold)')} 10%, transparent)`,
                     color: LEVEL_COLORS[kp.level] || 'var(--gold)',
                   }}>
                     {kp.level}
@@ -411,7 +411,7 @@ export default function ExamResult() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-medium text-[var(--ink-700)]">{group.kpName}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{
-                    background: `${(LEVEL_COLORS[group.level] || 'var(--gold)')}18`,
+                    background: `color-mix(in srgb, ${(LEVEL_COLORS[group.level] || 'var(--gold)')} 10%, transparent)`,
                     color: LEVEL_COLORS[group.level] || 'var(--gold)',
                   }}>
                     {group.level}
@@ -525,7 +525,7 @@ export default function ExamResult() {
                                 <span style={{ color: isUserAnswer ? 'var(--ink-700)' : 'var(--ink-500)' }}>{o.content}</span>
                                 {isUserAnswer && <span className="text-[9px] text-[var(--ink-300)]">你的选择</span>}
                                 {!isUserAnswer && isCorrectOption && a.isCorrect === false && (
-                                  <span className="text-[9px]" style={{ color: 'var(--sage)' }}>正确答案</span>
+                                  <span className="text-[var(--sage)] text-[9px]">正确答案</span>
                                 )}
                               </div>
                             );
@@ -546,11 +546,11 @@ export default function ExamResult() {
                         {a.correctAnswer && a.isCorrect === false && (
                           <p>
                             <span className="font-medium">正确答案：</span>
-                            <span style={{ color: 'var(--sage)' }}>{formatCorrect(a)}</span>
+                            <span className="text-[var(--sage)]">{formatCorrect(a)}</span>
                           </p>
                         )}
                         {a.graderNote && (
-                          <p className="mt-1 p-2 rounded" style={{ background: 'var(--paper)' }}>
+                          <p className="bg-[var(--paper)] mt-1 p-2 rounded">
                             <span className="font-medium">评语：</span>{a.graderNote}
                           </p>
                         )}
@@ -559,8 +559,7 @@ export default function ExamResult() {
                       {/* Analysis */}
                       {a.analysis && (
                         <details className="group">
-                          <summary className="text-xs cursor-pointer inline-flex items-center gap-1 font-medium"
-                            style={{ color: 'var(--fox)' }}>
+                          <summary className="text-[var(--fox)] text-xs cursor-pointer inline-flex items-center gap-1 font-medium">
                             <span className="transition-transform group-open:rotate-90">▶</span> 查看解析
                           </summary>
                           <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: 'var(--paper-alt)', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
@@ -591,40 +590,40 @@ export default function ExamResult() {
           <div className="rounded-2xl p-6 max-w-md w-[90%] max-h-[80vh] overflow-y-auto" style={{ background: 'var(--paper-bright, #fff)' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold m-0" style={{ color: 'var(--ink-700)' }}>📊 成绩变动记录</h3>
+              <h3 className="text-[var(--ink-700)] text-base font-bold m-0">📊 成绩变动记录</h3>
               <button onClick={() => setShowScoreChanges(false)}
                 className="bg-transparent border-none cursor-pointer text-lg" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
 
             {loadingChanges ? (
-              <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+              <p className="text-[var(--ink-300)] text-sm text-center py-8">加载中…</p>
             ) : scoreChanges.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-3xl mb-3">📭</p>
-                <p className="text-sm" style={{ color: 'var(--ink-400)' }}>暂无成绩变动记录</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>成绩未被调整过</p>
+                <p className="text-[var(--ink-400)] text-sm">暂无成绩变动记录</p>
+                <p className="text-[var(--ink-300)] text-xs mt-1">成绩未被调整过</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {scoreChanges.map((c, i) => (
                   <div key={i} className="p-3 rounded-lg" style={{ background: 'var(--paper-dark, #f5f0eb)' }}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-mono font-bold" style={{ color: 'var(--fox)' }}>
+                      <span className="text-[var(--fox)] text-sm font-mono font-bold">
                         {c.fromScore ?? '?'} → {c.toScore ?? '?'}
                       </span>
-                      <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                      <span className="text-[var(--ink-300)] text-[10px]">
                         {new Date(c.timestamp).toLocaleString('zh-CN')}
                       </span>
                     </div>
                     {c.reason && (
-                      <p className="text-xs mt-1" style={{ color: 'var(--ink-500)' }}>
+                      <p className="text-[var(--ink-500)] text-xs mt-1">
                         <span className="text-[10px] px-1.5 py-0.5 rounded mr-1" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{c.action}</span>
                         {c.reason}
                       </p>
                     )}
                   </div>
                 ))}
-                <p className="text-[10px] text-center pt-2" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-300)] text-[10px] text-center pt-2">
                   ※ 仅展示分数变化与原因，不显示操作人信息
                 </p>
               </div>

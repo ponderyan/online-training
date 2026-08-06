@@ -192,7 +192,7 @@ export default function OfflineScoresPage() {
     FILL_BLANK: '填空', SHORT_ANSWER: '简答', CASE_STUDY: '案例',
   };
 
-  if (loading) return <AppLayout><div className="p-8 text-center" style={{ color: 'var(--ink-400)' }}>加载中…</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-400)] p-8 text-center">加载中…</div></AppLayout>;
 
   const questionTypes = getQuestionTypes();
 
@@ -237,7 +237,7 @@ export default function OfflineScoresPage() {
         {/* 批量导入面板 */}
         {showImport && (
           <div className="card p-4 mb-4">
-            <p className="text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>
+            <p className="text-[var(--ink-500)] text-xs font-medium mb-2">
               粘贴 CSV 数据（格式：学员ID,{questionTypes.map(t => typeLabels[t] || t).join(',')},阅卷人）
             </p>
             <textarea value={importData} onChange={e => setImportData(e.target.value)}
@@ -253,15 +253,15 @@ export default function OfflineScoresPage() {
         <div className="card overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr style={{ background: 'var(--paper)' }}>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>座位</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>学员</th>
+              <tr className="bg-[var(--paper)]">
+                <th className="text-[var(--ink-500)] text-left px-4 py-3 font-medium">座位</th>
+                <th className="text-[var(--ink-500)] text-left px-4 py-3 font-medium">学员</th>
                 {questionTypes.map(t => (
-                  <th key={t} className="text-center px-2 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>{typeLabels[t] || t}</th>
+                  <th key={t} className="text-[var(--ink-500)] text-center px-2 py-3 font-medium">{typeLabels[t] || t}</th>
                 ))}
-                <th className="text-center px-3 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>总分</th>
-                <th className="text-center px-3 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>状态</th>
-                <th className="text-center px-3 py-3 font-medium" style={{ color: 'var(--ink-500)' }}>操作</th>
+                <th className="text-[var(--ink-500)] text-center px-3 py-3 font-medium">总分</th>
+                <th className="text-[var(--ink-500)] text-center px-3 py-3 font-medium">状态</th>
+                <th className="text-[var(--ink-500)] text-center px-3 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -269,15 +269,15 @@ export default function OfflineScoresPage() {
                 const score = scores.find(sc => sc.sessionId === s.id);
                 return (
                   <tr key={s.id} className="border-t" style={{ borderColor: 'var(--ink-50)', background: s.absent ? 'var(--paper)' : 'white' }}>
-                    <td className="px-4 py-2.5" style={{ color: 'var(--ink-400)' }}>{s.seatNumber || '-'}</td>
+                    <td className="text-[var(--ink-400)] px-4 py-2.5">{s.seatNumber || '-'}</td>
                     <td className="px-4 py-2.5 font-medium">{s.student?.displayName || `#${s.studentId}`}</td>
                     {questionTypes.map(t => (
-                      <td key={t} className="text-center px-2 py-2.5" style={{ color: 'var(--ink-500)' }}>
+                      <td key={t} className="text-[var(--ink-500)] text-center px-2 py-2.5">
                         {s.absent ? '-' : (score?.scoreByType?.[t] ?? '-')}
                       </td>
                     ))}
                     <td className="text-center px-3 py-2.5 font-bold">
-                      {s.absent ? <span style={{ color: 'var(--verm)' }}>缺考</span> : (score?.totalScore ?? '-')}
+                      {s.absent ? <span className="text-[var(--verm)]">缺考</span> : (score?.totalScore ?? '-')}
                     </td>
                     <td className="text-center px-3 py-2.5">
                       {s.absent ? <span className="tag tag-verm">缺考</span> :
@@ -306,7 +306,7 @@ export default function OfflineScoresPage() {
         </div>
 
         {/* 统计 */}
-        <div className="flex gap-4 mt-4 text-xs" style={{ color: 'var(--ink-400)' }}>
+        <div className="text-[var(--ink-400)] flex gap-4 mt-4 text-xs">
           <span>共 {sessions.length} 人</span>
           <span>已录入 {scores.length} 人</span>
           <span>缺考 {sessions.filter(s => s.absent).length} 人</span>
@@ -322,19 +322,19 @@ export default function OfflineScoresPage() {
             <div className="space-y-3">
               {questionTypes.map(t => (
                 <div key={t} className="flex items-center gap-3">
-                  <label className="text-xs w-16 shrink-0" style={{ color: 'var(--ink-500)' }}>{typeLabels[t] || t}</label>
+                  <label className="text-[var(--ink-500)] text-xs w-16 shrink-0">{typeLabels[t] || t}</label>
                   <input type="number" min={0} value={scoreForm[t] || ''}
                     onChange={e => setScoreForm({ ...scoreForm, [t]: e.target.value })}
                     className="input" style={{ width: '100px' }} placeholder="0" />
                 </div>
               ))}
-              <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-                <label className="text-xs w-16 shrink-0" style={{ color: 'var(--ink-500)' }}>阅卷人</label>
+              <div className="border-[var(--ink-100)] flex items-center gap-3 pt-2 border-t">
+                <label className="text-[var(--ink-500)] text-xs w-16 shrink-0">阅卷人</label>
                 <input value={graderName} onChange={e => setGraderName(e.target.value)}
                   className="input" placeholder="阅卷人姓名（可与录入人不同）" />
               </div>
-              <p className="text-[10px]" style={{ color: 'var(--ink-300)' }}>录入人默认为当前登录用户，阅卷人可另填</p>
-              <div className="text-xs pt-2" style={{ color: 'var(--ink-400)' }}>
+              <p className="text-[var(--ink-300)] text-[10px]">录入人默认为当前登录用户，阅卷人可另填</p>
+              <div className="text-[var(--ink-400)] text-xs pt-2">
                 总分：{Object.values(scoreForm).reduce((s, v) => s + (parseFloat(v) || 0), 0)}
               </div>
             </div>

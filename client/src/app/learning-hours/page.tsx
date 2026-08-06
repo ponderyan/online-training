@@ -82,9 +82,9 @@ export default function LearningHoursPage() {
   };
 
   const statusBadge = (status: string) => {
-    if (status === 'APPROVED' || status === 'AUTO_APPROVED') return <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已审核</span>;
-    if (status === 'REJECTED') return <span className="text-xs" style={{ color: 'var(--error)' }}>❌ 已驳回</span>;
-    return <span className="text-xs" style={{ color: 'var(--fox)' }}>⏳ 待审核</span>;
+    if (status === 'APPROVED' || status === 'AUTO_APPROVED') return <span className="text-[var(--sage)] text-xs">✅ 已审核</span>;
+    if (status === 'REJECTED') return <span className="text-[var(--error)] text-xs">❌ 已驳回</span>;
+    return <span className="text-[var(--fox)] text-xs">⏳ 待审核</span>;
   };
 
   return (
@@ -100,7 +100,7 @@ export default function LearningHoursPage() {
           <span className="text-xl">📜</span>
           <div>
             <div className="text-sm font-semibold">学时证明</div>
-            <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[var(--ink-400)] text-xs">
               {certificates.length > 0 ? `已有 ${certificates.length} 份证明` : '尚未申请'}
             </div>
           </div>
@@ -118,24 +118,24 @@ export default function LearningHoursPage() {
             <>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="card p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{stats.totalHours}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总学时（小时）</div>
+                  <div className="text-[var(--fox)] text-2xl font-bold">{stats.totalHours}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-1">总学时（小时）</div>
                 </div>
                 <div className="card p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>{stats.completedVideos}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已完成视频</div>
+                  <div className="text-[var(--info)] text-2xl font-bold">{stats.completedVideos}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-1">已完成视频</div>
                 </div>
                 <div className="card p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{stats.programStats?.length || 0}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>关联培训班</div>
+                  <div className="text-[var(--blue)] text-2xl font-bold">{stats.programStats?.length || 0}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-1">关联培训班</div>
                 </div>
               </div>
               {stats.typeStats?.length > 0 && (
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   {stats.typeStats.map((ts: any) => (
                     <div key={ts.typeCode} className="card p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{ts.hours}</div>
-                      <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{ts.typeName}（小时）</div>
+                      <div className="text-[var(--fox)] text-2xl font-bold">{ts.hours}</div>
+                      <div className="text-[var(--ink-400)] text-xs mt-1">{ts.typeName}（小时）</div>
                     </div>
                   ))}
                 </div>
@@ -145,7 +145,7 @@ export default function LearningHoursPage() {
 
           {stats?.programStats?.length > 0 && (
             <div className="card p-0 overflow-hidden mb-6">
-              <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>培训班汇总</div>
+              <div className="border-[var(--ink-200)] px-5 py-3 border-b text-sm font-semibold">培训班汇总</div>
               <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>培训班</th><th>学时</th></tr></thead>
@@ -165,7 +165,7 @@ export default function LearningHoursPage() {
           {/* 学时证明列表 */}
           {certificates.length > 0 && (
             <div className="card p-0 overflow-hidden mb-6">
-              <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学时证明</div>
+              <div className="border-[var(--ink-200)] px-5 py-3 border-b text-sm font-semibold">学时证明</div>
               <div className="overflow-x-auto">
               <table className="list-table">
                 <thead><tr><th>证明编号</th><th>培训班</th><th>总学时</th><th>状态</th><th>申请时间</th><th>操作</th></tr></thead>
@@ -186,7 +186,7 @@ export default function LearningHoursPage() {
                               : '⏳ 审批中'}
                           </span>
                         </td>
-                        <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                        <td className="text-[var(--ink-300)] text-xs">
                           {c.appliedAt ? new Date(c.appliedAt).toLocaleDateString('zh-CN') : '—'}
                         </td>
                         <td>
@@ -216,7 +216,7 @@ export default function LearningHoursPage() {
           )}
 
           <div className="card p-0 overflow-hidden">
-            <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-200)' }}>学习记录</div>
+            <div className="border-[var(--ink-200)] px-5 py-3 border-b text-sm font-semibold">学习记录</div>
             {records.length === 0 ? (
               <EmptyState icon="🕐" title="暂无学习记录" description="观看视频或申报学时后，记录会出现在这里" size="small" />
             ) : (
@@ -237,14 +237,14 @@ export default function LearningHoursPage() {
                             {sl.icon} {sl.text}
                           </span>
                         </td>
-                        <td className="text-sm" style={{ color: 'var(--ink-600)' }}>
+                        <td className="text-[var(--ink-600)] text-sm">
                           {r.source === 'VIDEO' ? (r.videoName || '视频学习') : (r.note || '人工申报')}
                         </td>
                         <td className="text-xs">{r.program?.name || '—'}</td>
-                        <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{r.type?.name || '—'}</td>
+                        <td className="text-[var(--ink-400)] text-xs">{r.type?.name || '—'}</td>
                         <td>{r.hours} 小时</td>
                         <td>{statusBadge(r.status)}</td>
-                        <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                        <td className="text-[var(--ink-400)] text-xs">
                           {new Date(r.recordedAt).toLocaleString('zh-CN')}
                         </td>
                       </tr>
@@ -262,12 +262,12 @@ export default function LearningHoursPage() {
       {applyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={e => { if (e.target === e.currentTarget) setApplyModal(false); }}>
-          <div className="rounded-2xl w-full max-w-md p-6" style={{ background: 'var(--paper-bright)' }}
+          <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-md p-6"
             onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-semibold mb-4">📜 申请学时证明</h3>
 
             <div className="mb-4">
-              <label className="text-xs mb-1.5 block" style={{ color: 'var(--ink-400)' }}>选择培训班</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1.5 block">选择培训班</label>
               <select
                 value={selectedProgramId || ''}
                 onChange={e => handleProgramSelect(e.target.value ? parseInt(e.target.value) : null)}
@@ -285,18 +285,18 @@ export default function LearningHoursPage() {
             </div>
 
             {preview && (
-              <div className="card p-4 mb-4 space-y-2" style={{ background: 'var(--paper-50)' }}>
+              <div className="bg-[var(--paper-50)] card p-4 mb-4 space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: 'var(--ink-400)' }}>培训班</span>
+                  <span className="text-[var(--ink-400)]">培训班</span>
                   <span className="font-medium">{preview.programName}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: 'var(--ink-400)' }}>累计学时</span>
-                  <span className="font-medium" style={{ color: 'var(--fox)' }}>{preview.totalHours} 小时</span>
+                  <span className="text-[var(--ink-400)]">累计学时</span>
+                  <span className="text-[var(--fox)] font-medium">{preview.totalHours} 小时</span>
                 </div>
                 {preview.hoursDetail?.length > 0 && (
-                  <div className="pt-2 border-t" style={{ borderColor: 'var(--ink-200)' }}>
-                    <div className="text-xs mb-1" style={{ color: 'var(--ink-400)' }}>学时明细</div>
+                  <div className="border-[var(--ink-200)] pt-2 border-t">
+                    <div className="text-[var(--ink-400)] text-xs mb-1">学时明细</div>
                     {preview.hoursDetail.map((d: any, i: number) => (
                       <div key={i} className="flex justify-between text-xs py-0.5">
                         <span>{d.typeName || d.source}</span>

@@ -67,7 +67,7 @@ export default function ExamSessionsPrototype() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+      <div className="border-[var(--ink-100)] flex gap-1 mb-5 border-b">
         {[
           { key: 'all', label: '全部' },
           { key: 'upcoming', label: '待开考' },
@@ -92,21 +92,21 @@ export default function ExamSessionsPrototype() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-serif font-bold text-sm" style={{ color: 'var(--ink-800)' }}>{s.name}</h3>
+                  <h3 className="text-[var(--ink-800)] font-serif font-bold text-sm">{s.name}</h3>
                   {statusBadge(s.status)}
                   <span className="text-xs px-2 py-0.5 rounded" style={{ background: s.type === '随到随考' ? 'var(--cyan-glow)' : 'var(--gold-glow)', color: s.type === '随到随考' ? 'var(--cyan)' : 'var(--gold-dark)' }}>
                     {s.type}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs" style={{ color: 'var(--ink-400)' }}>
+                <div className="text-[var(--ink-400)] flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
                   <span>📄 {s.paper}</span>
                   <span>👥 {s.group} · {s.candidates}人</span>
                   <span>⏱ {s.duration}分钟</span>
                   {s.proctor !== '—' && <span>👨‍🏫 监考：{s.proctor}</span>}
                 </div>
 
-                <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: 'var(--ink-300)' }}>
+                <div className="text-[var(--ink-300)] flex items-center gap-4 mt-2 text-xs">
                   <span>🕐 {s.startTime} → {s.endTime}</span>
                 </div>
               </div>
@@ -148,11 +148,11 @@ export default function ExamSessionsPrototype() {
               {/* 基本信息 */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试名称</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试名称</label>
                   <input className="input" placeholder="如：DTM 数智化管理师 模拟考（二）" defaultValue="" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>选择试卷</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">选择试卷</label>
                   <select className="input select" defaultValue="">
                     <option value="" disabled>请选择已定稿的试卷</option>
                     <option>DT+DTM-202606-008 · 期中水平测试（100分/120分钟）</option>
@@ -161,7 +161,7 @@ export default function ExamSessionsPrototype() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试类型</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试类型</label>
                   <select className="input select" defaultValue="统一开考">
                     <option>统一开考（所有人同时开始同时结束）</option>
                     <option>随到随考（灵活时段内自由参加）</option>
@@ -171,22 +171,22 @@ export default function ExamSessionsPrototype() {
 
               {/* 时间设置 */}
               <div>
-                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-600)' }}>⏱ 时间设置</h4>
+                <h4 className="text-[var(--ink-600)] text-sm font-semibold mb-3">⏱ 时间设置</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>开始时间</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">开始时间</label>
                     <input className="input" type="datetime-local" defaultValue="2026-06-22T09:00" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>结束时间</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">结束时间</label>
                     <input className="input" type="datetime-local" defaultValue="2026-06-22T11:00" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>考试时长（分钟）</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">考试时长（分钟）</label>
                     <input className="input" type="number" defaultValue={120} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>迟到禁止入场（分钟）</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">迟到禁止入场（分钟）</label>
                     <input className="input" type="number" defaultValue={30} placeholder="开考后多久禁止入场" />
                   </div>
                 </div>
@@ -194,10 +194,10 @@ export default function ExamSessionsPrototype() {
 
               {/* 考生范围 */}
               <div>
-                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-600)' }}>👥 考生范围</h4>
+                <h4 className="text-[var(--ink-600)] text-sm font-semibold mb-3">👥 考生范围</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>指定分组</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">指定分组</label>
                     <select className="input select" defaultValue="DTM一期班">
                       <option>全部学员</option>
                       <option>DTM一期班（45人）</option>
@@ -206,18 +206,18 @@ export default function ExamSessionsPrototype() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>监考人</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">监考人</label>
                     <input className="input" placeholder="监考人姓名" defaultValue="张老师" />
                   </div>
                 </div>
-                <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-300)] text-xs mt-2">
                   已选：<strong>DTM一期班</strong>，共 <strong>45</strong> 名学员将参加本场考试
                 </p>
               </div>
 
               {/* 防作弊设置 */}
               <div>
-                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-600)' }}>🛡 防作弊设置</h4>
+                <h4 className="text-[var(--ink-600)] text-sm font-semibold mb-3">🛡 防作弊设置</h4>
                 <div className="space-y-3">
                   {[
                     { label: '禁止切屏', desc: '切屏超过3次自动交卷', checked: true },
@@ -229,8 +229,8 @@ export default function ExamSessionsPrototype() {
                       <input type="checkbox" defaultChecked={opt.checked}
                         className="w-4 h-4 rounded" style={{ accentColor: 'var(--fox)' }} />
                       <div>
-                        <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{opt.label}</span>
-                        <span className="text-xs ml-2" style={{ color: 'var(--ink-300)' }}>{opt.desc}</span>
+                        <span className="text-[var(--ink-700)] text-sm font-medium">{opt.label}</span>
+                        <span className="text-[var(--ink-300)] text-xs ml-2">{opt.desc}</span>
                       </div>
                     </label>
                   ))}

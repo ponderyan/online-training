@@ -35,13 +35,13 @@ export default function AppealDialog({ examId, isOpen, onClose, onSubmitted }: A
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="rounded-2xl w-full max-w-md p-6" style={{ background: 'var(--paper-bright)' }}>
-        <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--ink-700)' }}>📝 分数申诉</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>请描述您对考试分数的疑问，我们会尽快处理</p>
+      <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-md p-6">
+        <h3 className="text-[var(--ink-700)] text-lg font-semibold mb-2">📝 分数申诉</h3>
+        <p className="text-[var(--ink-400)] text-xs mb-4">请描述您对考试分数的疑问，我们会尽快处理</p>
         <textarea value={reason} onChange={e => { setReason(e.target.value); setError(''); }}
           rows={5} maxLength={500} placeholder="输入申诉理由…（至少3个字，最多500字）"
           className="input w-full" />
-        {error && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{error}</p>}
+        {error && <p className="text-[var(--error)] text-xs mt-1">{error}</p>}
         <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium"
             style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-500)' }}>取消</button>

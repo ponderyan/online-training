@@ -217,7 +217,7 @@ export default function VideoPlayPage() {
       <div className="flex" style={{ maxWidth: 1400, margin: '0 auto' }}>
         {/* Left: Player */}
         <div className="flex-1 p-4">
-          <div className="rounded-lg overflow-hidden" style={{ background: 'var(--ink-900)' }}>
+          <div className="bg-[var(--ink-900)] rounded-lg overflow-hidden">
             <div style={{ position: 'relative', paddingTop: '56.25%' }}>
               <video ref={videoRef} controls autoPlay playsInline
                 poster={video.coverUrl ? mediaURL(video.coverUrl) : undefined}
@@ -243,13 +243,13 @@ export default function VideoPlayPage() {
                   </button>
                 ))}
               </div>
-              {quizWrong && <p className="text-xs mt-2" style={{ color: 'var(--fox-light)' }}>❌ 回答错误，请重新选择</p>}
+              {quizWrong && <p className="text-[var(--fox-light)] text-xs mt-2">❌ 回答错误，请重新选择</p>}
             </div>
           )}
 
           {/* 倍速控制条 */}
           <div className="flex items-center gap-2 mt-2 px-1 flex-wrap">
-            <span className="text-xs" style={{ color: 'var(--neutral-400)' }}>倍速</span>
+            <span className="text-[var(--neutral-400)] text-xs">倍速</span>
             {SPEEDS.map(rate => (
               <button key={rate} onClick={() => changeRate(rate)}
                 className="px-2 py-0.5 rounded text-xs transition-colors"
@@ -257,8 +257,8 @@ export default function VideoPlayPage() {
                 {rate}x
               </button>
             ))}
-            {seekBlocked && <span className="text-xs ml-3" style={{ color: 'var(--fox-light)' }}>⚠ 首次观看不可快进</span>}
-            {idlePaused && <span className="text-xs ml-3" style={{ color: 'var(--fox-light)' }}>⏸ 长时间无操作已暂停</span>}
+            {seekBlocked && <span className="text-[var(--fox-light)] text-xs ml-3">⚠ 首次观看不可快进</span>}
+            {idlePaused && <span className="text-[var(--fox-light)] text-xs ml-3">⏸ 长时间无操作已暂停</span>}
           </div>
         </div>
 
@@ -274,7 +274,7 @@ export default function VideoPlayPage() {
                 <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(46,125,50,0.2)', color: 'var(--sage-light)' }}>继续教育</span>
               )}
             </div>
-            <div className="text-xs space-y-1" style={{ color: 'var(--neutral-400)' }}>
+            <div className="text-[var(--neutral-400)] text-xs space-y-1">
               {video.instructorName && <p>👤 {video.instructorName}{video.instructorLevel ? `（${video.instructorLevel}）` : ''}</p>}
               {video.hours && <p>⏱ {video.hours} 课时 {video.duration ? `· ${fmtDuration(video.duration)}` : ''}</p>}
             </div>
@@ -282,27 +282,27 @@ export default function VideoPlayPage() {
 
           {video.description && (
             <div className="mb-6">
-              <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--neutral-400)' }}>📝 简介</h3>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--neutral-300)' }}>{video.description}</p>
+              <h3 className="text-[var(--neutral-400)] text-xs font-semibold mb-2">📝 简介</h3>
+              <p className="text-[var(--neutral-300)] text-xs leading-relaxed">{video.description}</p>
             </div>
           )}
 
           {progress && (
             <div className="mb-6">
-              <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--neutral-400)' }}>📊 学习进度</h3>
+              <h3 className="text-[var(--neutral-400)] text-xs font-semibold mb-2">📊 学习进度</h3>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--neutral-700)' }}>
+                <div className="bg-[var(--neutral-700)] flex-1 h-1.5 rounded-full">
                   <div className="h-full rounded-full" style={{ width: `${Math.min(100, progress.progress || 0)}%`, background: progress.completed ? 'var(--sage-light)' : 'var(--fox)' }} />
                 </div>
                 <span className="text-xs font-mono" style={{ color: progress.completed ? 'var(--sage-light)' : 'var(--fox)' }}>{Math.round(progress.progress || 0)}%</span>
               </div>
-              {progress.completed && <p className="text-xs mt-1" style={{ color: 'var(--sage-light)' }}>🎉 已完成</p>}
+              {progress.completed && <p className="text-[var(--sage-light)] text-xs mt-1">🎉 已完成</p>}
             </div>
           )}
 
           {relatedVideos.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--neutral-400)' }}>▶ 相关视频</h3>
+              <h3 className="text-[var(--neutral-400)] text-xs font-semibold mb-3">▶ 相关视频</h3>
               <div className="space-y-2">
                 {relatedVideos.map((rv: any) => {
                   const rpct = rv.progress ? Math.min(100, Math.round(rv.progress.progress || 0)) : 0;
@@ -321,10 +321,10 @@ export default function VideoPlayPage() {
                         <p className="text-xs truncate">{rv.name}</p>
                         {rpct > 0 && (
                           <div className="flex items-center gap-1 mt-0.5">
-                            <div className="flex-1 h-1 rounded-full" style={{ background: 'var(--neutral-600)' }}>
+                            <div className="bg-[var(--neutral-600)] flex-1 h-1 rounded-full">
                               <div className="h-full rounded-full" style={{ width: `${rpct}%`, background: rpct >= 80 ? 'var(--sage-light)' : 'var(--fox)' }} />
                             </div>
-                            <span className="text-[10px]" style={{ color: 'var(--neutral-500)' }}>{rpct}%</span>
+                            <span className="text-[var(--neutral-500)] text-[10px]">{rpct}%</span>
                           </div>
                         )}
                       </div>

@@ -140,7 +140,7 @@ export default function AgencyStudentsPage() {
       {/* Agency selector（AGENCY_ADMIN 自动锁定，不显示选择器） */}
       {!isAgencyAdmin && (
         <div className="mb-4 flex items-center gap-3">
-          <span className="text-xs font-medium" style={{ color: 'var(--ink-400)' }}>选择机构</span>
+          <span className="text-[var(--ink-400)] text-xs font-medium">选择机构</span>
           <select
             value={selectedAgencyId ?? ''}
             onChange={handleAgencyChange}
@@ -152,7 +152,7 @@ export default function AgencyStudentsPage() {
             ))}
           </select>
           {selectedAgency && (
-            <span className="text-[11px]" style={{ color: 'var(--ink-300)' }}>
+            <span className="text-[var(--ink-300)] text-[11px]">
               {selectedAgency.contactPerson && `${selectedAgency.contactPerson} / `}
               {selectedAgency.contactPhone}
             </span>
@@ -161,15 +161,15 @@ export default function AgencyStudentsPage() {
       )}
       {isAgencyAdmin && selectedAgency && (
         <div className="mb-4 flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--ink-400)' }}>当前机构：</span>
-          <span className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{selectedAgency.name}</span>
+          <span className="text-[var(--ink-400)] text-xs">当前机构：</span>
+          <span className="text-[var(--ink-600)] text-sm font-medium">{selectedAgency.name}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中…</div>
       ) : agencies.length === 0 ? (
-        <div className="card text-center py-16" style={{ color: 'var(--ink-300)' }}>
+        <div className="text-[var(--ink-300)] card text-center py-16">
           暂无招生机构数据，请先在「招生机构」页面添加机构
         </div>
       ) : (
@@ -193,7 +193,7 @@ export default function AgencyStudentsPage() {
           </div>
 
           {studentsLoading ? (
-            <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+            <div className="text-[var(--ink-300)] text-center py-16">加载中…</div>
           ) : (
             <>
               {activeTab === 'students' && (
@@ -203,7 +203,7 @@ export default function AgencyStudentsPage() {
                     <thead><tr><th>姓名</th><th>用户名</th><th>手机号</th><th>邮箱</th><th>学号</th><th>操作</th></tr></thead>
                     <tbody>
                       {students.length === 0 ? (
-                        <tr><td colSpan={6} className="text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无学员</td></tr>
+                        <tr><td colSpan={6} className="text-[var(--ink-300)] text-center py-8">暂无学员</td></tr>
                       ) : students.map((s: any) => (
                         <tr key={s.id}>
                           <td className="font-medium">{s.displayName}</td>
@@ -230,7 +230,7 @@ export default function AgencyStudentsPage() {
                     <thead><tr><th>姓名</th><th>学号</th><th>总学时</th><th>报名培训班</th><th>证书数</th></tr></thead>
                     <tbody>
                       {students.length === 0 ? (
-                        <tr><td colSpan={5} className="text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无数据</td></tr>
+                        <tr><td colSpan={5} className="text-[var(--ink-300)] text-center py-8">暂无数据</td></tr>
                       ) : students.map((s: any) => (
                         <tr key={s.id}>
                           <td className="font-medium">{s.displayName}</td>
@@ -249,7 +249,7 @@ export default function AgencyStudentsPage() {
               {activeTab === 'members' && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>机构内部人员管理（监考、讲师等）</span>
+                    <span className="text-[var(--ink-400)] text-xs">机构内部人员管理（监考、讲师等）</span>
                     <button onClick={async () => {
                       setMemberForm({ displayName: '', username: '', phone: '', roleCode: 'STUDENT' });
                       setShowMemberModal(true);
@@ -260,9 +260,9 @@ export default function AgencyStudentsPage() {
                     }} className="btn btn-fox btn-xs">➕ 添加成员</button>
                   </div>
                   {membersLoading ? (
-                    <div className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                    <div className="text-[var(--ink-300)] text-center py-8 text-xs">加载中…</div>
                   ) : members.length === 0 ? (
-                    <div className="card p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无机构成员</div>
+                    <div className="text-[var(--ink-300)] card p-8 text-center text-xs">暂无机构成员</div>
                   ) : (
                     <div className="card p-0 overflow-hidden">
                       <div className="overflow-x-auto">
@@ -308,7 +308,7 @@ export default function AgencyStudentsPage() {
             </div>
             <div className="modal-body space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>培训班</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">培训班</label>
                 <select value={submitForm.programId} onChange={e => setSubmitForm({...submitForm, programId: e.target.value})} className="input select text-xs">
                   <option value="">不关联培训班</option>
                   {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -316,18 +316,18 @@ export default function AgencyStudentsPage() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学时数 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">学时数 *</label>
                   <input type="number" min="0.5" step="0.5" value={submitForm.hours} onChange={e => setSubmitForm({...submitForm, hours: e.target.value})}
                     className="input" placeholder="如 4" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>类型</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">类型</label>
                   <select value={submitForm.source} onChange={e => setSubmitForm({...submitForm, source: e.target.value})} className="input select text-xs">
                     <option value="OFFLINE">线下培训</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学时类型</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">学时类型</label>
                   <select value={submitForm.typeId} onChange={e => setSubmitForm({...submitForm, typeId: e.target.value})} className="input select text-xs">
                     <option value="">请选择…</option>
                     {hourTypes.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -335,13 +335,13 @@ export default function AgencyStudentsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>证明材料（可选）</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">证明材料（可选）</label>
                 <input type="file" accept="image/*,.pdf" onChange={e => setEvidenceFile(e.target.files?.[0] || null)}
                   className="input text-xs" />
-                {evidenceFile && <p className="text-xs mt-1" style={{ color: 'var(--fox)' }}>已选择：{evidenceFile.name}</p>}
+                {evidenceFile && <p className="text-[var(--fox)] text-xs mt-1">已选择：{evidenceFile.name}</p>}
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>备注（可选）</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">备注（可选）</label>
                 <textarea value={submitForm.note} onChange={e => setSubmitForm({...submitForm, note: e.target.value})}
                   className="input textarea text-xs" rows={2} placeholder="培训内容说明" />
               </div>
@@ -366,23 +366,23 @@ export default function AgencyStudentsPage() {
             </div>
             <div className="modal-body space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>姓名 *</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">姓名 *</label>
                 <input value={memberForm.displayName} onChange={e => setMemberForm({...memberForm, displayName: e.target.value})}
                   className="input" placeholder="如 张老师" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>用户名 *</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">用户名 *</label>
                 <input value={memberForm.username} onChange={e => setMemberForm({...memberForm, username: e.target.value})}
                   className="input" placeholder="如 zhangls" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">手机号</label>
                 <input value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value.replace(/[^\d]/g, '')})}
                   maxLength={11}
                   className="input" placeholder="如 13800138000" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>角色 *</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色 *</label>
                 <select value={memberForm.roleCode} onChange={e => setMemberForm({...memberForm, roleCode: e.target.value})}
                   className="input select text-xs">
                   <option value="PROCTOR">监考员</option>

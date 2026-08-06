@@ -105,11 +105,11 @@ export default function LearningHourTypesPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : types.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">📋</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无学时类型</p>
+          <p className="text-[var(--ink-300)]">暂无学时类型</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -130,12 +130,12 @@ export default function LearningHourTypesPage() {
                 <tr key={t.id}>
                   <td className="font-medium">{t.name}</td>
                   <td>
-                    <span className="text-xs font-mono" style={{ color: 'var(--ink-400)' }}>
+                    <span className="text-[var(--ink-400)] text-xs font-mono">
                       {t.code}
                     </span>
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{t.sortOrder ?? '—'}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{t.description || '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{t.sortOrder ?? '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{t.description || '—'}</td>
                   <td>
                     <span
                       className="tag"
@@ -190,7 +190,7 @@ export default function LearningHourTypesPage() {
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">
                   类型名称 *
                 </label>
                 <input
@@ -201,7 +201,7 @@ export default function LearningHourTypesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">
                   编码 *
                 </label>
                 <input
@@ -212,7 +212,7 @@ export default function LearningHourTypesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">
                   排序
                 </label>
                 <input
@@ -224,7 +224,7 @@ export default function LearningHourTypesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">
                   描述
                 </label>
                 <textarea

@@ -186,9 +186,9 @@ export default function MyCertificatesPage() {
         </div>
 
         {/* 类型图例 */}
-        <div className="flex gap-2 mb-5 text-xs" style={{ color: 'var(--ink-400)' }}>
+        <div className="text-[var(--ink-400)] flex gap-2 mb-5 text-xs">
           <span className="flex items-center gap-1.5"><span>🎓</span> 结业证书（考试通过）</span>
-          <span className="mx-2" style={{ color: 'var(--ink-200)' }}>·</span>
+          <span className="text-[var(--ink-200)] mx-2">·</span>
           <span className="flex items-center gap-1.5"><span>📜</span> 学时证明（培训学时）</span>
         </div>
 
@@ -220,19 +220,19 @@ export default function MyCertificatesPage() {
 
                 {/* 标题 */}
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--ink-300)' }}>
+                  <div className="text-[var(--ink-300)] text-[11px] uppercase tracking-wider mb-1">
                     {card.kind === 'completion' ? '结业证书' : '学时证明'}
                   </div>
-                  <h3 className="font-bold text-sm truncate" style={{ color: 'var(--ink-700)' }}>
+                  <h3 className="text-[var(--ink-700)] font-bold text-sm truncate">
                     {card.title}
                   </h3>
                 </div>
 
                 {/* 元信息 */}
-                <div className="text-xs space-y-1" style={{ color: 'var(--ink-400)' }}>
+                <div className="text-[var(--ink-400)] text-xs space-y-1">
                   <div className="flex items-center gap-1.5">
                     <span>编号：</span>
-                    <span className="font-mono" style={{ color: 'var(--ink-600)' }}>{card.certificateNo}</span>
+                    <span className="text-[var(--ink-600)] font-mono">{card.certificateNo}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span>{card.kind === 'completion' ? '颁发' : '申请'}：</span>
@@ -241,13 +241,13 @@ export default function MyCertificatesPage() {
                   {card.kind === 'hours' && card.totalHours != null && (
                     <div className="flex items-center gap-1.5">
                       <span>学时：</span>
-                      <span className="font-medium" style={{ color: 'var(--fox)' }}>{card.totalHours} 小时</span>
+                      <span className="text-[var(--fox)] font-medium">{card.totalHours} 小时</span>
                     </div>
                   )}
                 </div>
 
                 {/* 操作 */}
-                <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                <div className="border-[var(--ink-100)] flex gap-2 pt-2 border-t">
                   {card.status === 'active' && (
                     <>
                       <button onClick={() => openPreview(card)} className="btn btn-fox btn-sm flex-1">
@@ -266,7 +266,7 @@ export default function MyCertificatesPage() {
                     </button>
                   )}
                   {card.status !== 'active' && (
-                    <span className="text-xs self-center" style={{ color: 'var(--ink-300)' }}>
+                    <span className="text-[var(--ink-300)] text-xs self-center">
                       {card.status === 'pending' ? '审核中，通过后可查看/下载' : '此证书不可用'}
                     </span>
                   )}

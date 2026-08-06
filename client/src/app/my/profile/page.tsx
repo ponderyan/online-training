@@ -101,8 +101,8 @@ export default function ProfilePage() {
     } catch (e: any) { setPwdMsg('修改失败：' + e.message); }
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
-  if (!profile) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载失败</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
+  if (!profile) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载失败</div></AppLayout>;
 
   const roleName: Record<string, string> = { SUPER_ADMIN: '超级管理员', ORG_ADMIN: '机构管理员', LECTURER: '讲师', PROCTOR: '监考员', STUDENT: '学员' };
   const firstRole = (profile.roles || [profile.role || 'STUDENT'])[0];
@@ -146,7 +146,7 @@ export default function ProfilePage() {
       <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
         {editing ? (
           <div className="py-3">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>{f.label}</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">{f.label}</label>
             {f.type === 'select' ? (
               <select value={value} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                 className="input text-sm w-full">
@@ -166,8 +166,8 @@ export default function ProfilePage() {
             )}
           </div>
         ) : (
-          <div className="flex items-center py-3.5 border-b" style={{ borderColor: 'var(--ink-50)' }}>
-            <span className="text-xs w-24 flex-shrink-0" style={{ color: 'var(--ink-400)' }}>{f.label}</span>
+          <div className="border-[var(--ink-50)] flex items-center py-3.5 border-b">
+            <span className="text-[var(--ink-400)] text-xs w-24 flex-shrink-0">{f.label}</span>
             <span className="text-sm" style={{ color: displayValue ? 'var(--ink-700)' : 'var(--ink-200)' }}>
               {displayValue || '未设置'}
             </span>
@@ -207,11 +207,11 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <h1 className="text-xl font-bold" style={{ color: 'var(--ink-800)' }}>{profile.displayName || '未设置姓名'}</h1>
-                  <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <h1 className="text-[var(--ink-800)] text-xl font-bold">{profile.displayName || '未设置姓名'}</h1>
+                  <p className="text-[var(--ink-400)] text-xs">
                     @{profile.username}
                     {profile.studentNumber && (
-                      <span className="ml-2">· 学号 <strong style={{ color: 'var(--ink-500)' }}>{profile.studentNumber}</strong></span>
+                      <span className="ml-2">· 学号 <strong className="text-[var(--ink-500)]">{profile.studentNumber}</strong></span>
                     )}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -264,14 +264,14 @@ export default function ProfilePage() {
         {activeTab === 'basic' && (
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📋 基本信息</h2>
+              <h2 className="text-[var(--ink-700)] text-sm font-bold">📋 基本信息</h2>
               {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {basicFields.map(f => renderField(f))}
             </div>
             {editing && (
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
                 <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
                   {saving ? '保存中…' : '💾 保存'}
@@ -285,13 +285,13 @@ export default function ProfilePage() {
         {activeTab === 'education' && (
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>🎓 学历信息</h2>
-              <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>如需修改请联系管理员</span>
+              <h2 className="text-[var(--ink-700)] text-sm font-bold">🎓 学历信息</h2>
+              <span className="text-[var(--ink-300)] text-[10px]">如需修改请联系管理员</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {educationFields.map(f => (
-                <div key={f.label} className="flex items-center py-3.5 border-b" style={{ borderColor: 'var(--ink-50)' }}>
-                  <span className="text-xs w-24 flex-shrink-0" style={{ color: 'var(--ink-400)' }}>{f.label}</span>
+                <div key={f.label} className="border-[var(--ink-50)] flex items-center py-3.5 border-b">
+                  <span className="text-[var(--ink-400)] text-xs w-24 flex-shrink-0">{f.label}</span>
                   <span className="text-sm" style={{ color: f.value ? 'var(--ink-700)' : 'var(--ink-200)' }}>
                     {f.value || '未设置'}
                   </span>
@@ -305,14 +305,14 @@ export default function ProfilePage() {
         {activeTab === 'contact' && (
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold" style={{ color: 'var(--ink-700)' }}>📞 联系信息</h2>
+              <h2 className="text-[var(--ink-700)] text-sm font-bold">📞 联系信息</h2>
               {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {contactFields.map(f => renderField(f))}
             </div>
             {editing && (
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
                 <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">
                   {saving ? '保存中…' : '💾 保存'}
@@ -325,22 +325,22 @@ export default function ProfilePage() {
         {/* ═══ 账号安全 Tab ═══ */}
         {activeTab === 'security' && (
           <div className="card p-6">
-            <h2 className="text-sm font-bold mb-5" style={{ color: 'var(--ink-700)' }}>🔒 账号安全</h2>
+            <h2 className="text-[var(--ink-700)] text-sm font-bold mb-5">🔒 账号安全</h2>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>当前密码</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">当前密码</label>
                   <input type="password" value={oldPwd} onChange={e => setOldPwd(e.target.value)}
                     className="input text-sm w-full" placeholder="输入当前密码" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>新密码</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">新密码</label>
                   <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)}
                     className="input text-sm w-full" placeholder="至少8位，含大小写字母和数字" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>确认新密码</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">确认新密码</label>
                   <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)}
                     className="input text-sm w-full" placeholder="再次输入新密码" />
                 </div>
@@ -349,13 +349,13 @@ export default function ProfilePage() {
               {/* Password strength */}
               {newPwd && (
                 <div>
-                  <div className="h-1.5 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                  <div className="bg-[var(--ink-100)] h-1.5 rounded-full">
                     <div className="h-full rounded-full transition-all" style={{
                       width: `${Math.min(100, newPwd.length * 16)}%`,
                       background: newPwd.length < 6 ? 'var(--error)' : newPwd.length < 10 ? 'var(--warning)' : 'var(--sage)',
                     }} />
                   </div>
-                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>
+                  <div className="text-[var(--ink-300)] text-[10px] mt-0.5">
                     {newPwd.length < 6 ? '弱' : newPwd.length < 10 ? '中' : '强'}
                   </div>
                 </div>
@@ -367,11 +367,11 @@ export default function ProfilePage() {
               {/* Login info */}
               <div className="pt-5 mt-5 border-t grid grid-cols-2 gap-3 text-xs" style={{ borderColor: 'var(--ink-50)', color: 'var(--ink-400)' }}>
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-300)' }}>上次登录</span>
+                  <span className="text-[var(--ink-300)] block">上次登录</span>
                   {profile.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString('zh-CN') : '—'}
                 </div>
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-300)' }}>登录次数</span>
+                  <span className="text-[var(--ink-300)] block">登录次数</span>
                   {profile.loginCount ?? 0} 次
                 </div>
               </div>

@@ -23,8 +23,8 @@ export default function InstructorDetail() {
     ]).then(([i, s]) => { setInst(i); setStats(s); }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
-  if (!inst) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>讲师不存在</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
+  if (!inst) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">讲师不存在</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -38,11 +38,11 @@ export default function InstructorDetail() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--ink-700)' }}>{inst.realName}</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${TYPE_COLORS[inst.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
+              <h2 className="text-[var(--ink-700)] text-lg font-bold">{inst.realName}</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: `color-mix(in srgb, ${TYPE_COLORS[inst.type] || 'var(--neutral-400)'} 10%, transparent)`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
                 {TYPE_NAMES[inst.type] || inst.type}
               </span>
-              {inst.instructorNo && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>#{inst.instructorNo}</span>}
+              {inst.instructorNo && <span className="text-[var(--ink-300)] text-[10px]">#{inst.instructorNo}</span>}
             </div>
             <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs mt-3">
               {[
@@ -58,12 +58,12 @@ export default function InstructorDetail() {
                 { label: '可阅卷', value: inst.isGrader ? '✅ 是' : '❌ 否' },
               ].map((item, i) => (
                 <div key={i}>
-                  <div style={{ color: 'var(--ink-400)' }}>{item.label}</div>
-                  <div className="font-medium" style={{ color: 'var(--ink-600)' }}>{item.value || '—'}</div>
+                  <div className="text-[var(--ink-400)]">{item.label}</div>
+                  <div className="text-[var(--ink-600)] font-medium">{item.value || '—'}</div>
                 </div>
               ))}
             </div>
-            {inst.bio && <p className="text-xs mt-3" style={{ color: 'var(--ink-400)' }}>{inst.bio}</p>}
+            {inst.bio && <p className="text-[var(--ink-400)] text-xs mt-3">{inst.bio}</p>}
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function InstructorDetail() {
           ].map((s, i) => (
             <div key={i} className="card p-4 text-center">
               <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>{s.label}</div>
+              <div className="text-[var(--ink-300)] text-[10px] mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
@@ -88,7 +88,7 @@ export default function InstructorDetail() {
       {/* Schedule list */}
       {stats?.schedules?.length > 0 && (
         <div className="card p-0 overflow-hidden">
-          <div className="px-5 py-3 border-b text-sm font-semibold" style={{ borderColor: 'var(--ink-100)' }}>📅 授课记录</div>
+          <div className="border-[var(--ink-100)] px-5 py-3 border-b text-sm font-semibold">📅 授课记录</div>
           <div className="overflow-x-auto">
           <table className="list-table">
             <thead><tr><th>课程</th><th>培训班</th><th>时间</th><th>课时</th></tr></thead>
@@ -97,7 +97,7 @@ export default function InstructorDetail() {
                 <tr key={i}>
                   <td className="font-medium">{s.courseName || '—'}</td>
                   <td>{s.programName || '—'}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                  <td className="text-[var(--ink-300)] text-xs">
                     {new Date(s.startTime).toLocaleDateString('zh-CN')}
                   </td>
                   <td>{s.hours || '—'}h</td>

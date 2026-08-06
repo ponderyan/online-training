@@ -125,11 +125,11 @@ export default function LearningHourCertificates() {
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div>
       ) : items.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">📜</p>
-          <p style={{ color: 'var(--ink-300)' }}>暂无学时证明</p>
+          <p className="text-[var(--ink-300)]">暂无学时证明</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -169,7 +169,7 @@ export default function LearningHourCertificates() {
                         {st.text}
                       </span>
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <td className="text-[var(--ink-300)] text-xs">
                       {item.appliedAt ? new Date(item.appliedAt).toLocaleString('zh-CN') : '—'}
                     </td>
                     <td>
@@ -179,7 +179,7 @@ export default function LearningHourCertificates() {
                         {item.approvalStatus === 'APPROVED' && (
                           <>
                             <a href={`/api/learning-hour-certificates/${item.id}/pdf`} target="_blank"
-                              className="btn btn-ghost btn-xs" style={{ color: 'var(--cyan)' }}>📥 PDF</a>
+                              className="text-[var(--cyan)] btn btn-ghost btn-xs">📥 PDF</a>
                             <button onClick={() => setRevokeItem(item)}
                               className="btn btn-ghost btn-xs" style={{ color: 'var(--neutral-500)' }}>撤销</button>
                           </>
@@ -210,11 +210,11 @@ export default function LearningHourCertificates() {
             <div className="modal-body space-y-3">
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>证明编号</span>
+                  <span className="text-[var(--ink-400)] block">证明编号</span>
                   <span className="font-mono font-medium">{detailItem.certificateNo || '—'}</span>
                 </div>
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>状态</span>
+                  <span className="text-[var(--ink-400)] block">状态</span>
                   <span className="tag" style={{
                     background: (STATUS_MAP[detailItem.approvalStatus]?.color || 'var(--neutral-500)') + '18',
                     color: STATUS_MAP[detailItem.approvalStatus]?.color || 'var(--neutral-500)',
@@ -222,28 +222,28 @@ export default function LearningHourCertificates() {
                   }}>{STATUS_MAP[detailItem.approvalStatus]?.text || detailItem.approvalStatus}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>学员</span>
+                  <span className="text-[var(--ink-400)] block">学员</span>
                   <span className="font-medium">{detailItem.studentName}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>培训班</span>
+                  <span className="text-[var(--ink-400)] block">培训班</span>
                   <span>{detailItem.programName}</span>
                 </div>
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>总学时</span>
-                  <span className="font-medium" style={{ color: 'var(--fox)' }}>{detailItem.totalHours} 小时</span>
+                  <span className="text-[var(--ink-400)] block">总学时</span>
+                  <span className="text-[var(--fox)] font-medium">{detailItem.totalHours} 小时</span>
                 </div>
                 <div>
-                  <span className="block" style={{ color: 'var(--ink-400)' }}>申请时间</span>
+                  <span className="text-[var(--ink-400)] block">申请时间</span>
                   <span>{detailItem.appliedAt ? new Date(detailItem.appliedAt).toLocaleString('zh-CN') : '—'}</span>
                 </div>
               </div>
 
               {detailItem.hoursDetail?.length > 0 && (
-                <div className="pt-2 border-t" style={{ borderColor: 'var(--ink-200)' }}>
+                <div className="border-[var(--ink-200)] pt-2 border-t">
                   <div className="text-xs mb-1.5 font-semibold">学时明细</div>
                   <table className="w-full text-xs">
-                    <thead><tr><th className="text-left py-1" style={{ color: 'var(--ink-400)' }}>类型</th><th className="text-right py-1" style={{ color: 'var(--ink-400)' }}>学时</th></tr></thead>
+                    <thead><tr><th className="text-[var(--ink-400)] text-left py-1">类型</th><th className="text-[var(--ink-400)] text-right py-1">学时</th></tr></thead>
                     <tbody>
                       {detailItem.hoursDetail.map((d: any, i: number) => (
                         <tr key={i}>
@@ -257,8 +257,8 @@ export default function LearningHourCertificates() {
               )}
 
               {detailItem.reviewNote && (
-                <div className="pt-2 border-t" style={{ borderColor: 'var(--ink-200)' }}>
-                  <span className="block text-xs" style={{ color: 'var(--ink-400)' }}>审核备注</span>
+                <div className="border-[var(--ink-200)] pt-2 border-t">
+                  <span className="text-[var(--ink-400)] block text-xs">审核备注</span>
                   <span className="text-xs">{detailItem.reviewNote}</span>
                 </div>
               )}
@@ -284,12 +284,12 @@ export default function LearningHourCertificates() {
             </div>
             <div className="modal-body space-y-3">
               <div className="text-xs space-y-1">
-                <div><span style={{ color: 'var(--ink-400)' }}>学员：</span>{reviewItem.studentName}</div>
-                <div><span style={{ color: 'var(--ink-400)' }}>培训班：</span>{reviewItem.programName}</div>
-                <div><span style={{ color: 'var(--ink-400)' }}>总学时：</span><span style={{ color: 'var(--fox)' }}>{reviewItem.totalHours} 小时</span></div>
+                <div><span className="text-[var(--ink-400)]">学员：</span>{reviewItem.studentName}</div>
+                <div><span className="text-[var(--ink-400)]">培训班：</span>{reviewItem.programName}</div>
+                <div><span className="text-[var(--ink-400)]">总学时：</span><span className="text-[var(--fox)]">{reviewItem.totalHours} 小时</span></div>
               </div>
               <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>审核备注（可选）</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">审核备注（可选）</label>
                 <textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)}
                   className="input w-full" rows={2} placeholder="审核意见…" />
               </div>
@@ -320,11 +320,11 @@ export default function LearningHourCertificates() {
               <button onClick={() => setRevokeItem(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-3">
-              <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+              <p className="text-[var(--ink-400)] text-xs">
                 确认撤销 {revokeItem.studentName} 的学时证明（{revokeItem.certificateNo}）？
               </p>
               <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--ink-400)' }}>撤销原因 *</label>
+                <label className="text-[var(--ink-400)] block text-xs mb-1">撤销原因 *</label>
                 <textarea value={revokeReason} onChange={e => setRevokeReason(e.target.value)}
                   className="input w-full" rows={2} placeholder="请输入撤销原因…" />
               </div>

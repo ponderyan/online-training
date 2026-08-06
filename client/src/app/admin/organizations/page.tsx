@@ -247,7 +247,7 @@ export default function OrganizationsPage() {
   };
 
   if (loading) {
-    return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载组织树… 🦊</div></AppLayout>;
+    return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载组织树… 🦊</div></AppLayout>;
   }
 
   return (
@@ -275,7 +275,7 @@ export default function OrganizationsPage() {
           </div>
           <div className="card flex-1 overflow-y-auto p-2" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); onDrop(null); }}>
             {filteredTree.length === 0 ? (
-              <div className="text-center py-12 text-xs" style={{ color: 'var(--ink-300)' }}>{search ? '未找到匹配组织' : '暂无组织，点击右上角新建'}</div>
+              <div className="text-[var(--ink-300)] text-center py-12 text-xs">{search ? '未找到匹配组织' : '暂无组织，点击右上角新建'}</div>
             ) : (
               filteredTree.map(node => (
                 <OrgNodeView key={node.id} node={node} depth={0}
@@ -301,7 +301,7 @@ export default function OrganizationsPage() {
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center"><p className="text-5xl mb-4">🏢</p><p style={{ color: 'var(--ink-300)' }}>从左侧选择一个组织查看详情</p></div>
+              <div className="text-center"><p className="text-5xl mb-4">🏢</p><p className="text-[var(--ink-300)]">从左侧选择一个组织查看详情</p></div>
             </div>
           )}
         </div>

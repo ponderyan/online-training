@@ -294,22 +294,22 @@ export default function KnowledgePointsPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>
+              <div className="text-[var(--ink-300)] text-center py-16">
                 小狐狸正在加载… 🦊
               </div>
             ) : subjectId === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-4xl mb-3">👈</p>
-                <p style={{ color: 'var(--ink-400)' }}>请先选择科目</p>
-                <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-400)]">请先选择科目</p>
+                <p className="text-[var(--ink-300)] text-xs mt-2">
                   从上方下拉框选择一个科目以查看知识体系
                 </p>
               </div>
             ) : tree.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-4xl mb-3">🧠</p>
-                <p style={{ color: 'var(--ink-400)' }}>该科目暂无知识点</p>
-                <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-400)]">该科目暂无知识点</p>
+                <p className="text-[var(--ink-300)] text-xs mt-2">
                   点击右侧「新增根节点」开始构建知识体系
                 </p>
               </div>
@@ -335,14 +335,14 @@ export default function KnowledgePointsPage() {
             {!selectedNode ? (
               <div className="p-8 text-center">
                 <p className="text-4xl mb-3">👈</p>
-                <p className="text-sm" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-300)] text-sm">
                   从左侧树中选择一个知识点查看详情
                 </p>
               </div>
             ) : (
               <div className="p-4 space-y-4">
                 {/* Node info */}
-                <div className="text-xs flex flex-wrap gap-2" style={{ color: 'var(--ink-400)' }}>
+                <div className="text-[var(--ink-400)] text-xs flex flex-wrap gap-2">
                   <span className="tag tag-ink">ID: {selectedNode.id}</span>
                   {selectedNode.code && <span className="tag tag-gold">{selectedNode.code}</span>}
                   <span className="tag tag-cyan">
@@ -352,8 +352,8 @@ export default function KnowledgePointsPage() {
 
                 {/* Name */}
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                    名称 <span style={{ color: 'var(--verm)' }}>*</span>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                    名称 <span className="text-[var(--verm)]">*</span>
                   </label>
                   <input
                     value={editForm.name}
@@ -366,8 +366,8 @@ export default function KnowledgePointsPage() {
 
                 {/* Code */}
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                    编码 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                    编码 <span className="text-[var(--ink-300)]">（可选）</span>
                   </label>
                   <input
                     value={editForm.code}
@@ -380,7 +380,7 @@ export default function KnowledgePointsPage() {
 
                 {/* Sort Order */}
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
                     排序
                   </label>
                   <input
@@ -395,8 +395,8 @@ export default function KnowledgePointsPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                    描述 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                    描述 <span className="text-[var(--ink-300)]">（可选）</span>
                   </label>
                   <textarea
                     value={editForm.description}
@@ -470,21 +470,21 @@ export default function KnowledgePointsPage() {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                  名称 <span style={{ color: 'var(--verm)' }}>*</span>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                  名称 <span className="text-[var(--verm)]">*</span>
                 </label>
                 <input value={createForm.name} onChange={e => setCreateForm({ ...createForm, name: e.target.value })}
                   className="input" placeholder="知识点名称" autoFocus />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                  编码 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                  编码 <span className="text-[var(--ink-300)]">（可选）</span>
                 </label>
                 <input value={createForm.code} onChange={e => setCreateForm({ ...createForm, code: e.target.value })}
                   className="input" placeholder="如：KP-001" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
                   排序
                 </label>
                 <input type="number" value={createForm.sortOrder}
@@ -492,8 +492,8 @@ export default function KnowledgePointsPage() {
                   className="input" style={{ width: '120px' }} />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>
-                  描述 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">
+                  描述 <span className="text-[var(--ink-300)]">（可选）</span>
                 </label>
                 <textarea value={createForm.description} onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
                   rows={3} className="input textarea" placeholder="知识点描述…" />

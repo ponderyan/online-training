@@ -46,7 +46,7 @@ export default function BrandingPage() {
     setSaving(false);
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -59,30 +59,30 @@ export default function BrandingPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>网站名称</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">网站名称</label>
               <input value={form.siteName} onChange={e => setForm({ ...form, siteName: e.target.value })} className="input w-full" />
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>浏览器标题</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">浏览器标题</label>
               <input value={form.siteTitle} onChange={e => setForm({ ...form, siteTitle: e.target.value })} className="input w-full" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>LOGO URL</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">LOGO URL</label>
               <input value={form.siteLogo} onChange={e => setForm({ ...form, siteLogo: e.target.value })} className="input w-full" placeholder="https://…" />
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>Favicon URL</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">Favicon URL</label>
               <input value={form.favicon} onChange={e => setForm({ ...form, favicon: e.target.value })} className="input w-full" placeholder="https://…" />
             </div>
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>页脚文字</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">页脚文字</label>
             <input value={form.footerText} onChange={e => setForm({ ...form, footerText: e.target.value })} className="input w-full" placeholder="版权信息" />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>ICP 备案号</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">ICP 备案号</label>
             <input value={form.icpBeian} onChange={e => setForm({ ...form, icpBeian: e.target.value })} className="input w-full" placeholder="京ICP备XXXXXXXX号" />
           </div>
           <div className="flex items-center gap-2 pt-2">
@@ -90,10 +90,10 @@ export default function BrandingPage() {
             <label htmlFor="pubReg" className="text-sm">允许公开注册</label>
           </div>
 
-          {error && <div className="text-xs" style={{ color: 'var(--error)' }}>{error}</div>}
+          {error && <div className="text-[var(--error)] text-xs">{error}</div>}
           <div className="flex items-center gap-3 pt-2">
             <button onClick={handleSave} disabled={saving} className="btn btn-fox">{saving ? '保存中…' : '保存设置'}</button>
-            {saved && <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已保存</span>}
+            {saved && <span className="text-[var(--sage)] text-xs">✅ 已保存</span>}
           </div>
         </div>
       </div>

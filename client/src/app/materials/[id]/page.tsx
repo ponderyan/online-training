@@ -192,7 +192,7 @@ export default function MaterialDetailPage() {
 
   if (loading) return (
     <AppLayout>
-      <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+      <div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div>
     </AppLayout>
   );
   if (!material) return null;
@@ -248,7 +248,7 @@ export default function MaterialDetailPage() {
   const renderDetailMode = () => {
     if (!current) {
       return (
-        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
+        <div className="text-[var(--ink-300)] card p-10 text-center">
           {filteredQuestions.length === 0
             ? '📭 这一章还没有试题'
             : '🎉 这一章全部审核完毕！'}
@@ -260,14 +260,14 @@ export default function MaterialDetailPage() {
       <div className="animate-fadeSlide">
         {/* 进度条 */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--paper-dark)' }}>
+          <div className="bg-[var(--paper-dark)] flex-1 h-1.5 rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all"
               style={{
                 width: `${((currentIndex + 1) / filteredQuestions.length) * 100}%`,
                 background: 'var(--fox)',
               }} />
           </div>
-          <span className="text-xs flex-shrink-0" style={{ color: 'var(--ink-400)' }}>
+          <span className="text-[var(--ink-400)] text-xs flex-shrink-0">
             第 {currentIndex + 1}/{filteredQuestions.length} 题
           </span>
         </div>
@@ -301,14 +301,14 @@ export default function MaterialDetailPage() {
               <span className="tag tag-fox">{GROUP_NAMES[current.suggestedGroup] || current.suggestedGroup}</span>
             )}
             {current.sourceChunk && (
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>📄 {current.sourceChunk}</span>
+              <span className="text-[var(--ink-300)] text-xs">📄 {current.sourceChunk}</span>
             )}
           </div>
 
           {/* Question content - view mode */}
           {!editMode ? (
             <>
-              <div className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--ink-700)' }}>
+              <div className="text-[var(--ink-700)] text-sm mb-4 leading-relaxed">
                 {current.content}
               </div>
 
@@ -330,7 +330,7 @@ export default function MaterialDetailPage() {
 
               {current.answer && (
                 <div className="mb-3">
-                  <div className="text-xs font-semibold mb-1" style={{ color: 'var(--cyan)' }}>参考答案</div>
+                  <div className="text-[var(--cyan)] text-xs font-semibold mb-1">参考答案</div>
                   <div className="text-sm p-3 rounded-lg" style={{ background: 'var(--cyan-glow)', color: 'var(--ink-700)' }}>
                     {current.answer}
                   </div>
@@ -338,7 +338,7 @@ export default function MaterialDetailPage() {
               )}
               {current.explanation && (
                 <div className="mb-3">
-                  <div className="text-xs font-semibold mb-1" style={{ color: 'var(--fox)' }}>解析</div>
+                  <div className="text-[var(--fox)] text-xs font-semibold mb-1">解析</div>
                   <div className="text-sm p-3 rounded-lg" style={{ background: 'var(--fox-pale)', color: 'var(--ink-700)' }}>
                     {current.explanation}
                   </div>
@@ -349,13 +349,13 @@ export default function MaterialDetailPage() {
             /* Edit mode */
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>题干</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">题干</label>
                 <textarea value={editData.content} onChange={e => setEditData({ ...editData, content: e.target.value })}
                   className="input textarea" rows={3} />
               </div>
               {current.options && Array.isArray(current.options) && (
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>选项</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">选项</label>
                   <div className="space-y-2">
                     {editData.options.map((opt: any, i: number) => (
                       <div key={i} className="flex items-center gap-2">
@@ -381,26 +381,26 @@ export default function MaterialDetailPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>参考答案</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">参考答案</label>
                   <textarea value={editData.answer} onChange={e => setEditData({ ...editData, answer: e.target.value })}
                     className="input textarea" rows={2} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>解析</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">解析</label>
                   <textarea value={editData.explanation} onChange={e => setEditData({ ...editData, explanation: e.target.value })}
                     className="input textarea" rows={2} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>难度</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">难度</label>
                   <select value={editData.difficulty} onChange={e => setEditData({ ...editData, difficulty: e.target.value })}
                     className="input select">
                     {Object.entries(DIFF_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>分组</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">分组</label>
                   <select value={editData.suggestedGroup} onChange={e => setEditData({ ...editData, suggestedGroup: e.target.value })}
                     className="input select">
                     <option value="PRACTICE_GROUP">练习组</option>
@@ -451,7 +451,7 @@ export default function MaterialDetailPage() {
               </>
             )}
             {current.reviewStatus !== 'PENDING' && (
-              <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--ink-400)' }}>
+              <div className="text-[var(--ink-400)] flex items-center gap-3 text-xs">
                 <span>
                   {current.reviewStatus === 'APPROVED' ? '✅ 已入库' :
                    current.reviewStatus === 'REJECTED' ? '❌ 已拒绝' : '✏️ 已修改入库'}
@@ -486,7 +486,7 @@ export default function MaterialDetailPage() {
   const renderListMode = () => {
     if (filteredQuestions.length === 0) {
       return (
-        <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
+        <div className="text-[var(--ink-300)] card p-10 text-center">
           📭 这一章还没有试题
         </div>
       );
@@ -496,7 +496,7 @@ export default function MaterialDetailPage() {
       <div>
         {/* 顶部工具条 */}
         <div className="flex items-center justify-between mb-3 px-1">
-          <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--ink-500)' }}>
+          <label className="text-[var(--ink-500)] flex items-center gap-2 text-xs cursor-pointer">
             <input type="checkbox"
               checked={pendingQuestions.length > 0 && selectedIds.size === pendingQuestions.length}
               onChange={toggleSelectAll}
@@ -507,7 +507,7 @@ export default function MaterialDetailPage() {
               : '本章节已全部审核完成'}
           </label>
           {selectedPendingCount > 0 && (
-            <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>
+            <span className="text-[var(--fox)] text-xs font-medium">
               已选 {selectedPendingCount} 题
             </span>
           )}
@@ -558,7 +558,7 @@ export default function MaterialDetailPage() {
                 )}
 
                 {/* 序号 */}
-                <span className="font-mono text-xs w-5 flex-shrink-0 text-center" style={{ color: 'var(--ink-300)' }}>
+                <span className="text-[var(--ink-300)] font-mono text-xs w-5 flex-shrink-0 text-center">
                   {idx + 1}
                 </span>
 
@@ -574,13 +574,13 @@ export default function MaterialDetailPage() {
 
                 {/* 知识点 */}
                 {q.knowledgePoint && (
-                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--gold)' }}>
+                  <span className="text-[var(--gold)] text-xs flex-shrink-0">
                     {q.knowledgePoint}
                   </span>
                 )}
 
                 {/* 题目内容 — 截断 */}
-                <span className="flex-1 truncate" style={{ color: 'var(--ink-600)' }}>
+                <span className="text-[var(--ink-600)] flex-1 truncate">
                   {q.content}
                 </span>
 
@@ -610,8 +610,8 @@ export default function MaterialDetailPage() {
               borderTop: '1px solid var(--ink-100)',
               boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
             }}>
-            <span className="text-xs" style={{ color: 'var(--ink-400)' }}>
-              已选 <strong style={{ color: 'var(--fox)' }}>{selectedPendingCount}</strong> 道待审试题
+            <span className="text-[var(--ink-400)] text-xs">
+              已选 <strong className="text-[var(--fox)]">{selectedPendingCount}</strong> 道待审试题
             </span>
             <button onClick={() => handleBatchReview('approve')}
               className="btn btn-fox btn-sm">
@@ -642,7 +642,7 @@ export default function MaterialDetailPage() {
           <p className="page-subtitle">
             {material.subject?.code} · {material.chapters?.length || 0} 章 · 共 {totalQuestions} 题
             &nbsp;|&nbsp;
-            待审核 <span style={{ color: 'var(--fox)' }}>{reviewCounts.pending}</span>
+            待审核 <span className="text-[var(--fox)]">{reviewCounts.pending}</span>
             &nbsp;·&nbsp; 已通过 {reviewCounts.approved}
             &nbsp;·&nbsp; 已拒绝 {reviewCounts.rejected}
             {reviewCounts.edited > 0 && <>&nbsp;·&nbsp; 已修改 {reviewCounts.edited}</>}
@@ -672,7 +672,7 @@ export default function MaterialDetailPage() {
             </button>
           )}
           {material?.status === 'PROCESSING' && (
-            <span className="text-xs self-center" style={{ color: 'var(--gold)' }}>⏳ 正在生成试题…</span>
+            <span className="text-[var(--gold)] text-xs self-center">⏳ 正在生成试题…</span>
           )}
           {reviewCounts.pending > 0 && (
             <button onClick={handleBatchImport} disabled={importing}
@@ -684,7 +684,7 @@ export default function MaterialDetailPage() {
       </div>
 
       {/* ── Tab 导航 ── */}
-      <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+      <div className="border-[var(--ink-100)] flex gap-1 mb-6 border-b">
         {[
           { key: 'structure', label: '📖 章节结构', condition: true },
           { key: 'plan', label: '🤖 出题配置', condition: material.status !== 'UPLOADED' && material.status !== 'FAILED' },
@@ -723,7 +723,7 @@ export default function MaterialDetailPage() {
       <div className="flex gap-6 items-start">
         {/* Chapter sidebar */}
         <div className="w-[200px] flex-shrink-0 space-y-1">
-          <div className="text-xs font-semibold mb-2 px-2" style={{ color: 'var(--ink-400)' }}>章节列表</div>
+          <div className="text-[var(--ink-400)] text-xs font-semibold mb-2 px-2">章节列表</div>
           {material.chapters?.map((ch: any) => {
             const total = chapterQuestionCount(ch.id);
             const pending = chapterPendingCount(ch.id);
@@ -738,10 +738,10 @@ export default function MaterialDetailPage() {
                   borderLeft: activeChapter === ch.id ? '3px solid var(--fox)' : '3px solid transparent',
                 }}>
                 <div className="font-medium mb-0.5 truncate">{ch.title}</div>
-                <div style={{ color: 'var(--ink-300)' }}>
+                <div className="text-[var(--ink-300)]">
                   {total} 题
-                  {pending > 0 && <span style={{ color: 'var(--fox)' }}> · {pending} 待审</span>}
-                  {reviewed > 0 && <span style={{ color: 'var(--cyan)' }}> · {reviewed} 已审</span>}
+                  {pending > 0 && <span className="text-[var(--fox)]"> · {pending} 待审</span>}
+                  {reviewed > 0 && <span className="text-[var(--cyan)]"> · {reviewed} 已审</span>}
                 </div>
               </div>
             );
@@ -778,25 +778,25 @@ export default function MaterialDetailPage() {
 
         {/* Right stats sidebar */}
         <div className="w-[180px] flex-shrink-0">
-          <div className="card p-4 text-xs space-y-2 sticky top-4" style={{ color: 'var(--ink-400)' }}>
-            <div className="font-semibold mb-1" style={{ color: 'var(--ink-600)' }}>📊 汇总</div>
+          <div className="text-[var(--ink-400)] card p-4 text-xs space-y-2 sticky top-4">
+            <div className="text-[var(--ink-600)] font-semibold mb-1">📊 汇总</div>
             <div className="flex justify-between"><span>全部试题</span><span>{reviewCounts.all}</span></div>
-            <div className="flex justify-between" style={{ color: 'var(--fox)' }}>
+            <div className="text-[var(--fox)] flex justify-between">
               <span>待审核</span><span>{reviewCounts.pending}</span>
             </div>
-            <div className="flex justify-between" style={{ color: 'var(--cyan)' }}>
+            <div className="text-[var(--cyan)] flex justify-between">
               <span>已通过</span><span>{reviewCounts.approved}</span>
             </div>
-            <div className="flex justify-between" style={{ color: 'var(--verm)' }}>
+            <div className="text-[var(--verm)] flex justify-between">
               <span>已拒绝</span><span>{reviewCounts.rejected}</span>
             </div>
             {reviewCounts.edited > 0 && (
-              <div className="flex justify-between" style={{ color: 'var(--fox-dark)' }}>
+              <div className="text-[var(--fox-dark)] flex justify-between">
                 <span>已修改</span><span>{reviewCounts.edited}</span>
               </div>
             )}
             <hr className="divider" />
-            <div className="font-semibold" style={{ color: 'var(--ink-600)' }}>💡 提示</div>
+            <div className="text-[var(--ink-600)] font-semibold">💡 提示</div>
             {reviewMode === 'detail' ? (
               <>
                 <p>可自由翻页浏览，不必立刻做决定。</p>

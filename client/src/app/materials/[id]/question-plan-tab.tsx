@@ -181,22 +181,22 @@ export default function QuestionPlanTab({
       : 0;
 
     return (
-      <div className="card p-6 mb-4" style={{ borderColor: 'var(--gold)' }}>
+      <div className="border-[var(--gold)] card p-6 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <span className="animate-pulse">🤖</span>
           <span className="text-sm font-medium">出题计划执行中…</span>
         </div>
-        <div className="w-full h-3 rounded-full overflow-hidden mb-2" style={{ background: 'var(--paper-dark)' }}>
+        <div className="bg-[var(--paper-dark)] w-full h-3 rounded-full overflow-hidden mb-2">
           <div className="h-full rounded-full transition-all duration-500" style={{
             width: `${pct}%`,
             background: 'linear-gradient(90deg, var(--fox), var(--gold))',
           }} />
         </div>
-        <div className="flex justify-between text-xs" style={{ color: 'var(--ink-400)' }}>
+        <div className="text-[var(--ink-400)] flex justify-between text-xs">
           <span>{execProgress.generatedQuestions}/{execProgress.totalQuestions} 题</span>
           <span>{execProgress.completedConfigs}/{execProgress.totalConfigs} 配置</span>
           {execProgress.failedConfigs > 0 && (
-            <span style={{ color: 'var(--verm)' }}>{execProgress.failedConfigs} 失败</span>
+            <span className="text-[var(--verm)]">{execProgress.failedConfigs} 失败</span>
           )}
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function QuestionPlanTab({
   };
 
   if (loading && plans.length === 0) {
-    return <div className="text-center py-10" style={{ color: 'var(--ink-300)' }}>加载中…</div>;
+    return <div className="text-[var(--ink-300)] text-center py-10">加载中…</div>;
   }
 
   return (
@@ -227,7 +227,7 @@ export default function QuestionPlanTab({
       {/* 已有计划列表 */}
       {plans.length > 0 && !showNewForm && (
         <div className="space-y-3 mb-6">
-          <h3 className="text-sm font-medium" style={{ color: 'var(--ink-500)' }}>已保存的出题计划</h3>
+          <h3 className="text-[var(--ink-500)] text-sm font-medium">已保存的出题计划</h3>
           {plans.map((plan: any) => {
             const planTotal = plan.configs?.reduce((s: number, c: any) => s + c.count, 0) || 0;
             const typeSummary = TYPE_OPTIONS.map(t => {
@@ -240,7 +240,7 @@ export default function QuestionPlanTab({
               <div key={plan.id} className="card p-4 flex items-center justify-between">
                 <div>
                   <div className="text-sm font-medium">{plan.name || '未命名计划'}</div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] text-xs mt-0.5">
                     {typeSummary} = {planTotal} 题
                     &nbsp;·&nbsp;
                     <span style={{
@@ -268,7 +268,7 @@ export default function QuestionPlanTab({
       {showNewForm ? (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>新建出题计划</h3>
+            <h3 className="text-[var(--ink-600)] text-sm font-medium">新建出题计划</h3>
             <button onClick={() => setShowNewForm(false)} className="btn btn-ghost btn-xs">取消</button>
           </div>
 
@@ -277,9 +277,9 @@ export default function QuestionPlanTab({
             {chapters.filter(ch => ch.contentLength > 0).map((ch, ci) => (
               <div key={ch.id} className="card p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="font-mono text-xs" style={{ color: 'var(--ink-300)' }}>{ci + 1}.</span>
+                  <span className="text-[var(--ink-300)] font-mono text-xs">{ci + 1}.</span>
                   <span className="text-sm font-medium">{ch.title}</span>
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                  <span className="text-[var(--ink-300)] text-xs">
                     {(ch.contentLength / 1000).toFixed(1)}k 字
                   </span>
                 </div>
@@ -303,21 +303,21 @@ export default function QuestionPlanTab({
                         {cfg._enabled && (
                           <div className="space-y-1.5 pl-5">
                             <div className="flex items-center gap-2">
-                              <span className="w-6" style={{ color: 'var(--ink-400)' }}>题数</span>
+                              <span className="text-[var(--ink-400)] w-6">题数</span>
                               <input type="number" min={0} max={30} value={cfg.count}
                                 onChange={e => updateConfig(idx, 'count', Math.max(0, Math.min(30, Number(e.target.value))))}
                                 className="input text-xs" style={{ width: '50px' }} />
                             </div>
                             <div className="flex items-center gap-1">
-                              <span className="w-6" style={{ color: 'var(--ink-400)' }}>易</span>
+                              <span className="text-[var(--ink-400)] w-6">易</span>
                               <input type="number" min={0} max={100} value={cfg.difficultyEasy}
                                 onChange={e => updateConfig(idx, 'difficultyEasy', Number(e.target.value))}
                                 className="input text-xs" style={{ width: '40px' }} />
-                              <span className="w-6 text-center" style={{ color: 'var(--ink-400)' }}>中</span>
+                              <span className="text-[var(--ink-400)] w-6 text-center">中</span>
                               <input type="number" min={0} max={100} value={cfg.difficultyMedium}
                                 onChange={e => updateConfig(idx, 'difficultyMedium', Number(e.target.value))}
                                 className="input text-xs" style={{ width: '40px' }} />
-                              <span className="w-6 text-center" style={{ color: 'var(--ink-400)' }}>难</span>
+                              <span className="text-[var(--ink-400)] w-6 text-center">难</span>
                               <input type="number" min={0} max={100} value={cfg.difficultyHard}
                                 onChange={e => updateConfig(idx, 'difficultyHard', Number(e.target.value))}
                                 className="input text-xs" style={{ width: '40px' }} />
@@ -336,14 +336,14 @@ export default function QuestionPlanTab({
           </div>
 
           {/* 总计预览 */}
-          <div className="card p-4 mb-4" style={{ background: 'var(--paper-50)' }}>
+          <div className="bg-[var(--paper-50)] card p-4 mb-4">
             <div className="flex items-center justify-between">
               <div className="text-sm">
                 {TYPE_OPTIONS.map(t => {
                   const c = totalByType(t.value);
                   return c > 0 ? <span key={t.value} className="mr-3">{t.label} {c}题</span> : null;
                 })}
-                <span className="font-bold" style={{ color: 'var(--fox)' }}>共 {totalQuestions} 题</span>
+                <span className="text-[var(--fox)] font-bold">共 {totalQuestions} 题</span>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleSave(false)} disabled={saving}

@@ -168,7 +168,7 @@ export default function KnowledgeDocumentDetailPage() {
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
             {loading ? (
-              <div className="p-6 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              <div className="text-[var(--ink-300)] p-6 text-center text-xs">加载中…</div>
             ) : chunks.map((c: any) => (
               <div key={c.id}
                 onClick={() => selectChunk(c)}
@@ -179,10 +179,10 @@ export default function KnowledgeDocumentDetailPage() {
                   borderLeft: selectedChunk?.id === c.id ? '3px solid var(--fox)' : '3px solid transparent',
                 }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium" style={{ color: 'var(--fox)' }}>#{c.chunkIndex}</span>
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{c.content?.length || 0} 字</span>
+                  <span className="text-[var(--fox)] text-xs font-medium">#{c.chunkIndex}</span>
+                  <span className="text-[var(--ink-300)] text-xs">{c.content?.length || 0} 字</span>
                 </div>
-                <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--ink-500)' }}>
+                <p className="text-[var(--ink-500)] text-xs mt-1 line-clamp-2">
                   {(c.content || '').slice(0, 60)}…
                 </p>
                 {c.knowledgePoints?.length > 0 && (
@@ -192,7 +192,7 @@ export default function KnowledgeDocumentDetailPage() {
                         {kp.knowledgePoint?.name}
                       </span>
                     ))}
-                    {c.knowledgePoints.length > 3 && <span className="text-xs" style={{ color: 'var(--ink-300)' }}>+{c.knowledgePoints.length - 3}</span>}
+                    {c.knowledgePoints.length > 3 && <span className="text-[var(--ink-300)] text-xs">+{c.knowledgePoints.length - 3}</span>}
                   </div>
                 )}
               </div>
@@ -217,7 +217,7 @@ export default function KnowledgeDocumentDetailPage() {
                   <button onClick={() => { loadKpTree(); setShowKpPicker(true); }} className="btn btn-outline btn-sm">🏷️ 知识点</button>
                   <button onClick={handleMerge} className="btn btn-outline btn-sm">⬆️ 合并</button>
                   <button onClick={handleSplit} className="btn btn-outline btn-sm">✂️ 拆分</button>
-                  <button onClick={handleDeleteChunk} className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>🗑️</button>
+                  <button onClick={handleDeleteChunk} className="text-[var(--error)] btn btn-outline btn-sm">🗑️</button>
                 </div>
               </div>
               <textarea
@@ -227,7 +227,7 @@ export default function KnowledgeDocumentDetailPage() {
                 style={{ flex: 1, minHeight: 300, resize: 'none', fontFamily: 'monospace', fontSize: '13px', lineHeight: 1.6 }}
               />
               <div className="flex items-center justify-between mt-3">
-                <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{editContent.length} 字符</span>
+                <span className="text-[var(--ink-300)] text-xs">{editContent.length} 字符</span>
                 <button onClick={saveChunk} disabled={saving} className="btn btn-fox btn-sm">
                   {saving ? '保存中…' : '💾 保存修改'}
                 </button>
@@ -235,7 +235,7 @@ export default function KnowledgeDocumentDetailPage() {
             </div>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p style={{ color: 'var(--ink-300)' }}>← 选择一个知识块进行编辑</p>
+              <p className="text-[var(--ink-300)]">← 选择一个知识块进行编辑</p>
             </div>
           )}
         </div>
@@ -248,16 +248,16 @@ export default function KnowledgeDocumentDetailPage() {
             <h3 className="text-base font-semibold mb-4">🔄 重新分块</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs" style={{ color: 'var(--ink-400)' }}>块大小（字符数）</label>
+                <label className="text-[var(--ink-400)] text-xs">块大小（字符数）</label>
                 <input type="number" value={chunkSize} onChange={e => setChunkSize(parseInt(e.target.value) || 500)}
                   className="input mt-1 w-full" min={100} max={2000} />
               </div>
               <div>
-                <label className="text-xs" style={{ color: 'var(--ink-400)' }}>重叠字符数</label>
+                <label className="text-[var(--ink-400)] text-xs">重叠字符数</label>
                 <input type="number" value={overlap} onChange={e => setOverlap(parseInt(e.target.value) || 50)}
                   className="input mt-1 w-full" min={0} max={200} />
               </div>
-              <p className="text-xs" style={{ color: 'var(--error)' }}>⚠️ 重新分块将删除所有现有块及知识点标注</p>
+              <p className="text-[var(--error)] text-xs">⚠️ 重新分块将删除所有现有块及知识点标注</p>
             </div>
             <div className="flex justify-end gap-2 mt-5">
               <button onClick={() => setShowRebuild(false)} className="btn btn-outline btn-sm">取消</button>
@@ -274,7 +274,7 @@ export default function KnowledgeDocumentDetailPage() {
             <h3 className="text-base font-semibold mb-3">🏷️ 关联知识点</h3>
             <div style={{ flex: 1, overflow: 'auto', minHeight: 200 }}>
               {kpTree.length === 0 ? (
-                <p className="text-sm text-center py-8" style={{ color: 'var(--ink-300)' }}>该科目暂无知识点</p>
+                <p className="text-[var(--ink-300)] text-sm text-center py-8">该科目暂无知识点</p>
               ) : (
                 flattenTree(kpTree).map((kp: any) => (
                   <label key={kp.id} className="flex items-center gap-2 py-1.5 px-2 rounded cursor-pointer hover:bg-[var(--paper-light)]"

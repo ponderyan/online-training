@@ -29,7 +29,7 @@ export default function ExamStudentList({ students, isOffline, lastUpdated, exam
           </button>
         </div>
       </div>
-      <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+      <div className="border-[var(--ink-100)] divide-y">
         {students.map(s => (
           <div key={s.id} className="px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -38,12 +38,12 @@ export default function ExamStudentList({ students, isOffline, lastUpdated, exam
                 {s.student?.displayName?.[0] || '?'}
               </div>
               <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--ink-600)' }}>{s.student?.displayName || '未知'}</p>
-                <p className="text-xs" style={{ color: 'var(--ink-300)' }}>{s.student?.organization || ''}</p>
+                <p className="text-[var(--ink-600)] text-sm font-medium">{s.student?.displayName || '未知'}</p>
+                <p className="text-[var(--ink-300)] text-xs">{s.student?.organization || ''}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {s.totalScore !== null && <span className="text-xs font-medium" style={{ color: 'var(--sage)' }}>{s.totalScore}分</span>}
+              {s.totalScore !== null && <span className="text-[var(--sage)] text-xs font-medium">{s.totalScore}分</span>}
               <span className="text-xs px-2.5 py-1 rounded-full" style={{
                 background: s.absent ? 'var(--warning-pale)' : s.status === 'SUBMITTED' ? 'var(--success-pale)' : s.status === 'ACTIVE' ? 'var(--fox-pale)' : 'var(--neutral-50)',
                 color: s.absent ? 'var(--warning)' : s.status === 'SUBMITTED' ? 'var(--sage)' : s.status === 'ACTIVE' ? 'var(--fox-dark)' : 'var(--ink-400)',
@@ -55,7 +55,7 @@ export default function ExamStudentList({ students, isOffline, lastUpdated, exam
           </div>
         ))}
         {students.length === 0 && (
-          <div className="px-5 py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无考生</div>
+          <div className="text-[var(--ink-300)] px-5 py-8 text-center text-xs">暂无考生</div>
         )}
       </div>
     </div>

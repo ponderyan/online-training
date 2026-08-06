@@ -89,7 +89,7 @@ export default function LearningHoursReviewPage() {
       <div className="flex items-center gap-1 mb-4">
         <button onClick={() => { setTab('pending'); setSelected(new Set()); }}
           className="btn btn-sm" style={tab === 'pending' ? { background: 'var(--fox)', color: '#fff' } : { background: 'transparent', color: 'var(--ink-400)' }}>
-          待审核 {pendingHours.length > 0 && <span className="ml-1 inline-flex items-center justify-center rounded-full text-white text-[10px] w-4 h-4" style={{ background: 'var(--error)' }}>{pendingHours.length}</span>}
+          待审核 {pendingHours.length > 0 && <span className="bg-[var(--error)] ml-1 inline-flex items-center justify-center rounded-full text-white text-[10px] w-4 h-4">{pendingHours.length}</span>}
         </button>
         <button onClick={() => { setTab('reviewed'); setSelected(new Set()); }}
           className="btn btn-sm" style={tab === 'reviewed' ? { background: 'var(--fox)', color: '#fff' } : { background: 'transparent', color: 'var(--ink-400)' }}>
@@ -109,7 +109,7 @@ export default function LearningHoursReviewPage() {
           <option value="">全部来源</option>
           <option value="OFFLINE">✏️ 人工申报</option>
         </select>
-        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+        <span className="text-[var(--ink-300)] text-xs">
           {tab === 'pending' ? `共 ${pendingHours.length} 条待审核` : `共 ${reviewedHours.length} 条已审核`}
         </span>
       </div>
@@ -117,7 +117,7 @@ export default function LearningHoursReviewPage() {
       {/* 待审核 Tab */}
       {tab === 'pending' && (
         pendingHours.length === 0 ? (
-          <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>🎉 暂无待审核学时记录</p></div>
+          <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">🎉 暂无待审核学时记录</p></div>
         ) : (
           <>
             <div className="card p-0 overflow-hidden mb-4">
@@ -131,13 +131,13 @@ export default function LearningHoursReviewPage() {
                   {pendingHours.map(h => (
                     <tr key={h.id}>
                       <td><input type="checkbox" checked={selected.has(h.id)} onChange={() => toggleSelect(h.id)} className="accent-[var(--fox)]" /></td>
-                      <td><div className="text-sm font-medium">{h.student?.displayName || '—'}</div><div className="text-xs" style={{ color: 'var(--ink-300)' }}>{h.student?.studentNumber || ''}</div></td>
+                      <td><div className="text-sm font-medium">{h.student?.displayName || '—'}</div><div className="text-[var(--ink-300)] text-xs">{h.student?.studentNumber || ''}</div></td>
                       <td className="text-xs">{h.program?.name || '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{h.type?.name || '—'}</td>
+                      <td className="text-[var(--ink-400)] text-xs">{h.type?.name || '—'}</td>
                       <td className="text-sm font-medium">{h.hours}h</td>
-                      <td>{h.evidenceUrl ? <a href={h.evidenceUrl} target="_blank" className="text-xs" style={{ color: 'var(--fox)' }}>查看附件</a> : '—'}</td>
+                      <td>{h.evidenceUrl ? <a href={h.evidenceUrl} target="_blank" className="text-[var(--fox)] text-xs">查看附件</a> : '—'}</td>
                       <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.note || h.description || ''}>{h.note || h.description || '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(h.recordedAt).toLocaleString('zh-CN')}</td>
+                      <td className="text-[var(--ink-300)] text-xs">{new Date(h.recordedAt).toLocaleString('zh-CN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -157,7 +157,7 @@ export default function LearningHoursReviewPage() {
       {/* 已审核 Tab */}
       {tab === 'reviewed' && (
         reviewedHours.length === 0 ? (
-          <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>暂无已审核记录</p></div>
+          <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">暂无已审核记录</p></div>
         ) : (
           <div className="card p-0 overflow-hidden">
             <div className="overflow-x-auto">
@@ -179,7 +179,7 @@ export default function LearningHoursReviewPage() {
                     <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
                       {h.reviewComment || '—'}
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <td className="text-[var(--ink-300)] text-xs">
                       {h.approvedAt ? new Date(h.approvedAt).toLocaleString('zh-CN') : '—'}
                     </td>
                   </tr>
@@ -195,7 +195,7 @@ export default function LearningHoursReviewPage() {
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(false); }}>
-          <div className="rounded-2xl w-full max-w-sm p-6" style={{ background: 'var(--paper-bright)' }}>
+          <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-base font-semibold mb-2">驳回原因</h3>
             <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
               rows={3} className="input w-full" placeholder="请输入驳回原因…" />

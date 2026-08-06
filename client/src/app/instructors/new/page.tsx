@@ -53,7 +53,7 @@ export default function NewInstructorPage() {
       <div className="card p-6 max-w-2xl">
         <div className="space-y-4">
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>关联用户 *</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">关联用户 *</label>
             <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} className="input select w-full">
               <option value="">选择用户…</option>
               {users.map((u: any) => (
@@ -62,28 +62,28 @@ export default function NewInstructorPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>姓名 *</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">姓名 *</label>
             <input value={form.realName} onChange={e => setForm({ ...form, realName: e.target.value })} className="input w-full" placeholder="讲师真实姓名" />
           </div>
 
           {/* ⭐ 类型 + 工作单位 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>讲师类型 *</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">讲师类型 *</label>
               <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="input select w-full">
                 <option value="INTERNAL">内部讲师</option>
                 <option value="EXTERNAL">外聘讲师</option>
               </select>
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>工作单位</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">工作单位</label>
               <input value={form.workUnit} onChange={e => setForm({ ...form, workUnit: e.target.value })} className="input w-full" placeholder="所在单位全称" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>职称</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">职称</label>
               <select value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="input select w-full">
                 <option value="">请选择</option>
                 <option value="初级工程师">初级工程师</option>
@@ -94,7 +94,7 @@ export default function NewInstructorPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>级别</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">级别</label>
               <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value })} className="input select w-full">
                 <option value="JUNIOR">初级讲师</option>
                 <option value="MIDDLE">中级讲师</option>
@@ -106,32 +106,32 @@ export default function NewInstructorPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>电话</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">电话</label>
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/[^\d]/g, '') })} className="input w-full" placeholder="手机号" maxLength={11} />
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>邮箱</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">邮箱</label>
               <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input w-full" placeholder="电子邮箱" />
             </div>
           </div>
 
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>简介</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">简介</label>
             <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} className="input w-full" rows={3} placeholder="讲师简介" />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>擅长领域（逗号分隔）</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">擅长领域（逗号分隔）</label>
             <input value={form.expertise} onChange={e => setForm({ ...form, expertise: e.target.value })} className="input w-full" placeholder="例如：数据分析,数字化转型" />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>资格/资质</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">资格/资质</label>
             <input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="input w-full" />
           </div>
 
           {/* ⭐ 学历 + 毕业院校 + 性别 */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>最高学历</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">最高学历</label>
               <select value={form.education} onChange={e => setForm({ ...form, education: e.target.value })} className="input select w-full">
                 <option value="">—</option>
                 <option value="博士">博士</option><option value="硕士">硕士</option>
@@ -139,11 +139,11 @@ export default function NewInstructorPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>毕业院校</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">毕业院校</label>
               <input value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} className="input w-full" placeholder="学校全称" />
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>性别</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">性别</label>
               <select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className="input select w-full">
                 <option value="">保密</option><option value="男">男</option><option value="女">女</option>
               </select>
@@ -158,26 +158,26 @@ export default function NewInstructorPage() {
           {/* ⭐ 外聘专属字段 */}
           {form.type === 'EXTERNAL' && (
             <div className="p-4 rounded-lg space-y-4" style={{ background: 'var(--paper)', border: '1px solid var(--fox)' }}>
-              <p className="text-xs font-semibold" style={{ color: 'var(--fox)' }}>外聘讲师信息（课酬发放用）</p>
+              <p className="text-[var(--fox)] text-xs font-semibold">外聘讲师信息（课酬发放用）</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>身份证号 *</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">身份证号 *</label>
                   <input value={form.idCard} onChange={e => setForm({ ...form, idCard: e.target.value })} className="input w-full" placeholder="18位" maxLength={18} />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>银行账户</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">银行账户</label>
                   <input value={form.bankAccount} onChange={e => setForm({ ...form, bankAccount: e.target.value })} className="input w-full" placeholder="开户行+卡号" />
                 </div>
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>签约有效期至</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">签约有效期至</label>
                 <input type="date" value={form.contractExpire} onChange={e => setForm({ ...form, contractExpire: e.target.value })} className="input w-full" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>备注</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
             <textarea value={form.remark} onChange={e => setForm({ ...form, remark: e.target.value })} className="input w-full" rows={2} />
           </div>
 

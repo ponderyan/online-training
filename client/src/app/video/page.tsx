@@ -78,16 +78,16 @@ export default function VideoListPage() {
           {stats && (
             <div className="flex gap-3">
               <div className="card px-4 py-3 text-center">
-                <div className="text-xl font-bold" style={{ color: 'var(--fox-dark)' }}>{stats.totalVideos ?? videos.length}</div>
-                <div className="text-[10px]" style={{ color: 'var(--ink-400)' }}>可学课程</div>
+                <div className="text-[var(--fox-dark)] text-xl font-bold">{stats.totalVideos ?? videos.length}</div>
+                <div className="text-[var(--ink-400)] text-[10px]">可学课程</div>
               </div>
               <div className="card px-4 py-3 text-center">
-                <div className="text-xl font-bold" style={{ color: 'var(--sage)' }}>{stats.completedVideos ?? 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--ink-400)' }}>已完成</div>
+                <div className="text-[var(--sage)] text-xl font-bold">{stats.completedVideos ?? 0}</div>
+                <div className="text-[var(--ink-400)] text-[10px]">已完成</div>
               </div>
               <div className="card px-4 py-3 text-center">
-                <div className="text-xl font-bold" style={{ color: 'var(--ink-700)' }}>{stats.totalHours ?? 0}<span className="text-xs font-normal">h</span></div>
-                <div className="text-[10px]" style={{ color: 'var(--ink-400)' }}>累计学时</div>
+                <div className="text-[var(--ink-700)] text-xl font-bold">{stats.totalHours ?? 0}<span className="text-xs font-normal">h</span></div>
+                <div className="text-[var(--ink-400)] text-[10px]">累计学时</div>
               </div>
             </div>
           )}
@@ -160,9 +160,8 @@ export default function VideoListPage() {
                   </div>
                   {/* 信息 */}
                   <div className="p-4">
-                    <h3 className="text-sm font-semibold mb-1 truncate group-hover:text-[var(--fox)]"
-                      style={{ color: 'var(--ink-700)' }}>{v.name}</h3>
-                    <div className="text-xs space-y-1" style={{ color: 'var(--ink-400)' }}>
+                    <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-1 truncate group-hover:text-[var(--fox)]">{v.name}</h3>
+                    <div className="text-[var(--ink-400)] text-xs space-y-1">
                       {v.instructorName && <div>👤 {v.instructorName}</div>}
                       {v.hours && <div>⏱ {v.hours} 课时</div>}
                       {v.courseLinks?.length > 0 && (
@@ -172,10 +171,10 @@ export default function VideoListPage() {
                     {/* 进度条 */}
                     {v.progress && !isCompleted && pct > 0 && (
                       <div className="mt-2">
-                        <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--paper-dark)' }}>
+                        <div className="bg-[var(--paper-dark)] w-full h-1.5 rounded-full">
                           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--fox)' }} />
                         </div>
-                        <div className="text-[10px] mt-0.5 text-right" style={{ color: 'var(--ink-300)' }}>已学 {pct}%</div>
+                        <div className="text-[var(--ink-300)] text-[10px] mt-0.5 text-right">已学 {pct}%</div>
                       </div>
                     )}
                   </div>

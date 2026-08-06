@@ -191,8 +191,8 @@ export default function AiAssistantPage() {
       <div className="max-w-3xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 0px)', minHeight: '500px' }}>
         {/* Header */}
         <div className="text-center pt-6 pb-4 px-4 flex-shrink-0">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ink-700)' }}>🦊 AI 助教</h1>
-          <p className="mt-1 text-xs" style={{ color: 'var(--ink-400)' }}>
+          <h1 className="text-[var(--ink-700)] text-2xl font-bold">🦊 AI 助教</h1>
+          <p className="text-[var(--ink-400)] mt-1 text-xs">
             基于教材原文的智能问答 · 支持多轮对话
           </p>
           {messages.length > 0 && (
@@ -208,7 +208,7 @@ export default function AiAssistantPage() {
           {/* 引导问题 */}
           {isEmpty && (
             <div className="max-w-lg mx-auto mt-4">
-              <p className="text-center text-xs mb-4" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--ink-300)] text-center text-xs mb-4">
                 你可以问我这些 👇
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -221,7 +221,7 @@ export default function AiAssistantPage() {
                   >
                     <div className="flex items-start gap-2.5">
                       <span className="text-lg flex-shrink-0">{g.icon}</span>
-                      <span className="text-sm leading-snug" style={{ color: 'var(--ink-600)' }}>{g.text}</span>
+                      <span className="text-[var(--ink-600)] text-sm leading-snug">{g.text}</span>
                     </div>
                   </button>
                 ))}
@@ -242,9 +242,8 @@ export default function AiAssistantPage() {
                   </div>
                 ) : (
                   <div className="flex justify-start">
-                    <div className="flex gap-2.5" style={{ maxWidth: '85%' }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
-                        style={{ background: 'var(--fox-pale)' }}>
+                    <div className="max-w-[85%] flex gap-2.5">
+                      <div className="bg-[var(--fox-pale)] w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0">
                         🦊
                       </div>
                       <div className="min-w-0">
@@ -254,7 +253,7 @@ export default function AiAssistantPage() {
                             <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                           ) : msg.streaming ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs" style={{ color: 'var(--ink-400)' }}>思考中</span>
+                              <span className="text-[var(--ink-400)] text-xs">思考中</span>
                               <span className="flex gap-1">
                                 {[0, 150, 300].map(d => (
                                   <span key={d} className="w-1.5 h-1.5 rounded-full animate-pulse"
@@ -265,24 +264,24 @@ export default function AiAssistantPage() {
                           ) : null}
                           {/* 流式光标 */}
                           {msg.streaming && msg.content && (
-                            <span className="inline-block w-0.5 h-4 ml-0.5 animate-pulse" style={{ background: 'var(--fox)' }} />
+                            <span className="bg-[var(--fox)] inline-block w-0.5 h-4 ml-0.5 animate-pulse" />
                           )}
                         </div>
                         {/* 参考来源 */}
                         {msg.sources && msg.sources.length > 0 && !msg.streaming && (
                           <details className="mt-2">
-                            <summary className="text-xs cursor-pointer select-none" style={{ color: 'var(--fox)' }}>
+                            <summary className="text-[var(--fox)] text-xs cursor-pointer select-none">
                               参考来源（{msg.sources.length}）
                             </summary>
                             <div className="space-y-2 mt-2">
                               {msg.sources.map((source, i) => (
-                                <div key={i} className="card p-2.5 text-xs" style={{ background: 'var(--paper)' }}>
+                                <div key={i} className="bg-[var(--paper)] card p-2.5 text-xs">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-semibold" style={{ color: 'var(--fox)' }}>{source.materialName}</span>
-                                    <span style={{ color: 'var(--ink-300)' }}>·</span>
-                                    <span style={{ color: 'var(--ink-400)' }}>{source.chapterTitle}</span>
+                                    <span className="text-[var(--fox)] font-semibold">{source.materialName}</span>
+                                    <span className="text-[var(--ink-300)]">·</span>
+                                    <span className="text-[var(--ink-400)]">{source.chapterTitle}</span>
                                   </div>
-                                  <div className="leading-relaxed" style={{ color: 'var(--ink-400)' }}>{source.content}</div>
+                                  <div className="text-[var(--ink-400)] leading-relaxed">{source.content}</div>
                                 </div>
                               ))}
                             </div>
@@ -323,14 +322,12 @@ export default function AiAssistantPage() {
             />
             {loading ? (
               <button onClick={handleStop}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors flex-shrink-0"
-                style={{ background: 'var(--error)' }}>
+                className="bg-[var(--error)] px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors flex-shrink-0">
                 停止
               </button>
             ) : (
               <button onClick={handleAsk} disabled={!question.trim()}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 flex-shrink-0"
-                style={{ background: 'var(--fox)' }}>
+                className="bg-[var(--fox)] px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 flex-shrink-0">
                 发送
               </button>
             )}

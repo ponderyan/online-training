@@ -94,7 +94,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-card animate-fadeSlide" style={{ maxWidth: '780px' }}>
+      <div className="max-w-[780px] modal-card animate-fadeSlide">
         <div className="modal-header">
           <h3 className="font-serif font-bold text-base">
             {step === 'config' ? '批量导入试题' : step === 'preview' ? '预览并确认' : '导入结果'}
@@ -108,14 +108,14 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
               {/* Left: config panel */}
               <div className="flex-1">
                 <div className="mb-4">
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>导入科目</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">导入科目</label>
                   <select value={selectedSubject} onChange={e => setSelectedSubject(Number(e.target.value))} className="input select" style={{ width: '100%' }}>
                     {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
                   </select>
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>包含题型</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-2">包含题型</label>
                   <div className="grid grid-cols-3 gap-2">
                     {ALL_TYPES.map(t => {
                       const checked = enabledTypes.includes(t);
@@ -145,8 +145,8 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
                   <button onClick={downloadTemplate} className="btn btn-gold btn-sm">下载模板</button>
                 </div>
 
-                <div className="mt-4 p-3 rounded" style={{ background: 'var(--paper)' }}>
-                  <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>填写说明</p>
+                <div className="bg-[var(--paper)] mt-4 p-3 rounded">
+                  <p className="text-[var(--ink-500)] text-xs font-medium mb-1.5">填写说明</p>
                   <ul className="text-xs space-y-0.5" style={{ color: 'var(--ink-400)', lineHeight: '1.7' }}>
                     <li>· 每种题型独立一个 sheet 页</li>
                     <li>· 难度：易 / 较易 / 较难 / 难</li>
@@ -160,7 +160,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
               {/* Right: upload area */}
               <div className="flex-1 flex flex-col">
-                <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>上传填好的模板</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-2">上传填好的模板</label>
                 <div
                   className="flex-1 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors text-center"
                   style={{
@@ -176,23 +176,23 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
                   onMouseLeave={e => { if (uploadStatus === 'idle') e.currentTarget.style.borderColor = 'var(--ink-100)'; }}>
                   {uploadStatus === 'idle' && (
                     <>
-                      <span className="text-lg mb-1" style={{ color: 'var(--ink-300)' }}>⬆</span>
-                      <p className="text-sm font-medium mb-0.5" style={{ color: 'var(--ink-400)' }}>拖拽文件到此处</p>
-                      <p className="text-xs" style={{ color: 'var(--ink-300)' }}>或点击选择 .xlsx 文件</p>
+                      <span className="text-[var(--ink-300)] text-lg mb-1">⬆</span>
+                      <p className="text-[var(--ink-400)] text-sm font-medium mb-0.5">拖拽文件到此处</p>
+                      <p className="text-[var(--ink-300)] text-xs">或点击选择 .xlsx 文件</p>
                     </>
                   )}
                   {uploadStatus === 'success' && (
                     <>
-                      <span className="text-lg mb-1" style={{ color: 'var(--cyan)' }}>✓</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--cyan)' }}>上传成功</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>正在解析…</p>
+                      <span className="text-[var(--cyan)] text-lg mb-1">✓</span>
+                      <p className="text-[var(--cyan)] text-sm font-medium">上传成功</p>
+                      <p className="text-[var(--ink-300)] text-xs mt-1">正在解析…</p>
                     </>
                   )}
                   {uploadStatus === 'error' && (
                     <>
-                      <span className="text-lg mb-1" style={{ color: 'var(--verm)' }}>✕</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--verm)' }}>上传失败</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{uploadError}</p>
+                      <span className="text-[var(--verm)] text-lg mb-1">✕</span>
+                      <p className="text-[var(--verm)] text-sm font-medium">上传失败</p>
+                      <p className="text-[var(--ink-400)] text-xs mt-1">{uploadError}</p>
                     </>
                   )}
                   <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden"
@@ -206,11 +206,11 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
           {step === 'preview' && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm" style={{ color: 'var(--ink-500)' }}>
+                <p className="text-[var(--ink-500)] text-sm">
                   共解析 <strong>{rows.length}</strong> 行，
-                  <span style={{ color: 'var(--cyan)' }}>{rows.filter(r => r.errors.length === 0).length} 条有效</span>
+                  <span className="text-[var(--cyan)]">{rows.filter(r => r.errors.length === 0).length} 条有效</span>
                   {rows.filter(r => r.errors.length > 0).length > 0 && (
-                    <span className="ml-1" style={{ color: 'var(--verm)' }}>
+                    <span className="text-[var(--verm)] ml-1">
                       ，{rows.filter(r => r.errors.length > 0).length} 条有误
                     </span>
                   )}
@@ -228,14 +228,14 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
                     <span className="tag tag-ink mr-1.5" style={{ fontSize: '10px' }}>{TYPE_NAMES[r.sheetType]}</span>
                     <span className="mr-1.5">{r.content.substring(0, 60)}{r.content.length > 60 ? '…' : ''}</span>
                     {r.errors.length > 0 && (
-                      <span style={{ color: 'var(--verm)' }}> — {r.errors[0]}</span>
+                      <span className="text-[var(--verm)]"> — {r.errors[0]}</span>
                     )}
                   </div>
                 ))}
               </div>
 
               {rows.filter(r => r.errors.length > 0).length > 0 && (
-                <p className="text-xs mb-3" style={{ color: 'var(--verm)' }}>
+                <p className="text-[var(--verm)] text-xs mb-3">
                   有错误的行将被跳过，仅导入有效数据
                 </p>
               )}
@@ -248,31 +248,31 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
                 style={{ background: result.failCount === 0 ? 'var(--cyan-glow)' : result.successCount > 0 ? 'var(--gold-glow)' : 'var(--verm-glow)' }}>
                 {result.failCount === 0 ? (
-                  <span className="text-xl" style={{ color: 'var(--cyan)' }}>✓</span>
+                  <span className="text-[var(--cyan)] text-xl">✓</span>
                 ) : result.successCount > 0 ? (
-                  <span className="text-lg" style={{ color: 'var(--gold)' }}>!</span>
+                  <span className="text-[var(--gold)] text-lg">!</span>
                 ) : (
-                  <span className="text-lg" style={{ color: 'var(--verm)' }}>✕</span>
+                  <span className="text-[var(--verm)] text-lg">✕</span>
                 )}
               </div>
               <p className="text-base font-medium mb-2">
                 共 <strong>{result.total}</strong> 条，
-                <span style={{ color: 'var(--cyan)' }}>成功 {result.successCount}</span>
+                <span className="text-[var(--cyan)]">成功 {result.successCount}</span>
                 {result.failCount > 0 && (
-                  <span className="ml-1" style={{ color: 'var(--verm)' }}>，失败 {result.failCount}</span>
+                  <span className="text-[var(--verm)] ml-1">，失败 {result.failCount}</span>
                 )}
               </p>
               {result.failCount > 0 && (
-                <div className="mt-3 max-h-36 overflow-y-auto text-left mx-auto" style={{ maxWidth: '480px' }}>
+                <div className="max-w-[480px] mt-3 max-h-36 overflow-y-auto text-left mx-auto">
                   {result.results.filter((r: any) => !r.success).map((r: any) => (
-                    <div key={r.index} className="text-xs py-1" style={{ color: 'var(--verm)' }}>
+                    <div key={r.index} className="text-[var(--verm)] text-xs py-1">
                       # {r.index + 1}: {r.error}
                     </div>
                   ))}
                 </div>
               )}
               {result.successCount > 0 && (
-                <p className="text-xs mt-4" style={{ color: 'var(--ink-300)' }}>
+                <p className="text-[var(--ink-300)] text-xs mt-4">
                   导入的试题已进入题库，可在题库管理中查看
                 </p>
               )}

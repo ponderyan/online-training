@@ -79,8 +79,8 @@ export default function AuditTrailPage() {
         <div className="mb-6"><h1 className="page-title">🔍 全链审计</h1><p className="page-subtitle">业务实体生命周期追溯</p></div>
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">🔒</p>
-          <p style={{ color: 'var(--ink-300)' }}>您没有查看审计日志的权限</p>
-          <p className="text-xs mt-2" style={{ color: 'var(--ink-300)' }}>请联系管理员开通 auditLog:view 权限</p>
+          <p className="text-[var(--ink-300)]">您没有查看审计日志的权限</p>
+          <p className="text-[var(--ink-300)] text-xs mt-2">请联系管理员开通 auditLog:view 权限</p>
         </div>
       </AppLayout>
     );
@@ -97,7 +97,7 @@ export default function AuditTrailPage() {
         {/* ═══ 左侧：实体选择器 ═══ */}
         <div className="card p-4">
           {/* 实体类型切换 */}
-          <div className="flex gap-1 mb-3 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
+          <div className="bg-[var(--paper-dark)] flex gap-1 mb-3 p-0.5 rounded-lg">
             {(['EXAM', 'PROGRAM', 'USER', 'CERTIFICATE'] as const).map(t => (
               <button key={t} onClick={() => { setEntityType(t); setSelectedEntity(null); setTrail(null); }}
                 className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer border-none"
@@ -115,9 +115,9 @@ export default function AuditTrailPage() {
           {/* 搜索结果列表 */}
           <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
             {loadingSearch ? (
-              <p className="text-xs text-center py-4" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+              <p className="text-[var(--ink-300)] text-xs text-center py-4">加载中…</p>
             ) : searchResults.length === 0 ? (
-              <p className="text-xs text-center py-4" style={{ color: 'var(--ink-300)' }}>暂无{ENTITY_LABELS[entityType]}</p>
+              <p className="text-[var(--ink-300)] text-xs text-center py-4">暂无{ENTITY_LABELS[entityType]}</p>
             ) : (
               searchResults.map(entity => {
                 const name = entity.title || entity.name;
@@ -129,9 +129,9 @@ export default function AuditTrailPage() {
                       background: isSelected ? 'var(--fox-glow)' : 'transparent',
                       borderColor: isSelected ? 'var(--fox)' : 'var(--ink-100)',
                     }}>
-                    <div className="text-xs font-medium truncate" style={{ color: 'var(--ink-700)' }}>{name}</div>
+                    <div className="text-[var(--ink-700)] text-xs font-medium truncate">{name}</div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-mono" style={{ color: 'var(--ink-300)' }}>#{entity.id}</span>
+                      <span className="text-[var(--ink-300)] text-[10px] font-mono">#{entity.id}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>{entity.status}</span>
                     </div>
                   </button>
@@ -146,30 +146,30 @@ export default function AuditTrailPage() {
           {!selectedEntity ? (
             <div className="card p-12 text-center">
               <p className="text-4xl mb-4">👈</p>
-              <p className="text-sm" style={{ color: 'var(--ink-400)' }}>请从左侧选择一个{ENTITY_LABELS[entityType]}查看完整生命周期</p>
+              <p className="text-[var(--ink-400)] text-sm">请从左侧选择一个{ENTITY_LABELS[entityType]}查看完整生命周期</p>
             </div>
           ) : loadingTrail ? (
-            <div className="card p-12 text-center"><p className="text-sm" style={{ color: 'var(--ink-300)' }}>正在加载时间线… 🦊</p></div>
+            <div className="card p-12 text-center"><p className="text-[var(--ink-300)] text-sm">正在加载时间线… 🦊</p></div>
           ) : !trail || trail.events.length === 0 ? (
             <div className="card p-12 text-center">
               <p className="text-4xl mb-4">📋</p>
-              <p className="text-sm" style={{ color: 'var(--ink-300)' }}>{trail?.entityName || '该实体'} 暂无事件记录</p>
+              <p className="text-[var(--ink-300)] text-sm">{trail?.entityName || '该实体'} 暂无事件记录</p>
             </div>
           ) : (
             <div className="card p-5">
               {/* 实体标题 */}
-              <div className="mb-5 pb-4 border-b" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] mb-5 pb-4 border-b">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold m-0" style={{ color: 'var(--ink-700)' }}>{trail.entityName}</h2>
+                  <h2 className="text-[var(--ink-700)] text-lg font-bold m-0">{trail.entityName}</h2>
                   <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>#{trail.entityId}</span>
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>共 {trail.events.length} 个事件 · 按时间倒序</p>
+                <p className="text-[var(--ink-400)] text-xs mt-1">共 {trail.events.length} 个事件 · 按时间倒序</p>
               </div>
 
               {/* 纵向时间线 */}
               <div className="relative pl-6">
                 {/* 竖线 */}
-                <div className="absolute left-[11px] top-2 bottom-2 w-0.5" style={{ background: 'var(--ink-100)' }} />
+                <div className="bg-[var(--ink-100)] absolute left-[11px] top-2 bottom-2 w-0.5" />
 
                 {trail.events.map((event: any) => {
                   const style = EVENT_STYLE[event.eventType] || EVENT_STYLE.STATE_CHANGE;
@@ -188,7 +188,7 @@ export default function AuditTrailPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{event.eventName}</span>
+                              <span className="text-[var(--ink-700)] text-sm font-medium">{event.eventName}</span>
                               <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: style.bg, color: style.color }}>
                                 {event.eventType}
                               </span>
@@ -198,7 +198,7 @@ export default function AuditTrailPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs mt-1" style={{ color: 'var(--ink-500)' }}>{event.summary}</p>
+                            <p className="text-[var(--ink-500)] text-xs mt-1">{event.summary}</p>
                           </div>
                           {hasDetail && (
                             <button onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
@@ -210,45 +210,45 @@ export default function AuditTrailPage() {
                         </div>
 
                         {/* 元信息行 */}
-                        <div className="flex items-center gap-3 mt-2 text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                        <div className="text-[var(--ink-300)] flex items-center gap-3 mt-2 text-[10px]">
                           <span>🕐 {new Date(event.timestamp).toLocaleString('zh-CN')}</span>
                           <span>👤 {event.operatorName}</span>
                         </div>
 
                         {/* 展开详情 */}
                         {isExpanded && hasDetail && (
-                          <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'var(--ink-100)' }}>
+                          <div className="border-[var(--ink-100)] mt-3 pt-3 border-t space-y-2">
                             {event.detail?.changeReason && (
                               <div className="text-xs">
-                                <span style={{ color: 'var(--ink-400)' }}>变更原因：</span>
-                                <span style={{ color: 'var(--verm)' }}>{event.detail.changeReason}</span>
+                                <span className="text-[var(--ink-400)]">变更原因：</span>
+                                <span className="text-[var(--verm)]">{event.detail.changeReason}</span>
                               </div>
                             )}
                             {event.detail?.fromScore !== undefined && event.detail?.toScore !== undefined && (
                               <div className="text-xs">
-                                <span style={{ color: 'var(--ink-400)' }}>分数变化：</span>
+                                <span className="text-[var(--ink-400)]">分数变化：</span>
                                 <span className="font-mono">{event.detail.fromScore} → {event.detail.toScore}</span>
-                                {event.detail.reason && <span style={{ color: 'var(--ink-400)' }}>（{event.detail.reason}）</span>}
+                                {event.detail.reason && <span className="text-[var(--ink-400)]">（{event.detail.reason}）</span>}
                               </div>
                             )}
                             {event.detail?.before && event.detail?.after && (
                               <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                                 <div>
-                                  <div style={{ color: 'var(--ink-400)' }}>变更前：</div>
-                                  <pre className="p-2 rounded overflow-auto max-h-32 mt-1" style={{ background: 'var(--paper-dark)' }}>
+                                  <div className="text-[var(--ink-400)]">变更前：</div>
+                                  <pre className="bg-[var(--paper-dark)] p-2 rounded overflow-auto max-h-32 mt-1">
                                     {JSON.stringify(event.detail.before, null, 2)}
                                   </pre>
                                 </div>
                                 <div>
-                                  <div style={{ color: 'var(--ink-400)' }}>变更后：</div>
-                                  <pre className="p-2 rounded overflow-auto max-h-32 mt-1" style={{ background: 'var(--paper-dark)' }}>
+                                  <div className="text-[var(--ink-400)]">变更后：</div>
+                                  <pre className="bg-[var(--paper-dark)] p-2 rounded overflow-auto max-h-32 mt-1">
                                     {JSON.stringify(event.detail.after, null, 2)}
                                   </pre>
                                 </div>
                               </div>
                             )}
                             {event.relatedAuditLogIds?.length > 0 && (
-                              <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                              <div className="text-[var(--ink-300)] text-[10px]">
                                 关联审计日志 ID：{event.relatedAuditLogIds.join(', ')}
                               </div>
                             )}

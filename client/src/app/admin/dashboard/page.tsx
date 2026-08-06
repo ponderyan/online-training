@@ -148,7 +148,7 @@ function AgencyTable({
 }) {
   if (!data || data.length === 0) {
     return (
-      <div className="text-center py-8 text-sm" style={{ color: 'var(--ink-300)' }}>
+      <div className="text-[var(--ink-300)] text-center py-8 text-sm">
         暂无机构数据
       </div>
     );
@@ -160,7 +160,7 @@ function AgencyTable({
     <div className="w-full">
       <table className="w-full text-sm">
         <thead>
-          <tr style={{ color: 'var(--ink-400)' }}>
+          <tr className="text-[var(--ink-400)]">
             <th className="text-left pb-3 font-medium">机构名称</th>
             <th className="text-center pb-3 font-medium">学员数</th>
             <th className="text-center pb-3 font-medium">学时总数</th>
@@ -169,19 +169,19 @@ function AgencyTable({
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={row.agencyId} className="border-t" style={{ borderColor: 'var(--ink-100)' }}>
-              <td className="py-3 pr-4" style={{ color: 'var(--ink-600)' }}>
+            <tr key={row.agencyId} className="border-[var(--ink-100)] border-t">
+              <td className="text-[var(--ink-600)] py-3 pr-4">
                 {row.agencyName}
               </td>
-              <td className="py-3 text-center" style={{ color: 'var(--ink-500)' }}>
+              <td className="text-[var(--ink-500)] py-3 text-center">
                 {row.studentCount}
               </td>
-              <td className="py-3 text-center font-semibold" style={{ color: 'var(--fox)' }}>
+              <td className="text-[var(--fox)] py-3 text-center font-semibold">
                 {row.totalHours}
               </td>
               <td className="py-3 pl-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-2 rounded-full flex-1" style={{ background: 'var(--ink-100)' }}>
+                  <div className="bg-[var(--ink-100)] h-2 rounded-full flex-1">
                     <div
                       className="h-full rounded-full"
                       style={{
@@ -190,7 +190,7 @@ function AgencyTable({
                       }}
                     />
                   </div>
-                  <span className="text-[11px] w-10 text-right" style={{ color: 'var(--ink-400)' }}>
+                  <span className="text-[var(--ink-400)] text-[11px] w-10 text-right">
                     {maxHours > 0 ? Math.round((row.totalHours / maxHours) * 100) : 0}%
                   </span>
                 </div>
@@ -213,7 +213,7 @@ function TrendChart({
 }) {
   if (!data || data.length < 2) {
     return (
-      <div className="flex items-center justify-center h-[240px] text-sm" style={{ color: 'var(--ink-300)' }}>
+      <div className="text-[var(--ink-300)] flex items-center justify-center h-[240px] text-sm">
         暂无趋势数据
       </div>
     );
@@ -536,7 +536,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex items-center gap-4 text-xs text-[var(--ink-400)]">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 rounded" style={{ background: 'var(--fox)' }} />
+                  <span className="bg-[var(--fox)] w-3 h-0.5 rounded" />
                   <span>通过率</span>
                 </div>
                 <div>

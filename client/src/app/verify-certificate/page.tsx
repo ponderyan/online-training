@@ -53,10 +53,10 @@ export default function VerifyCertificatePage() {
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
-        <div className="font-serif font-bold text-lg tracking-wider" style={{ color: 'var(--ink-700)' }}>
+        <div className="text-[var(--ink-700)] font-serif font-bold text-lg tracking-wider">
           {settings?.siteName || 'FoxLearn'}
         </div>
-        <span className="text-xs ml-auto" style={{ color: 'var(--ink-300)' }}>
+        <span className="text-[var(--ink-300)] text-xs ml-auto">
           证书验证平台
         </span>
       </header>
@@ -66,8 +66,8 @@ export default function VerifyCertificatePage() {
           {/* Title */}
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">🏅</div>
-            <h1 className="text-2xl font-serif font-bold" style={{ color: 'var(--ink-700)' }}>结业证书验证</h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--ink-300)' }}>
+            <h1 className="text-[var(--ink-700)] text-2xl font-serif font-bold">结业证书验证</h1>
+            <p className="text-[var(--ink-300)] text-sm mt-1">
               输入证书编号和防伪码查验真伪
             </p>
           </div>
@@ -100,8 +100,8 @@ export default function VerifyCertificatePage() {
           {error && !loading && (
             <div className="card p-6 text-center" style={{ border: '2px solid var(--verm-glow)', background: 'var(--verm-glow)' }}>
               <div className="text-4xl mb-2">❌</div>
-              <p className="text-sm font-medium" style={{ color: 'var(--verm)' }}>验证失败</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--verm)' }}>{error}</p>
+              <p className="text-[var(--verm)] text-sm font-medium">验证失败</p>
+              <p className="text-[var(--verm)] text-xs mt-1">{error}</p>
             </div>
           )}
 
@@ -110,34 +110,34 @@ export default function VerifyCertificatePage() {
             <div className="card p-6" style={{ border: `2px solid var(--cyan-glow)`, background: 'var(--cyan-glow)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">✅</span>
-                <span className="text-sm font-semibold" style={{ color: 'var(--cyan)' }}>验证通过 · 真实有效</span>
+                <span className="text-[var(--cyan)] text-sm font-semibold">验证通过 · 真实有效</span>
                 <span className="tag ml-auto" style={{ background: 'rgba(0,137,123,0.15)', color: 'var(--cyan)' }}>有效证书</span>
               </div>
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--ink-400)' }}>持证人</span>
-                  <span className="font-medium" style={{ color: 'var(--ink-700)' }}>{cert.studentName || '—'}</span>
+                  <span className="text-[var(--ink-400)]">持证人</span>
+                  <span className="text-[var(--ink-700)] font-medium">{cert.studentName || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--ink-400)' }}>课程</span>
+                  <span className="text-[var(--ink-400)]">课程</span>
                   <span className="font-medium text-right" style={{ color: 'var(--ink-700)', maxWidth: 280 }}>{cert.courseName || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--ink-400)' }}>证书编号</span>
-                  <span className="font-mono text-xs" style={{ color: 'var(--ink-600)' }}>{cert.certificateNo || '—'}</span>
+                  <span className="text-[var(--ink-400)]">证书编号</span>
+                  <span className="text-[var(--ink-600)] font-mono text-xs">{cert.certificateNo || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--ink-400)' }}>发证日期</span>
-                  <span style={{ color: 'var(--ink-600)' }}>{cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('zh-CN') : '—'}</span>
+                  <span className="text-[var(--ink-400)]">发证日期</span>
+                  <span className="text-[var(--ink-600)]">{cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('zh-CN') : '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--ink-400)' }}>证书状态</span>
+                  <span className="text-[var(--ink-400)]">证书状态</span>
                   <span className="tag" style={{ background: 'rgba(0,137,123,0.15)', color: 'var(--cyan)' }}>有效</span>
                 </div>
               </div>
               {cert.verificationUrl && (
-                <div className="mt-4 pt-3 border-t text-center" style={{ borderColor: 'var(--paper-dark)' }}>
-                  <span className="text-xs" style={{ color: 'var(--ink-300)' }}>验证来源：{cert.verificationUrl}</span>
+                <div className="border-[var(--paper-dark)] mt-4 pt-3 border-t text-center">
+                  <span className="text-[var(--ink-300)] text-xs">验证来源：{cert.verificationUrl}</span>
                 </div>
               )}
             </div>
@@ -147,16 +147,16 @@ export default function VerifyCertificatePage() {
           {result && !isValid && !loading && (
             <div className="card p-6 text-center" style={{ border: '2px solid var(--verm-glow)', background: 'var(--verm-glow)' }}>
               <div className="text-4xl mb-2">{isRevoked ? '⛔' : '❌'}</div>
-              <p className="text-sm font-medium" style={{ color: 'var(--verm)' }}>
+              <p className="text-[var(--verm)] text-sm font-medium">
                 {isRevoked ? '该证书已被撤销' : '验证失败'}
               </p>
-              <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+              <p className="text-[var(--ink-400)] text-xs mt-1">
                 {isRevoked
                   ? `撤销时间：${cert.revokedAt ? new Date(cert.revokedAt).toLocaleDateString('zh-CN') : '—'}`
                   : '未找到匹配的证书，请确认编号和防伪码输入正确'}
               </p>
               {isRevoked && cert.revokeReason && (
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>原因：{cert.revokeReason}</p>
+                <p className="text-[var(--ink-400)] text-xs mt-1">原因：{cert.revokeReason}</p>
               )}
             </div>
           )}
@@ -164,7 +164,7 @@ export default function VerifyCertificatePage() {
           {/* Footer */}
           <div className="text-center pt-6 pb-12">
             <a href="/" className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'none' }}>← 返回首页</a>
-            <div className="mt-3 text-xs" style={{ color: 'var(--ink-300)' }}>© {new Date().getFullYear()} FoxLearn · 狐学</div>
+            <div className="text-[var(--ink-300)] mt-3 text-xs">© {new Date().getFullYear()} FoxLearn · 狐学</div>
           </div>
         </div>
       </main>

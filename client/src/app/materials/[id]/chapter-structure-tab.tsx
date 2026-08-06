@@ -140,7 +140,7 @@ export default function ChapterStructureTab({
 
   if (chapters.length === 0) {
     return (
-      <div className="card p-10 text-center" style={{ color: 'var(--ink-300)' }}>
+      <div className="text-[var(--ink-300)] card p-10 text-center">
         📭 暂无章节，请先上传教材或录入正文
       </div>
     );
@@ -167,7 +167,7 @@ export default function ChapterStructureTab({
               )}
 
               {/* 序号 */}
-              <span className="font-mono text-xs flex-shrink-0" style={{ color: 'var(--ink-300)' }}>{idx + 1}.</span>
+              <span className="text-[var(--ink-300)] font-mono text-xs flex-shrink-0">{idx + 1}.</span>
 
               {/* 标题（编辑模式/显示模式） */}
               {editingTitle === ch.id ? (
@@ -182,13 +182,13 @@ export default function ChapterStructureTab({
                   <button onClick={() => setEditingTitle(null)} className="btn btn-ghost btn-xs">取消</button>
                 </div>
               ) : (
-                <span className="text-sm font-medium flex-1 min-w-0 truncate" style={{ color: 'var(--ink-700)' }}>
+                <span className="text-[var(--ink-700)] text-sm font-medium flex-1 min-w-0 truncate">
                   {ch.contentLength > 0 ? '📄' : '📄'} {ch.title}
                 </span>
               )}
 
               {/* 字数 */}
-              <span className="text-xs flex-shrink-0" style={{ color: 'var(--ink-300)' }}>
+              <span className="text-[var(--ink-300)] text-xs flex-shrink-0">
                 {ch.contentLength > 0 ? `${(ch.contentLength / 1000).toFixed(1)}k 字` : '—'}
               </span>
 
@@ -220,9 +220,9 @@ export default function ChapterStructureTab({
 
             {/* 展开的正文 */}
             {expandedContent[ch.id] && (
-              <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+              <div className="border-[var(--ink-100)] mt-3 pt-3 border-t">
                 {expandedContent[ch.id].loading ? (
-                  <p className="text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+                  <p className="text-[var(--ink-300)] text-xs">加载中…</p>
                 ) : (
                   <div>
                     <pre className="text-xs leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto p-3 rounded"
@@ -232,7 +232,7 @@ export default function ChapterStructureTab({
                     {/* 分割操作 */}
                     {!isLocked && splitChapterId === ch.id ? (
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs" style={{ color: 'var(--ink-400)' }}>在此位置分割：</span>
+                        <span className="text-[var(--ink-400)] text-xs">在此位置分割：</span>
                         <input type="number" value={splitPosition}
                           onChange={e => setSplitPosition(Math.min(Number(e.target.value), (ch.content || '').length))}
                           className="input text-xs" style={{ width: '100px' }}
@@ -266,7 +266,7 @@ export default function ChapterStructureTab({
               🔗 合并选中章节 ({selectedIds.size})
             </button>
 
-            <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
+            <span className="text-[var(--ink-300)] text-xs">
               勾选≥2个相邻章节可合并
             </span>
           </div>
@@ -275,8 +275,8 @@ export default function ChapterStructureTab({
 
       {/* 确认结构化 */}
       {!isLocked && (
-        <div className="text-center py-4 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-          <p className="text-xs mb-3" style={{ color: 'var(--ink-400)' }}>
+        <div className="border-[var(--ink-100)] text-center py-4 border-t">
+          <p className="text-[var(--ink-400)] text-xs mb-3">
             确认章节结构后，章节将锁定不可编辑，并进入「出题配置」阶段
           </p>
           <button onClick={handleConfirm} disabled={confirming}

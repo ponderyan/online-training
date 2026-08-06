@@ -130,7 +130,7 @@ function QuestionDetailModal({
 
         {error && (
           <div className="p-8 text-center">
-            <p className="text-sm" style={{ color: 'var(--error)' }}>加载失败</p>
+            <p className="text-[var(--error)] text-sm">加载失败</p>
             <p className="text-xs mt-2" style={{ color: INK_400 }}>{error}</p>
             <button onClick={onClose} className="btn btn-outline btn-xs mt-3">关闭</button>
           </div>
@@ -147,7 +147,7 @@ function QuestionDetailModal({
 
             {/* 样本量过小提示 */}
             {sampleTooSmall && (
-              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
                 ℹ️ 样本量过小（{detail.sampleCount} 人），数据仅供参考
               </div>
             )}
@@ -173,7 +173,7 @@ function QuestionDetailModal({
                       {o.label}
                     </span>
                     <span style={{ color: o.isCorrect ? 'var(--sage)' : INK_600 }}>{o.text || '—'}</span>
-                    {o.isCorrect && <span className="text-xs" style={{ color: 'var(--sage)' }}>✓ 正确答案</span>}
+                    {o.isCorrect && <span className="text-[var(--sage)] text-xs">✓ 正确答案</span>}
                   </div>
                 ))}
               </div>
@@ -181,11 +181,11 @@ function QuestionDetailModal({
 
             {/* 基础指标行 */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-2.5 rounded-lg text-center" style={{ background: 'var(--paper-dark)' }}>
+              <div className="bg-[var(--paper-dark)] p-2.5 rounded-lg text-center">
                 <div className="text-lg font-bold" style={{ color: scoreColor(detail.correctRate) }}>{detail.correctRate}%</div>
                 <div className="text-xs mt-0.5" style={{ color: INK_400 }}>正确率 · {difficultyHint}</div>
               </div>
-              <div className="p-2.5 rounded-lg text-center" style={{ background: 'var(--paper-dark)' }}>
+              <div className="bg-[var(--paper-dark)] p-2.5 rounded-lg text-center">
                 <div className="text-lg font-bold" style={{ color: discLevel(detail.discrimination).color }}>
                   {detail.discrimination !== null ? detail.discrimination.toFixed(2) : '—'}
                 </div>
@@ -194,7 +194,7 @@ function QuestionDetailModal({
                   <span className="ml-1">· {discLevel(detail.discrimination).suggest}</span>
                 </div>
               </div>
-              <div className="p-2.5 rounded-lg text-center" style={{ background: 'var(--paper-dark)' }}>
+              <div className="bg-[var(--paper-dark)] p-2.5 rounded-lg text-center">
                 <div className="text-lg font-bold" style={{ color: INK_600 }}>{detail.sampleCount}</div>
                 <div className="text-xs mt-0.5" style={{ color: INK_400 }}>答题人数</div>
               </div>
@@ -238,7 +238,7 @@ function QuestionDetailModal({
                       <span className="text-xs" style={{ color: INK_400 }}>{tier.label}</span>
                       <span className="text-xs font-medium" style={{ color: tier.color }}>{tier.data.rate}%</span>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--ink-100)' }}>
+                    <div className="bg-[var(--ink-100)] h-2 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{
                         width: `${Math.max(tier.data.rate, 2)}%`,
                         background: tier.color,
@@ -338,7 +338,7 @@ export default function ExamQualityReportPage() {
     return (
       <AppLayout>
         <div className="card p-8 text-center max-w-md mx-auto mt-16" style={CARD_STYLE}>
-          <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
+          <div className="text-[var(--error)] text-sm">加载失败</div>
           <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
           <button onClick={load} className="btn btn-fox btn-xs mt-3">重试</button>
           <button onClick={() => router.back()} className="btn btn-outline btn-xs mt-3 ml-2">返回</button>
@@ -363,12 +363,12 @@ export default function ExamQualityReportPage() {
 
       {/* 边界状态提示 */}
       {smallSample && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
           ℹ️ 样本量过小（{overview.totalExaminees} 人），数据仅供参考
         </div>
       )}
       {allFullMarks && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid var(--gold)44' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
           ℹ️ 所有学员成绩完全相同，成绩无区分度
         </div>
       )}

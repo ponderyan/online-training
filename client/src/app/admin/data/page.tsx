@@ -66,11 +66,11 @@ export default function DataArchivePage() {
 
       {activeExportTab === 'export' && (
         <div className="card p-6 max-w-lg">
-          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-700)' }}>📤 导出数据</h3>
+          <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-3">📤 导出数据</h3>
           <div className="space-y-2">
             {EXPORT_MODULES.map(m => (
-              <div key={m.value} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--paper-dark)' }}>
-                <span className="text-sm" style={{ color: 'var(--ink-600)' }}>{m.label}</span>
+              <div key={m.value} className="bg-[var(--paper-dark)] flex items-center justify-between p-3 rounded-lg">
+                <span className="text-[var(--ink-600)] text-sm">{m.label}</span>
                 <button onClick={() => handleExport(m.value)} disabled={exporting} className="btn btn-fox btn-xs">
                   {exporting ? '导出中…' : '导出 Excel'}
                 </button>
@@ -82,9 +82,9 @@ export default function DataArchivePage() {
 
       {activeExportTab === 'logs' && (
         <div className="card p-5">
-          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--ink-700)' }}>导出日志</h3>
+          <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-3">导出日志</h3>
           {exportLogs.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无导出记录</p>
+            <p className="text-[var(--ink-300)] text-xs">暂无导出记录</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="list-table">

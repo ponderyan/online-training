@@ -175,14 +175,14 @@ export default function AdminMessagesPage() {
         <div className="card overflow-hidden">
           <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
             <span>收件箱</span>
-            <button onClick={loadInbox} className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>刷新</button>
+            <button onClick={loadInbox} className="text-[var(--fox)] text-[10px] bg-transparent border-none cursor-pointer">刷新</button>
           </div>
           {loadingInbox ? (
-            <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+            <div className="text-[var(--ink-300)] p-8 text-center text-xs">加载中…</div>
           ) : notifications.length === 0 ? (
-            <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>📨 暂无通知</div>
+            <div className="text-[var(--ink-300)] p-8 text-center text-xs">📨 暂无通知</div>
           ) : (
-            <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+            <div className="border-[var(--ink-100)] divide-y">
               {notifications.map((n: any) => (
                 <div key={n.id} className="px-4 py-3" style={{ background: n.isRead ? 'transparent' : 'var(--fox-glow)' }}>
                   <div className="flex items-center justify-between mb-1">
@@ -190,12 +190,12 @@ export default function AdminMessagesPage() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
                         {MSG_TYPE_LABELS[n.type] || n.type}
                       </span>
-                      {!n.isRead && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--fox)' }} />}
+                      {!n.isRead && <span className="bg-[var(--fox)] w-1.5 h-1.5 rounded-full" />}
                     </div>
-                    <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{new Date(n.createdAt).toLocaleString('zh-CN')}</span>
+                    <span className="text-[var(--ink-300)] text-[10px]">{new Date(n.createdAt).toLocaleString('zh-CN')}</span>
                   </div>
-                  <div className="text-sm font-medium mb-0.5" style={{ color: 'var(--ink-700)' }}>{n.title}</div>
-                  <div className="text-xs" style={{ color: 'var(--ink-500)' }}>{n.message}</div>
+                  <div className="text-[var(--ink-700)] text-sm font-medium mb-0.5">{n.title}</div>
+                  <div className="text-[var(--ink-500)] text-xs">{n.message}</div>
                 </div>
               ))}
             </div>
@@ -207,7 +207,7 @@ export default function AdminMessagesPage() {
       {view === 'compose' && (
         <div className="grid grid-cols-2 gap-6">
           <div className="card p-5">
-            <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ink-700)' }}>🎯 选择收件人</h3>
+            <h3 className="text-[var(--ink-700)] text-sm font-bold mb-4">🎯 选择收件人</h3>
             <div className="flex gap-2 mb-3">
               <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="input select text-xs" style={{ width: 130 }}>
                 {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
@@ -215,8 +215,8 @@ export default function AdminMessagesPage() {
               <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="搜索…" className="input text-xs flex-1" />
             </div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>{loading ? '加载中…' : `共 ${candidates.length} 人`}</span>
-              <button onClick={selectAll} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+              <span className="text-[var(--ink-300)] text-xs">{loading ? '加载中…' : `共 ${candidates.length} 人`}</span>
+              <button onClick={selectAll} className="text-[var(--fox)] text-xs bg-transparent border-none cursor-pointer">
                 {selectedIds.length === candidates.length ? '取消全选' : '全选'}
               </button>
             </div>
@@ -228,23 +228,23 @@ export default function AdminMessagesPage() {
                   <span className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>{u.displayName?.[0] || '?'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{u.displayName}</div>
-                    <div style={{ color: 'var(--ink-300)' }}>{u.phone || '—'}</div>
+                    <div className="text-[var(--ink-300)]">{u.phone || '—'}</div>
                   </div>
                 </label>
               ))}
-              {candidates.length === 0 && !loading && <p className="text-xs text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无用户</p>}
+              {candidates.length === 0 && !loading && <p className="text-[var(--ink-300)] text-xs text-center py-8">暂无用户</p>}
             </div>
             {selectedIds.length > 0 && (
-              <div className="mt-3 p-3 rounded-lg text-xs" style={{ background: 'var(--fox-glow)' }}>
-                已选 <strong style={{ color: 'var(--fox)' }}>{selectedIds.length}</strong> 人
+              <div className="bg-[var(--fox-glow)] mt-3 p-3 rounded-lg text-xs">
+                已选 <strong className="text-[var(--fox)]">{selectedIds.length}</strong> 人
               </div>
             )}
           </div>
 
           <div className="card p-5">
-            <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ink-700)' }}>✏️ 编写消息</h3>
+            <h3 className="text-[var(--ink-700)] text-sm font-bold mb-4">✏️ 编写消息</h3>
             <div className="mb-3">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>消息类型</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">消息类型</label>
               <select value={msgType} onChange={e => setMsgType(e.target.value)} className="input select">
                 {Object.entries(MSG_TYPE_LABELS).filter(([k]) => !['EXAM_PUBLISHED','EXAM_GRADED','CERT_ISSUED','LEARNING_HOUR_APPROVED','LEARNING_HOUR_REJECTED'].includes(k)).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -252,15 +252,15 @@ export default function AdminMessagesPage() {
               </select>
             </div>
             <div className="mb-3">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>标题</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">标题</label>
               <input value={title} onChange={e => setTitle(e.target.value)} className="input" placeholder="消息标题" />
             </div>
             <div className="mb-3">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>内容</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">内容</label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} className="input textarea" rows={6} placeholder="消息正文…" />
             </div>
             <div className="mb-4">
-              <label className="block text-xs font-medium mb-2" style={{ color: 'var(--ink-500)' }}>发送渠道</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-2">发送渠道</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                   <input type="checkbox" checked={sendChannels.inApp} onChange={e => setSendChannels(p => ({ ...p, inApp: e.target.checked }))} className="accent-[var(--fox)]" /> 📨 站内信
@@ -273,9 +273,9 @@ export default function AdminMessagesPage() {
                 </label>
               </div>
             </div>
-            <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-              <span className="text-xs" style={{ color: 'var(--ink-300)' }}>
-                将发送给 <strong style={{ color: 'var(--fox)' }}>{selectedIds.length}</strong> 位用户
+            <div className="border-[var(--ink-100)] flex items-center justify-between pt-3 border-t">
+              <span className="text-[var(--ink-300)] text-xs">
+                将发送给 <strong className="text-[var(--fox)]">{selectedIds.length}</strong> 位用户
               </span>
               <button onClick={handleSend} disabled={sending || selectedIds.length === 0 || (!sendChannels.inApp && !sendChannels.email && !sendChannels.sms)}
                 className="btn btn-fox btn-sm">{sending ? '发送中…' : '📤 发送'}</button>
@@ -289,14 +289,14 @@ export default function AdminMessagesPage() {
         <div className="card overflow-hidden">
           <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
             <span>发送记录</span>
-            <button onClick={loadSentHistory} className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>刷新</button>
+            <button onClick={loadSentHistory} className="text-[var(--fox)] text-[10px] bg-transparent border-none cursor-pointer">刷新</button>
           </div>
           {loadingHistory ? (
-            <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+            <div className="text-[var(--ink-300)] p-8 text-center text-xs">加载中…</div>
           ) : sentHistory.length === 0 ? (
-            <div className="p-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>📋 暂无发送记录</div>
+            <div className="text-[var(--ink-300)] p-8 text-center text-xs">📋 暂无发送记录</div>
           ) : (
-            <div className="divide-y" style={{ borderColor: 'var(--ink-100)' }}>
+            <div className="border-[var(--ink-100)] divide-y">
               {sentHistory.map((batch: any) => {
                 const key = batch.batchId || `single-${batch.notifications?.[0]?.id}`;
                 const ch = batch.channels || {};
@@ -322,13 +322,13 @@ export default function AdminMessagesPage() {
                         <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
                           {MSG_TYPE_LABELS[batch.type] || batch.type}
                         </span>
-                        <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{new Date(batch.createdAt).toLocaleString('zh-CN')}</span>
+                        <span className="text-[var(--ink-300)] text-[10px]">{new Date(batch.createdAt).toLocaleString('zh-CN')}</span>
                       </div>
-                      <div className="text-sm font-medium mb-0.5" style={{ color: 'var(--ink-700)' }}>{batch.title}</div>
-                      <div className="flex items-center gap-3 text-xs flex-wrap" style={{ color: 'var(--ink-400)' }}>
-                        <span>收件人 <strong style={{ color: 'var(--fox)' }}>{batch.recipientCount}</strong> 人</span>
+                      <div className="text-[var(--ink-700)] text-sm font-medium mb-0.5">{batch.title}</div>
+                      <div className="text-[var(--ink-400)] flex items-center gap-3 text-xs flex-wrap">
+                        <span>收件人 <strong className="text-[var(--fox)]">{batch.recipientCount}</strong> 人</span>
                         {recipientNames.length > 0 && (
-                          <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                          <span className="text-[var(--ink-300)] text-[10px]">
                             {recipientNames.join('、')}{moreCount > 0 ? ` 等 ${batch.recipientCount} 人` : ''}
                           </span>
                         )}
@@ -342,8 +342,8 @@ export default function AdminMessagesPage() {
                       </div>
                     </div>
                     {expandedId === key && (
-                      <div className="px-4 pb-3 pt-0 text-xs space-y-1" style={{ color: 'var(--ink-400)' }}>
-                        <div className="pl-4 pb-1 text-[10px]" style={{ color: 'var(--ink-300)' }}>消息内容：{batch.message?.substring(0, 100)}</div>
+                      <div className="text-[var(--ink-400)] px-4 pb-3 pt-0 text-xs space-y-1">
+                        <div className="text-[var(--ink-300)] pl-4 pb-1 text-[10px]">消息内容：{batch.message?.substring(0, 100)}</div>
                         {(batch.notifications || []).map((n: any) => {
                           const nMap: Record<string, any> = {};
                           (n.channels || []).forEach((c: any) => { nMap[c.channel] = c; });

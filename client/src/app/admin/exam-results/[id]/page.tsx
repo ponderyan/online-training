@@ -32,15 +32,15 @@ export default function AdminExamResultsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : !data ? (
-        <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>考试不存在</p></div>
+        <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">考试不存在</p></div>
       ) : (
         <>
           {/* Exam info */}
-          <div className="card p-4 mb-6 text-sm" style={{ background: 'var(--paper)' }}>
+          <div className="bg-[var(--paper)] card p-4 mb-6 text-sm">
             <p><strong>{data.examTitle}</strong> {data.paperName ? `· ${data.paperName}` : ''}</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>共 {data.students?.length || 0} 名考生</p>
+            <p className="text-[var(--ink-300)] text-xs mt-1">共 {data.students?.length || 0} 名考生</p>
           </div>
 
           {/* Publish button */}
@@ -69,7 +69,7 @@ export default function AdminExamResultsPage() {
                   <tr key={s.studentId}>
                     <td className="font-medium">{s.studentName}</td>
                     <td>{s.finalScore != null ? `${s.finalScore}分` : '—'}</td>
-                    <td>{s.isPassed ? <span style={{ color: 'var(--sage)' }}>✅ 通过</span> : <span style={{ color: 'var(--error)' }}>❌ 未通过</span>}</td>
+                    <td>{s.isPassed ? <span className="text-[var(--sage)]">✅ 通过</span> : <span className="text-[var(--error)]">❌ 未通过</span>}</td>
                     <td><span className="text-xs px-2 py-0.5 rounded" style={{ background: s.scoringStatus === 'PUBLISHED' ? 'var(--sage-glow)' : 'var(--fox-glow)', color: s.scoringStatus === 'PUBLISHED' ? 'var(--sage)' : 'var(--ink-300)' }}>{s.scoringStatus}</span></td>
                     <td>{s.appealStatus ? <span style={{ color: s.appealStatus === 'PENDING' ? 'var(--fox-dark)' : 'var(--sage)' }}>{s.appealStatus === 'PENDING' ? '🔴 待处理' : '✅ 已处理'}</span> : '—'}</td>
                     <td><button onClick={() => router.push(`/admin/exam-results/${examId}/student/${s.studentId}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button></td>

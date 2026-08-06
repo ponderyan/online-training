@@ -58,11 +58,11 @@ export default function ExamResultsPage() {
               {exams.map((e: any) => (
                 <tr key={e.id}>
                   <td className="font-medium">{e.title}{e.examMode === 'OFFLINE' && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--warning-pale)', color: 'var(--warning)' }}>线下</span>}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.paperName || '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{e.paperName || '—'}</td>
                   <td>{e.totalScore ?? '—'}</td>
                   <td><strong style={{ color: e.isPassed ? 'var(--sage)' : 'var(--error)' }}>{e.myFinalScore ?? e.myScore ?? '—'}</strong></td>
-                  <td>{e.absent ? <span style={{ color: 'var(--warning)' }}>缺考</span> : e.isPassed ? <span style={{ color: 'var(--sage)' }}>✅ 通过</span> : <span style={{ color: 'var(--error)' }}>❌ 未通过</span>}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{e.submittedAt ? new Date(e.submittedAt).toLocaleString('zh-CN') : '—'}</td>
+                  <td>{e.absent ? <span className="text-[var(--warning)]">缺考</span> : e.isPassed ? <span className="text-[var(--sage)]">✅ 通过</span> : <span className="text-[var(--error)]">❌ 未通过</span>}</td>
+                  <td className="text-[var(--ink-300)] text-xs">{e.submittedAt ? new Date(e.submittedAt).toLocaleString('zh-CN') : '—'}</td>
                   <td>
                     {e.examMode !== 'OFFLINE' ? (
                       <button onClick={() => router.push(`/exam/result/${e.id}`)}
@@ -70,7 +70,7 @@ export default function ExamResultsPage() {
                         查看详情
                       </button>
                     ) : (
-                      <span className="text-xs" style={{ color: 'var(--ink-300)' }}>线下笔试</span>
+                      <span className="text-[var(--ink-300)] text-xs">线下笔试</span>
                     )}
                   </td>
                 </tr>

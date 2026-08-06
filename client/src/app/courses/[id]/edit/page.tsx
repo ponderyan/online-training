@@ -48,7 +48,7 @@ export default function EditCoursePage() {
     setSaving(false);
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -59,40 +59,40 @@ export default function EditCoursePage() {
       <div className="card p-6 max-w-2xl">
         <div className="space-y-4">
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课程名称 *</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">课程名称 *</label>
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input w-full" />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课程类型</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">课程类型</label>
             {form.type === 'CUSTOM' ? (
-              <div className="text-sm py-1.5" style={{ color: 'var(--ink-400)' }}>
+              <div className="text-[var(--ink-400)] text-sm py-1.5">
                 定制课（基于：{form.parentCourseName || '未知'}）
                 <span className="ml-2 text-xs">（类型不可修改）</span>
               </div>
             ) : (
-              <div className="text-sm py-1.5" style={{ color: 'var(--ink-400)' }}>标准课</div>
+              <div className="text-[var(--ink-400)] text-sm py-1.5">标准课</div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课程编号</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">课程编号</label>
               <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} className="input w-full" />
             </div>
             <div>
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>学时</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">学时</label>
               <input value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })} className="input w-full" type="number" step="0.5" />
             </div>
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课程简介</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">课程简介</label>
             <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="input w-full" rows={3} />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>教学大纲</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">教学大纲</label>
             <textarea value={form.syllabus} onChange={e => setForm({ ...form, syllabus: e.target.value })} className="input w-full" rows={4} />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>备注</label>
+            <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
             <textarea value={form.remark} onChange={e => setForm({ ...form, remark: e.target.value })} className="input w-full" rows={2} />
           </div>
           <div className="flex gap-3 pt-4">

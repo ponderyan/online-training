@@ -272,7 +272,7 @@ export default function AgencyRadarPage() {
 
       {error && (
         <div className="card p-8 text-center max-w-md mx-auto" style={CARD_STYLE}>
-          <div className="text-sm" style={{ color: 'var(--error)' }}>加载失败</div>
+          <div className="text-[var(--error)] text-sm">加载失败</div>
           <div className="text-xs mt-2" style={{ color: INK_400 }}>{error}</div>
           <button onClick={loadData} className="btn btn-fox btn-xs mt-3">重试</button>
         </div>
@@ -354,7 +354,7 @@ export default function AgencyRadarPage() {
                               return a.val - b.val;
                             })
                             .map(({ dim, val, detail }) => (
-                              <tr key={dim.key} className="border-t" style={{ borderColor: 'var(--ink-100)' }}>
+                              <tr key={dim.key} className="border-[var(--ink-100)] border-t">
                                 <td className="px-3 py-2">
                                   <div className="flex items-center gap-2">
                                     <span style={{ width: 10, height: 10, borderRadius: '50%', display: 'inline-block', background: scoreColor(val) }} />

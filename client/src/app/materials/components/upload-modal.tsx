@@ -52,31 +52,30 @@ export default function UploadModal({ subjects, onClose }: { subjects: any[]; on
         <div className="modal-header">
           <h3 className="font-serif font-bold text-base">📖 上传教材</h3>
           <button onClick={onClose} disabled={uploading}
-            className="text-lg bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-300)' }}>✕</button>
+            className="text-[var(--ink-300)] text-lg bg-transparent border-none cursor-pointer">✕</button>
         </div>
         <div className="modal-body space-y-4">
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>所属科目</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">所属科目</label>
             <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="input select">
               {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材名称</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">教材名称</label>
             <input value={materialName} onChange={e => setMaterialName(e.target.value)}
               placeholder="如：DTIV上册" className="input" />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-              出题要求 <span style={{ color: 'var(--verm)' }}>*必填</span>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+              出题要求 <span className="text-[var(--verm)]">*必填</span>
             </label>
             <textarea value={batchNote} onChange={e => setBatchNote(e.target.value)}
               placeholder={'补充特殊要求（可选），如：侧重第三章、减少概念定义题、60%书上原话…'}
               className="input textarea" rows={5} />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>教材文件（PDF / PPTX / DOCX）</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">教材文件（PDF / PPTX / DOCX）</label>
             <div className="border-2 border-dashed rounded-lg p-8 text-center transition-all"
               style={{ borderColor: file ? 'var(--fox)' : 'var(--ink-100)', background: file ? 'var(--fox-pale)' : 'var(--paper)' }}
               onDragOver={e => e.preventDefault()}
@@ -88,14 +87,14 @@ export default function UploadModal({ subjects, onClose }: { subjects: any[]; on
               {file ? (
                 <div>
                   <div className="text-2xl mb-2">📄</div>
-                  <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>{file.name}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</p>
+                  <p className="text-[var(--ink-700)] text-sm font-medium">{file.name}</p>
+                  <p className="text-[var(--ink-400)] text-xs mt-1">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
                   <button onClick={() => setFile(null)} className="btn btn-ghost btn-xs mt-2">重新选择</button>
                 </div>
               ) : (
                 <label className="cursor-pointer block">
                   <div className="text-3xl mb-2">📂</div>
-                  <p className="text-sm" style={{ color: 'var(--ink-500)' }}>拖拽或点击上传</p>
+                  <p className="text-[var(--ink-500)] text-sm">拖拽或点击上传</p>
                   <input type="file" accept=".pdf,.pptx,.docx" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                 </label>

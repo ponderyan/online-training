@@ -67,20 +67,20 @@ export default function AdminLearningHoursPage() {
       {/* 汇总卡片 */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--fox)' }}>{total}</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总记录数</div>
+          <div className="text-[var(--fox)] text-xl font-bold">{total}</div>
+          <div className="text-[var(--ink-400)] text-xs mt-1">总记录数</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--sage)' }}>{Math.round(summary.approved * 100) / 100}h</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已通过学时</div>
+          <div className="text-[var(--sage)] text-xl font-bold">{Math.round(summary.approved * 100) / 100}h</div>
+          <div className="text-[var(--ink-400)] text-xs mt-1">已通过学时</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--fox)' }}>{Math.round(summary.pending * 100) / 100}h</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>待审核学时</div>
+          <div className="text-[var(--fox)] text-xl font-bold">{Math.round(summary.pending * 100) / 100}h</div>
+          <div className="text-[var(--ink-400)] text-xs mt-1">待审核学时</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--error)' }}>{Math.round(summary.rejected * 100) / 100}h</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>已驳回学时</div>
+          <div className="text-[var(--error)] text-xl font-bold">{Math.round(summary.rejected * 100) / 100}h</div>
+          <div className="text-[var(--ink-400)] text-xs mt-1">已驳回学时</div>
         </div>
       </div>
 
@@ -104,14 +104,14 @@ export default function AdminLearningHoursPage() {
           <option value="VIDEO">📺 视频</option>
           <option value="OFFLINE">✏️ 申报</option>
         </select>
-        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {total} 条</span>
+        <span className="text-[var(--ink-300)] text-xs">共 {total} 条</span>
       </div>
 
       {/* 记录表格 */}
       {loading ? (
-        <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>加载中…</p></div>
+        <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">加载中…</p></div>
       ) : records.length === 0 ? (
-        <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>暂无学时记录</p></div>
+        <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">暂无学时记录</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
@@ -127,22 +127,22 @@ export default function AdminLearningHoursPage() {
                   <tr key={r.id}>
                     <td>
                       <div className="text-sm font-medium">{r.student?.displayName || '—'}</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-300)' }}>{r.student?.studentNumber || ''}</div>
+                      <div className="text-[var(--ink-300)] text-xs">{r.student?.studentNumber || ''}</div>
                     </td>
                     <td className="text-xs">{r.program?.name || '—'}</td>
                     <td>
                       <span className="tag" style={{ background: src.bg, color: src.color, fontSize: '10px' }}>{src.label}</span>
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{r.type?.name || '—'}</td>
+                    <td className="text-[var(--ink-400)] text-xs">{r.type?.name || '—'}</td>
                     <td className="text-sm font-medium">{r.hours}h</td>
                     <td>
                       <span className="tag" style={{ background: st.bg, color: st.color, fontSize: '10px' }}>{st.label}</span>
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                    <td className="text-[var(--ink-400)] text-xs">
                       {r.reviewComment ? <span title={r.reviewComment}>💬 {r.reviewComment.length > 12 ? r.reviewComment.slice(0, 12) + '…' : r.reviewComment}</span> : '—'}
                       {r.approvedAt && <div style={{ color: 'var(--ink-300)', fontSize: '10px' }}>{new Date(r.approvedAt).toLocaleDateString('zh-CN')}</div>}
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(r.recordedAt).toLocaleString('zh-CN')}</td>
+                    <td className="text-[var(--ink-300)] text-xs">{new Date(r.recordedAt).toLocaleString('zh-CN')}</td>
                   </tr>
                 );
               })}

@@ -268,7 +268,7 @@ export default function ProgramDetailPage() {
 
   // handleScheduleDelete 已由 ReasonConfirmModal + handleScheduleDeleteWithReason 替代
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
   if (!program) return null;
 
   return (
@@ -278,9 +278,9 @@ export default function ProgramDetailPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{program.code}</span>
+            <span className="text-[var(--ink-300)] text-xs font-mono">{program.code}</span>
             <span className="tag" style={{
-              background: `${STATUS_COLORS[program.status] || 'var(--neutral-400)'}18`,
+              background: `color-mix(in srgb, ${STATUS_COLORS[program.status] || 'var(--neutral-400)'} 10%, transparent)`,
               color: STATUS_COLORS[program.status] || 'var(--neutral-400)',
               padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
             }}>{STATUS_NAMES[program.status] || program.status}</span>
@@ -303,12 +303,12 @@ export default function ProgramDetailPage() {
 
       <div className="card p-5 mb-6">
         <div className="grid grid-cols-3 gap-4 text-sm">
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>课程全称</span><p>{program.courseName}</p></div>
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>时间</span><p>{program.startDate?.slice(0,10)} ~ {program.endDate?.slice(0,10)}</p></div>
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>报名</span><p>{program.enrollStart?.slice(0,10)} ~ {program.enrollEnd?.slice(0,10)}</p></div>
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>费用</span><p>培训 ¥{program.tuitionFee || 0} / 考试 ¥{program.examFee || 0} / 证书 ¥{program.certFee || 0}</p></div>
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>人数</span><p>{program.enrolledCount || 0}{program.maxStudents ? ` / ${program.maxStudents}` : ''}</p></div>
-          <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>班主任</span><p>{program.headTeacher || '—'}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">课程全称</span><p>{program.courseName}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">时间</span><p>{program.startDate?.slice(0,10)} ~ {program.endDate?.slice(0,10)}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">报名</span><p>{program.enrollStart?.slice(0,10)} ~ {program.enrollEnd?.slice(0,10)}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">费用</span><p>培训 ¥{program.tuitionFee || 0} / 考试 ¥{program.examFee || 0} / 证书 ¥{program.certFee || 0}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">人数</span><p>{program.enrolledCount || 0}{program.maxStudents ? ` / ${program.maxStudents}` : ''}</p></div>
+          <div><span className="text-[var(--ink-400)] text-xs">班主任</span><p>{program.headTeacher || '—'}</p></div>
         </div>
       </div>
 
@@ -325,7 +325,7 @@ export default function ProgramDetailPage() {
       {activeTab === 'students' && (
         <div className="card p-0 overflow-hidden">
           {(!program.enrollments || program.enrollments.length === 0) ? (
-            <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无学员报名</div>
+            <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无学员报名</div>
           ) : (
             <div className="overflow-x-auto">
               <div className="overflow-x-auto">
@@ -346,14 +346,14 @@ export default function ProgramDetailPage() {
                   const enrollStatusNames: Record<string, string> = { ENROLLED: '已报名', COMPLETED: '已完成', CANCELLED: '已取消', DROPPED: '已退学' };
                   return (
                     <tr key={e.id}>
-                      <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{i + 1}</td>
+                      <td className="text-[var(--ink-300)] text-xs font-mono">{i + 1}</td>
                       <td className="font-medium">{e.student?.displayName || '—'}</td>
                       <td>{e.student?.phone || '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.student?.organization || e.agency?.name || '—'}</td>
+                      <td className="text-[var(--ink-400)] text-xs">{e.student?.organization || e.agency?.name || '—'}</td>
                       <td className="text-xs">{e.enrollSource || '系统录入'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{e.createdAt ? new Date(e.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
+                      <td className="text-[var(--ink-300)] text-xs">{e.createdAt ? new Date(e.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
                       <td>{e.feeAmount ? `¥${e.feeAmount.toLocaleString()}` : '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{e.paidAt ? new Date(e.paidAt).toLocaleDateString('zh-CN') : '—'}</td>
+                      <td className="text-[var(--ink-300)] text-xs">{e.paidAt ? new Date(e.paidAt).toLocaleDateString('zh-CN') : '—'}</td>
                       <td>
                         <span className="text-xs font-medium px-2 py-0.5 rounded" style={{
                           background: e.feeStatus === 'PAID' ? 'var(--cyan-glow)' : e.feeStatus === 'REFUNDED' ? 'var(--verm-glow)' : 'var(--fox-glow)',
@@ -373,7 +373,7 @@ export default function ProgramDetailPage() {
       )}
 
       {activeTab === 'exams' && (
-        <div className="card p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>
+        <div className="text-[var(--ink-300)] card p-10 text-center text-xs">
           暂无关联考试。可在创建考试时选择此培训班。
         </div>
       )}
@@ -389,7 +389,7 @@ export default function ProgramDetailPage() {
           </div>
           <div className="card p-0 overflow-hidden">
             {schedules.length === 0 ? (
-              <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无排课记录</div>
+              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无排课记录</div>
             ) : (
               <div className="overflow-x-auto">
               <table className="list-table">
@@ -439,7 +439,7 @@ export default function ProgramDetailPage() {
               ].map((s, i) => (
                 <div key={i} className="card p-4 text-center">
                   <div className="text-sm font-bold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+                  <div className="text-[var(--ink-400)] text-xs mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -452,14 +452,14 @@ export default function ProgramDetailPage() {
                 {evals.map((e: any) => (
                   <tr key={e.id}>
                     <td>{e.isAnonymous ? '匿名' : e.student?.displayName || '—'}</td>
-                    <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
+                    <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
                     <td className="text-center">{'★'.repeat(e.contentRating)}</td>
                     <td className="text-center">{'★'.repeat(e.instructorRating)}</td>
                     <td className="text-center"><strong style={{ color: e.overallRating >= 4 ? 'var(--sage)' : e.overallRating >= 3 ? 'var(--gold)' : 'var(--verm)' }}>{'★'.repeat(e.overallRating)}</strong></td>
-                    <td className="text-xs max-w-[200px] truncate" style={{ color: 'var(--ink-400)' }}>{e.comment || '—'}</td>
+                    <td className="text-[var(--ink-400)] text-xs max-w-[200px] truncate">{e.comment || '—'}</td>
                   </tr>
                 ))}
-                {evals.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无评价</td></tr>}
+                {evals.length === 0 && <tr><td colSpan={6} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无评价</td></tr>}
               </tbody>
             </table>
             </div>
@@ -470,24 +470,24 @@ export default function ProgramDetailPage() {
       {activeTab === 'status' && (
         <div>
           <div className="card p-5 mb-6 text-center">
-            <div className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>当前状态</div>
+            <div className="text-[var(--ink-400)] text-xs mb-2">当前状态</div>
             <div className="text-2xl font-bold mb-1" style={{ color: STATUS_COLORS[program.status] || 'var(--neutral-400)' }}>
               {STATUS_NAMES[program.status] || program.status}
             </div>
           </div>
           <div className="card p-5">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>状态变更记录</h3>
+            <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-4">状态变更记录</h3>
             <div className="relative pl-8">
-              <div className="absolute left-3.5 top-2 bottom-2 w-0.5" style={{ background: 'var(--ink-200)' }} />
+              <div className="bg-[var(--ink-200)] absolute left-3.5 top-2 bottom-2 w-0.5" />
               {logsLoading ? (
-                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+                <div className="text-[var(--ink-300)] py-8 text-center text-xs">加载中…</div>
               ) : statusLogs.length === 0 ? (
-                <div className="py-8 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无状态变更记录</div>
+                <div className="text-[var(--ink-300)] py-8 text-center text-xs">暂无状态变更记录</div>
               ) : statusLogs.map((log: any) => (
                 <div key={log.id} className="relative pb-6">
                   <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
                     style={{ background: 'var(--paper)', borderColor: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)' }} />
-                  <div className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] text-xs">
                     {new Date(log.createdAt).toLocaleString('zh-CN')}
                   </div>
                   <div className="text-sm mt-0.5">
@@ -499,7 +499,7 @@ export default function ProgramDetailPage() {
                       {STATUS_NAMES[log.toStatus] || log.toStatus}
                     </span>
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                  <div className="text-[var(--ink-400)] text-xs mt-0.5">
                     {log.operator?.displayName || '系统'}{log.reason ? ` · ${log.reason}` : ''}
                   </div>
                 </div>
@@ -513,27 +513,27 @@ export default function ProgramDetailPage() {
         <div>
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: 'var(--fox)' }}>{attendanceRecords.length}</div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>学员总数</div>
+              <div className="text-[var(--fox)] text-2xl font-bold">{attendanceRecords.length}</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">学员总数</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: 'var(--info)' }}>
+              <div className="text-[var(--info)] text-2xl font-bold">
                 {attendanceRecords.length > 0
                   ? Math.round(attendanceRecords.reduce((s, r) => s + (r.attendanceRate || 0), 0) / attendanceRecords.length)
                   : 0}%
               </div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>平均出勤率</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">平均出勤率</div>
             </div>
             <div className="card p-4 text-center">
-              <div className="text-2xl font-bold" style={{ color: 'var(--blue)' }}>{attendanceRecords[0]?.totalDays || 0}</div>
-              <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>总排课天数</div>
+              <div className="text-[var(--blue)] text-2xl font-bold">{attendanceRecords[0]?.totalDays || 0}</div>
+              <div className="text-[var(--ink-400)] text-xs mt-1">总排课天数</div>
             </div>
           </div>
           <div className="card p-0 overflow-hidden">
             {attendanceLoading ? (
-              <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              <div className="text-[var(--ink-300)] p-10 text-center text-xs">加载中…</div>
             ) : attendanceRecords.length === 0 ? (
-              <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无出勤记录，请先添加学员和排课</div>
+              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无出勤记录，请先添加学员和排课</div>
             ) : (
               <div className="overflow-x-auto">
               <table className="list-table">
@@ -544,9 +544,9 @@ export default function ProgramDetailPage() {
                     const saving = attendanceSaving === r.id;
                     return (
                       <tr key={r.id}>
-                        <td className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{i + 1}</td>
+                        <td className="text-[var(--ink-300)] text-xs font-mono">{i + 1}</td>
                         <td className="font-medium">{r.student?.displayName || '—'}</td>
-                        <td style={{ color: 'var(--ink-400)' }} className="text-xs">{r.student?.organization || '—'}</td>
+                        <td className="text-[var(--ink-400)] text-xs">{r.student?.organization || '—'}</td>
                         <td>{r.totalDays}</td>
                         <td>
                           {canEdit ? (
@@ -613,9 +613,9 @@ export default function ProgramDetailPage() {
 
           <div className="card p-0 overflow-hidden">
             {evidencesLoading ? (
-              <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              <div className="text-[var(--ink-300)] p-10 text-center text-xs">加载中…</div>
             ) : evidences.length === 0 ? (
-              <div className="p-10 text-center text-xs" style={{ color: 'var(--ink-300)' }}>暂无证据文件</div>
+              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无证据文件</div>
             ) : (
               <div className="overflow-x-auto">
               <table className="list-table">
@@ -625,16 +625,16 @@ export default function ProgramDetailPage() {
                     <tr key={e.id}>
                       <td>
                         <a href={api.trainingPrograms.downloadEvidence(Number(params.id), e.id)}
-                          target="_blank" className="text-sm" style={{ color: 'var(--fox)' }}>{e.fileName}</a>
+                          target="_blank" className="text-[var(--fox)] text-sm">{e.fileName}</a>
                       </td>
                       <td><span className="tag" style={{
                         background: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--cyan-glow)' : 'var(--fox-glow)',
                         color: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--info)' : 'var(--ink-300)',
                         fontSize: '10px',
                       }}>{e.evidenceType === 'ATTENDANCE_SHEET' ? '签到表' : e.evidenceType === 'SCORING' ? '成绩表' : e.evidenceType === 'SCHEDULE' ? '排课表' : '其他'}</span></td>
-                      <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.uploadedBy?.displayName || '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{e.notes || '—'}</td>
+                      <td className="text-[var(--ink-400)] text-xs">{e.uploadedBy?.displayName || '—'}</td>
+                      <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
+                      <td className="text-[var(--ink-400)] text-xs">{e.notes || '—'}</td>
                       <td>
                         <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
                       </td>
@@ -653,11 +653,11 @@ export default function ProgramDetailPage() {
                 <h3 className="font-semibold text-base mb-4">上传证据文件</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>文件</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">文件</label>
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="input w-full" />
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>证据类型</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">证据类型</label>
                     <select value={uploadType} onChange={e => setUploadType(e.target.value)} className="input select w-full">
                       <option value="ATTENDANCE_SHEET">签到表</option>
                       <option value="SCORING">成绩表</option>
@@ -666,7 +666,7 @@ export default function ProgramDetailPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>备注</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
                     <input value={uploadNotes} onChange={e => setUploadNotes(e.target.value)} className="input w-full" placeholder="可选" />
                   </div>
                   <div className="flex gap-3 pt-2">
@@ -702,7 +702,7 @@ export default function ProgramDetailPage() {
       {activeTab === 'filing' && (
         <div>
           <div className="card p-5 mb-6 text-center">
-            <div className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>备案状态</div>
+            <div className="text-[var(--ink-400)] text-xs mb-2">备案状态</div>
             <div className="text-2xl font-bold mb-1" style={{
               color: !filing ? 'var(--ink-300)' : filing.status === 'PENDING' ? 'var(--fox)' : filing.status === 'APPROVED' ? 'var(--sage)' : 'var(--error)',
             }}>
@@ -712,7 +712,7 @@ export default function ProgramDetailPage() {
 
           {!filing && (
             <div className="card p-6 text-center">
-              <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>尚未提交备案</p>
+              <p className="text-[var(--ink-400)] text-sm mb-4">尚未提交备案</p>
               <button onClick={async () => {
                 const evs = await api.trainingPrograms.getEvidences(Number(params.id)).catch(() => []);
                 if (!evs || evs.length === 0) { toast.warning('请先上传签到表扫描件后再提交备案'); return; }
@@ -727,10 +727,10 @@ export default function ProgramDetailPage() {
               <div className="card p-5">
                 <h3 className="text-sm font-semibold mb-3">审核信息</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>机构名称</span><p>{filing.agencyName}</p></div>
-                  <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>联系人</span><p>{filing.agencyContact} ({filing.agencyPhone})</p></div>
-                  <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>提交人</span><p>{filing.submittedBy?.displayName || '—'}</p></div>
-                  <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>提交时间</span><p>{filing.submittedAt ? new Date(filing.submittedAt).toLocaleString('zh-CN') : '—'}</p></div>
+                  <div><span className="text-[var(--ink-400)] text-xs">机构名称</span><p>{filing.agencyName}</p></div>
+                  <div><span className="text-[var(--ink-400)] text-xs">联系人</span><p>{filing.agencyContact} ({filing.agencyPhone})</p></div>
+                  <div><span className="text-[var(--ink-400)] text-xs">提交人</span><p>{filing.submittedBy?.displayName || '—'}</p></div>
+                  <div><span className="text-[var(--ink-400)] text-xs">提交时间</span><p>{filing.submittedAt ? new Date(filing.submittedAt).toLocaleString('zh-CN') : '—'}</p></div>
                 </div>
               </div>
 
@@ -738,19 +738,19 @@ export default function ProgramDetailPage() {
                 <div className="card p-5">
                   <h3 className="text-sm font-semibold mb-3">审核记录</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核人</span><p>{filing.reviewedBy?.displayName || '—'}</p></div>
-                    <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核时间</span><p>{filing.reviewedAt ? new Date(filing.reviewedAt).toLocaleString('zh-CN') : '—'}</p></div>
+                    <div><span className="text-[var(--ink-400)] text-xs">审核人</span><p>{filing.reviewedBy?.displayName || '—'}</p></div>
+                    <div><span className="text-[var(--ink-400)] text-xs">审核时间</span><p>{filing.reviewedAt ? new Date(filing.reviewedAt).toLocaleString('zh-CN') : '—'}</p></div>
                   </div>
                   {filing.reviewComment && (
-                    <div className="mt-2"><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核意见</span><p className="text-sm mt-1">{filing.reviewComment}</p></div>
+                    <div className="mt-2"><span className="text-[var(--ink-400)] text-xs">审核意见</span><p className="text-sm mt-1">{filing.reviewComment}</p></div>
                   )}
                 </div>
               )}
 
               {filing.status === 'APPROVED' && (
-                <div className="card p-5 text-center" style={{ background: 'var(--sage-glow)' }}>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--sage)' }}>✅ 备案已通过</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>培训班状态已自动更新为「报名中」</p>
+                <div className="bg-[var(--sage-glow)] card p-5 text-center">
+                  <p className="text-[var(--sage)] text-sm font-semibold">✅ 备案已通过</p>
+                  <p className="text-[var(--ink-400)] text-xs mt-1">培训班状态已自动更新为「报名中」</p>
                 </div>
               )}
             </div>
@@ -763,15 +763,15 @@ export default function ProgramDetailPage() {
                 <h3 className="font-semibold text-base mb-4">提交备案</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>机构名称 *</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">机构名称 *</label>
                     <input value={filingForm.agencyName} onChange={e => setFilingForm({ ...filingForm, agencyName: e.target.value })} className="input w-full" placeholder="例如：XX培训机构" />
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>联系人 *</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">联系人 *</label>
                     <input value={filingForm.agencyContact} onChange={e => setFilingForm({ ...filingForm, agencyContact: e.target.value })} className="input w-full" placeholder="姓名" />
                   </div>
                   <div>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>联系电话 *</label>
+                    <label className="text-[var(--ink-400)] text-xs mb-1 block">联系电话 *</label>
                     <input value={filingForm.agencyPhone} onChange={e => setFilingForm({ ...filingForm, agencyPhone: e.target.value })} className="input w-full" placeholder="手机号" />
                   </div>
                   <div className="flex gap-3 pt-2">
@@ -804,14 +804,14 @@ export default function ProgramDetailPage() {
             <h3 className="font-semibold text-base mb-4">{editingSchedule ? '编辑排课' : '添加排课'}</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>课程 *</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">课程 *</label>
                 <select value={scheduleForm.courseId} onChange={e => setScheduleForm({ ...scheduleForm, courseId: e.target.value })} className="input select w-full">
                   <option value="">选择课程…</option>
                   {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}{c.code ? ` (${c.code})` : ''}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>讲师</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">讲师</label>
                 <select value={scheduleForm.instructorId} onChange={e => setScheduleForm({ ...scheduleForm, instructorId: e.target.value })} className="input select w-full">
                   <option value="">不指定</option>
                   {instructors.map((i: any) => <option key={i.id} value={i.id}>{i.realName}{i.title ? ` (${i.title})` : ''}</option>)}
@@ -819,20 +819,20 @@ export default function ProgramDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>开始时间 *</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">开始时间 *</label>
                   <input type="datetime-local" value={scheduleForm.startTime} onChange={e => setScheduleForm({ ...scheduleForm, startTime: e.target.value })} className="input w-full" />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>结束时间 *</label>
+                  <label className="text-[var(--ink-400)] text-xs mb-1 block">结束时间 *</label>
                   <input type="datetime-local" value={scheduleForm.endTime} onChange={e => setScheduleForm({ ...scheduleForm, endTime: e.target.value })} className="input w-full" />
                 </div>
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>上课地点</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">上课地点</label>
                 <input value={scheduleForm.location} onChange={e => setScheduleForm({ ...scheduleForm, location: e.target.value })} className="input w-full" placeholder={program?.location || '默认使用培训班地点'} />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>备注</label>
+                <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
                 <input value={scheduleForm.remark} onChange={e => setScheduleForm({ ...scheduleForm, remark: e.target.value })} className="input w-full" />
               </div>
               <div className="flex gap-3 pt-2">
@@ -849,9 +849,9 @@ export default function ProgramDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setStatusModal(null)}>
           <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-2">确认{statusModal.label}</h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--ink-400)' }}>{statusModal.confirm || '确认执行此操作？'}</p>
+            <p className="text-[var(--ink-400)] text-sm mb-4">{statusModal.confirm || '确认执行此操作？'}</p>
             <div className="mb-4">
-              <label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>备注原因</label>
+              <label className="text-[var(--ink-400)] text-xs mb-1 block">备注原因</label>
               <textarea value={statusReason} onChange={e => setStatusReason(e.target.value)}
                 className="input w-full" rows={3} placeholder="填写操作原因（可选）" />
             </div>

@@ -84,9 +84,9 @@ export default function FilingPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : filings.length === 0 ? (
-        <div className="card p-12 text-center"><p className="text-4xl mb-4">🏢</p><p style={{ color: 'var(--ink-300)' }}>暂无备案记录</p></div>
+        <div className="card p-12 text-center"><p className="text-4xl mb-4">🏢</p><p className="text-[var(--ink-300)]">暂无备案记录</p></div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
@@ -98,8 +98,8 @@ export default function FilingPage() {
                   <td className="font-medium text-sm">{f.program?.name || '—'}</td>
                   <td>{f.agencyName}</td>
                   <td>{f.agencyContact} ({f.agencyPhone})</td>
-                  <td><span className="tag" style={{ background: `${STATUS_COLORS[f.status]}18`, color: STATUS_COLORS[f.status] }}>{STATUS_NAMES[f.status] || f.status}</span></td>
-                  <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{new Date(f.submittedAt).toLocaleString('zh-CN')}</td>
+                  <td><span className="tag" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[f.status]} 10%, transparent)`, color: STATUS_COLORS[f.status] }}>{STATUS_NAMES[f.status] || f.status}</span></td>
+                  <td className="text-[var(--ink-300)] text-xs">{new Date(f.submittedAt).toLocaleString('zh-CN')}</td>
                   <td>
                     <button onClick={() => openDetail(f.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
                       {f.status === 'PENDING' ? '审核' : '详情'}
@@ -112,8 +112,8 @@ export default function FilingPage() {
           </div>
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
-              <span className="text-xs" style={{ color: 'var(--ink-400)' }}>共 {total} 条，第 {page}/{totalPages} 页</span>
+            <div className="border-[var(--ink-100)] flex items-center justify-between px-5 py-3 border-t">
+              <span className="text-[var(--ink-400)] text-xs">共 {total} 条，第 {page}/{totalPages} 页</span>
               <div className="flex gap-2">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
                   className="btn btn-outline btn-xs">上一页</button>
@@ -128,20 +128,20 @@ export default function FilingPage() {
       {/* Detail / Review Modal */}
       {modalOpen && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setModalOpen(false)}>
-          <div className="rounded-xl p-6 w-full max-w-lg" style={{ background: 'var(--paper)' }} onClick={e => e.stopPropagation()}>
+          <div className="bg-[var(--paper)] rounded-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-4">
               {selected.status === 'PENDING' ? '审核备案' : '备案详情'}
             </h3>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>培训班</span><p className="font-medium mt-0.5">{selected.program?.name}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>培训班编号</span><p className="font-medium mt-0.5">{selected.program?.code || '—'}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>机构名称</span><p className="mt-0.5">{selected.agencyName}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>联系人</span><p className="mt-0.5">{selected.agencyContact} / {selected.agencyPhone}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>提交人</span><p className="mt-0.5">{selected.submittedBy?.displayName || '—'}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>提交时间</span><p className="mt-0.5">{selected.submittedAt ? new Date(selected.submittedAt).toLocaleString('zh-CN') : '—'}</p></div>
-                <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>当前状态</span>
-                  <p className="mt-0.5"><span className="tag" style={{ background: `${STATUS_COLORS[selected.status]}18`, color: STATUS_COLORS[selected.status] }}>{STATUS_NAMES[selected.status] || selected.status}</span></p>
+                <div><span className="text-[var(--ink-400)] text-xs">培训班</span><p className="font-medium mt-0.5">{selected.program?.name}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">培训班编号</span><p className="font-medium mt-0.5">{selected.program?.code || '—'}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">机构名称</span><p className="mt-0.5">{selected.agencyName}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">联系人</span><p className="mt-0.5">{selected.agencyContact} / {selected.agencyPhone}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">提交人</span><p className="mt-0.5">{selected.submittedBy?.displayName || '—'}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">提交时间</span><p className="mt-0.5">{selected.submittedAt ? new Date(selected.submittedAt).toLocaleString('zh-CN') : '—'}</p></div>
+                <div><span className="text-[var(--ink-400)] text-xs">当前状态</span>
+                  <p className="mt-0.5"><span className="tag" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[selected.status]} 10%, transparent)`, color: STATUS_COLORS[selected.status] }}>{STATUS_NAMES[selected.status] || selected.status}</span></p>
                 </div>
               </div>
 
@@ -154,7 +154,7 @@ export default function FilingPage() {
                       style={{ background: action === 'REJECTED' ? 'var(--error)' : 'var(--paper-dark)', color: action === 'REJECTED' ? 'white' : 'var(--ink-400)' }}>❌ 驳回</button>
                   </div>
                   {action === 'REJECTED' && (
-                    <div><label className="text-xs mb-1 block" style={{ color: 'var(--ink-400)' }}>驳回原因 *</label>
+                    <div><label className="text-[var(--ink-400)] text-xs mb-1 block">驳回原因 *</label>
                       <textarea value={comment} onChange={e => setComment(e.target.value)} className="input w-full" rows={3} /></div>
                   )}
                   <div className="flex gap-2 pt-2">
@@ -168,11 +168,11 @@ export default function FilingPage() {
               {selected.status !== 'PENDING' && (
                 <div className="pt-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核人</span><p className="mt-0.5">{selected.reviewedBy?.displayName || '—'}</p></div>
-                    <div><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核时间</span><p className="mt-0.5">{selected.reviewedAt ? new Date(selected.reviewedAt).toLocaleString('zh-CN') : '—'}</p></div>
+                    <div><span className="text-[var(--ink-400)] text-xs">审核人</span><p className="mt-0.5">{selected.reviewedBy?.displayName || '—'}</p></div>
+                    <div><span className="text-[var(--ink-400)] text-xs">审核时间</span><p className="mt-0.5">{selected.reviewedAt ? new Date(selected.reviewedAt).toLocaleString('zh-CN') : '—'}</p></div>
                   </div>
                   {selected.reviewComment && (
-                    <div className="mt-2"><span className="text-xs" style={{ color: 'var(--ink-400)' }}>审核意见</span><p className="text-sm mt-1" style={{ color: 'var(--ink-600)' }}>{selected.reviewComment}</p></div>
+                    <div className="mt-2"><span className="text-[var(--ink-400)] text-xs">审核意见</span><p className="text-[var(--ink-600)] text-sm mt-1">{selected.reviewComment}</p></div>
                   )}
                   <button onClick={() => setModalOpen(false)} className="btn btn-outline btn-sm mt-4">关闭</button>
                 </div>

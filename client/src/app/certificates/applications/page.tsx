@@ -75,7 +75,7 @@ export default function CertificateApplications() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
@@ -97,13 +97,13 @@ export default function CertificateApplications() {
                       className="accent-[var(--fox)]" /></td>
                   )}
                   <td className="font-medium">{a.student?.displayName || '—'}</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-400)' }}>{a.examSession?.exam?.title || '—'}</td>
+                  <td className="text-[var(--ink-400)] text-xs">{a.examSession?.exam?.title || '—'}</td>
                   <td>
                     <span className="tag" style={{ background: STATUS_LABEL[a.status]?.color + '18', color: STATUS_LABEL[a.status]?.color, border: '1px solid ' + (STATUS_LABEL[a.status]?.color + '30') }}>
                       {STATUS_LABEL[a.status]?.text || a.status}
                     </span>
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{a.appliedAt ? new Date(a.appliedAt).toLocaleDateString('zh-CN') : '—'}</td>
+                  <td className="text-[var(--ink-300)] text-xs">{a.appliedAt ? new Date(a.appliedAt).toLocaleDateString('zh-CN') : '—'}</td>
                   {statusFilter === 'PENDING' && (
                     <td>
                       <div className="flex gap-1">
@@ -115,7 +115,7 @@ export default function CertificateApplications() {
                 </tr>
               ))}
               {apps.length === 0 && (
-                <tr><td colSpan={statusFilter === 'PENDING' ? 6 : 5} className="text-center py-8 text-xs" style={{ color: 'var(--ink-300)' }}>暂无申请</td></tr>
+                <tr><td colSpan={statusFilter === 'PENDING' ? 6 : 5} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无申请</td></tr>
               )}
             </tbody>
           </table>
@@ -132,7 +132,7 @@ export default function CertificateApplications() {
               <button onClick={() => setRejectId(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-3">
-              <label className="block text-xs" style={{ color: 'var(--ink-400)' }}>驳回原因 *</label>
+              <label className="text-[var(--ink-400)] block text-xs">驳回原因 *</label>
               <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
                 placeholder="如：成绩未达标、缺少必要材料" className="input textarea" rows={3} />
             </div>

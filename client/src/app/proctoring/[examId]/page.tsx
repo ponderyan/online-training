@@ -138,7 +138,7 @@ export default function ProctoringDetail() {
     return 'white';
   };
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -146,7 +146,7 @@ export default function ProctoringDetail() {
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="page-title">🎥 监考面板</h1>
-        <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>刷新于 {lastRefresh} · 自动每15秒更新</div>
+        <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
       </div>
 
       {/* Overview cards */}
@@ -160,7 +160,7 @@ export default function ProctoringDetail() {
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center">
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+            <div className="text-[var(--ink-400)] text-[10px] mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
@@ -180,7 +180,7 @@ export default function ProctoringDetail() {
       {/* Session list */}
       <div className="space-y-2">
         {sessions.length === 0 ? (
-          <div className="card p-12 text-center"><p style={{ color: 'var(--ink-300)' }}>暂无数据</p></div>
+          <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">暂无数据</p></div>
         ) : sessions.map(s => (
           <div key={s.sessionId} onClick={() => openDetail(s.sessionId)}
             className="rounded-xl p-4 transition-all cursor-pointer flex items-center gap-4"
@@ -191,20 +191,20 @@ export default function ProctoringDetail() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm" style={{ color: 'var(--ink-700)' }}>{s.studentName}</span>
-                {s.online && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--sage)' }} title="在线" />}
-                {!s.online && s.status !== 'SUBMITTED' && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--error)' }} title="离线" />}
-                {s.status === 'SUBMITTED' && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>✅ 已交卷</span>}
+                <span className="text-[var(--ink-700)] font-medium text-sm">{s.studentName}</span>
+                {s.online && <span className="bg-[var(--sage)] w-2 h-2 rounded-full" title="在线" />}
+                {!s.online && s.status !== 'SUBMITTED' && <span className="bg-[var(--error)] w-2 h-2 rounded-full" title="离线" />}
+                {s.status === 'SUBMITTED' && <span className="text-[var(--ink-300)] text-[10px]">✅ 已交卷</span>}
               </div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>
+              <div className="text-[var(--ink-300)] text-[10px] mt-0.5">
                 {s.organization || '—'} · {s.remainingTime != null ? `⏱ ${Math.floor(s.remainingTime / 60)}:${String(s.remainingTime % 60).padStart(2, '0')}` : '—'}
               </div>
             </div>
-            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--ink-400)' }}>
+            <div className="text-[var(--ink-400)] flex items-center gap-3 text-xs">
               {s.tabSwitchCount > 0 && <span style={{ color: s.tabSwitchCount > 3 ? 'var(--error)' : 'var(--fox)' }}>🔄 {s.tabSwitchCount}次</span>}
               {s.suspicionLevel > 0 && <span className="font-medium" style={{ color: s.suspicionLevel >= 3 ? 'var(--error)' : 'var(--fox)' }}>⚠️ {s.suspicionLevel}</span>}
             </div>
-            <span className="text-xs" style={{ color: 'var(--fox)' }}>查看 →</span>
+            <span className="text-[var(--fox)] text-xs">查看 →</span>
           </div>
         ))}
       </div>
@@ -212,41 +212,41 @@ export default function ProctoringDetail() {
       {/* Session Detail Modal */}
       {showDetail && (
         <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/30" onClick={() => setShowDetail(false)}>
-          <div className="w-[500px] h-full overflow-y-auto p-6" style={{ background: 'var(--paper-bright)' }} onClick={e => e.stopPropagation()}>
+          <div className="bg-[var(--paper-bright)] w-[500px] h-full overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-base" style={{ color: 'var(--ink-700)' }}>考生详情</h2>
+              <h2 className="text-[var(--ink-700)] font-semibold text-base">考生详情</h2>
               <button onClick={() => setShowDetail(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
 
             {detailLoading ? (
-              <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>加载中…</div>
+              <div className="text-[var(--ink-300)] text-center py-16">加载中…</div>
             ) : selectedSession ? (
               <div className="space-y-5">
                 {/* Info card */}
-                <div className="rounded-xl p-4" style={{ background: 'var(--paper-dark)' }}>
+                <div className="bg-[var(--paper-dark)] rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style={{ background: 'rgba(232,122,48,0.1)', color: 'var(--fox)' }}>
                       {selectedSession.studentName?.[0] || '?'}
                     </div>
                     <div>
                       <div className="font-semibold text-sm">{selectedSession.studentName}</div>
-                      <div className="text-xs" style={{ color: 'var(--ink-300)' }}>{selectedSession.organization || '—'}</div>
+                      <div className="text-[var(--ink-300)] text-xs">{selectedSession.organization || '—'}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span style={{ color: 'var(--ink-400)' }}>状态：</span>{selectedSession.status}</div>
-                    <div><span style={{ color: 'var(--ink-400)' }}>在线：</span>{selectedSession.online ? '🟢 在线' : '🔴 离线'}</div>
-                    <div><span style={{ color: 'var(--ink-400)' }}>切屏：</span>{selectedSession.tabSwitchCount} 次</div>
-                    <div><span style={{ color: 'var(--ink-400)' }}>可疑度：</span>{selectedSession.suspicionLevel}</div>
+                    <div><span className="text-[var(--ink-400)]">状态：</span>{selectedSession.status}</div>
+                    <div><span className="text-[var(--ink-400)]">在线：</span>{selectedSession.online ? '🟢 在线' : '🔴 离线'}</div>
+                    <div><span className="text-[var(--ink-400)]">切屏：</span>{selectedSession.tabSwitchCount} 次</div>
+                    <div><span className="text-[var(--ink-400)]">可疑度：</span>{selectedSession.suspicionLevel}</div>
                     {selectedSession.remainingTime != null && (
-                      <div><span style={{ color: 'var(--ink-400)' }}>剩余时间：</span>{Math.floor(selectedSession.remainingTime / 60)}:{(selectedSession.remainingTime % 60).toString().padStart(2, '0')}</div>
+                      <div><span className="text-[var(--ink-400)]">剩余时间：</span>{Math.floor(selectedSession.remainingTime / 60)}:{(selectedSession.remainingTime % 60).toString().padStart(2, '0')}</div>
                     )}
                   </div>
                 </div>
 
                 {/* Tab switch timeline */}
                 <div>
-                  <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--ink-600)' }}>切屏时间线</h3>
+                  <h3 className="text-[var(--ink-600)] text-xs font-semibold mb-2">切屏时间线</h3>
                   {selectedSession.tabSwitchTimeline?.length > 0 ? (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {selectedSession.tabSwitchTimeline.map((t: any, i: number) => (
@@ -256,30 +256,30 @@ export default function ProctoringDetail() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs" style={{ color: 'var(--ink-300)' }}>无切屏记录</p>
+                    <p className="text-[var(--ink-300)] text-xs">无切屏记录</p>
                   )}
                 </div>
 
                 {/* Proctor actions */}
                 <div>
-                  <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--ink-600)' }}>监考员操作记录</h3>
+                  <h3 className="text-[var(--ink-600)] text-xs font-semibold mb-2">监考员操作记录</h3>
                   {selectedSession.proctorActions?.length > 0 ? (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {selectedSession.proctorActions.map((a: any, i: number) => (
-                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: 'var(--neutral-100)' }}>
+                        <div key={i} className="bg-[var(--neutral-100)] text-xs px-3 py-1.5 rounded">
                           <span className="font-medium">{a.action}</span> — {a.message}
-                          <div className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{new Date(a.timestamp).toLocaleString('zh-CN')} · {a.operatorName}</div>
+                          <div className="text-[var(--ink-300)] text-[10px]">{new Date(a.timestamp).toLocaleString('zh-CN')} · {a.operatorName}</div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs" style={{ color: 'var(--ink-300)' }}>无操作记录</p>
+                    <p className="text-[var(--ink-300)] text-xs">无操作记录</p>
                   )}
                 </div>
 
                 {/* 消息记录 */}
                 <div>
-                  <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--ink-600)' }}>消息记录</h3>
+                  <h3 className="text-[var(--ink-600)] text-xs font-semibold mb-2">消息记录</h3>
                   {sessionMessages.length > 0 ? (
                     <div className="space-y-1 max-h-40 overflow-y-auto">
                       {sessionMessages.map((m: any) => (
@@ -287,7 +287,7 @@ export default function ProctoringDetail() {
                           background: m.messageType === 'WARN' ? 'var(--error-pale)' : 'var(--info-pale)',
                         }}>
                           <span className="font-medium">{m.messageType === 'WARN' ? '⚠️ 警告' : 'ℹ️ 消息'}</span> — {m.content}
-                          <div className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--ink-300)' }}>
+                          <div className="text-[var(--ink-300)] flex items-center gap-2 text-[10px]">
                             <span>{m.senderName} · {new Date(m.sentAt).toLocaleString('zh-CN')}</span>
                             <span style={{ color: m.readAt ? 'var(--cyan)' : 'var(--fox)', fontWeight: m.readAt ? 400 : 600 }}>
                               {m.readAt ? '🟢 已读' : '🔴 未读'}
@@ -297,7 +297,7 @@ export default function ProctoringDetail() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs" style={{ color: 'var(--ink-300)' }}>暂无消息</p>
+                    <p className="text-[var(--ink-300)] text-xs">暂无消息</p>
                   )}
                 </div>
 
@@ -320,7 +320,7 @@ export default function ProctoringDetail() {
                 )}
               </div>
             ) : (
-              <p style={{ color: 'var(--ink-300)' }}>加载失败</p>
+              <p className="text-[var(--ink-300)]">加载失败</p>
             )}
           </div>
         </div>
@@ -359,8 +359,8 @@ export default function ProctoringDetail() {
       {forceSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setForceSubmitModal(null)}>
           <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-sm mb-2" style={{ color: 'var(--error)' }}>🛑 强制交卷</h3>
-            <p className="text-xs mb-4" style={{ color: 'var(--ink-400)' }}>此操作将强制提交该考生的试卷，不可撤销。</p>
+            <h3 className="text-[var(--error)] font-semibold text-sm mb-2">🛑 强制交卷</h3>
+            <p className="text-[var(--ink-400)] text-xs mb-4">此操作将强制提交该考生的试卷，不可撤销。</p>
             <input value={forceSubmitReason} onChange={e => setForceSubmitReason(e.target.value)}
               className="input w-full mb-3" placeholder="强制交卷原因" />
             <input value={confirmText} onChange={e => setConfirmText(e.target.value)}

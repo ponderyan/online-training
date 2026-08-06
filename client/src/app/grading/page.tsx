@@ -105,7 +105,7 @@ export default function Grading() {
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-        <span className="text-xs" style={{ color: 'var(--ink-300)' }}>共 {exams.length} 场</span>
+        <span className="text-[var(--ink-300)] text-xs">共 {exams.length} 场</span>
       </div>
 
       {loading ? (
@@ -127,12 +127,12 @@ export default function Grading() {
                 onKeyDown={e => e.key === 'Enter' && router.push(`/grading/${exam.id}`)}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--ink-700)' }}>{exam.title}</h3>
-                    <p className="text-xs mb-2" style={{ color: 'var(--ink-400)' }}>
+                    <h3 className="text-[var(--ink-700)] font-semibold text-sm mb-1">{exam.title}</h3>
+                    <p className="text-[var(--ink-400)] text-xs mb-2">
                       <FileSearch size={12} className="inline mr-0.5" />{exam.paper?.name || '-'} · <Users size={12} className="inline mr-0.5" />{total}人 · 已提交 {submitted}人 · 待批改 {pending}人
                     </p>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--paper-dark)' }}>
+                      <div className="bg-[var(--paper-dark)] flex-1 h-2 rounded-full">
                         <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: progress === 100 ? 'var(--cyan)' : 'var(--fox)' }} />
                       </div>
                       <span className="text-[10px] font-medium" style={{ color: progress === 100 ? 'var(--cyan)' : 'var(--fox)' }}>{progress}%</span>

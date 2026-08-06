@@ -127,9 +127,9 @@ export default function MyLearningPage() {
   };
 
   const hourStatusBadge = (status: string) => {
-    if (status === 'APPROVED') return <span className="text-xs" style={{ color: 'var(--sage)' }}>✅ 已审核</span>;
-    if (status === 'REJECTED') return <span className="text-xs" style={{ color: 'var(--error)' }}>❌ 已驳回</span>;
-    return <span className="text-xs" style={{ color: 'var(--fox)' }}>⏳ 待审核</span>;
+    if (status === 'APPROVED') return <span className="text-[var(--sage)] text-xs">✅ 已审核</span>;
+    if (status === 'REJECTED') return <span className="text-[var(--error)] text-xs">❌ 已驳回</span>;
+    return <span className="text-[var(--fox)] text-xs">⏳ 待审核</span>;
   };
 
   // Learning path computation
@@ -142,7 +142,7 @@ export default function MyLearningPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center py-32">
-          <div style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+          <div className="text-[var(--ink-300)]">小狐狸正在加载… 🦊</div>
         </div>
       </AppLayout>
     );
@@ -162,59 +162,56 @@ export default function MyLearningPage() {
           {/* 考试通过率 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 📋
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 考试通过率
               </span>
             </div>
-            <div className="text-3xl font-bold" style={{ color: 'var(--ink-700)' }}>
+            <div className="text-[var(--ink-700)] text-3xl font-bold">
               {(data?.examStats.totalAttempts ?? 0) > 0
                 ? Math.round(((data?.examStats.passed ?? 0) / (data?.examStats.totalAttempts ?? 1)) * 100)
                 : 0}%
             </div>
-            <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>通过 <strong style={{ color: 'var(--sage)' }}>{data?.examStats.passed || 0}</strong></span>
-              <span>未通过 <strong style={{ color: 'var(--error)' }}>{data?.examStats.failed || 0}</strong></span>
-              <span>待评分 <strong style={{ color: 'var(--fox)' }}>{data?.examStats.pendingScore || 0}</strong></span>
+            <div className="text-[var(--ink-400)] flex gap-3 mt-2 text-xs">
+              <span>通过 <strong className="text-[var(--sage)]">{data?.examStats.passed || 0}</strong></span>
+              <span>未通过 <strong className="text-[var(--error)]">{data?.examStats.failed || 0}</strong></span>
+              <span>待评分 <strong className="text-[var(--fox)]">{data?.examStats.pendingScore || 0}</strong></span>
             </div>
           </div>
 
           {/* 总学时 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 🕐
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 总学时
               </span>
             </div>
-            <div className="text-3xl font-bold" style={{ color: 'var(--ink-700)' }}>
+            <div className="text-[var(--ink-700)] text-3xl font-bold">
               {data?.hoursStats.totalHours || 0}
-              <span className="text-base font-normal" style={{ color: 'var(--ink-400)' }}> h</span>
+              <span className="text-[var(--ink-400)] text-base font-normal"> h</span>
             </div>
-            <div className="flex gap-3 mt-2 text-xs" style={{ color: 'var(--ink-400)' }}>
-              <span>已审核 <strong style={{ color: 'var(--sage)' }}>{data?.hoursStats.approvedHours || 0}</strong></span>
-              <span>待审核 <strong style={{ color: 'var(--fox)' }}>{data?.hoursStats.pendingHours || 0}</strong></span>
+            <div className="text-[var(--ink-400)] flex gap-3 mt-2 text-xs">
+              <span>已审核 <strong className="text-[var(--sage)]">{data?.hoursStats.approvedHours || 0}</strong></span>
+              <span>待审核 <strong className="text-[var(--fox)]">{data?.hoursStats.pendingHours || 0}</strong></span>
             </div>
           </div>
 
           {/* 证书数 */}
           <div className="card p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'var(--fox-pale)' }}>
+              <div className="bg-[var(--fox-pale)] w-10 h-10 rounded-xl flex items-center justify-center text-lg">
                 🏅
               </div>
-              <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>
+              <span className="text-[var(--ink-400)] text-xs uppercase tracking-wider">
                 证书数
               </span>
             </div>
-            <div className="text-3xl font-bold" style={{ color: 'var(--ink-700)' }}>
+            <div className="text-[var(--ink-700)] text-3xl font-bold">
               {data?.certificates.total || 0}
             </div>
             <div className="mt-2">
@@ -230,11 +227,11 @@ export default function MyLearningPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* 最近考试 */}
           <div className="card p-5">
-            <h2 className="font-bold text-sm mb-4" style={{ color: 'var(--ink-700)' }}>
+            <h2 className="text-[var(--ink-700)] font-bold text-sm mb-4">
               📋 最近考试
             </h2>
             {data?.examStats.recentExams.length === 0 ? (
-              <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>
+              <div className="text-[var(--ink-300)] text-center py-8">
                 <div className="text-2xl mb-2">📝</div>
                 <p className="text-xs">还没有参加过考试</p>
                 <button onClick={() => router.push('/exam')}
@@ -244,7 +241,7 @@ export default function MyLearningPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr style={{ color: 'var(--ink-400)' }}>
+                    <tr className="text-[var(--ink-400)]">
                       <th className="text-left pb-2 font-medium">考试</th>
                       <th className="text-left pb-2 font-medium">分数</th>
                       <th className="text-left pb-2 font-medium">状态</th>
@@ -254,12 +251,12 @@ export default function MyLearningPage() {
                     {data?.examStats.recentExams.map((exam, i) => (
                       <tr key={i} className="border-t" style={{ borderColor: 'rgba(139,129,116,0.12)' }}>
                         <td className="py-2.5 pr-2">
-                          <div className="font-medium" style={{ color: 'var(--ink-700)' }}>
+                          <div className="text-[var(--ink-700)] font-medium">
                             {exam.examTitle}
                           </div>
-                          <div style={{ color: 'var(--ink-300)' }}>{exam.paperName}</div>
+                          <div className="text-[var(--ink-300)]">{exam.paperName}</div>
                         </td>
-                        <td className="py-2.5 pr-2" style={{ color: 'var(--ink-600)' }}>
+                        <td className="text-[var(--ink-600)] py-2.5 pr-2">
                           {exam.myScore != null
                             ? `${exam.myScore}/${exam.totalScore}`
                             : '—'}
@@ -285,11 +282,11 @@ export default function MyLearningPage() {
 
           {/* 最近学时 */}
           <div className="card p-5">
-            <h2 className="font-bold text-sm mb-4" style={{ color: 'var(--ink-700)' }}>
+            <h2 className="text-[var(--ink-700)] font-bold text-sm mb-4">
               🕐 最近学时记录
             </h2>
             {data?.hoursStats.recentRecords.length === 0 ? (
-              <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>
+              <div className="text-[var(--ink-300)] text-center py-8">
                 <div className="text-2xl mb-2">📊</div>
                 <p className="text-xs">还没有学时记录</p>
               </div>
@@ -299,16 +296,16 @@ export default function MyLearningPage() {
                   <div key={rec.id} className="flex items-center justify-between py-1.5 border-b"
                     style={{ borderColor: 'rgba(139,129,116,0.08)' }}>
                     <div className="min-w-0 flex-1 mr-3">
-                      <div className="text-xs font-medium truncate" style={{ color: 'var(--ink-700)' }}>
+                      <div className="text-[var(--ink-700)] text-xs font-medium truncate">
                         {rec.programName}
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--ink-400)' }}>
+                      <div className="text-[var(--ink-400)] text-xs mt-0.5">
                         {rec.source === 'VIDEO' ? '📺 视频' : '✏️ 申报'}
                         {rec.typeName ? ` · ${rec.typeName}` : ''}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>
+                      <div className="text-[var(--ink-700)] text-sm font-semibold">
                         {rec.hours}h
                       </div>
                       <div className="mt-0.5">{hourStatusBadge(rec.status)}</div>
@@ -331,7 +328,7 @@ export default function MyLearningPage() {
         {/* ──────── 底部：证书展示 ──────── */}
         <div className="card p-5 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-sm" style={{ color: 'var(--ink-700)' }}>
+            <h2 className="text-[var(--ink-700)] font-bold text-sm">
               🏅 我的证书（{data?.certificates.total || 0}）
             </h2>
             {(data?.certificates.total ?? 0) > 0 && (
@@ -340,10 +337,10 @@ export default function MyLearningPage() {
             )}
           </div>
           {data?.certificates.items.length === 0 ? (
-            <div className="text-center py-8" style={{ color: 'var(--ink-300)' }}>
+            <div className="text-[var(--ink-300)] text-center py-8">
               <div className="text-2xl mb-2">🎓</div>
               <p className="text-xs">还没有获得证书</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--ink-300)] text-xs mt-1">
                 参加考试并通过后自动发放
               </p>
               <button onClick={() => router.push('/exam')}
@@ -356,13 +353,13 @@ export default function MyLearningPage() {
                   style={{ background: 'rgba(232, 122, 48, 0.05)' }}>
                   <span className="text-lg flex-shrink-0 mt-0.5">🏅</span>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate" style={{ color: 'var(--ink-700)' }}>
+                    <div className="text-[var(--ink-700)] text-xs font-semibold truncate">
                       {cert.courseName}
                     </div>
-                    <div className="text-xs mt-1" style={{ color: 'var(--ink-400)' }}>
+                    <div className="text-[var(--ink-400)] text-xs mt-1">
                       {cert.certificateNo}
                     </div>
-                    <div className="text-xs" style={{ color: 'var(--ink-300)' }}>
+                    <div className="text-[var(--ink-300)] text-xs">
                       {new Date(cert.issueDate).toLocaleDateString('zh-CN')}
                     </div>
                   </div>
@@ -375,14 +372,14 @@ export default function MyLearningPage() {
         {/* ═══ 学习路径 ═══ */}
         {learningPath && learningPath.length > 0 && (
           <div className="card p-5 mb-8">
-            <h2 className="font-bold text-sm mb-4" style={{ color: 'var(--ink-700)' }}>
+            <h2 className="text-[var(--ink-700)] font-bold text-sm mb-4">
               📋 你的专属学习路径
             </h2>
 
             {allDone ? (
               <div className="text-center py-8">
                 <div className="text-2xl mb-2">🎉</div>
-                <p className="text-sm font-medium" style={{ color: 'var(--ink-700)' }}>恭喜！你已完成所有推荐课程</p>
+                <p className="text-[var(--ink-700)] text-sm font-medium">恭喜！你已完成所有推荐课程</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -404,14 +401,14 @@ export default function MyLearningPage() {
                           }}>
                           {isCompleted ? '✅' : idx + 1}
                         </span>
-                        <span className="text-xs font-medium truncate" style={{ color: 'var(--ink-700)' }}>{step.kpName}</span>
+                        <span className="text-[var(--ink-700)] text-xs font-medium truncate">{step.kpName}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0" style={{
-                          background: `${(LEVEL_COLORS[step.level] || 'var(--warning)')}18`,
+                          background: `color-mix(in srgb, ${(LEVEL_COLORS[step.level] || 'var(--warning)')} 10%, transparent)`,
                           color: LEVEL_COLORS[step.level] || 'var(--warning)',
                         }}>
                           {step.level}
                         </span>
-                        <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--ink-300)' }}>
+                        <span className="text-[var(--ink-300)] text-[10px] flex-shrink-0">
                           {step.avgRate}% 掌握
                         </span>
                         {!isCompleted && (
@@ -428,9 +425,9 @@ export default function MyLearningPage() {
                             <div key={course.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs"
                               style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="truncate" style={{ color: 'var(--ink-600)' }}>{course.title}</span>
+                                <span className="text-[var(--ink-600)] truncate">{course.title}</span>
                                 {course.duration != null && (
-                                  <span className="flex-shrink-0" style={{ color: 'var(--ink-300)' }}>{course.duration}分钟</span>
+                                  <span className="text-[var(--ink-300)] flex-shrink-0">{course.duration}分钟</span>
                                 )}
                               </div>
                               <button onClick={() => router.push(`/video/${course.id}`)}

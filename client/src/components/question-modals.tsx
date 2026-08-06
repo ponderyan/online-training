@@ -179,13 +179,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
         <div className="modal-body">
           <div className="grid grid-cols-2 gap-4 mb-1">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>题型</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">题型</label>
               <select value={type} onChange={e => setType(e.target.value)} className="input select">
                 {Object.entries(TYPE_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>难度</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">难度</label>
               <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="input select">
                 {Object.entries(DIFF_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
@@ -194,13 +194,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>科目</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">科目</label>
               <select value={subjectId} onChange={e => setSubjectId(Number(e.target.value))} className="input select">
                 {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.code} ({s.name})</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>章节</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">章节</label>
               <select value={chapterId} onChange={e => setChapterId(Number(e.target.value))} className="input select">
                 <option value={0}>不指定</option>
                 {(chapters || []).map((ch: any) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
@@ -209,7 +209,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
           </div>
 
           <div className="mb-4">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>题干</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">题干</label>
             <textarea value={content} onChange={e => setContent(e.target.value)} rows={3}
               className="input textarea"
               placeholder={type === 'FILL_BLANK' ? '用 {{_}} 标记填空位置' : '输入试题题干…'} />
@@ -221,14 +221,14 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
               <div className="grid grid-cols-2 gap-3">
                 {options.map((o, i) => (
                   <div key={i}>
-                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>选项 {String.fromCharCode(65 + i)}</label>
+                    <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">选项 {String.fromCharCode(65 + i)}</label>
                     <input value={o} onChange={e => { const n = [...options]; n[i] = e.target.value; setOptions(n); }}
                       className="input" />
                   </div>
                 ))}
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>正确答案</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">正确答案</label>
                 {type === 'SINGLE_CHOICE' ? (
                   <select value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} className="input select" style={{ width: '120px' }}>
                     {options.map((_, i) => <option key={i} value={String.fromCharCode(65 + i)}>{String.fromCharCode(65 + i)}</option>)}
@@ -253,7 +253,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
           {type === 'TRUE_FALSE' && (
             <div className="mb-4">
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>正确答案</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">正确答案</label>
               <select value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} className="input select" style={{ width: '140px' }}>
                 <option value="true">✓ 正确</option>
                 <option value="false">✗ 错误</option>
@@ -265,7 +265,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
             <div className="space-y-2 mb-4">
               {blanks.map((b, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <label className="text-xs font-medium whitespace-nowrap" style={{ color: 'var(--ink-500)' }}>填空 {i + 1}</label>
+                  <label className="text-[var(--ink-500)] text-xs font-medium whitespace-nowrap">填空 {i + 1}</label>
                   <input value={b} onChange={e => { const n = [...blanks]; n[i] = e.target.value; setBlanks(n); }}
                     className="input" />
                   <button onClick={() => setBlanks(blanks.filter((_, j) => j !== i))}
@@ -283,7 +283,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
           {type === 'SHORT_ANSWER' && (
             <div className="mb-4">
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>参考答案</label>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">参考答案</label>
               <textarea value={analysis} onChange={e => setAnalysis(e.target.value)} rows={3}
                 className="input textarea" />
             </div>
@@ -294,7 +294,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
               {subQuestions.map((sq, i) => (
                 <div key={i} className="p-4 border rounded" style={{ borderColor: 'var(--ink-100)', background: 'rgba(239, 233, 220, 0.4)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>子问题 {i + 1}</span>
+                    <span className="text-[var(--ink-500)] text-xs font-medium">子问题 {i + 1}</span>
                     {subQuestions.length > 1 && (
                       <button onClick={() => setSubQuestions(subQuestions.filter((_, j) => j !== i))}
                         className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
@@ -319,8 +319,8 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
           {type !== 'SHORT_ANSWER' && (
             <div className="mb-1">
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-                参考解析 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+                参考解析 <span className="text-[var(--ink-300)]">（可选）</span>
               </label>
               <textarea value={analysis} onChange={e => setAnalysis(e.target.value)} rows={2}
                 className="input textarea" />
@@ -328,14 +328,14 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
           )}
 
           {/* 关联知识点 */}
-          <div className="border-t pt-3 mt-4" style={{ borderColor: 'var(--ink-100)' }}>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>
-              关联知识点 <span style={{ color: 'var(--ink-300)' }}>（可选）</span>
+          <div className="border-[var(--ink-100)] border-t pt-3 mt-4">
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+              关联知识点 <span className="text-[var(--ink-300)]">（可选）</span>
             </label>
             {kpLoading ? (
-              <p className="text-xs py-2" style={{ color: 'var(--ink-300)' }}>加载中…</p>
+              <p className="text-[var(--ink-300)] text-xs py-2">加载中…</p>
             ) : kpTree.length === 0 ? (
-              <p className="text-xs py-2" style={{ color: 'var(--ink-300)' }}>
+              <p className="text-[var(--ink-300)] text-xs py-2">
                 暂无知识点，请先在「知识点管理」中添加
               </p>
             ) : (
@@ -375,7 +375,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                           }}
                           style={{ accentColor: 'var(--fox)' }} />
                         <span className="truncate flex-1">{kp.name}</span>
-                        {kp.code && <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{kp.code}</span>}
+                        {kp.code && <span className="text-[var(--ink-300)] text-[10px]">{kp.code}</span>}
                       </label>
                     ))}
                 </div>
@@ -434,8 +434,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
       <div className="modal-card max-w-[640px] animate-fadeSlide">
         <div className="modal-header">
           <h3 className="font-serif font-bold text-base">试题详情</h3>
-          <button onClick={onClose} className="text-lg bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-300)' }}>✕</button>
+          <button onClick={onClose} className="text-[var(--ink-300)] text-lg bg-transparent border-none cursor-pointer">✕</button>
         </div>
 
         <div className="modal-body space-y-4">
@@ -491,14 +490,14 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           )}
 
           {/* 题干 */}
-          <div className="p-4 rounded text-sm leading-relaxed" style={{ background: 'var(--paper)' }}>
+          <div className="bg-[var(--paper)] p-4 rounded text-sm leading-relaxed">
             {question.content}
           </div>
 
           {/* 选项（选择题） */}
           {question.options?.length > 0 && (
             <div className="space-y-1.5">
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>选项</div>
+              <div className="text-[var(--ink-500)] text-xs font-medium mb-1">选项</div>
               {question.options.map((o: any) => (
                 <div key={o.id} className="px-3 py-2 rounded text-sm"
                   style={{
@@ -506,7 +505,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
                     border: o.isCorrect ? '1px solid rgba(0, 201, 182, 0.3)' : '1px solid transparent',
                   }}>
                   <span className="font-medium">{o.label}.</span> {o.content}
-                  {o.isCorrect && <span className="ml-1 text-xs" style={{ color: 'var(--cyan)' }}>✓ 正确答案</span>}
+                  {o.isCorrect && <span className="text-[var(--cyan)] ml-1 text-xs">✓ 正确答案</span>}
                 </div>
               ))}
             </div>
@@ -515,7 +514,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* 填空 */}
           {question.blanks?.length > 0 && (
             <div>
-              <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>填空答案</div>
+              <div className="text-[var(--ink-500)] text-xs font-medium mb-1.5">填空答案</div>
               <div className="flex flex-wrap gap-2">
                 {question.blanks.map((b: any, i: number) => (
                   <span key={b.id} className="tag tag-gold">空{i + 1}: {b.answer}</span>
@@ -527,7 +526,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* 简答/案例 参考答案 */}
           {['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && question.analysis && (
             <div>
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>参考答案</div>
+              <div className="text-[var(--ink-500)] text-xs font-medium mb-1">参考答案</div>
               <div className="p-3 rounded text-sm" style={{ background: 'var(--cyan-glow)', color: 'var(--ink-700)' }}>
                 {question.analysis}
               </div>
@@ -537,7 +536,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* 解析 */}
           {question.analysis && !['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && (
             <div>
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--fox)' }}>解析</div>
+              <div className="text-[var(--fox)] text-xs font-medium mb-1">解析</div>
               <div className="p-3 rounded text-sm" style={{ background: 'var(--fox-pale)', color: 'var(--ink-700)' }}>
                 {question.analysis}
               </div>
@@ -547,12 +546,12 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* 子问题（案例题） */}
           {question.subQuestions?.length > 0 && (
             <div>
-              <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink-500)' }}>子问题</div>
+              <div className="text-[var(--ink-500)] text-xs font-medium mb-1.5">子问题</div>
               <div className="space-y-2">
                 {question.subQuestions.map((sq: any, i: number) => (
-                  <div key={sq.id} className="p-3 rounded text-sm" style={{ background: 'var(--paper)' }}>
+                  <div key={sq.id} className="bg-[var(--paper)] p-3 rounded text-sm">
                     <div className="font-medium mb-1">({i + 1}) {sq.content}{sq.score ? `（${sq.score}分）` : ''}</div>
-                    {sq.answer && <div className="text-xs" style={{ color: 'var(--cyan)' }}>答案：{sq.answer}</div>}
+                    {sq.answer && <div className="text-[var(--cyan)] text-xs">答案：{sq.answer}</div>}
                   </div>
                 ))}
               </div>
@@ -591,12 +590,11 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {/* 引用试卷列表 */}
           {papers.length > 0 && (
             <div className="space-y-1.5">
-              <div className="text-xs font-medium" style={{ color: 'var(--ink-500)' }}>出现在以下试卷中：</div>
+              <div className="text-[var(--ink-500)] text-xs font-medium">出现在以下试卷中：</div>
               {papers.map((p: any, i: number) => (
-                <div key={i} className="flex items-center justify-between px-3 py-2 rounded text-xs"
-                  style={{ background: 'var(--paper)' }}>
-                  <span className="truncate flex-1" style={{ color: 'var(--ink-600)' }}>{p.name}</span>
-                  <span className="ml-3" style={{ color: 'var(--ink-300)' }}>{p.paperNumber}</span>
+                <div key={i} className="bg-[var(--paper)] flex items-center justify-between px-3 py-2 rounded text-xs">
+                  <span className="text-[var(--ink-600)] truncate flex-1">{p.name}</span>
+                  <span className="text-[var(--ink-300)] ml-3">{p.paperNumber}</span>
                   <span className={`tag ml-2 ${
                     p.status === 'OFFICIAL' ? 'tag-verm' :
                     p.status === 'FINALIZED' ? 'tag-cyan' : 'tag-ink'

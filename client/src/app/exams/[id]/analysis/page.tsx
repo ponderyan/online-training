@@ -35,7 +35,7 @@ export default function ExamAnalysisPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <AppLayout><div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div></AppLayout>;
+  if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
 
   const maxDistribution = distribution?.buckets ? Math.max(...distribution.buckets.map((b: any) => b.count), 1) : 1;
 
@@ -55,9 +55,9 @@ export default function ExamAnalysisPage() {
             { label: '通过率', value: `${overview.passRate}%`, sub: `${overview.passCount}人通过 / ${overview.failCount}人未通过`, color: overview.passRate >= 60 ? 'var(--sage)' : 'var(--verm)' },
           ].map((s, i) => (
             <div key={i} className="card p-5">
-              <div className="text-xs mb-1" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+              <div className="text-[var(--ink-400)] text-xs mb-1">{s.label}</div>
               <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>{s.sub}</div>
+              <div className="text-[var(--ink-300)] text-[10px] mt-1">{s.sub}</div>
             </div>
           ))}
         </div>
@@ -66,7 +66,7 @@ export default function ExamAnalysisPage() {
       {/* Distribution bar chart */}
       {distribution?.buckets && (
         <div className="card p-5 mb-8">
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>分数分布</h3>
+          <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-4">分数分布</h3>
           <div className="space-y-3">
             {distribution.buckets.map((b: any) => {
               const pct = maxDistribution > 0 ? b.count / maxDistribution * 100 : 0;
@@ -76,9 +76,9 @@ export default function ExamAnalysisPage() {
                 <div key={b.range}>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span style={{ color: isFail ? 'var(--verm)' : 'var(--ink-500)' }}>{b.range} 分</span>
-                    <span className="num" style={{ color: 'var(--ink-400)' }}>{b.count} 人</span>
+                    <span className="text-[var(--ink-400)] num">{b.count} 人</span>
                   </div>
-                  <div className="h-6 rounded-lg overflow-hidden" style={{ background: 'var(--paper-dark)' }}>
+                  <div className="bg-[var(--paper-dark)] h-6 rounded-lg overflow-hidden">
                     <div className="hist-bar h-full rounded-lg flex items-center justify-end px-2 text-[10px] text-white font-medium transition-all"
                       style={{ width: `${Math.max(pct, b.count > 0 ? 4 : 0)}%`, background: `linear-gradient(90deg, ${barColor}, ${barColor}dd)` }}>
                       {b.count > 0 && `${b.count}人`}
@@ -93,18 +93,18 @@ export default function ExamAnalysisPage() {
 
       {/* Question accuracy */}
       <div className="card p-5">
-        <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--ink-700)' }}>逐题正确率（按正确率升序）</h3>
+        <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-4">逐题正确率（按正确率升序）</h3>
         <div className="space-y-2">
           {questions.map((q: any, idx: number) => (
-            <div key={q.questionId} className="rounded-lg p-3" style={{ background: 'var(--paper-dark)' }}>
+            <div key={q.questionId} className="bg-[var(--paper-dark)] rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] font-mono" style={{ color: 'var(--ink-300)' }}>#{idx + 1}</span>
+                <span className="text-[var(--ink-300)] text-[10px] font-mono">#{idx + 1}</span>
                 <span className="tag text-[10px]" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{TYPE_NAMES[q.type] || q.type}</span>
-                <span className="text-xs flex-1 truncate" style={{ color: 'var(--ink-500)' }}>{q.content}</span>
-                <span className="text-[10px]" style={{ color: 'var(--ink-300)' }}>{q.score}分</span>
+                <span className="text-[var(--ink-500)] text-xs flex-1 truncate">{q.content}</span>
+                <span className="text-[var(--ink-300)] text-[10px]">{q.score}分</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--ink-100)' }}>
+                <div className="bg-[var(--ink-100)] flex-1 h-2 rounded-full">
                   <div className="h-full rounded-full" style={{
                     width: `${q.accuracy}%`,
                     background: q.accuracy >= 80 ? 'var(--sage)' : q.accuracy >= 60 ? 'var(--fox)' : 'var(--error)',
@@ -119,7 +119,7 @@ export default function ExamAnalysisPage() {
             </div>
           ))}
           {questions.length === 0 && (
-            <p className="text-xs text-center py-8" style={{ color: 'var(--ink-300)' }}>暂无数据</p>
+            <p className="text-[var(--ink-300)] text-xs text-center py-8">暂无数据</p>
           )}
         </div>
       </div>

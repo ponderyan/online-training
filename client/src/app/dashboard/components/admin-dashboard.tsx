@@ -47,7 +47,7 @@ export default function GlobalAdminDashboard({ stats, loading }: any) {
                       {p.code} · {p.startDate?.slice(0, 10)} ~ {p.endDate?.slice(0, 10)}
                     </div>
                   </div>
-                  <span className="tag text-[10px] px-2 py-1 rounded-lg" style={{ background: `${STATUS_COLORS[p.status] || 'var(--ink-300)'}18`, color: STATUS_COLORS[p.status] || 'var(--ink-300)' }}>
+                  <span className="tag text-[10px] px-2 py-1 rounded-lg" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[p.status] || 'var(--ink-300)'} 10%, transparent)`, color: STATUS_COLORS[p.status] || 'var(--ink-300)' }}>
                     {STATUS_NAMES[p.status] || p.status}
                   </span>
                 </div>

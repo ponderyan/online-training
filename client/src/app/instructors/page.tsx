@@ -105,23 +105,23 @@ export default function InstructorsPage() {
             <tbody>
               {instructors.map((inst: any) => (
                 <tr key={inst.id}>
-                  <td className="text-xs" style={{ color: 'var(--ink-300)' }}>{inst.instructorNo || '—'}</td>
+                  <td className="text-[var(--ink-300)] text-xs">{inst.instructorNo || '—'}</td>
                   <td>
                     <span onClick={() => router.push(`/instructors/${inst.id}`)}
                       className="font-medium cursor-pointer hover:underline" style={{ color: 'var(--fox)' }}>
                       {inst.realName}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--ink-400)' }}>{inst.workUnit || '—'}</td>
+                  <td className="text-[var(--ink-400)]">{inst.workUnit || '—'}</td>
                   <td>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ background: `${TYPE_COLORS[inst.type] || 'var(--neutral-400)'}18`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
+                      style={{ background: `color-mix(in srgb, ${TYPE_COLORS[inst.type] || 'var(--neutral-400)'} 10%, transparent)`, color: TYPE_COLORS[inst.type] || 'var(--neutral-400)' }}>
                       {TYPE_NAMES[inst.type] || inst.type}
                     </span>
                   </td>
                   <td>{inst.title || '—'}</td>
                   <td><span className="tag tag-cyan">{LEVEL_NAMES[inst.level] || inst.level}</span></td>
-                  <td><span className="tag" style={{ background: `${STATUS_COLORS[inst.status] || 'var(--neutral-400)'}18`, color: STATUS_COLORS[inst.status] || 'var(--neutral-400)' }}>{STATUS_NAMES[inst.status] || inst.status}</span></td>
+                  <td><span className="tag" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[inst.status] || 'var(--neutral-400)'} 10%, transparent)`, color: STATUS_COLORS[inst.status] || 'var(--neutral-400)' }}>{STATUS_NAMES[inst.status] || inst.status}</span></td>
                   <td>
                     <div className="flex gap-2">
                       <button onClick={() => router.push(`/instructors/${inst.id}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button>

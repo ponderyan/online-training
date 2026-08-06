@@ -32,7 +32,7 @@ function formatDate(d: string | null | undefined) {
 function FeeTag({ label, amount }: { label: string; amount: number | null | undefined }) {
   if (amount === null || amount === undefined || amount === 0) return null;
   return (
-    <span className="text-xs" style={{ color: 'var(--ink-400)' }}>
+    <span className="text-[var(--ink-400)] text-xs">
       {label}¥{amount.toLocaleString()}
     </span>
   );
@@ -93,7 +93,7 @@ export default function ProgramsPage() {
         <div className="flex gap-2 mb-5 flex-wrap">
           {STATUS_ORDER.filter(s => stats[s]).map(s => (
             <span key={s} className="text-xs font-medium px-3 py-1 rounded-full" style={{
-              background: `${STATUS_COLORS[s] || 'var(--neutral-400)'}18`, color: STATUS_COLORS[s] || 'var(--neutral-400)',
+              background: `color-mix(in srgb, ${STATUS_COLORS[s] || 'var(--neutral-400)'} 10%, transparent)`, color: STATUS_COLORS[s] || 'var(--neutral-400)',
             }}>
               {STATUS_NAMES[s]} {stats[s]}
             </span>
@@ -132,16 +132,16 @@ export default function ProgramsPage() {
                   <div className="flex-1 min-w-0">
                     {/* 标题行 */}
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-mono" style={{ color: 'var(--ink-300)' }}>{p.code}</span>
+                      <span className="text-[var(--ink-300)] text-xs font-mono">{p.code}</span>
                       <h3 className="font-semibold" style={{ color: 'var(--ink-700)', fontSize: 15 }}>{p.name}</h3>
                       {p.headTeacher && (
-                        <span className="text-xs" style={{ color: 'var(--fox)' }}>
+                        <span className="text-[var(--fox)] text-xs">
                           <User size={12} className="inline mr-0.5" />{p.headTeacher}
                         </span>
                       )}
                     </div>
                     {/* 信息行 1: 科目 · 日期 · 地点 */}
-                    <div className="flex gap-4 text-xs flex-wrap mb-1.5" style={{ color: 'var(--ink-400)' }}>
+                    <div className="text-[var(--ink-400)] flex gap-4 text-xs flex-wrap mb-1.5">
                       <span><FolderOpen size={12} className="inline mr-0.5" />{p.subject?.code || p.subjectId || '—'}</span>
                       {p.startDate && (
                         <span><Calendar size={12} className="inline mr-0.5" />{formatDate(p.startDate)} ~ {formatDate(p.endDate)}</span>
@@ -149,7 +149,7 @@ export default function ProgramsPage() {
                       {p.location && <span><MapPin size={12} className="inline mr-0.5" />{p.location}</span>}
                     </div>
                     {/* 信息行 2: 学员 · 费用 */}
-                    <div className="flex gap-4 text-xs flex-wrap" style={{ color: 'var(--ink-400)' }}>
+                    <div className="text-[var(--ink-400)] flex gap-4 text-xs flex-wrap">
                       <span><Users size={12} className="inline mr-0.5" />{p.enrolledCount || 0}/{p.maxStudents || '不限'}人</span>
                       <FeeTag label="培训费" amount={p.tuitionFee} />
                       <FeeTag label="考试费" amount={p.examFee} />
@@ -157,7 +157,7 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                   <span className="shrink-0 text-xs font-medium px-3 py-1 rounded-full ml-3" style={{
-                    background: `${STATUS_COLORS[p.status] || 'var(--neutral-400)'}18`,
+                    background: `color-mix(in srgb, ${STATUS_COLORS[p.status] || 'var(--neutral-400)'} 10%, transparent)`,
                     color: STATUS_COLORS[p.status] || 'var(--neutral-400)',
                   }}>{STATUS_NAMES[p.status] || p.status}</span>
                 </div>

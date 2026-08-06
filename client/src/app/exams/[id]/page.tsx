@@ -60,7 +60,7 @@ export default function ExamDetail() {
     router.push('/exams');
   };
 
-  if (loading) return <AppLayout><p style={{ color: 'var(--ink-300)' }}>加载中…</p></AppLayout>;
+  if (loading) return <AppLayout><p className="text-[var(--ink-300)]">加载中…</p></AppLayout>;
   if (!exam) return null;
 
   const isOffline = exam.examMode === 'OFFLINE';

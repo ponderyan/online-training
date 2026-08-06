@@ -98,9 +98,9 @@ export default function AgenciesPage() {
         className="input mb-4" style={{ maxWidth: 320 }} onKeyDown={e => e.key === 'Enter' && load()} />
 
       {loading ? (
-        <div className="text-center py-16" style={{ color: 'var(--ink-300)' }}>小狐狸正在加载… 🦊</div>
+        <div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div>
       ) : agencies.length === 0 ? (
-        <div className="card p-12 text-center" style={{ color: 'var(--ink-300)' }}>暂无招生机构</div>
+        <div className="text-[var(--ink-300)] card p-12 text-center">暂无招生机构</div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
@@ -109,15 +109,15 @@ export default function AgenciesPage() {
             <tbody>{agencies.map((a: any) => (
               <tr key={a.id}>
                 <td className="font-medium">{a.name}</td>
-                <td style={{ color: 'var(--ink-400)' }}>{a.organization?.name || '—'}</td>
-                <td style={{ color: 'var(--ink-400)' }}>{a.shortName || '—'}</td>
+                <td className="text-[var(--ink-400)]">{a.organization?.name || '—'}</td>
+                <td className="text-[var(--ink-400)]">{a.shortName || '—'}</td>
                 <td>{a.contactPerson || '—'}</td><td>{a.contactPhone || '—'}</td>
                 <td>{a._count?.primaryStudents ?? 0}</td>
                 <td>{a._count?.enrollments ?? 0}</td>
                 <td><span className={`tag ${a.isActive ? 'tag-cyan' : 'tag-ink'}`}>{a.isActive ? '启用' : '停用'}</span></td>
                 <td>
                   {isAgencyAdmin ? (
-                    <span className="text-xs" style={{ color: 'var(--ink-300)' }}>—</span>
+                    <span className="text-[var(--ink-300)] text-xs">—</span>
                   ) : (
                     <div className="flex gap-1">
                       <button onClick={() => { setEditItem(a); setForm({ name: a.name, shortName: a.shortName || '', contactPerson: a.contactPerson || '', contactPhone: a.contactPhone || '', contactEmail: a.contactEmail || '', remark: a.remark || '', organizationId: a.organizationId || '' }); setShowModal(true); }}
@@ -141,22 +141,22 @@ export default function AgenciesPage() {
               <button onClick={() => setShowModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
             </div>
             <div className="modal-body space-y-4">
-              <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>机构名称 *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input" /></div>
+              <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">机构名称 *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input" /></div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>所属组织</label>
+                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">所属组织</label>
                 <select value={form.organizationId} onChange={e => setForm({...form, organizationId: e.target.value})} className="input">
                   <option value="">— 不隶属组织 —</option>
                   {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.code} - {o.name}</option>)}
                 </select>
-                <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>选择后，该机构创建的学员将自动归属对应组织</p>
+                <p className="text-[var(--ink-300)] text-xs mt-1">选择后，该机构创建的学员将自动归属对应组织</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>简称</label><input value={form.shortName} onChange={e => setForm({...form, shortName: e.target.value})} className="input" /></div>
-                <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>联系人</label><input value={form.contactPerson} onChange={e => setForm({...form, contactPerson: e.target.value})} className="input" /></div>
-                <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>联系电话</label><input value={form.contactPhone} onChange={e => setForm({...form, contactPhone: e.target.value.replace(/[^\d+\-\s]/g, '')})} className="input" placeholder="如 13800138000" maxLength={20} /></div>
-                <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>邮箱</label><input value={form.contactEmail} onChange={e => setForm({...form, contactEmail: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input" placeholder="如 name@example.com" /></div>
+                <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">简称</label><input value={form.shortName} onChange={e => setForm({...form, shortName: e.target.value})} className="input" /></div>
+                <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">联系人</label><input value={form.contactPerson} onChange={e => setForm({...form, contactPerson: e.target.value})} className="input" /></div>
+                <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">联系电话</label><input value={form.contactPhone} onChange={e => setForm({...form, contactPhone: e.target.value.replace(/[^\d+\-\s]/g, '')})} className="input" placeholder="如 13800138000" maxLength={20} /></div>
+                <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">邮箱</label><input value={form.contactEmail} onChange={e => setForm({...form, contactEmail: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })} className="input" placeholder="如 name@example.com" /></div>
               </div>
-              <div><label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>备注</label><textarea value={form.remark} onChange={e => setForm({...form, remark: e.target.value})} className="input textarea" rows={2} /></div>
+              <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">备注</label><textarea value={form.remark} onChange={e => setForm({...form, remark: e.target.value})} className="input textarea" rows={2} /></div>
             </div>
             <div className="modal-footer">
               <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm">取消</button>

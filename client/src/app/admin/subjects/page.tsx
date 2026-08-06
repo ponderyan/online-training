@@ -127,27 +127,27 @@ export default function SubjectsAdminPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-sm" style={{ color: 'var(--ink-300)' }}>加载中...</div>
+        <div className="text-[var(--ink-300)] text-center py-20 text-sm">加载中...</div>
       ) : (
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b" style={{ borderColor: 'var(--ink-100)' }}>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>代码</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>名称</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>归属</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>描述</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>章节</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>题目</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>知识点</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>状态</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>排序</th>
-                <th className="text-center px-4 py-3 font-medium" style={{ color: 'var(--ink-400)' }}>操作</th>
+              <tr className="border-[var(--ink-100)] border-b">
+                <th className="text-[var(--ink-400)] text-left px-4 py-3 font-medium">代码</th>
+                <th className="text-[var(--ink-400)] text-left px-4 py-3 font-medium">名称</th>
+                <th className="text-[var(--ink-400)] text-left px-4 py-3 font-medium">归属</th>
+                <th className="text-[var(--ink-400)] text-left px-4 py-3 font-medium">描述</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">章节</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">题目</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">知识点</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">状态</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">排序</th>
+                <th className="text-[var(--ink-400)] text-center px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
               {subjects.map(s => (
-                <tr key={s.id} className="border-b last:border-0 hover:bg-[var(--paper-50)]" style={{ borderColor: 'var(--ink-50)' }}>
+                <tr key={s.id} className="border-[var(--ink-50)] border-b last:border-0 hover:bg-[var(--paper-50)]">
                   <td className="px-4 py-3">
                     <span className="tag tag-gold">{s.code}</span>
                   </td>
@@ -155,13 +155,13 @@ export default function SubjectsAdminPage() {
                     {s.name}
                     {s.isSystem && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'var(--warning-pale)', color: 'var(--fox-dark)' }}>系统</span>}
                   </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'var(--ink-400)' }}>
+                  <td className="text-[var(--ink-400)] px-4 py-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       {s.organization ? (
                         <span className="px-1.5 py-0.5 rounded" style={{ background: 'var(--ink-50)', color: 'var(--ink-500)' }}>
                           {s.organization.code} - {s.organization.name}
                         </span>
-                      ) : <span style={{ color: 'var(--ink-300)' }}>平台级</span>}
+                      ) : <span className="text-[var(--ink-300)]">平台级</span>}
                       {s.ownership && (
                         <span className="px-1 py-0.5 rounded text-[10px]" style={{ background: OWNERSHIP_COLORS[s.ownership] + '15', color: OWNERSHIP_COLORS[s.ownership] }}>
                           {OWNERSHIP_LABELS[s.ownership]}
@@ -186,30 +186,30 @@ export default function SubjectsAdminPage() {
                         {s.isActive ? '启用' : '停用'}
                       </button>
                     ) : (
-                      <span className="px-2 py-0.5 text-xs" style={{ color: 'var(--ink-300)' }}>{s.isActive ? '启用' : '停用'}</span>
+                      <span className="text-[var(--ink-300)] px-2 py-0.5 text-xs">{s.isActive ? '启用' : '停用'}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-xs" style={{ color: 'var(--ink-300)' }}>{s.sortOrder}</td>
+                  <td className="text-[var(--ink-300)] px-4 py-3 text-center text-xs">{s.sortOrder}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       {s.manageable !== false ? (
                         <>
                           <button onClick={() => openEdit(s)} className="text-xs cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
                           {s.isSystem || s.organization?.orgType === 'ASSOCIATION' ? (
-                            <span className="text-xs" style={{ color: 'var(--ink-200)' }} title={s.isSystem ? '系统内置科目不可删除' : '协会级科目不可删除，仅可停用'}>删除</span>
+                            <span className="text-[var(--ink-200)] text-xs" title={s.isSystem ? '系统内置科目不可删除' : '协会级科目不可删除，仅可停用'}>删除</span>
                           ) : (
                             <button onClick={() => handleDelete(s)} className="text-xs cursor-pointer" style={{ color: 'var(--red, #dc2626)' }}>删除</button>
                           )}
                         </>
                       ) : (
-                        <span className="text-xs" style={{ color: 'var(--ink-200)' }} title="非本级科目，仅可查看">🔒 只读</span>
+                        <span className="text-[var(--ink-200)] text-xs" title="非本级科目，仅可查看">🔒 只读</span>
                       )}
                     </div>
                   </td>
                 </tr>
               ))}
               {subjects.length === 0 && (
-                <tr><td colSpan={10} className="text-center py-12 text-sm" style={{ color: 'var(--ink-300)' }}>暂无科目，点击「新增科目」创建</td></tr>
+                <tr><td colSpan={10} className="text-[var(--ink-300)] text-center py-12 text-sm">暂无科目，点击「新增科目」创建</td></tr>
               )}
             </tbody>
           </table>
@@ -223,26 +223,26 @@ export default function SubjectsAdminPage() {
             <h3 className="text-base font-semibold mb-4">{editingId ? '编辑科目' : '新增科目'}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-400)' }}>科目代码 *</label>
+                <label className="text-[var(--ink-400)] block text-xs font-medium mb-1">科目代码 *</label>
                 <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })}
                   placeholder="如 DT+、DTC" maxLength={20}
                   className="input w-full" disabled={!!editingId} />
-                {editingId && <p className="text-xs mt-1" style={{ color: 'var(--ink-300)' }}>代码创建后不可修改</p>}
+                {editingId && <p className="text-[var(--ink-300)] text-xs mt-1">代码创建后不可修改</p>}
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-400)' }}>科目名称 *</label>
+                <label className="text-[var(--ink-400)] block text-xs font-medium mb-1">科目名称 *</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                   placeholder="如 数智化管理师" maxLength={200}
                   className="input w-full" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-400)' }}>描述</label>
+                <label className="text-[var(--ink-400)] block text-xs font-medium mb-1">描述</label>
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   placeholder="科目简介（可选）" rows={3}
                   className="input w-full resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-400)' }}>排序</label>
+                <label className="text-[var(--ink-400)] block text-xs font-medium mb-1">排序</label>
                 <input type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
                   className="input w-24" />
               </div>

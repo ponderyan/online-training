@@ -173,22 +173,22 @@ export default function StudentsPage() {
             {s.displayName?.charAt(0) || '?'}
           </div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: 'var(--ink-700)' }}>{s.displayName}</div>
-            <div className="text-xs" style={{ color: 'var(--ink-300)' }}>@{s.username}</div>
+            <div className="text-[var(--ink-700)] font-semibold text-sm">{s.displayName}</div>
+            <div className="text-[var(--ink-300)] text-xs">@{s.username}</div>
           </div>
         </div>
         <span className={`text-xs font-medium px-2 py-0.5 rounded ${s.isActive ? 'tag-cyan' : 'tag-ink'}`}>
           {s.isActive ? '正常' : '已停用'}
         </span>
       </div>
-      <div className="flex gap-3 text-xs flex-wrap" style={{ color: 'var(--ink-400)' }}>
+      <div className="text-[var(--ink-400)] flex gap-3 text-xs flex-wrap">
         {s.studentNumber && <span>🎓 {s.studentNumber}</span>}
         {s.phone && <span>📞 {s.phone}</span>}
         {s.email && <span>✉️ {s.email}</span>}
         {s.organization && <span>🏢 {s.organization}</span>}
         {s.group?.name && <span>📂 {s.group.name}</span>}
       </div>
-      <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: 'var(--ink-100)' }}>
+      <div className="border-[var(--ink-100)] flex items-center justify-between mt-3 pt-3 border-t">
         <RoleBadge roles={s.roleAssignments?.map((ra: any) => ra.role.code) || [s.role || 'STUDENT']} />
         <div className="flex gap-1">
           <button onClick={e => { e.stopPropagation();
@@ -251,7 +251,7 @@ export default function StudentsPage() {
           <option value="">全部班级</option>
           {groups.map((g: any) => <option key={g.id} value={g.id}>{g.name} ({g._count?.members || 0}人)</option>)}
         </select>
-        <div className="ml-auto flex border rounded-lg overflow-hidden" style={{ borderColor: 'var(--ink-200)' }}>
+        <div className="border-[var(--ink-200)] ml-auto flex border rounded-lg overflow-hidden">
           <button onClick={() => setViewMode('table')}
             className="px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
             style={{ background: viewMode === 'table' ? 'var(--fox)' : 'transparent', color: viewMode === 'table' ? '#fff' : 'var(--ink-400)', border: 'none' }}>
@@ -354,27 +354,27 @@ export default function StudentsPage() {
             <div className="modal-body">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>用户名 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">用户名 *</label>
                   <input value={form.username} onChange={e => setForm({...form, username: e.target.value})}
                     className="input" disabled={!!editStudent} placeholder="登录用" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>姓名 *</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">姓名 *</label>
                   <input value={form.displayName} onChange={e => setForm({...form, displayName: e.target.value})}
                     className="input" placeholder="真实姓名" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>密码</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">密码</label>
                   <input value={form.password} onChange={e => setForm({...form, password: e.target.value})}
                     className="input" placeholder={editStudent ? '留空不修改' : '默认123456'} type="password" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>学号</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">学号</label>
                   <input value={form.studentNumber} onChange={e => setForm({...form, studentNumber: e.target.value})}
                     className="input" placeholder="如 DTM2026001" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>角色（可多选）</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色（可多选）</label>
                   <div className="flex flex-wrap gap-1.5">
                     {allRolesStu.map((r: any) => (
                       <label key={r.id} className="flex items-center gap-1 px-2.5 py-1.5 rounded cursor-pointer text-xs transition-all"
@@ -391,22 +391,22 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>手机号</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">手机号</label>
                   <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/[^\d]/g, '')})}
                     className="input" placeholder="11位手机号" maxLength={11} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>邮箱</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">邮箱</label>
                   <input value={form.email} onChange={e => setForm({...form, email: e.target.value.replace(/[^a-zA-Z0-9._%+@\-]/g, '') })}
                     className="input" placeholder="邮箱" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>工作单位</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">工作单位</label>
                   <input value={form.organization} onChange={e => setForm({...form, organization: e.target.value})}
                     className="input" placeholder="工作单位/机构" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>所属班级</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">所属班级</label>
                   <select value={form.groupId} onChange={e => setForm({...form, groupId: e.target.value})} className="input select">
                     <option value="">无分组</option>
                     {groups.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -439,15 +439,15 @@ export default function StudentsPage() {
             </div>
             <div className="modal-body">
               {groups.length === 0 ? (
-                <p className="text-sm text-center py-4" style={{ color: 'var(--ink-300)' }}>暂无分组</p>
+                <p className="text-[var(--ink-300)] text-sm text-center py-4">暂无分组</p>
               ) : (
                 <div className="space-y-2 mb-4">
                   {groups.map((g: any) => (
-                    <div key={g.id} className="flex items-center justify-between p-3 rounded" style={{ background: 'var(--paper)' }}>
+                    <div key={g.id} className="bg-[var(--paper)] flex items-center justify-between p-3 rounded">
                       <div>
                         <span className="text-sm font-medium">{g.name}</span>
-                        <span className="text-xs ml-2" style={{ color: 'var(--ink-300)' }}>{g._count?.members} 人</span>
-                        {g.note && <p className="text-xs mt-0.5" style={{ color: 'var(--ink-300)' }}>{g.note}</p>}
+                        <span className="text-[var(--ink-300)] text-xs ml-2">{g._count?.members} 人</span>
+                        {g.note && <p className="text-[var(--ink-300)] text-xs mt-0.5">{g.note}</p>}
                       </div>
                       <button onClick={async () => {
                         if (!confirm(`确认删除分组"${g.name}"？学员将变为无分组状态。`)) return;
@@ -463,12 +463,12 @@ export default function StudentsPage() {
               <hr className="divider" />
               <div className="flex gap-3 items-end mt-4">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>分组名称</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">分组名称</label>
                   <input value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})}
                     className="input" placeholder="如 DTM二期班" />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>说明（选填）</label>
+                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">说明（选填）</label>
                   <input value={groupForm.note} onChange={e => setGroupForm({...groupForm, note: e.target.value})}
                     className="input" placeholder="班级说明" />
                 </div>

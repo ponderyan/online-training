@@ -232,7 +232,7 @@ export default function SystemConfigPage() {
       {loading ? (
         <div className="text-center py-16" style={{ color: INK_300 }}>加载中… 🦊</div>
       ) : error ? (
-        <div className="text-center py-16" style={{ color: 'var(--error)' }}>
+        <div className="text-[var(--error)] text-center py-16">
           <p className="mb-4">{error}</p>
           <button onClick={load} className="btn btn-fox btn-sm">🔄 重试</button>
         </div>

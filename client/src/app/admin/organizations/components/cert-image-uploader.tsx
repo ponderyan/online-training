@@ -39,7 +39,7 @@ export default function CertImageUploader({ label, hint, value, uploading, onUpl
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ink-500)' }}>{label}</label>
+      <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">{label}</label>
       <div className="flex items-center gap-3">
         {value ? (
           <div className="relative group" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)', background: 'var(--neutral-50)', ...previewStyle }}>
@@ -55,8 +55,8 @@ export default function CertImageUploader({ label, hint, value, uploading, onUpl
             onDrop={handleDrop}
             className="flex flex-col items-center justify-center cursor-pointer transition-colors"
             style={{ width: round ? '72px' : '160px', height: round ? '72px' : '56px', borderRadius: round ? '50%' : '8px', border: `1.5px dashed ${dragOver ? 'var(--fox)' : 'var(--ink-200)'}`, background: dragOver ? 'var(--fox-pale)' : 'var(--paper)' }}>
-            {uploading ? <span className="text-[10px]" style={{ color: 'var(--fox)' }}>上传中…</span> : (
-              <><span className="text-sm">📁</span><span className="text-[10px] mt-0.5" style={{ color: 'var(--ink-300)' }}>拖拽或点击</span></>
+            {uploading ? <span className="text-[var(--fox)] text-[10px]">上传中…</span> : (
+              <><span className="text-sm">📁</span><span className="text-[var(--ink-300)] text-[10px] mt-0.5">拖拽或点击</span></>
             )}
           </div>
         )}
@@ -66,8 +66,8 @@ export default function CertImageUploader({ label, hint, value, uploading, onUpl
           </button>
         )}
       </div>
-      <p className="text-[10px] mt-1" style={{ color: 'var(--ink-300)' }}>{hint}</p>
-      <p className="text-[10px]" style={{ color: 'var(--ink-300)' }}>支持 PNG / JPG / SVG / WebP · 最大 2MB · 图片不会变形（等比缩放）</p>
+      <p className="text-[var(--ink-300)] text-[10px] mt-1">{hint}</p>
+      <p className="text-[var(--ink-300)] text-[10px]">支持 PNG / JPG / SVG / WebP · 最大 2MB · 图片不会变形（等比缩放）</p>
       <input ref={inputRef} type="file" accept=".png,.jpg,.jpeg,.svg,.webp" onChange={handleSelect} className="hidden" />
     </div>
   );
