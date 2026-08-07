@@ -46,11 +46,11 @@ export default function CircularProgress({
         {done ? (
           <span style={{ fontSize: size * 0.32, color, lineHeight: 1 }}>✓</span>
         ) : (
-          <span className="num" style={{ fontSize: size * 0.22, fontWeight: 700, color: 'var(--ink-700)', fontFamily: 'var(--font-serif)' }}>
+          <span className="num text-[var(--ink-700)]" style={{ fontSize: size * 0.22, fontWeight: 700,  fontFamily: 'var(--font-serif)' }}>
             {label ?? `${Math.round(pct)}%`}
           </span>
         )}
-        <span style={{ fontSize: size * 0.1, color: 'var(--ink-400)', marginTop: 2 }}>
+        <span className="text-[var(--ink-400)]" style={{ fontSize: size * 0.1,  marginTop: 2 }}>
           {sublabel ?? (done ? '已完成' : '完成')}
         </span>
       </div>

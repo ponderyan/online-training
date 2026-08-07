@@ -190,8 +190,8 @@ function ReportCard({ result }: { result: ExamResult }) {
       </div>
 
       {/* ===== 页脚 ===== */}
-      <div className="mt-8 pt-4 text-center text-[9px] leading-relaxed"
-        style={{ borderTop: '1px solid var(--ink-100)', color: 'var(--ink-300)' }}>
+      <div className="mt-8 pt-4 text-center text-[9px] leading-relaxed text-[var(--ink-300)]"
+        style={{ borderTop: '1px solid var(--ink-100)',  }}>
         <p>本成绩单由 狐学（FoxLearn）智能在线培训考试平台 自动生成</p>
         <p className="mt-0.5">仅供学习参考 · 如有疑问请联系培训机构</p>
       </div>
@@ -247,8 +247,8 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
 
       {/* ===== 屏幕：遮罩弹窗 ===== */}
       {open && (
-        <div className="score-report-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(26,23,18,0.45)', backdropFilter: 'blur(2px)' }}>
+        <div className="score-report-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(26,23,18,0.45)]"
+          style={{  backdropFilter: 'blur(2px)' }}>
           <div className="bg-[var(--paper-bright)] relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
             
             {/* 预览 */}
@@ -259,13 +259,13 @@ export default function ScoreReportModal({ open, onClose, result }: Props) {
             {/* 按钮栏 */}
             <div className="score-report-no-print flex items-center justify-end gap-3 px-8 pb-6 pt-2">
               <button onClick={onClose}
-                className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all hover:brightness-95 active:scale-95"
-                style={{ background: 'var(--paper-dark)', color: 'var(--ink-500)', border: 'none' }}>
+                className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all hover:brightness-95 active:scale-95 bg-[var(--paper-dark)] text-[var(--ink-500)]"
+                style={{   border: 'none' }}>
                 关闭
               </button>
               <button onClick={() => window.print()}
-                className="px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110 active:scale-95"
-                style={{ background: 'var(--fox)', color: '#fff', border: 'none' }}>
+                className="px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110 active:scale-95 bg-[var(--fox)] text-[#fff]"
+                style={{   border: 'none' }}>
                 🖨️ 打印成绩单
               </button>
             </div>

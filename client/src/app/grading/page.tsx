@@ -99,8 +99,8 @@ export default function Grading() {
         <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索考试标题…" className="input" style={{ maxWidth: 320 }}
           onKeyDown={e => e.key === 'Enter' && load()} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="input !w-auto"
-          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', background: 'var(--paper-bright)', border: '1px solid var(--ink-100)', borderRadius: '0.5rem', fontSize: '0.8rem', color: 'var(--ink-500)', cursor: 'pointer' }}>
+          className="input !w-auto bg-[var(--paper-bright)] text-[var(--ink-500)]"
+          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem',  border: '1px solid var(--ink-100)', borderRadius: '0.5rem', fontSize: '0.8rem',  cursor: 'pointer' }}>
           {STATUS_OPTIONS.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
@@ -139,7 +139,7 @@ export default function Grading() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'var(--fox-pale2)', color: 'var(--fox)' }}>进入阅卷 <ArrowRight size={12} className="inline ml-0.5" /></span>
+                    <span className="text-xs px-3 py-1 rounded-full font-medium bg-[var(--fox-pale2)] text-[var(--fox)]" >进入阅卷 <ArrowRight size={12} className="inline ml-0.5" /></span>
                   </div>
                 </div>
               </div>

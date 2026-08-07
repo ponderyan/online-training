@@ -182,9 +182,9 @@ export default function BatchGeneratePage() {
         {/* Step: 加载模板 */}
         {step === 'load' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: 'var(--neutral-500)', marginBottom: 12 }}>模板 ID: {templateId || '未指定'}</p>
+            <p className="text-[var(--neutral-500)]" style={{  marginBottom: 12 }}>模板 ID: {templateId || '未指定'}</p>
             <button onClick={loadTemplate} style={btnPrimary}>加载模板</button>
-            {!templateId && <p style={{ color: 'var(--error)', fontSize: 12, marginTop: 8 }}>请从模板列表页点击"批量生成"进入</p>}
+            {!templateId && <p className="text-[var(--error)]" style={{  fontSize: 12, marginTop: 8 }}>请从模板列表页点击"批量生成"进入</p>}
           </div>
         )}
 
@@ -195,9 +195,9 @@ export default function BatchGeneratePage() {
             <button onClick={() => fileRef.current?.click()} style={btnPrimary}>📂 上传 Excel 文件</button>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleFileUpload} />
             <div style={{ marginTop: 12 }}>
-              <button onClick={downloadTemplate} style={{ ...btnPrimary, background: 'var(--neutral-500)' }}>⬇ 下载导入模板</button>
+              <button onClick={downloadTemplate} className="bg-[var(--neutral-500)]" style={{ ...btnPrimary,  }}>⬇ 下载导入模板</button>
             </div>
-            <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>支持 .xlsx / .xls / .csv，单次上限 200 条</p>
+            <p className="text-[var(--neutral-400)]" style={{ fontSize: 11,  marginTop: 8 }}>支持 .xlsx / .xls / .csv，单次上限 200 条</p>
           </div>
         )}
 
@@ -205,7 +205,7 @@ export default function BatchGeneratePage() {
         {step === 'mapping' && (
           <div>
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>字段映射（Excel 列 → 模板变量）</h3>
-            <p style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 12 }}>共 {rows.length} 条数据，Excel 列：{headers.join(', ')}</p>
+            <p className="text-[var(--neutral-500)]" style={{ fontSize: 12,  marginBottom: 12 }}>共 {rows.length} 条数据，Excel 列：{headers.join(', ')}</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr className="bg-[var(--neutral-50)]">
@@ -216,7 +216,7 @@ export default function BatchGeneratePage() {
               <tbody>
                 {VAR_FIELDS.map(f => (
                   <tr key={f.key} style={{ borderBottom: '1px solid var(--ink-100)' }}>
-                    <td style={tdStyle}><code style={{ background: 'var(--blue-pale)', padding: '1px 4px', borderRadius: 3 }}>{'{{' + f.key + '}}'}</code> {f.label}</td>
+                    <td style={tdStyle}><code className="bg-[var(--blue-pale)]" style={{  padding: '1px 4px', borderRadius: 3 }}>{'{{' + f.key + '}}'}</code> {f.label}</td>
                     <td style={tdStyle}>
                       <select value={mapping[f.key] || ''} onChange={e => setMapping(m => ({ ...m, [f.key]: e.target.value }))} style={{ padding: '3px 8px', fontSize: 12, border: '1px solid var(--ink-100)', borderRadius: 3 }}>
                         <option value="">（不映射）</option>
@@ -270,7 +270,7 @@ export default function BatchGeneratePage() {
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={handleGenerate} style={{ ...btnPrimary, background: 'var(--sage-light)' }}>🚀 开始生成（{rows.length} 份）</button>
+              <button onClick={handleGenerate} className="bg-[var(--sage-light)]" style={{ ...btnPrimary,  }}>🚀 开始生成（{rows.length} 份）</button>
               <button onClick={() => setStep('mapping')} style={btnSecondary}>返回映射</button>
             </div>
           </div>
@@ -280,18 +280,18 @@ export default function BatchGeneratePage() {
         {step === 'generating' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
             <p style={{ fontSize: 14, marginBottom: 12 }}>正在生成 {rows.length} 份证书 PDF...</p>
-            <div style={{ width: 300, height: 8, background: 'var(--neutral-100)', borderRadius: 4, margin: '0 auto', overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', background: 'var(--fox)', transition: 'width 0.3s' }} />
+            <div className="bg-[var(--neutral-100)]" style={{ width: 300, height: 8,  borderRadius: 4, margin: '0 auto', overflow: 'hidden' }}>
+              <div className="bg-[var(--fox)]" style={{ width: `${progress}%`, height: '100%',  transition: 'width 0.3s' }} />
             </div>
-            <p style={{ fontSize: 12, color: 'var(--neutral-400)', marginTop: 8 }}>请稍候，生成完成后自动下载 ZIP</p>
+            <p className="text-[var(--neutral-400)]" style={{ fontSize: 12,  marginTop: 8 }}>请稍候，生成完成后自动下载 ZIP</p>
           </div>
         )}
 
         {/* Step: 完成 */}
         {step === 'done' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ fontSize: 16, color: 'var(--sage-light)', marginBottom: 12 }}>✅ 批量生成完成！</p>
-            <p style={{ fontSize: 13, color: 'var(--neutral-500)' }}>共 {rows.length} 份证书已打包为 ZIP 下载</p>
+            <p className="text-[var(--sage-light)]" style={{ fontSize: 16,  marginBottom: 12 }}>✅ 批量生成完成！</p>
+            <p className="text-[var(--neutral-500)]" style={{ fontSize: 13,  }}>共 {rows.length} 份证书已打包为 ZIP 下载</p>
             <div style={{ marginTop: 16 }}>
               <button onClick={() => { setStep('upload'); setRows([]); }} style={btnPrimary}>继续生成</button>
             </div>

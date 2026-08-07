@@ -132,7 +132,7 @@ export default function VideoListPage() {
                   className="card overflow-hidden transition-all hover:shadow-md group"
                   style={{ padding: 0, textDecoration: 'none' }}>
                   {/* 封面 */}
-                  <div className="relative" style={{ paddingTop: '56.25%', background: 'var(--ink-100)' }}>
+                  <div className="relative bg-[var(--ink-100)]" style={{ paddingTop: '56.25%',  }}>
                     {v.coverUrl ? (
                       <img src={mediaURL(v.coverUrl)} alt={v.name}
                         className="absolute inset-0 w-full h-full object-cover" />
@@ -140,22 +140,22 @@ export default function VideoListPage() {
                       <div className="absolute inset-0 flex items-center justify-center text-4xl">🎬</div>
                     )}
                     {/* 类型标签 */}
-                    <span className="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded"
+                    <span className="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded text-[#fff]"
                       style={{
                         background: isPublic ? 'rgba(0,137,123,0.9)' : 'rgba(21,101,192,0.9)',
-                        color: '#fff',
+                        
                       }}>
                       {isPublic ? '公共课' : '专项课'}
                     </span>
                     {/* 完成标签 */}
                     {isCompleted && (
-                      <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded"
-                        style={{ background: 'rgba(46,125,50,0.9)', color: '#fff' }}>✓ 已完成</span>
+                      <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded bg-[rgba(46,125,50,0.9)] text-[#fff]"
+                        >✓ 已完成</span>
                     )}
                     {/* 时长 */}
                     {v.duration && (
-                      <span className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded"
-                        style={{ background: 'rgba(0,0,0,0.7)', color: '#fff' }}>{fmtDuration(v.duration)}</span>
+                      <span className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.7)] text-[#fff]"
+                        >{fmtDuration(v.duration)}</span>
                     )}
                   </div>
                   {/* 信息 */}
@@ -172,7 +172,7 @@ export default function VideoListPage() {
                     {v.progress && !isCompleted && pct > 0 && (
                       <div className="mt-2">
                         <div className="bg-[var(--paper-dark)] w-full h-1.5 rounded-full">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--fox)' }} />
+                          <div className="h-full rounded-full bg-[var(--fox)]" style={{ width: `${pct}%`,  }} />
                         </div>
                         <div className="text-[var(--ink-300)] text-[10px] mt-0.5 text-right">已学 {pct}%</div>
                       </div>

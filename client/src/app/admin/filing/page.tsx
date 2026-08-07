@@ -101,7 +101,7 @@ export default function FilingPage() {
                   <td><span className="tag" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[f.status]} 10%, transparent)`, color: STATUS_COLORS[f.status] }}>{STATUS_NAMES[f.status] || f.status}</span></td>
                   <td className="text-[var(--ink-300)] text-xs">{new Date(f.submittedAt).toLocaleString('zh-CN')}</td>
                   <td>
-                    <button onClick={() => openDetail(f.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+                    <button onClick={() => openDetail(f.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >
                       {f.status === 'PENDING' ? '审核' : '详情'}
                     </button>
                   </td>

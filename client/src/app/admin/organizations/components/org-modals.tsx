@@ -94,7 +94,7 @@ export function ImportModal({ open, importRows, importing, importResult, onClose
             <input type="file" accept=".xlsx,.xls" className="input" style={{ padding: 6 }}
               onChange={e => { const f = e.target.files?.[0]; if (f) onFileSelect(f); }} />
           </div>
-          <div className="text-xs space-y-1 p-3 rounded-lg" style={{ background: 'var(--paper)', color: 'var(--ink-400)' }}>
+          <div className="text-xs space-y-1 p-3 rounded-lg bg-[var(--paper)] text-[var(--ink-400)]" >
             <div className="text-[var(--ink-500)] font-medium">导入说明：</div>
             <div>· 第一列：组织名称（必填）</div>
             <div>· 第二列：上级组织名称（可选，留空=根组织）</div>
@@ -191,7 +191,7 @@ export function MigrateModal({ open, source, tree, targetId, options, migrating,
           </div>
           <div>
             <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">迁移到</label>
-            <div className="rounded-lg p-2 max-h-[240px] overflow-y-auto" style={{ border: '1px solid var(--ink-100)', background: 'var(--paper-bright)' }}>
+            <div className="rounded-lg p-2 max-h-[240px] overflow-y-auto bg-[var(--paper-bright)]" style={{ border: '1px solid var(--ink-100)',  }}>
               {tree.map(node => (
                 <MigrateOrgPicker key={node.id} node={node} depth={0} selectedId={targetId} onSelect={onTargetChange} excludeId={source.id} />
               ))}

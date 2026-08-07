@@ -116,15 +116,15 @@ export default function ExamList() {
 
   return (
     <div className="bg-[var(--paper)] min-h-dvh-fb">
-      <div className="sticky top-0 z-10 backdrop-blur-md" style={{ background: 'rgba(246,241,232,0.92)', borderBottom: '1px solid var(--ink-100)' }}>
+      <div className="sticky top-0 z-10 backdrop-blur-md bg-[rgba(246,241,232,0.92)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FoxLogo.Light size={32} />
             <span className="text-[var(--ink-700)] font-semibold">我的考试</span>
           </div>
           <button onClick={() => router.push('/dashboard')}
-            className="text-xs px-3 py-1.5 rounded-md bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-400)' }}>← 返回</button>
+            className="text-xs px-3 py-1.5 rounded-md bg-transparent border-none cursor-pointer text-[var(--ink-400)]"
+            >← 返回</button>
         </div>
       </div>
 
@@ -137,26 +137,26 @@ export default function ExamList() {
           ) : (
             <>
               {sortedActive.map(exam => (
-                <div key={exam.id} style={{
-                  background: 'var(--paper-bright)', borderRadius: '12px',
+                <div key={exam.id} className="bg-[var(--paper-bright)]" style={{
+                   borderRadius: '12px',
                   border: exam.accessType === 'UNIFIED' ? '1px solid var(--fox)' : '2px solid var(--fox)',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: 'var(--fox-pale2)', color: 'var(--fox)', fontWeight: 600 }}>📝 考试中</span>
+                      <span className="bg-[var(--fox-pale2)] text-[var(--fox)]" style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px',   fontWeight: 600 }}>📝 考试中</span>
                     </div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: 0 }}>
+                    <h3 className="text-[var(--neutral-800)]" style={{ fontSize: '15px', fontWeight: 600,  margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p className="text-[var(--neutral-500)]" style={{ fontSize: '13px',  margin: 0 }}>
                       {exam.paperName}
                       {exam.accessType === 'UNIFIED'
                         ? ` · 📅 ${new Date(exam.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}-${new Date(exam.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
                         : ` · ⏱ ${formatRemainingTime(exam.remainingTime)}`}
                     </p>
                   </div>
-                  <Link href={`/exam/take/${exam.id}`} style={{
-                    padding: '8px 20px', borderRadius: '8px', background: 'var(--fox)', color: 'white',
+                  <Link href={`/exam/take/${exam.id}`} className="bg-[var(--fox)]" style={{
+                    padding: '8px 20px', borderRadius: '8px',  color: 'white',
                     fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
                   }}>{exam.accessType === 'UNIFIED' ? '返回考场 →' : '继续答题 →'}</Link>
                 </div>
@@ -166,26 +166,26 @@ export default function ExamList() {
                 const notStarted = exam.startTime && now < new Date(exam.startTime);
                 const ended = exam.endTime && now > new Date(exam.endTime);
                 return (
-                <div key={exam.id} style={{
-                  background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--ink-100)',
+                <div key={exam.id} className="bg-[var(--paper-bright)]" style={{
+                   borderRadius: '12px', border: '1px solid var(--ink-100)',
                   padding: '20px 24px', marginBottom: '12px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   opacity: ended ? 0.6 : 1,
                 }}>
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: '0 0 2px' }}>
+                    <h3 className="text-[var(--neutral-800)]" style={{ fontSize: '15px', fontWeight: 600,  margin: '0 0 4px' }}>{exam.title}</h3>
+                    <p className="text-[var(--neutral-500)]" style={{ fontSize: '13px',  margin: '0 0 2px' }}>
                       ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 📅 {formatExamTime(exam.startTime)}
                     </p>
-                    <p style={{ fontSize: '12px', color: 'var(--neutral-400)', margin: 0 }}>{exam.paperName}</p>
+                    <p className="text-[var(--neutral-400)]" style={{ fontSize: '12px',  margin: 0 }}>{exam.paperName}</p>
                   </div>
                   {notStarted ? (
-                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--neutral-100)', color: 'var(--neutral-400)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
+                    <span className="bg-[var(--neutral-100)] text-[var(--neutral-400)]" style={{ padding: '8px 16px', borderRadius: '8px',   fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>⏳ 未开始</span>
                   ) : ended ? (
-                    <span style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--error-pale)', color: 'var(--error)', fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
+                    <span className="bg-[var(--error-pale)] text-[var(--error)]" style={{ padding: '8px 16px', borderRadius: '8px',   fontSize: '13px', fontWeight: 600, flexShrink: 0 }}>已结束</span>
                   ) : (
-                    <Link href={`/exam/take/${exam.id}`} style={{
-                      padding: '8px 20px', borderRadius: '8px', background: 'var(--fox)', color: 'white',
+                    <Link href={`/exam/take/${exam.id}`} className="bg-[var(--fox)]" style={{
+                      padding: '8px 20px', borderRadius: '8px',  color: 'white',
                       fontSize: '13px', fontWeight: 600, textDecoration: 'none', flexShrink: 0,
                     }}>进入考试 →</Link>
                   )}
@@ -201,19 +201,19 @@ export default function ExamList() {
           <section style={styles.section}>
             <h2 style={styles.sectionTitle}>⚠️ 已缺考</h2>
             {missedExams.map(exam => (
-              <div key={exam.id} style={{
-                background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--verm)',
+              <div key={exam.id} className="bg-[var(--paper-bright)]" style={{
+                 borderRadius: '12px', border: '1px solid var(--verm)',
                 padding: '16px 24px', marginBottom: '8px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 opacity: 0.8,
               }}>
                 <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--neutral-800)', margin: '0 0 4px' }}>{exam.title}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--neutral-500)', margin: 0 }}>
+                  <h3 className="text-[var(--neutral-800)]" style={{ fontSize: '15px', fontWeight: 600,  margin: '0 0 4px' }}>{exam.title}</h3>
+                  <p className="text-[var(--neutral-500)]" style={{ fontSize: '13px',  margin: 0 }}>
                     ⏱ {exam.durationMinutes}分钟 · 📊 {exam.totalScore}分 · 截止 {new Date(exam.endTime).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <span style={{ padding: '6px 14px', borderRadius: '8px', background: 'var(--error-pale)', color: 'var(--error)', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+                <span className="bg-[var(--error-pale)] text-[var(--error)]" style={{ padding: '6px 14px', borderRadius: '8px',   fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
                   未参加
                 </span>
               </div>
@@ -238,8 +238,8 @@ export default function ExamList() {
 
               return (
                 <div key={exam.id} onClick={() => isPublished ? router.push(`/exam/result/${exam.id}`) : undefined}
-                  style={{
-                    background: 'var(--paper-bright)', borderRadius: '12px', border: '1px solid var(--ink-100)',
+                  className="bg-[var(--paper-bright)]" style={{
+                     borderRadius: '12px', border: '1px solid var(--ink-100)',
                     padding: '16px 24px', marginBottom: '8px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     cursor: isPublished ? 'pointer' : 'default',
@@ -249,17 +249,17 @@ export default function ExamList() {
                       {badge.text}
                     </span>
                     <div>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--neutral-800)' }}>{exam.title}</span>
+                      <span className="text-[var(--neutral-800)]" style={{ fontSize: '14px', fontWeight: 500,  }}>{exam.title}</span>
                       {isPublished && (
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fox)', marginLeft: '12px' }}>
+                        <span className="text-[var(--fox)]" style={{ fontSize: '14px', fontWeight: 600,  marginLeft: '12px' }}>
                           {exam.myFinalScore || exam.myScore}分
                         </span>
                       )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--neutral-400)' }}>{formatDate(exam.submittedAt)}</span>
-                    {isPublished && <span style={{ fontSize: '14px', color: 'var(--neutral-400)' }}>→</span>}
+                    <span className="text-[var(--neutral-400)]" style={{ fontSize: '12px',  }}>{formatDate(exam.submittedAt)}</span>
+                    {isPublished && <span className="text-[var(--neutral-400)]" style={{ fontSize: '14px',  }}>→</span>}
                   </div>
                 </div>
               );

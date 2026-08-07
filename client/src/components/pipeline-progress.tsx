@@ -56,7 +56,7 @@ export default function PipelineProgress({ status, hasChapters, totalQuestions, 
         return (
           <div key={step.key} className="flex items-center">
             <div className="flex flex-col items-center">
-              <div style={{
+              <div className="text-[#fff]" style={{
                 width: dotSize,
                 height: dotSize,
                 borderRadius: '50%',
@@ -66,7 +66,7 @@ export default function PipelineProgress({ status, hasChapters, totalQuestions, 
                 justifyContent: 'center',
                 fontSize: fontSize,
                 fontWeight: 600,
-                color: '#fff',
+                
                 transition: 'all 0.3s',
               }}>
                 {isDone ? '✓' : idx + 1}

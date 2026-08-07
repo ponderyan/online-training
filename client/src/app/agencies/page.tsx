@@ -122,7 +122,7 @@ export default function AgenciesPage() {
                     <div className="flex gap-1">
                       <button onClick={() => { setEditItem(a); setForm({ name: a.name, shortName: a.shortName || '', contactPerson: a.contactPerson || '', contactPhone: a.contactPhone || '', contactEmail: a.contactEmail || '', remark: a.remark || '', organizationId: a.organizationId || '' }); setShowModal(true); }}
                         className="btn btn-ghost btn-xs">编辑</button>
-                      <button onClick={() => handleDelete(a.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>删除</button>
+                      <button onClick={() => handleDelete(a.id)} className="btn btn-ghost btn-xs text-[var(--verm)]" >删除</button>
                     </div>
                   )}
                 </td>
@@ -138,7 +138,7 @@ export default function AgenciesPage() {
           <div className="modal-card max-w-[500px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">{editItem ? '编辑机构' : '新建机构'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowModal(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div><label className="text-[var(--ink-500)] block text-xs font-medium mb-1">机构名称 *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input" /></div>

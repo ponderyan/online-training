@@ -161,19 +161,19 @@ export default function KnowledgePage() {
                   {documents.map((d: any) => (
                     <tr key={d.id}>
                       <td className="font-medium text-sm">
-                        <Link href={`/admin/knowledge/${d.id}`} style={{ color: 'var(--fox)', textDecoration: 'none' }}>
+                        <Link href={`/admin/knowledge/${d.id}`} className="text-[var(--fox)]" style={{  textDecoration: 'none' }}>
                           {d.name}
                         </Link>
                         <span className="text-[var(--ink-300)] text-xs ml-2">.{d.fileType}</span>
                       </td>
                       <td className="text-[var(--ink-400)] text-xs">{d.subject?.name || '—'}</td>
-                      <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{d.chunkCount} 块</span></td>
+                      <td><span className="tag bg-[rgba(123,31,162,0.09)] text-[var(--purple)]" style={{   fontSize: '10px' }}>{d.chunkCount} 块</span></td>
                       <td className="text-[var(--ink-300)] text-xs">v{d.version}</td>
                       <td>{statusBadge(d.status)}</td>
                       <td className="text-[var(--ink-300)] text-xs">{d.createdAt ? new Date(d.createdAt).toLocaleString('zh-CN') : '—'}</td>
                       <td className="flex gap-2">
                         <Link href={`/admin/knowledge/${d.id}`} className="text-[var(--fox)] text-xs">分块</Link>
-                        <button onClick={() => handleDelete(d.id, d.name)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                        <button onClick={() => handleDelete(d.id, d.name)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                       </td>
                     </tr>
                   ))}
@@ -205,7 +205,7 @@ export default function KnowledgePage() {
               <div className="flex gap-1 mt-3 flex-wrap">
                 <span className="text-[var(--ink-300)] text-xs">提取关键词：</span>
                 {testKeywords.map((kw, i) => (
-                  <span key={i} className="tag" style={{ fontSize: '10px', background: 'var(--blue-pale)', color: 'var(--blue)' }}>{kw}</span>
+                  <span key={i} className="tag bg-[var(--blue-pale)] text-[var(--blue)]" style={{ fontSize: '10px',   }}>{kw}</span>
                 ))}
               </div>
             )}
@@ -225,7 +225,7 @@ export default function KnowledgePage() {
                   {r.matchedKeywords?.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {r.matchedKeywords.map((kw: string, j: number) => (
-                        <span key={j} className="tag" style={{ fontSize: '9px', background: 'var(--fox-pale)', color: 'var(--fox-dark)' }}>{kw}</span>
+                        <span key={j} className="tag bg-[var(--fox-pale)] text-[var(--fox-dark)]" style={{ fontSize: '9px',   }}>{kw}</span>
                       ))}
                     </div>
                   )}
@@ -243,7 +243,7 @@ export default function KnowledgePage() {
 
       {/* 上传弹窗 */}
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" >
           <div className="card p-6" style={{ width: 440, maxHeight: '80vh', overflow: 'auto' }}>
             <h3 className="text-base font-semibold mb-4">📤 上传知识文档</h3>
             <div className="space-y-4">

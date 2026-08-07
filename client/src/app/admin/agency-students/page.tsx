@@ -212,8 +212,8 @@ export default function AgencyStudentsPage() {
                           <td className="text-xs">{s.email || '—'}</td>
                           <td className="text-xs">{s.studentNumber || '—'}</td>
                           <td className="flex gap-1">
-                            <button onClick={() => router.push(`/students/${s.id}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>详情</button>
-                            <button onClick={() => openSubmitModal(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>申报学时</button>
+                            <button onClick={() => router.push(`/students/${s.id}`)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >详情</button>
+                            <button onClick={() => openSubmitModal(s)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >申报学时</button>
                           </td>
                         </tr>
                       ))}
@@ -282,7 +282,7 @@ export default function AgencyStudentsPage() {
                                   api.enrollmentAgencies.removeMember(selectedAgencyId!, m.id).then(() => {
                                     api.enrollmentAgencies.listMembers(selectedAgencyId!).then(setMembers);
                                   }).catch((e: any) => toast.error('操作失败：' + e.message));
-                                }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>移除</button>
+                                }} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >移除</button>
                               </td>
                             </tr>
                           ))}
@@ -304,7 +304,7 @@ export default function AgencyStudentsPage() {
           <div className="modal-card max-w-md animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">✏️ 为 {submitTarget.displayName} 申报学时</h3>
-              <button onClick={() => setShowSubmitModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowSubmitModal(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div>
@@ -362,7 +362,7 @@ export default function AgencyStudentsPage() {
           <div className="modal-card max-w-sm animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">➕ 添加机构成员</h3>
-              <button onClick={() => setShowMemberModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowMemberModal(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div>

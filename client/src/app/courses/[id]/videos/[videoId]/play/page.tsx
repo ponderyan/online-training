@@ -134,13 +134,13 @@ export default function VideoPlayPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push(`/courses/${courseId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-3" style={{ color: 'var(--fox)' }}>
+      <button onClick={() => router.push(`/courses/${courseId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-3 text-[var(--fox)]" >
         ← {course?.name || '返回课程'}
       </button>
 
       {/* Video Player */}
       <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
-        <div style={{ position: 'relative', paddingTop: '56.25%', background: 'var(--ink-900)' }}>
+        <div className="bg-[var(--ink-900)]" style={{ position: 'relative', paddingTop: '56.25%',  }}>
           <video
             ref={videoRef}
             id="video-player"
@@ -165,9 +165,9 @@ export default function VideoPlayPage() {
           </div>
           <div>
             {completed ? (
-              <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontWeight: 600 }}>✅ 已完成</span>
+              <span className="tag bg-[var(--sage-glow)] text-[var(--sage)]" style={{   fontWeight: 600 }}>✅ 已完成</span>
             ) : (
-              <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中</span>
+              <span className="tag bg-[var(--fox-glow)] text-[var(--fox)]" >学习中</span>
             )}
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function VideoPlayPage() {
           <div className="mt-3">
             <div className="flex items-center gap-2">
               <div className="bg-[var(--ink-100)] flex-1 h-1.5 rounded-full">
-                <div className="h-full rounded-full" style={{ width: `${Math.min(100, progress.progress || 0)}%`, background: 'var(--fox)', transition: 'width 0.3s' }} />
+                <div className="h-full rounded-full bg-[var(--fox)]" style={{ width: `${Math.min(100, progress.progress || 0)}%`,  transition: 'width 0.3s' }} />
               </div>
               <span className="text-[var(--ink-400)] text-xs font-mono">{Math.round(progress.progress || 0)}%</span>
             </div>

@@ -43,7 +43,7 @@ export default function PrototypesPage() {
             点击查看高保真原型 · 每个原型包含模拟数据和可交互流程
           </p>
           <div className="flex items-center justify-center gap-2 mt-3">
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>二期规划中</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--fox-dark)]" >二期规划中</span>
             <span className="text-[var(--ink-300)] text-xs">待需求确认后进入开发</span>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function PrototypesPage() {
           ))}
         </div>
 
-        <div className="mt-10 p-5 rounded-lg text-xs text-center" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+        <div className="mt-10 p-5 rounded-lg text-xs text-center bg-[var(--fox-glow)] text-[var(--fox-dark)]" >
           🦊 原型已部署在服务器上，用手机或电脑浏览器都能打开查看。
           <br />等你回来一起审，确认需求后再进入开发。
         </div>

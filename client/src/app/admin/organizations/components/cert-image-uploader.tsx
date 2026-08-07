@@ -42,11 +42,11 @@ export default function CertImageUploader({ label, hint, value, uploading, onUpl
       <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">{label}</label>
       <div className="flex items-center gap-3">
         {value ? (
-          <div className="relative group" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)', background: 'var(--neutral-50)', ...previewStyle }}>
+          <div className="relative group bg-[var(--neutral-50)]" style={{ borderRadius: round ? '50%' : '6px', overflow: 'hidden', border: '1px solid var(--ink-100)',  ...previewStyle }}>
             <img src={value} alt={label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             <button onClick={onClear}
-              className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              style={{ background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none' }} title="移除">✕</button>
+              className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-[rgba(0,0,0,0.5)] text-[#fff]"
+              style={{   border: 'none' }} title="移除">✕</button>
           </div>
         ) : (
           <div onClick={() => inputRef.current?.click()}
@@ -61,7 +61,7 @@ export default function CertImageUploader({ label, hint, value, uploading, onUpl
           </div>
         )}
         {value && (
-          <button onClick={() => inputRef.current?.click()} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-400)' }}>
+          <button onClick={() => inputRef.current?.click()} className="btn btn-ghost btn-xs text-[var(--ink-400)]" >
             {uploading ? '上传中…' : '更换'}
           </button>
         )}

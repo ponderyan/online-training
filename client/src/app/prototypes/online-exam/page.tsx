@@ -115,17 +115,17 @@ export default function OnlineExamPrototype() {
   return (
     <div className="bg-[var(--paper)] min-h-dvh-fb flex flex-col">
       {/* Top bar */}
-      <header className="border-b flex-shrink-0" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
+      <header className="border-b flex-shrink-0 bg-[var(--paper-bright)] border-[var(--ink-100)]" >
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-[var(--ink-800)] font-serif font-bold text-sm">🦊 FoxLearn</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>考试中</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-[var(--verm-glow)] text-[var(--verm)]" >考试中</span>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <span className="text-[var(--ink-300)] text-xs">进度</span>
               <div className="bg-[var(--paper-dark)] w-32 h-1.5 rounded-full">
-                <div className="h-1.5 rounded-full transition-all" style={{ width: `${(answeredCount / totalQuestions) * 100}%`, background: 'var(--fox)' }} />
+                <div className="h-1.5 rounded-full transition-all bg-[var(--fox)]" style={{ width: `${(answeredCount / totalQuestions) * 100}%`,  }} />
               </div>
               <span className="text-[var(--fox)] text-xs font-medium">{answeredCount}/{totalQuestions}</span>
             </div>
@@ -168,7 +168,7 @@ export default function OnlineExamPrototype() {
 
             {/* Question content */}
             <div className="flex-1">
-              <div className="text-base leading-relaxed mb-6" style={{ color: 'var(--ink-800)', lineHeight: 1.8 }}>
+              <div className="text-base leading-relaxed mb-6 text-[var(--ink-800)]" style={{  lineHeight: 1.8 }}>
                 {q.content}
               </div>
 
@@ -249,7 +249,7 @@ export default function OnlineExamPrototype() {
                 ← 上一题
               </button>
               <button onClick={() => setShowSubmitModal(true)}
-                className="btn btn-outline btn-sm" style={{ color: 'var(--verm)', borderColor: 'var(--verm-glow)' }}>
+                className="btn btn-outline btn-sm text-[var(--verm)] border-[var(--verm-glow)]" >
                 交卷
               </button>
               <button onClick={() => setCurrentQ(Math.min(totalQuestions - 1, currentQ + 1))} disabled={currentQ === totalQuestions - 1}
@@ -281,7 +281,7 @@ export default function OnlineExamPrototype() {
             </div>
 
             {/* Legend */}
-            <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t text-xs" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-300)' }}>
+            <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t text-xs border-[var(--ink-100)] text-[var(--ink-300)]" >
               <div className="flex items-center gap-2">
                 <span className="bg-[var(--fox)] w-3 h-3 rounded" />
                 <span>已作答</span>
@@ -310,7 +310,7 @@ export default function OnlineExamPrototype() {
           <div className="modal-card max-w-[420px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">确认交卷</h3>
-              <button onClick={() => setShowSubmitModal(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowSubmitModal(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div className="bg-[var(--paper)] p-4 rounded-lg">
@@ -331,7 +331,7 @@ export default function OnlineExamPrototype() {
               </div>
 
               {totalQuestions - answeredCount > 0 && (
-                <div className="text-sm p-3 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+                <div className="text-sm p-3 rounded-lg bg-[var(--verm-glow)] text-[var(--verm)]" >
                   ⚠ 还有 {totalQuestions - answeredCount} 道题未作答，确定要交卷吗？
                 </div>
               )}

@@ -130,7 +130,7 @@ export default function OrgCodesSettingsPage() {
             <button onClick={doPreview} className="btn btn-outline btn-sm">预览</button>
           </div>
           {previewResult && (
-            <div className="mt-2 p-2 rounded text-sm font-mono font-bold" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+            <div className="mt-2 p-2 rounded text-sm font-mono font-bold bg-[var(--fox-glow)] text-[var(--fox-dark)]" >
               {previewResult}
             </div>
           )}
@@ -186,7 +186,7 @@ export default function OrgCodesSettingsPage() {
                     <span className="text-[var(--gold)] font-mono font-bold">{a.abbr}</span>
                     <span className="tag tag-ink" style={{ fontSize: 9 }}>{a.category || '—'}</span>
                     <button onClick={() => { setEditId(a.id); setEditKeyword(a.keyword); setEditAbbr(a.abbr); }}
-                      className="bg-transparent border-none cursor-pointer text-xs" style={{ color: 'var(--ink-300)' }}>✎</button>
+                      className="bg-transparent border-none cursor-pointer text-xs text-[var(--ink-300)]" >✎</button>
                     <button onClick={() => {
                         if (confirmDelId === a.id) { setConfirmDelId(null); deleteAbbreviation(a.id); }
                         else { setConfirmDelId(a.id); setTimeout(() => setConfirmDelId(c => (c === a.id ? null : c)), 3000); }
@@ -219,7 +219,7 @@ export default function OrgCodesSettingsPage() {
           <div className="max-h-[500px] overflow-y-auto space-y-0.5">
             {allOrgs.map(o => (
               <div key={o.id} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded" style={{ paddingLeft: 8 + o.depth * 16 }}>
-                <span className="font-mono font-bold" style={{ color: 'var(--cyan)', minWidth: 100 }}>{o.code}</span>
+                <span className="font-mono font-bold text-[var(--cyan)]" style={{  minWidth: 100 }}>{o.code}</span>
                 <span className="text-[var(--ink-500)]">{o.name}</span>
                 <span className="tag tag-ink ml-auto" style={{ fontSize: 9 }}>{o.orgType}</span>
               </div>

@@ -48,7 +48,7 @@ export default function ExamTranscriptPage() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="px-5 py-3 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+        <div className="px-5 py-3 text-xs font-medium text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
           成绩排名
         </div>
         {data.scores?.map((s: any, i: number) => (

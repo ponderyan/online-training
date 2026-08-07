@@ -142,8 +142,8 @@ export default function MaterialsPage() {
           <div className="flex items-center gap-2 mb-1">
             {subjectIdParam && (
               <button onClick={() => router.push('/materials')}
-                className="text-xs bg-transparent border-none cursor-pointer"
-                style={{ color: 'var(--fox)' }}>← 返回科目总览</button>
+                className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+                >← 返回科目总览</button>
             )}
           </div>
           <h1 className="page-title">
@@ -213,8 +213,8 @@ export default function MaterialsPage() {
             {archivedMaterials.length > 0 && (
               <div>
                 <button onClick={() => setShowArchived(!showArchived)}
-                  className="text-sm font-medium mb-3 flex items-center gap-1 bg-transparent border-none cursor-pointer"
-                  style={{ color: 'var(--ink-400)' }}>
+                  className="text-sm font-medium mb-3 flex items-center gap-1 bg-transparent border-none cursor-pointer text-[var(--ink-400)]"
+                  >
                   📦 已归档 · {archivedMaterials.length} 份 {showArchived ? '▲' : '▼'}
                 </button>
                 {showArchived && (
@@ -283,8 +283,8 @@ export default function MaterialsPage() {
               {/* 已归档 */}
               {archivedMaterials.length > 0 && (
                 <button onClick={() => setShowArchived(!showArchived)}
-                  className="text-sm font-medium flex items-center gap-1 bg-transparent border-none cursor-pointer mb-3"
-                  style={{ color: 'var(--ink-400)' }}>
+                  className="text-sm font-medium flex items-center gap-1 bg-transparent border-none cursor-pointer mb-3 text-[var(--ink-400)]"
+                  >
                   📦 已归档 · {archivedMaterials.length} 份 {showArchived ? '▲' : '▼'}
                 </button>
               )}

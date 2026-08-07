@@ -85,9 +85,9 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" 
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="rounded-2xl w-full max-w-3xl p-6" style={{ background: 'var(--paper-bright)', maxHeight: '90vh', overflow: 'auto' }}>
+      <div className="rounded-2xl w-full max-w-3xl p-6 bg-[var(--paper-bright)]" style={{  maxHeight: '90vh', overflow: 'auto' }}>
         <h2 className="text-lg font-semibold mb-4">📥 导入学员</h2>
 
         {/* Step 1: Download template */}
@@ -103,7 +103,7 @@ export default function ImportModal({ onClose, onSuccess }: { onClose: () => voi
 
         {/* Validation errors */}
         {errors.length > 0 && (
-          <div className="mb-4 p-3 rounded-lg" style={{ background: 'var(--error-pale)', border: '1px solid var(--verm)' }}>
+          <div className="mb-4 p-3 rounded-lg bg-[var(--error-pale)]" style={{  border: '1px solid var(--verm)' }}>
             <p className="text-[var(--error)] text-xs font-medium mb-1">⚠️ 发现 {errors.length} 个问题</p>
             {errors.slice(0, 5).map((e, i) => (
               <p key={i} className="text-[var(--error)] text-xs">第{e.row}行：{e.message}</p>

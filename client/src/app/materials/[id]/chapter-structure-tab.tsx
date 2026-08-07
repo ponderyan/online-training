@@ -201,11 +201,11 @@ export default function ChapterStructureTab({
               {!isLocked && (
                 <>
                   <button onClick={() => startEditTitle(ch)}
-                    className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                    className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--fox)')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>编辑</button>
                   <button onClick={() => handleDelete(ch.id)}
-                    className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                    className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
                 </>
@@ -213,7 +213,7 @@ export default function ChapterStructureTab({
 
               {/* 展开/折叠 */}
               <button onClick={() => toggleExpand(ch)}
-                className="btn btn-ghost btn-xs" style={{ color: 'var(--fox)' }}>
+                className="btn btn-ghost btn-xs text-[var(--fox)]" >
                 {expandedContent[ch.id] ? '收起' : '展开'}
               </button>
             </div>
@@ -225,8 +225,8 @@ export default function ChapterStructureTab({
                   <p className="text-[var(--ink-300)] text-xs">加载中…</p>
                 ) : (
                   <div>
-                    <pre className="text-xs leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto p-3 rounded"
-                      style={{ background: 'var(--paper)', color: 'var(--ink-600)' }}>
+                    <pre className="text-xs leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto p-3 rounded bg-[var(--paper)] text-[var(--ink-600)]"
+                      >
                       {expandedContent[ch.id].text}
                     </pre>
                     {/* 分割操作 */}
@@ -243,7 +243,7 @@ export default function ChapterStructureTab({
                       </div>
                     ) : !isLocked && (
                       <button onClick={() => { setSplitChapterId(ch.id); setSplitPosition(Math.floor((ch.content?.length || 0) / 2)); }}
-                        className="btn btn-ghost btn-xs mt-2" style={{ color: 'var(--fox)' }}>
+                        className="btn btn-ghost btn-xs mt-2 text-[var(--fox)]" >
                         在此分割 ➔
                       </button>
                     )}

@@ -133,7 +133,7 @@ export default function ProgramsPage() {
                     {/* 标题行 */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[var(--ink-300)] text-xs font-mono">{p.code}</span>
-                      <h3 className="font-semibold" style={{ color: 'var(--ink-700)', fontSize: 15 }}>{p.name}</h3>
+                      <h3 className="font-semibold text-[var(--ink-700)]" style={{  fontSize: 15 }}>{p.name}</h3>
                       {p.headTeacher && (
                         <span className="text-[var(--fox)] text-xs">
                           <User size={12} className="inline mr-0.5" />{p.headTeacher}

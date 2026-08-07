@@ -152,8 +152,8 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
     <div className="flex gap-5" onKeyDown={handleKeyDown}>
       {/* 左栏：题目列表 */}
       <div className="w-56 flex-shrink-0">
-        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
-          <div className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+        <div className="rounded-xl overflow-hidden bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
+          <div className="px-4 py-3 text-xs font-medium text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
             主观题（{subjectivePqs.length}）
           </div>
           <div className="border-[var(--ink-100)] divide-y">
@@ -162,7 +162,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                 className="px-4 py-3 cursor-pointer transition-colors text-sm"
                 style={{ background: selectedPq?.id === pq.id ? 'var(--fox-pale2)' : 'white' }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--fox)]" >
                     {typeNames[pq.question?.type] || pq.question?.type}
                   </span>
                   <span className="text-[var(--ink-600)] text-xs font-medium">{pq.score}分</span>
@@ -173,31 +173,31 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
             {subjectivePqs.length === 0 && <div className="text-[var(--ink-300)] px-4 py-8 text-center text-xs">本场无主观题</div>}
           </div>
         </div>
-        <div className="mt-3 p-3 rounded-lg text-[10px] space-y-1" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
+        <div className="mt-3 p-3 rounded-lg text-[10px] space-y-1 bg-[var(--paper-dark)] text-[var(--ink-400)]" >
           <p>⌨️ 快捷键：</p>
-          <p><kbd className="px-1 rounded" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-200)' }}>Enter</kbd> 提交并下一个</p>
-          <p><kbd className="px-1 rounded" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-200)' }}>Alt+↑↓</kbd> 切换答案</p>
+          <p><kbd className="px-1 rounded bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-200)' }}>Enter</kbd> 提交并下一个</p>
+          <p><kbd className="px-1 rounded bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-200)' }}>Alt+↑↓</kbd> 切换答案</p>
         </div>
       </div>
 
       {/* 右栏：答案列表 + 评分 */}
       <div className="flex-1">
         {!selectedPq ? (
-          <div className="rounded-xl p-12 text-center" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+          <div className="rounded-xl p-12 text-center bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
             <p className="text-3xl mb-3">📝</p>
             <p className="text-[var(--ink-300)]">选择左侧题目开始按题批阅</p>
           </div>
         ) : loading ? (
-          <div className="rounded-xl p-12 text-center" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+          <div className="rounded-xl p-12 text-center bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
             <p className="text-[var(--ink-300)]">加载中…</p>
           </div>
         ) : (
           <div className="space-y-4">
             {/* 题目信息 + 进度 */}
-            <div className="rounded-xl p-4" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+            <div className="rounded-xl p-4 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[var(--fox-glow)] text-[var(--fox)]" >
                     {typeNames[selectedPq.question?.type]} · {selectedPq.score}分
                   </span>
                   <span className="text-[var(--ink-400)] text-xs">已评 {gradedCount}/{answers.length}</span>
@@ -211,7 +211,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
               </div>
               <p className="text-[var(--ink-600)] text-sm">{selectedPq.question?.content}</p>
               {selectedPq.question?.analysis && (
-                <p className="text-xs mt-2 p-2 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>
+                <p className="text-xs mt-2 p-2 rounded bg-[var(--sage-glow)] text-[var(--sage)]" >
                   📖 参考答案：{selectedPq.question.analysis}
                 </p>
               )}
@@ -219,11 +219,11 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
 
             {/* Rubric 评分标准 */}
             {rubric.length > 0 && (
-              <div className="rounded-xl p-4" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+              <div className="rounded-xl p-4 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[var(--ink-500)] text-xs font-medium">📋 评分标准（点击打分）</span>
                   <button onClick={() => { setRubricDraft([...rubric]); setShowRubricEditor(true); }}
-                    className="text-[10px] px-2 py-0.5 rounded" style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-400)' }}>
+                    className="text-[10px] px-2 py-0.5 rounded text-[var(--ink-400)]" style={{ border: '1px solid var(--ink-200)',  }}>
                     编辑标准
                   </button>
                 </div>
@@ -243,10 +243,10 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
               </div>
             )}
             {rubric.length === 0 && (
-              <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'var(--paper-dark)', border: '1px dashed var(--ink-200)' }}>
+              <div className="rounded-xl p-3 flex items-center justify-between bg-[var(--paper-dark)]" style={{  border: '1px dashed var(--ink-200)' }}>
                 <span className="text-[var(--ink-400)] text-xs">💡 尚未设置评分标准，可预设扣分点提升阅卷一致性</span>
                 <button onClick={() => { setRubricDraft([]); setShowRubricEditor(true); }}
-                  className="text-xs px-3 py-1 rounded-md" style={{ background: 'var(--fox)', color: 'white' }}>
+                  className="text-xs px-3 py-1 rounded-md bg-[var(--fox)]" style={{  color: 'white' }}>
                   + 设置 Rubric
                 </button>
               </div>
@@ -254,19 +254,19 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
 
             {/* 当前答案 + 评分表单 */}
             {answers.length > 0 && (
-              <div className="rounded-xl p-5" style={{ background: 'var(--paper-bright)', border: `2px solid ${answers[currentIdx]?.graded ? 'var(--sage)' : 'var(--fox-light)'}` }}>
+              <div className="rounded-xl p-5 bg-[var(--paper-bright)]" style={{  border: `2px solid ${answers[currentIdx]?.graded ? 'var(--sage)' : 'var(--fox-light)'}` }}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[var(--ink-500)] text-xs font-medium">
                     {blind ? `考生 #${currentIdx + 1}` : answers[currentIdx]?.studentName} · 第 {currentIdx + 1}/{answers.length} 份
                   </span>
                   {answers[currentIdx]?.graded && (
-                    <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>
+                    <span className="text-xs px-2 py-0.5 rounded bg-[var(--sage-glow)] text-[var(--sage)]" >
                       ✅ 已评 {answers[currentIdx].score}/{maxScore}
                     </span>
                   )}
                 </div>
-                <div className="text-sm p-4 rounded-lg mb-4" style={{ background: 'var(--fox-pale)', borderLeft: '3px solid var(--fox-light)', minHeight: 80 }}>
-                  <p style={{ color: 'var(--ink-700)', whiteSpace: 'pre-wrap' }}>
+                <div className="text-sm p-4 rounded-lg mb-4 bg-[var(--fox-pale)]" style={{  borderLeft: '3px solid var(--fox-light)', minHeight: 80 }}>
+                  <p className="text-[var(--ink-700)]" style={{  whiteSpace: 'pre-wrap' }}>
                     {typeof answers[currentIdx]?.answer === 'string'
                       ? (answers[currentIdx]?.answer || '（未作答）')
                       : JSON.stringify(answers[currentIdx]?.answer || '（未作答）')}
@@ -285,7 +285,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                       className="input" placeholder="扣分原因…" />
                   </div>
                   <button onClick={handleSubmitAndNext} disabled={!scoreInput || submitting}
-                    className="btn text-xs px-4 py-2.5" style={{ background: 'var(--sage)', color: 'white', opacity: !scoreInput || submitting ? 0.5 : 1 }}>
+                    className="btn text-xs px-4 py-2.5 bg-[var(--sage)]" style={{  color: 'white', opacity: !scoreInput || submitting ? 0.5 : 1 }}>
                     {submitting ? '…' : '✓ 提交 (Enter)'}
                   </button>
                 </div>
@@ -302,8 +302,8 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
             )}
 
             {/* 全部答案缩略列表 */}
-            <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
-              <div className="px-4 py-2.5 text-xs font-medium" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+            <div className="rounded-xl overflow-hidden bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
+              <div className="px-4 py-2.5 text-xs font-medium text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
                 全部答案（{answers.length}份）
               </div>
               <div className="border-[var(--ink-100)] max-h-[300px] overflow-y-auto divide-y">
@@ -321,7 +321,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                     {a.graded ? (
                       <span className="text-[var(--sage)] text-xs font-medium num">{a.score}/{maxScore}</span>
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--gold-glow)', color: 'var(--gold-dark)' }}>待评</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--gold-glow)] text-[var(--gold-dark)]" >待评</span>
                     )}
                   </div>
                 ))}
@@ -333,7 +333,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
 
       {/* Rubric 编辑弹窗 */}
       {showRubricEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)]" >
           <div className="bg-[var(--paper-bright)] rounded-2xl p-6 w-[520px] max-h-[80vh] overflow-y-auto">
             <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-4">📋 编辑评分标准（{selectedPq?.score}分）</h3>
             <div className="space-y-2 mb-4">
@@ -351,17 +351,17 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
                     onChange={e => { const d = [...rubricDraft]; d[idx] = { ...d[idx], description: e.target.value }; setRubricDraft(d); }}
                     className="input flex-1 text-xs" />
                   <button onClick={() => setRubricDraft(rubricDraft.filter((_, i) => i !== idx))}
-                    className="text-xs px-2 py-1 rounded" style={{ color: 'var(--error)' }}>✕</button>
+                    className="text-xs px-2 py-1 rounded text-[var(--error)]" >✕</button>
                 </div>
               ))}
             </div>
             <button onClick={() => setRubricDraft([...rubricDraft, { description: '', points: 1, type: 'add' }])}
-              className="text-xs px-3 py-1.5 rounded-md mb-4" style={{ border: '1px dashed var(--ink-300)', color: 'var(--ink-500)' }}>
+              className="text-xs px-3 py-1.5 rounded-md mb-4 text-[var(--ink-500)]" style={{ border: '1px dashed var(--ink-300)',  }}>
               + 添加评分项
             </button>
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowRubricEditor(false)} className="btn btn-outline btn-sm">取消</button>
-              <button onClick={saveRubric} className="btn btn-sm" style={{ background: 'var(--fox)', color: 'white' }}>保存标准</button>
+              <button onClick={saveRubric} className="btn btn-sm bg-[var(--fox)]" style={{  color: 'white' }}>保存标准</button>
             </div>
           </div>
         </div>

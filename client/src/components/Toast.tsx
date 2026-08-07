@@ -99,14 +99,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               key={t.id}
-              className="animate-slideDown"
+              className="animate-slideDown bg-[var(--color-paper-bright)]"
               style={{
                 pointerEvents: 'auto',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 10,
                 padding: '12px 14px',
-                background: 'var(--color-paper-bright)',
+                
                 borderLeft: `4px solid ${s.border}`,
                 borderRadius: 'var(--radius-card)',
                 boxShadow: 'var(--shadow-lg)',
@@ -121,11 +121,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {ICONS[t.type]}
               </span>
               <span
-                style={{
+                className="text-[var(--color-ink-800)]" style={{
                   flex: 1,
                   fontSize: '0.84rem',
                   lineHeight: 1.5,
-                  color: 'var(--color-ink-800)',
+                  
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                 }}
@@ -134,10 +134,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </span>
               <button
                 onClick={() => remove(t.id)}
-                style={{
+                className="text-[var(--color-ink-300)]" style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--color-ink-300)',
+                  
                   cursor: 'pointer',
                   fontSize: '1rem',
                   lineHeight: 1,

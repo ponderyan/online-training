@@ -43,14 +43,14 @@ export default function OrgNodeView({ node, depth, selectedId, expanded, onSelec
         }}
       >
         <button onClick={e => { e.stopPropagation(); if (hasChildren) onToggle(node.id); }}
-          className="w-4 h-4 flex items-center justify-center text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0"
-          style={{ color: 'var(--ink-400)', visibility: hasChildren ? 'visible' : 'hidden' }}>
+          className="w-4 h-4 flex items-center justify-center text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0 text-[var(--ink-400)]"
+          style={{  visibility: hasChildren ? 'visible' : 'hidden' }}>
           {isExpanded ? '▼' : '▶'}
         </button>
         <span className="text-sm font-medium truncate flex-1" style={{ color: isSelected ? 'var(--fox-dark)' : 'var(--ink-600)' }}>
           {highlightText(node.name, searchKeyword || '')}
         </span>
-        <span className="tag text-[9px] flex-shrink-0" style={{ background: 'var(--paper-dark)', color: ORG_TYPE_COLORS[node.orgType || ''] || 'var(--ink-400)' }}>
+        <span className="tag text-[9px] flex-shrink-0 bg-[var(--paper-dark)]" style={{  color: ORG_TYPE_COLORS[node.orgType || ''] || 'var(--ink-400)' }}>
           {ORG_TYPE_LABELS[node.orgType || ''] || LEVEL_LABELS[node.level] || `L${node.level}`}
         </span>
         <span className="text-[var(--ink-300)] text-[9px] flex-shrink-0">
@@ -59,11 +59,11 @@ export default function OrgNodeView({ node, depth, selectedId, expanded, onSelec
         </span>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button onClick={e => { e.stopPropagation(); onCreate(node); }}
-            className="text-[10px] bg-transparent border-none cursor-pointer px-1" style={{ color: 'var(--ink-300)' }} title="新建子组织">＋</button>
+            className="text-[10px] bg-transparent border-none cursor-pointer px-1 text-[var(--ink-300)]" title="新建子组织">＋</button>
           <button onClick={e => { e.stopPropagation(); onEdit(node); }}
-            className="text-[10px] bg-transparent border-none cursor-pointer px-1" style={{ color: 'var(--ink-300)' }} title="编辑">✏️</button>
+            className="text-[10px] bg-transparent border-none cursor-pointer px-1 text-[var(--ink-300)]" title="编辑">✏️</button>
           <button onClick={e => { e.stopPropagation(); onDelete(node); }}
-            className="text-[10px] bg-transparent border-none cursor-pointer px-1" style={{ color: 'var(--verm)' }} title="删除">🗑️</button>
+            className="text-[10px] bg-transparent border-none cursor-pointer px-1 text-[var(--verm)]" title="删除">🗑️</button>
         </div>
       </div>
       {hasChildren && isExpanded && (

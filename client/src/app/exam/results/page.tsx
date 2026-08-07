@@ -57,7 +57,7 @@ export default function ExamResultsPage() {
             <tbody>
               {exams.map((e: any) => (
                 <tr key={e.id}>
-                  <td className="font-medium">{e.title}{e.examMode === 'OFFLINE' && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--warning-pale)', color: 'var(--warning)' }}>线下</span>}</td>
+                  <td className="font-medium">{e.title}{e.examMode === 'OFFLINE' && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--warning-pale)] text-[var(--warning)]" >线下</span>}</td>
                   <td className="text-[var(--ink-400)] text-xs">{e.paperName || '—'}</td>
                   <td>{e.totalScore ?? '—'}</td>
                   <td><strong style={{ color: e.isPassed ? 'var(--sage)' : 'var(--error)' }}>{e.myFinalScore ?? e.myScore ?? '—'}</strong></td>
@@ -66,7 +66,7 @@ export default function ExamResultsPage() {
                   <td>
                     {e.examMode !== 'OFFLINE' ? (
                       <button onClick={() => router.push(`/exam/result/${e.id}`)}
-                        className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+                        className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >
                         查看详情
                       </button>
                     ) : (

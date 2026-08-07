@@ -249,20 +249,20 @@ export default function PaperDetailPage() {
           {canEdit && (
             <>
               <button onClick={() => router.push(`/generate?copyFrom=${paper.id}`)} className="btn btn-outline btn-sm">修改配置</button>
-              <button onClick={handleSubmitReview} className="btn btn-sm" style={{ background: 'var(--gold)', color: '#fff' }}>提交审题</button>
-              <button onClick={handleFinalize} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>直接定稿</button>
+              <button onClick={handleSubmitReview} className="btn btn-sm bg-[var(--gold)] text-[#fff]" >提交审题</button>
+              <button onClick={handleFinalize} className="btn btn-sm bg-[var(--cyan)] text-[#fff]" >直接定稿</button>
             </>
           )}
           {canReview && (
             <>
-              <button onClick={handleApproveReview} className="btn btn-sm" style={{ background: 'var(--cyan)', color: '#fff' }}>✓ 审题通过</button>
-              <button onClick={handleRejectReview} className="btn btn-outline btn-sm" style={{ color: 'var(--verm)', borderColor: 'var(--verm)' }}>✗ 驳回</button>
+              <button onClick={handleApproveReview} className="btn btn-sm bg-[var(--cyan)] text-[#fff]" >✓ 审题通过</button>
+              <button onClick={handleRejectReview} className="btn btn-outline btn-sm text-[var(--verm)] border-[var(--verm)]" >✗ 驳回</button>
             </>
           )}
           {canPromote && (
             <button onClick={handlePromote} className="btn btn-verm btn-sm">转为正式</button>
           )}
-          <button onClick={() => setDeletePaperTarget(true)} className="btn btn-ghost btn-sm" style={{ color: 'var(--ink-300)' }}
+          <button onClick={() => setDeletePaperTarget(true)} className="btn btn-ghost btn-sm text-[var(--ink-300)]" 
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
         </div>
@@ -299,7 +299,7 @@ export default function PaperDetailPage() {
           <h3 className="section-title mb-3">📊 章节覆盖分布</h3>
           <div className="flex flex-wrap gap-3">
             {paper.chapterDistribution.map((ch: any) => (
-              <div key={ch.chapterId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+              <div key={ch.chapterId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                 <span className="text-[var(--ink-600)]">{ch.chapterName}</span>
                 <span className="text-[var(--fox)] font-bold">{ch.count}题</span>
               </div>
@@ -316,7 +316,7 @@ export default function PaperDetailPage() {
         }
         if (warnings.length === 0) return null;
         return (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+          <div className="mb-4 p-3 rounded-lg text-sm bg-[var(--verm-glow)] text-[var(--verm)]" >
             ⚠ {warnings.join('；')}。定稿前请调整试题使总分匹配。
           </div>
         );
@@ -343,7 +343,7 @@ export default function PaperDetailPage() {
               <div key={section}>
                 <div className="border-[var(--ink-900)] flex items-center justify-between gap-4 mb-4 pb-3 border-b-2">
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-bold px-3 py-0.5 rounded" style={{ background: 'var(--ink-900)', color: 'var(--paper-bright)' }}>
+                    <span className="text-sm font-bold px-3 py-0.5 rounded bg-[var(--ink-900)] text-[var(--paper-bright)]" >
                       {TYPE_NAMES[section] || section}
                     </span>
                     <span className="text-[var(--ink-300)] text-xs">
@@ -374,11 +374,11 @@ export default function PaperDetailPage() {
                               {canEdit && (
                                 <>
                                   <button onClick={() => handleReplaceQuestion(pq.id, section, pq.score)}
-                                    className="text-xs px-2 py-0.5 rounded hover:bg-[var(--fox-glow)] transition-colors bg-transparent border-none cursor-pointer"
-                                    style={{ color: 'var(--fox-dark)' }}>换一题</button>
+                                    className="text-xs px-2 py-0.5 rounded hover:bg-[var(--fox-glow)] transition-colors bg-transparent border-none cursor-pointer text-[var(--fox-dark)]"
+                                    >换一题</button>
                                   <button onClick={() => handleRemoveQuestion(pq.id)}
-                                    className="text-xs px-2 py-0.5 rounded hover:bg-[var(--verm-glow)] transition-colors bg-transparent border-none cursor-pointer"
-                                    style={{ color: 'var(--verm)' }}>删除</button>
+                                    className="text-xs px-2 py-0.5 rounded hover:bg-[var(--verm-glow)] transition-colors bg-transparent border-none cursor-pointer text-[var(--verm)]"
+                                    >删除</button>
                                 </>
                               )}
                             </div>
@@ -409,7 +409,7 @@ export default function PaperDetailPage() {
                               <div key={b.id} className="text-sm">
                                 <span className="text-[var(--ink-300)]">填空 {b.blankIndex + 1}：</span>
                                 {showAnswer ? (
-                                  <span className="font-medium border-b border-dashed" style={{ color: 'var(--cyan)', borderColor: 'var(--cyan)' }}>{b.answer}</span>
+                                  <span className="font-medium border-b border-dashed text-[var(--cyan)] border-[var(--cyan)]" >{b.answer}</span>
                                 ) : (
                                   <span className="border-[var(--ink-100)] border-b border-dashed px-8">______</span>
                                 )}
@@ -440,7 +440,7 @@ export default function PaperDetailPage() {
 
       {/* Answer key panel */}
       {showAnswer && (
-        <div className="card p-5 mt-4" style={{ borderColor: 'var(--verm)', borderWidth: '2px' }}>
+        <div className="card p-5 mt-4 border-[var(--verm)]" style={{  borderWidth: '2px' }}>
           <h3 className="section-title mb-3">
             <span className="text-[var(--verm)]">☰</span> 参考答案
             <span className="tag tag-verm">仅供命题人查阅</span>
@@ -449,7 +449,7 @@ export default function PaperDetailPage() {
             <div className="space-y-4">
               {Object.entries(groups).map(([section, items]) => (
                 <div key={section}>
-                  <h4 className="text-sm font-bold mb-2 pb-1 border-b" style={{ color: 'var(--ink-500)', borderColor: 'var(--ink-100)' }}>
+                  <h4 className="text-sm font-bold mb-2 pb-1 border-b text-[var(--ink-500)] border-[var(--ink-100)]" >
                     {TYPE_NAMES[section] || section}
                   </h4>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
@@ -492,7 +492,7 @@ export default function PaperDetailPage() {
           <div className="modal-card max-w-[600px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">{replaceTarget ? '替换试题' : '从题库选题'} — {TYPE_NAMES[pickingSection] || pickingSection}</h3>
-              <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => { setShowPickModal(false); setReplaceTarget(null); }} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             {!replaceTarget && (
               <label className="text-[var(--ink-400)] flex items-center gap-2 px-4 pt-2 pb-1 text-xs">
@@ -508,8 +508,8 @@ export default function PaperDetailPage() {
                 <div className="space-y-2">
                   {availableQuestions.map((q: any) => (
                     <div key={q.id} onClick={() => handleAddQuestion(q.id)}
-                      className="p-3 rounded-lg text-sm cursor-pointer transition-colors"
-                      style={{ background: 'var(--paper)' }}
+                      className="p-3 rounded-lg text-sm cursor-pointer transition-colors bg-[var(--paper)]"
+                      
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--fox-glow)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'var(--paper)'}>
                       <p className="text-[var(--ink-700)] line-clamp-2">{q.content}</p>

@@ -261,10 +261,10 @@ export default function MaterialDetailPage() {
         {/* 进度条 */}
         <div className="flex items-center gap-3 mb-3">
           <div className="bg-[var(--paper-dark)] flex-1 h-1.5 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all"
+            <div className="h-full rounded-full transition-all bg-[var(--fox)]"
               style={{
                 width: `${((currentIndex + 1) / filteredQuestions.length) * 100}%`,
-                background: 'var(--fox)',
+                
               }} />
           </div>
           <span className="text-[var(--ink-400)] text-xs flex-shrink-0">
@@ -331,7 +331,7 @@ export default function MaterialDetailPage() {
               {current.answer && (
                 <div className="mb-3">
                   <div className="text-[var(--cyan)] text-xs font-semibold mb-1">参考答案</div>
-                  <div className="text-sm p-3 rounded-lg" style={{ background: 'var(--cyan-glow)', color: 'var(--ink-700)' }}>
+                  <div className="text-sm p-3 rounded-lg bg-[var(--cyan-glow)] text-[var(--ink-700)]" >
                     {current.answer}
                   </div>
                 </div>
@@ -339,7 +339,7 @@ export default function MaterialDetailPage() {
               {current.explanation && (
                 <div className="mb-3">
                   <div className="text-[var(--fox)] text-xs font-semibold mb-1">解析</div>
-                  <div className="text-sm p-3 rounded-lg" style={{ background: 'var(--fox-pale)', color: 'var(--ink-700)' }}>
+                  <div className="text-sm p-3 rounded-lg bg-[var(--fox-pale)] text-[var(--ink-700)]" >
                     {current.explanation}
                   </div>
                 </div>
@@ -426,8 +426,8 @@ export default function MaterialDetailPage() {
             {current.reviewStatus === 'PENDING' && !editMode && (
               <>
                 <button onClick={() => handleReview('REJECTED')}
-                  className="btn btn-outline flex-1 py-2"
-                  style={{ borderColor: 'var(--verm)', color: 'var(--verm)' }}>
+                  className="btn btn-outline flex-1 py-2 border-[var(--verm)] text-[var(--verm)]"
+                  >
                   拒绝 ✕
                 </button>
                 <button onClick={enterEdit}
@@ -604,9 +604,9 @@ export default function MaterialDetailPage() {
 
         {/* 批量操作栏 */}
         {selectedPendingCount > 0 && (
-          <div className="flex items-center justify-center gap-3 py-3 rounded-lg sticky bottom-0"
+          <div className="flex items-center justify-center gap-3 py-3 rounded-lg sticky bottom-0 bg-[var(--paper)]"
             style={{
-              background: 'var(--paper)',
+              
               borderTop: '1px solid var(--ink-100)',
               boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
             }}>
@@ -618,8 +618,8 @@ export default function MaterialDetailPage() {
               批量入库 ✓
             </button>
             <button onClick={() => handleBatchReview('reject')}
-              className="btn btn-outline btn-sm"
-              style={{ borderColor: 'var(--verm)', color: 'var(--verm)' }}>
+              className="btn btn-outline btn-sm border-[var(--verm)] text-[var(--verm)]"
+              >
               批量拒绝 ✕
             </button>
           </div>
@@ -635,8 +635,8 @@ export default function MaterialDetailPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <button onClick={() => router.push('/materials')}
-              className="text-xs bg-transparent border-none cursor-pointer"
-              style={{ color: 'var(--fox)' }}>← 返回教材列表</button>
+              className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+              >← 返回教材列表</button>
           </div>
           <h1 className="page-title">{material.name}</h1>
           <p className="page-subtitle">
@@ -751,8 +751,8 @@ export default function MaterialDetailPage() {
         {/* Main content area */}
         <div className="flex-1 min-w-0">
           {/* 模式切换 */}
-          <div className="flex items-center gap-1 mb-4 p-0.5 rounded-lg"
-            style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+          <div className="flex items-center gap-1 mb-4 p-0.5 rounded-lg bg-[var(--paper-dark)]"
+            style={{  width: 'fit-content' }}>
             <button onClick={() => setReviewMode('detail')}
               className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
               style={{

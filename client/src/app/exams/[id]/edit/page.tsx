@@ -155,7 +155,7 @@ export default function EditExam() {
             <div className="border-[var(--ink-100)] pt-4 border-t">
               <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">⏰ 时间模式</label>
               {isOffline ? (
-                <div className="text-xs px-3 py-2 rounded-lg mb-4" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>🏫 线下笔试固定为「统一开考」</div>
+                <div className="text-xs px-3 py-2 rounded-lg mb-4 bg-[var(--fox-pale)] text-[var(--fox)]" >🏫 线下笔试固定为「统一开考」</div>
               ) : (
               <div className="flex gap-4 mb-4">
                 {[
@@ -287,7 +287,7 @@ export default function EditExam() {
                   <input type="number" value={loc.capacity || ''} placeholder="容量"
                     onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], capacity: Number(e.target.value) }; setLocations(arr); }}
                     className="input" style={{ width: '80px' }} />
-                  <button onClick={() => setLocations(locations.filter((_: any, i: number) => i !== idx))} className="text-xs" style={{ color: 'var(--verm)' }}>✕</button>
+                  <button onClick={() => setLocations(locations.filter((_: any, i: number) => i !== idx))} className="text-xs text-[var(--verm)]" >✕</button>
                 </div>
               ))}
               <button onClick={() => setLocations([...locations, { name: '', capacity: 30 }])} className="btn btn-outline btn-xs mt-1">+ 添加考场</button>
@@ -304,7 +304,7 @@ export default function EditExam() {
               </div>
             </div>
 
-            {error && <div className="text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>⚠ {error}</div>}
+            {error && <div className="text-xs px-4 py-2.5 rounded-lg bg-[var(--verm-glow)] text-[var(--verm)]" >⚠ {error}</div>}
             <div className="flex gap-3 pt-2">
               <button onClick={handleUpdate} disabled={saving} className="btn btn-fox btn-sm">{saving ? '保存中…' : '保存修改'}</button>
               <button onClick={() => router.push(`/exams/${examId}`)} className="btn btn-outline btn-sm">取消</button>

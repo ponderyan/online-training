@@ -196,8 +196,8 @@ export default function AiAssistantPage() {
             基于教材原文的智能问答 · 支持多轮对话
           </p>
           {messages.length > 0 && (
-            <button onClick={handleClear} className="mt-2 text-xs px-3 py-1 rounded-full border transition-colors"
-              style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-400)' }}>
+            <button onClick={handleClear} className="mt-2 text-xs px-3 py-1 rounded-full border transition-colors border-[var(--ink-200)] text-[var(--ink-400)]"
+              >
               清空对话
             </button>
           )}
@@ -216,8 +216,8 @@ export default function AiAssistantPage() {
                   <button
                     key={i}
                     onClick={() => handleGuideClick(g.text)}
-                    className="card p-3.5 text-left transition-all hover:border-[var(--fox)]"
-                    style={{ background: 'var(--paper-bright)' }}
+                    className="card p-3.5 text-left transition-all hover:border-[var(--fox)] bg-[var(--paper-bright)]"
+                    
                   >
                     <div className="flex items-start gap-2.5">
                       <span className="text-lg flex-shrink-0">{g.icon}</span>
@@ -235,8 +235,8 @@ export default function AiAssistantPage() {
               <div key={msg.id}>
                 {msg.role === 'user' ? (
                   <div className="flex justify-end">
-                    <div className="rounded-2xl rounded-br-md px-4 py-2.5 text-sm"
-                      style={{ background: 'var(--fox)', color: '#fff', maxWidth: '70%' }}>
+                    <div className="rounded-2xl rounded-br-md px-4 py-2.5 text-sm bg-[var(--fox)] text-[#fff]"
+                      style={{   maxWidth: '70%' }}>
                       {msg.content}
                     </div>
                   </div>
@@ -247,8 +247,8 @@ export default function AiAssistantPage() {
                         🦊
                       </div>
                       <div className="min-w-0">
-                        <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed"
-                          style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-200)', color: 'var(--ink-700)' }}>
+                        <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed bg-[var(--paper-bright)] text-[var(--ink-700)]"
+                          style={{  border: '1px solid var(--ink-200)',  }}>
                           {msg.content ? (
                             <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                           ) : msg.streaming ? (
@@ -256,8 +256,8 @@ export default function AiAssistantPage() {
                               <span className="text-[var(--ink-400)] text-xs">思考中</span>
                               <span className="flex gap-1">
                                 {[0, 150, 300].map(d => (
-                                  <span key={d} className="w-1.5 h-1.5 rounded-full animate-pulse"
-                                    style={{ background: 'var(--fox)', animationDelay: `${d}ms` }} />
+                                  <span key={d} className="w-1.5 h-1.5 rounded-full animate-pulse bg-[var(--fox)]"
+                                    style={{  animationDelay: `${d}ms` }} />
                                 ))}
                               </span>
                             </div>
@@ -297,8 +297,8 @@ export default function AiAssistantPage() {
             {/* 错误提示 */}
             {error && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm"
-                  style={{ background: 'var(--error-pale)', border: '1px solid var(--verm)', color: 'var(--error)' }}>
+                <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm bg-[var(--error-pale)] text-[var(--error)]"
+                  style={{  border: '1px solid var(--verm)',  }}>
                   {error}
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function AiAssistantPage() {
         </div>
 
         {/* 输入区 */}
-        <div className="flex-shrink-0 px-4 py-3 border-t" style={{ borderColor: 'var(--ink-100)', background: 'var(--paper-bright)' }}>
+        <div className="flex-shrink-0 px-4 py-3 border-t border-[var(--ink-100)] bg-[var(--paper-bright)]" >
           <div className="max-w-3xl mx-auto flex gap-2 items-end">
             <textarea
               ref={inputRef}
@@ -317,8 +317,8 @@ export default function AiAssistantPage() {
               placeholder="输入您的问题… (Enter 发送，Shift+Enter 换行)"
               disabled={loading}
               rows={1}
-              className="flex-1 px-4 py-2.5 rounded-xl border text-sm outline-none transition-colors resize-none"
-              style={{ borderColor: 'var(--ink-100)', background: 'var(--paper)', color: 'var(--ink-700)', opacity: loading ? 0.6 : 1, maxHeight: '120px', minHeight: '44px' }}
+              className="flex-1 px-4 py-2.5 rounded-xl border text-sm outline-none transition-colors resize-none border-[var(--ink-100)] bg-[var(--paper)] text-[var(--ink-700)]"
+              style={{    opacity: loading ? 0.6 : 1, maxHeight: '120px', minHeight: '44px' }}
             />
             {loading ? (
               <button onClick={handleStop}

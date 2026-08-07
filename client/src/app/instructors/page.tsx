@@ -108,7 +108,7 @@ export default function InstructorsPage() {
                   <td className="text-[var(--ink-300)] text-xs">{inst.instructorNo || '—'}</td>
                   <td>
                     <span onClick={() => router.push(`/instructors/${inst.id}`)}
-                      className="font-medium cursor-pointer hover:underline" style={{ color: 'var(--fox)' }}>
+                      className="font-medium cursor-pointer hover:underline text-[var(--fox)]" >
                       {inst.realName}
                     </span>
                   </td>
@@ -124,9 +124,9 @@ export default function InstructorsPage() {
                   <td><span className="tag" style={{ background: `color-mix(in srgb, ${STATUS_COLORS[inst.status] || 'var(--neutral-400)'} 10%, transparent)`, color: STATUS_COLORS[inst.status] || 'var(--neutral-400)' }}>{STATUS_NAMES[inst.status] || inst.status}</span></td>
                   <td>
                     <div className="flex gap-2">
-                      <button onClick={() => router.push(`/instructors/${inst.id}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button>
-                      <button onClick={() => router.push(`/instructors/${inst.id}/edit`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                      <button onClick={() => handleDelete(inst.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>停用</button>
+                      <button onClick={() => router.push(`/instructors/${inst.id}`)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >查看</button>
+                      <button onClick={() => router.push(`/instructors/${inst.id}/edit`)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >编辑</button>
+                      <button onClick={() => handleDelete(inst.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >停用</button>
                     </div>
                   </td>
                 </tr>

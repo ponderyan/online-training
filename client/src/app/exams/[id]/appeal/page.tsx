@@ -62,7 +62,7 @@ export default function AppealPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/exams/appeals')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回申诉列表</button>
+      <button onClick={() => router.push('/exams/appeals')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回申诉列表</button>
       <h1 className="page-title">成绩申诉</h1>
       <p className="page-subtitle mb-6">{result?.exam?.title || '考试'}</p>
 

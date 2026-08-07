@@ -180,8 +180,8 @@ export default function KnowledgePointsPage() {
           {/* Expand/collapse toggle */}
           <button
             onClick={e => { e.stopPropagation(); toggleExpand(node.id); }}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-xs bg-transparent border-none cursor-pointer"
-            style={{ color: 'var(--ink-300)', visibility: hasChildren ? 'visible' : 'hidden' }}
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-xs bg-transparent border-none cursor-pointer text-[var(--ink-300)]"
+            style={{  visibility: hasChildren ? 'visible' : 'hidden' }}
           >
             {isExpanded ? '▼' : '▶'}
           </button>
@@ -194,7 +194,7 @@ export default function KnowledgePointsPage() {
 
           {/* Code badge */}
           {node.code && (
-            <span className="tag text-[10px] px-1.5 py-0" style={{ background: 'var(--ink-100)', color: 'var(--ink-400)', borderRadius: '4px', fontSize: '10px' }}>
+            <span className="tag text-[10px] px-1.5 py-0 bg-[var(--ink-100)] text-[var(--ink-400)]" style={{   borderRadius: '4px', fontSize: '10px' }}>
               {node.code}
             </span>
           )}
@@ -204,8 +204,8 @@ export default function KnowledgePointsPage() {
           <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0 ml-2">
             <button
               onClick={e => { e.stopPropagation(); openCreateChild(node.id); }}
-              className="btn btn-xs bg-transparent border-none cursor-pointer"
-              style={{ color: 'var(--cyan)', fontSize: '11px', padding: '0 4px' }}
+              className="btn btn-xs bg-transparent border-none cursor-pointer text-[var(--cyan)]"
+              style={{  fontSize: '11px', padding: '0 4px' }}
               title="添加子节点"
             >+子</button>
             <button
@@ -219,14 +219,14 @@ export default function KnowledgePointsPage() {
                   sortOrder: node.sortOrder,
                 });
               }}
-              className="btn btn-xs bg-transparent border-none cursor-pointer"
-              style={{ color: 'var(--gold)', fontSize: '11px', padding: '0 4px' }}
+              className="btn btn-xs bg-transparent border-none cursor-pointer text-[var(--gold)]"
+              style={{  fontSize: '11px', padding: '0 4px' }}
               title="编辑"
             >编辑</button>
             <button
               onClick={e => { e.stopPropagation(); handleDelete(node); }}
-              className="btn btn-xs bg-transparent border-none cursor-pointer"
-              style={{ color: 'var(--ink-300)', fontSize: '11px', padding: '0 4px' }}
+              className="btn btn-xs bg-transparent border-none cursor-pointer text-[var(--ink-300)]"
+              style={{  fontSize: '11px', padding: '0 4px' }}
               title="删除"
               onMouseEnter={e => e.currentTarget.style.color = 'var(--verm)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--ink-300)'}
@@ -263,13 +263,13 @@ export default function KnowledgePointsPage() {
         </div>
         {subjectId > 0 && canManage && <button onClick={openCreateRoot} className="btn btn-fox btn-sm">➕ 新增根节点</button>}
         {subjectId > 0 && !canManage && (
-          <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>🔒 只读 — 该科目由上级组织定义</span>
+          <span className="text-xs px-3 py-1.5 rounded-md bg-[var(--ink-50)] text-[var(--ink-400)]" >🔒 只读 — 该科目由上级组织定义</span>
         )}
       </div>
 
       {/* 科目选择器 */}
-      <div className="flex items-center gap-2 mb-6 p-3 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
-        <span className="text-xs font-medium" style={{ color: 'var(--ink-500)', whiteSpace: 'nowrap' }}>科目</span>
+      <div className="flex items-center gap-2 mb-6 p-3 rounded-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
+        <span className="text-xs font-medium text-[var(--ink-500)]" style={{  whiteSpace: 'nowrap' }}>科目</span>
         <select value={subjectId} onChange={e => {
           const sid = Number(e.target.value);
           setSubjectId(sid);
@@ -285,10 +285,10 @@ export default function KnowledgePointsPage() {
         {/* ── Left: Tree Panel ── */}
         <div className="flex-1 min-w-0">
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 text-xs font-medium" style={{
-              color: 'var(--ink-400)',
+            <div className="px-4 py-3 text-xs font-medium text-[var(--ink-400)] bg-[var(--paper)]" style={{
+              
               borderBottom: '1px solid var(--ink-100)',
-              background: 'var(--paper)',
+              
             }}>
               知识层级
             </div>
@@ -324,10 +324,10 @@ export default function KnowledgePointsPage() {
         {/* ── Right: Detail/Edit Panel ── */}
         <div className="w-[380px] flex-shrink-0">
           <div className="card">
-            <div className="px-4 py-3 text-xs font-medium" style={{
-              color: 'var(--ink-400)',
+            <div className="px-4 py-3 text-xs font-medium text-[var(--ink-400)] bg-[var(--paper)]" style={{
+              
               borderBottom: '1px solid var(--ink-100)',
-              background: 'var(--paper)',
+              
             }}>
               {selectedNode ? '知识点详情 / 编辑' : '选择知识点'}
             </div>
@@ -426,13 +426,13 @@ export default function KnowledgePointsPage() {
                   </button>
                 </div>
                 ) : (
-                <div className="pt-2 text-xs px-3 py-2 rounded-md" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>
+                <div className="pt-2 text-xs px-3 py-2 rounded-md bg-[var(--ink-50)] text-[var(--ink-400)]" >
                   🔒 只读 — 该知识点所属科目由上级组织定义，不可编辑
                 </div>
                 )}
 
                 {/* Metadata */}
-                <div className="pt-3 border-t text-xs space-y-1" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-400)' }}>
+                <div className="pt-3 border-t text-xs space-y-1 border-[var(--ink-100)] text-[var(--ink-400)]" >
                   <div className="flex justify-between">
                     <span>创建时间</span>
                     <span>{selectedNode.createdAt ? new Date(selectedNode.createdAt).toLocaleString('zh-CN') : '—'}</span>
@@ -461,11 +461,11 @@ export default function KnowledgePointsPage() {
                 {createParentId ? '添加子节点' : '新增根节点'}
               </h3>
               <button onClick={() => setShowCreateModal(false)}
-                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+                className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               {createParentId && (
-                <div className="text-xs p-2 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+                <div className="text-xs p-2 rounded bg-[var(--fox-glow)] text-[var(--fox-dark)]" >
                   父节点：{allNodes.find(n => n.id === createParentId)?.name || `#${createParentId}`}
                 </div>
               )}

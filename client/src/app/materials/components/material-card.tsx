@@ -82,7 +82,7 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
 
         {/* 错误提示 */}
         {m.errorMessage && (
-          <div className="text-xs p-2 rounded mb-2" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+          <div className="text-xs p-2 rounded mb-2 bg-[var(--verm-glow)] text-[var(--verm)]" >
             ⚠ {m.errorMessage}
           </div>
         )}
@@ -93,19 +93,19 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
           <div className="flex-1" />
           {m.archivedAt ? (
             <>
-              <button onClick={() => onUnarchive(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--fox)' }}
+              <button onClick={() => onUnarchive(m)} className="btn btn-ghost btn-xs text-[var(--fox)]" 
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--cyan)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--fox)')}>恢复</button>
-              <button onClick={() => onDelete(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+              <button onClick={() => onDelete(m)} className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>彻底删除</button>
             </>
           ) : m.status !== 'UPLOADED' && m.status !== 'FAILED' ? (
-            <button onClick={() => onArchive(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+            <button onClick={() => onArchive(m)} className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>归档</button>
           ) : (
-            <button onClick={() => onDelete(m)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+            <button onClick={() => onDelete(m)} className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
           )}

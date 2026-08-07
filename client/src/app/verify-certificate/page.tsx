@@ -51,7 +51,7 @@ export default function VerifyCertificatePage() {
   return (
     <div className="min-h-dvh-fb flex flex-col" style={{ background: 'linear-gradient(135deg, #fdf8f3 0%, #f5ede4 100%)', fontFamily: 'var(--font-sans, "PingFang SC","Microsoft YaHei",sans-serif)' }}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
+      <header className="px-6 py-4 flex items-center gap-3 border-b border-[rgba(196,188,176,0.3)]" style={{  background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
         <div className="text-[var(--ink-700)] font-serif font-bold text-lg tracking-wider">
           {settings?.siteName || 'FoxLearn'}
@@ -76,14 +76,14 @@ export default function VerifyCertificatePage() {
           <div className="card p-5 mb-6">
             <div className="space-y-3">
               <div>
-                <label className="text-xs mb-1.5 block" style={{ color: 'var(--ink-400)', fontWeight: 500 }}>证书编号</label>
+                <label className="text-xs mb-1.5 block text-[var(--ink-400)]" style={{  fontWeight: 500 }}>证书编号</label>
                 <input value={certNo} onChange={e => setCertNo(e.target.value)}
                   placeholder="例如：FX-20260620-0001"
                   className="input w-full text-sm"
                   onKeyDown={e => e.key === 'Enter' && handleVerify()} />
               </div>
               <div>
-                <label className="text-xs mb-1.5 block" style={{ color: 'var(--ink-400)', fontWeight: 500 }}>防伪码</label>
+                <label className="text-xs mb-1.5 block text-[var(--ink-400)]" style={{  fontWeight: 500 }}>防伪码</label>
                 <input value={code} onChange={e => setCode(e.target.value)}
                   placeholder="输入防伪码（忽略大小写）"
                   className="input w-full text-sm"
@@ -98,7 +98,7 @@ export default function VerifyCertificatePage() {
 
           {/* Error / loading */}
           {error && !loading && (
-            <div className="card p-6 text-center" style={{ border: '2px solid var(--verm-glow)', background: 'var(--verm-glow)' }}>
+            <div className="card p-6 text-center bg-[var(--verm-glow)]" style={{ border: '2px solid var(--verm-glow)',  }}>
               <div className="text-4xl mb-2">❌</div>
               <p className="text-[var(--verm)] text-sm font-medium">验证失败</p>
               <p className="text-[var(--verm)] text-xs mt-1">{error}</p>
@@ -107,11 +107,11 @@ export default function VerifyCertificatePage() {
 
           {/* Valid result */}
           {isValid && !loading && cert && (
-            <div className="card p-6" style={{ border: `2px solid var(--cyan-glow)`, background: 'var(--cyan-glow)' }}>
+            <div className="card p-6 bg-[var(--cyan-glow)]" style={{ border: `2px solid var(--cyan-glow)`,  }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">✅</span>
                 <span className="text-[var(--cyan)] text-sm font-semibold">验证通过 · 真实有效</span>
-                <span className="tag ml-auto" style={{ background: 'rgba(0,137,123,0.15)', color: 'var(--cyan)' }}>有效证书</span>
+                <span className="tag ml-auto bg-[rgba(0,137,123,0.15)] text-[var(--cyan)]" >有效证书</span>
               </div>
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between">
@@ -120,7 +120,7 @@ export default function VerifyCertificatePage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--ink-400)]">课程</span>
-                  <span className="font-medium text-right" style={{ color: 'var(--ink-700)', maxWidth: 280 }}>{cert.courseName || '—'}</span>
+                  <span className="font-medium text-right text-[var(--ink-700)]" style={{  maxWidth: 280 }}>{cert.courseName || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--ink-400)]">证书编号</span>
@@ -132,7 +132,7 @@ export default function VerifyCertificatePage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--ink-400)]">证书状态</span>
-                  <span className="tag" style={{ background: 'rgba(0,137,123,0.15)', color: 'var(--cyan)' }}>有效</span>
+                  <span className="tag bg-[rgba(0,137,123,0.15)] text-[var(--cyan)]" >有效</span>
                 </div>
               </div>
               {cert.verificationUrl && (
@@ -145,7 +145,7 @@ export default function VerifyCertificatePage() {
 
           {/* Revoked / invalid result */}
           {result && !isValid && !loading && (
-            <div className="card p-6 text-center" style={{ border: '2px solid var(--verm-glow)', background: 'var(--verm-glow)' }}>
+            <div className="card p-6 text-center bg-[var(--verm-glow)]" style={{ border: '2px solid var(--verm-glow)',  }}>
               <div className="text-4xl mb-2">{isRevoked ? '⛔' : '❌'}</div>
               <p className="text-[var(--verm)] text-sm font-medium">
                 {isRevoked ? '该证书已被撤销' : '验证失败'}
@@ -163,7 +163,7 @@ export default function VerifyCertificatePage() {
 
           {/* Footer */}
           <div className="text-center pt-6 pb-12">
-            <a href="/" className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'none' }}>← 返回首页</a>
+            <a href="/" className="text-xs text-[var(--fox)]" style={{  textDecoration: 'none' }}>← 返回首页</a>
             <div className="text-[var(--ink-300)] mt-3 text-xs">© {new Date().getFullYear()} FoxLearn · 狐学</div>
           </div>
         </div>

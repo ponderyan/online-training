@@ -51,7 +51,7 @@ export default function EditInstructorPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/instructors')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回讲师列表</button>
+      <button onClick={() => router.push('/instructors')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回讲师列表</button>
       <h1 className="page-title">编辑讲师</h1>
       <p className="page-subtitle mb-6">修改讲师信息</p>
 
@@ -154,7 +154,7 @@ export default function EditInstructorPage() {
 
           {/* ⭐ 外聘专属字段 */}
           {form.type === 'EXTERNAL' && (
-            <div className="p-4 rounded-lg space-y-4" style={{ background: 'var(--paper)', border: '1px solid var(--fox)' }}>
+            <div className="p-4 rounded-lg space-y-4 bg-[var(--paper)]" style={{  border: '1px solid var(--fox)' }}>
               <p className="text-[var(--fox)] text-xs font-semibold">外聘讲师信息（课酬发放用）</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>

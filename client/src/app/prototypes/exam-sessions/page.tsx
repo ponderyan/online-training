@@ -34,7 +34,7 @@ export default function ExamSessionsPrototype() {
       {/* Page header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>二期原型</span>
+          <span className="text-xs px-2 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--fox)]" >二期原型</span>
         </div>
         <div className="flex items-start justify-between">
           <div>
@@ -115,7 +115,7 @@ export default function ExamSessionsPrototype() {
                 {s.status === 'UPCOMING' && (
                   <>
                     <button className="btn btn-outline btn-xs">编辑</button>
-                    <button className="btn btn-cyan btn-xs" style={{ background: 'var(--cyan)', color: '#fff' }}>开始考试</button>
+                    <button className="btn btn-cyan btn-xs bg-[var(--cyan)] text-[#fff]" >开始考试</button>
                   </>
                 )}
                 {s.status === 'ONGOING' && (
@@ -142,7 +142,7 @@ export default function ExamSessionsPrototype() {
           <div className="modal-card max-w-[680px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">创建考试场次</h3>
-              <button onClick={() => setShowCreate(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowCreate(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-5">
               {/* 基本信息 */}
@@ -247,7 +247,7 @@ export default function ExamSessionsPrototype() {
       )}
 
       {/* Prototype note */}
-      <div className="mt-8 p-4 rounded-lg text-xs" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+      <div className="mt-8 p-4 rounded-lg text-xs bg-[var(--fox-glow)] text-[var(--fox-dark)]" >
         🦊 这是二期原型的交互演示，数据为模拟数据。等你回来一起审需求和调整。
       </div>
     </AppLayout>

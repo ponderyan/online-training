@@ -39,8 +39,8 @@ export default function GlobalAdminDashboard({ stats, loading }: any) {
             <div className="space-y-2">
               {g.recentPrograms.map((p: any) => (
                 <div key={p.id} onClick={() => router.push(`/programs/${p.id}`)}
-                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
-                  style={{ background: 'var(--paper-dark)' }}>
+                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors bg-[var(--paper-dark)]"
+                  >
                   <div>
                     <div className="text-sm font-medium text-[var(--ink-600)]">{p.name}</div>
                     <div className="text-xs mt-0.5 text-[var(--ink-300)]">

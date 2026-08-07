@@ -38,7 +38,7 @@ export default function NewCoursePage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/courses')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回课程列表</button>
+      <button onClick={() => router.push('/courses')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回课程列表</button>
       <h1 className="page-title">新建课程</h1>
       <p className="page-subtitle mb-6">添加新的课程基本信息</p>
 

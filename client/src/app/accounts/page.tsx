@@ -260,7 +260,7 @@ export default function AccountsPage() {
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => openSide(u)} className="btn btn-ghost btn-xs">查看</button>
                       <button onClick={() => openEdit(u)} className="btn btn-ghost btn-xs">编辑</button>
-                      <button onClick={() => handleResetPwd(u.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--gold)' }}>改密</button>
+                      <button onClick={() => handleResetPwd(u.id)} className="btn btn-ghost btn-xs text-[var(--gold)]" >改密</button>
                       <button onClick={() => handleToggleActive(u)} className="btn btn-ghost btn-xs"
                         style={{ color: u.isActive ? 'var(--verm)' : 'var(--cyan)' }}>
                         {u.isActive ? '停用' : '启用'}
@@ -311,7 +311,7 @@ export default function AccountsPage() {
           <div className="bg-[var(--paper-bright)] w-[660px] max-h-[80vh] overflow-y-auto rounded-xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg bg-[var(--fox-pale)] text-[var(--fox)]" >
                   {sideUser.displayName?.[0] || '🦊'}
                 </div>
                 <div>
@@ -319,7 +319,7 @@ export default function AccountsPage() {
                   <div className="text-[var(--ink-400)] text-xs">@{sideUser.username}</div>
                 </div>
               </div>
-              <button onClick={() => setSideUser(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setSideUser(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
 
             {/* Info cards */}
@@ -385,9 +385,9 @@ export default function AccountsPage() {
                     <div key={e.id} className="bg-[var(--paper)] p-3 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-[var(--ink-600)] text-xs font-medium">{e.exam?.title || '—'}</span>
-                        {e.isPassed === true && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ {e.finalScore}分</span>}
-                        {e.isPassed === false && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>❌ {e.finalScore}分</span>}
-                        {e.isPassed === null && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>⏳ 待阅卷</span>}
+                        {e.isPassed === true && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--sage-glow)] text-[var(--sage)]" >✅ {e.finalScore}分</span>}
+                        {e.isPassed === false && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--verm-glow)] text-[var(--error)]" >❌ {e.finalScore}分</span>}
+                        {e.isPassed === null && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--gold-glow)] text-[var(--warning)]" >⏳ 待阅卷</span>}
                       </div>
                       <div className="text-[var(--ink-300)] text-[10px] mt-1">
                         {e.submittedAt ? new Date(e.submittedAt).toLocaleString('zh-CN') : ''}
@@ -409,9 +409,9 @@ export default function AccountsPage() {
                           <div className="text-[var(--ink-300)] text-[10px]">{c.certificateNo}</div>
                         </div>
                         {c.isRevoked ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>已撤销</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--verm-glow)] text-[var(--error)]" >已撤销</span>
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>有效</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--sage-glow)] text-[var(--sage)]" >有效</span>
                         )}
                       </div>
                       <div className="text-[var(--ink-300)] text-[10px] mt-1">
@@ -445,7 +445,7 @@ export default function AccountsPage() {
             <div className="border-[var(--ink-100)] flex gap-2 mt-5 pt-4 border-t">
               <button onClick={() => { setSideUser(null); openEdit(sideUser); }}
                 className="btn btn-fox btn-xs">✏️ 编辑资料</button>
-              <button onClick={() => handleResetPwd(sideUser.id)} className="btn btn-outline btn-xs" style={{ color: 'var(--gold)', borderColor: 'var(--gold)' }}>
+              <button onClick={() => handleResetPwd(sideUser.id)} className="btn btn-outline btn-xs text-[var(--gold)] border-[var(--gold)]" >
                 🔑 重置密码
               </button>
               <button onClick={() => handleToggleActive(sideUser)} className="btn btn-outline btn-xs"
@@ -463,7 +463,7 @@ export default function AccountsPage() {
           <div className="modal-card max-w-[560px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">{editUser ? '编辑用户' : '创建用户'}</h3>
-              <button onClick={() => { setShowModal(false); setEditUser(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => { setShowModal(false); setEditUser(null); }} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body">
               <div className="grid grid-cols-2 gap-4">

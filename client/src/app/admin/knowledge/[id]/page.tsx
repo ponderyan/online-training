@@ -163,7 +163,7 @@ export default function KnowledgeDocumentDetailPage() {
       <div className="flex gap-5" style={{ minHeight: '60vh' }}>
         {/* 左侧：块列表 */}
         <div className="card p-0 overflow-hidden" style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-          <div className="p-3 text-xs font-medium" style={{ borderBottom: '1px solid var(--border)', color: 'var(--ink-400)' }}>
+          <div className="p-3 text-xs font-medium text-[var(--ink-400)]" style={{ borderBottom: '1px solid var(--border)',  }}>
             知识块列表（{total} 个）
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
@@ -188,7 +188,7 @@ export default function KnowledgeDocumentDetailPage() {
                 {c.knowledgePoints?.length > 0 && (
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {c.knowledgePoints.slice(0, 3).map((kp: any) => (
-                      <span key={kp.id} className="tag" style={{ fontSize: '9px', background: 'var(--success-pale)', color: 'var(--sage)' }}>
+                      <span key={kp.id} className="tag bg-[var(--success-pale)] text-[var(--sage)]" style={{ fontSize: '9px',   }}>
                         {kp.knowledgePoint?.name}
                       </span>
                     ))}
@@ -243,7 +243,7 @@ export default function KnowledgeDocumentDetailPage() {
 
       {/* 重新分块弹窗 */}
       {showRebuild && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" >
           <div className="card p-6" style={{ width: 380 }}>
             <h3 className="text-base font-semibold mb-4">🔄 重新分块</h3>
             <div className="space-y-3">
@@ -269,7 +269,7 @@ export default function KnowledgeDocumentDetailPage() {
 
       {/* 知识点选择弹窗 */}
       {showKpPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" >
           <div className="card p-6" style={{ width: 420, maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
             <h3 className="text-base font-semibold mb-3">🏷️ 关联知识点</h3>
             <div style={{ flex: 1, overflow: 'auto', minHeight: 200 }}>

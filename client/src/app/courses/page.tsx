@@ -128,8 +128,8 @@ export default function CoursesPage() {
                   <tr key={c.id}>
                     <td className="font-medium">
                       <button onClick={() => router.push(`/courses/${c.id}`)}
-                        className="group bg-transparent border-none cursor-pointer font-medium text-left flex items-center gap-1"
-                        style={{ color: 'var(--blue)' }}
+                        className="group bg-transparent border-none cursor-pointer font-medium text-left flex items-center gap-1 text-[var(--blue)]"
+                        
                         title="点击查看课程详情">
                         <span className="group-hover:underline">{c.name}</span>
                         <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs">→</span>
@@ -162,8 +162,8 @@ export default function CoursesPage() {
                     <td>
                       <div className="flex gap-2">
                         <button onClick={() => router.push(`/courses/${c.id}/edit`)}
-                          className="text-xs bg-transparent border-none cursor-pointer"
-                          style={{ color: 'var(--fox)' }}>编辑</button>
+                          className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+                          >编辑</button>
                         <button onClick={() => handleToggleStatus(c)}
                           className="text-xs bg-transparent border-none cursor-pointer"
                           style={{ color: c.status === 'ACTIVE' ? 'var(--error)' : 'var(--info)' }}>{c.status === 'ACTIVE' ? '停用' : '恢复'}</button>

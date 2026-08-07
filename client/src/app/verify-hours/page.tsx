@@ -48,7 +48,7 @@ export default function VerifyHoursPage() {
   return (
     <div className="min-h-dvh-fb flex flex-col" style={{ background: 'linear-gradient(135deg, var(--paper-bright) 0%, var(--paper-light) 100%)' }}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(196,188,176,0.3)', background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
+      <header className="px-6 py-4 flex items-center gap-3 border-b border-[rgba(196,188,176,0.3)]" style={{  background: 'color-mix(in srgb, var(--paper-bright) 75%, transparent)' }}>
         <FoxLogo size={32} />
         <div className="text-[var(--ink-600)] font-serif font-bold text-lg tracking-wider">
           {settings?.siteName || 'FoxLearn'}
@@ -96,8 +96,8 @@ export default function VerifyHoursPage() {
 
           {/* Error */}
           {error && !loading && (
-            <div className="card p-6 text-center"
-              style={{ border: '2px solid var(--verm)', background: 'var(--error-pale)' }}>
+            <div className="card p-6 text-center bg-[var(--error-pale)]"
+              style={{ border: '2px solid var(--verm)',  }}>
               <div className="text-4xl mb-2">❌</div>
               <p className="text-[var(--error)] text-sm font-medium">验证失败</p>
               <p className="text-[var(--error-light)] text-xs mt-1">{error}</p>
@@ -106,8 +106,8 @@ export default function VerifyHoursPage() {
 
           {/* Valid result */}
           {isValid && !loading && (
-            <div className="card p-6"
-              style={{ border: '2px solid var(--sage-light)', background: 'var(--success-pale)' }}>
+            <div className="card p-6 bg-[var(--success-pale)]"
+              style={{ border: '2px solid var(--sage-light)',  }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">✅</span>
                 <span className="text-[var(--sage)] text-sm font-semibold">验证通过 - 真实有效</span>
@@ -184,8 +184,8 @@ export default function VerifyHoursPage() {
 
           {/* Revoked / Invalid result */}
           {result && !isValid && !loading && (
-            <div className="card p-6 text-center"
-              style={{ border: '2px solid var(--verm)', background: 'var(--error-pale)' }}>
+            <div className="card p-6 text-center bg-[var(--error-pale)]"
+              style={{ border: '2px solid var(--verm)',  }}>
               <div className="text-4xl mb-2">❌</div>
               <p className="text-[var(--error)] text-sm font-medium">
                 {isRevoked ? '此证明已被撤销' : '证明无效'}

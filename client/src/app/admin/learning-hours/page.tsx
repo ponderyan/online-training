@@ -140,7 +140,7 @@ export default function AdminLearningHoursPage() {
                     </td>
                     <td className="text-[var(--ink-400)] text-xs">
                       {r.reviewComment ? <span title={r.reviewComment}>💬 {r.reviewComment.length > 12 ? r.reviewComment.slice(0, 12) + '…' : r.reviewComment}</span> : '—'}
-                      {r.approvedAt && <div style={{ color: 'var(--ink-300)', fontSize: '10px' }}>{new Date(r.approvedAt).toLocaleDateString('zh-CN')}</div>}
+                      {r.approvedAt && <div className="text-[var(--ink-300)]" style={{  fontSize: '10px' }}>{new Date(r.approvedAt).toLocaleDateString('zh-CN')}</div>}
                     </td>
                     <td className="text-[var(--ink-300)] text-xs">{new Date(r.recordedAt).toLocaleString('zh-CN')}</td>
                   </tr>

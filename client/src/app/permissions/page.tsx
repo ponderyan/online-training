@@ -362,7 +362,7 @@ export default function PermissionsPage() {
                     </div>
                     {!role?.isSystem && (
                       <button onClick={e => { e.stopPropagation(); setDeleteRoleTarget(row.roleId); }}
-                        className="text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0 hover:opacity-70" style={{ color: 'var(--ink-300)' }}>
+                        className="text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0 hover:opacity-70 text-[var(--ink-300)]" >
                         🗑️
                       </button>
                     )}
@@ -372,7 +372,7 @@ export default function PermissionsPage() {
                       {role?.userCount ?? 0} 人 · {grantedCount} 权限
                     </span>
                     <button onClick={e => { e.stopPropagation(); setEditRoleData(role); setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || 'var(--info-light)', copyFromRoleId: 0 }); setShowRoleModal(true); }}
-                      className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>
+                      className="text-[10px] bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >
                       ✏️
                     </button>
                   </div>
@@ -453,10 +453,10 @@ export default function PermissionsPage() {
                             <div className="flex items-center gap-2">
                               {grantedCount === group.children.length ? (
                                 <button onClick={e => { e.stopPropagation(); toggleGroup(groupPerms, false); }}
-                                  className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>取消全选</button>
+                                  className="text-[10px] bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >取消全选</button>
                               ) : (
                                 <button onClick={e => { e.stopPropagation(); toggleGroup(groupPerms, true); }}
-                                  className="text-[10px] bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>全选</button>
+                                  className="text-[10px] bg-transparent border-none cursor-pointer text-[var(--fox)]" >全选</button>
                               )}
                             </div>
                           </div>
@@ -520,7 +520,7 @@ export default function PermissionsPage() {
                               </td>
                               <td>
                                 <button onClick={() => removeRoleUser(u.assignmentId)}
-                                  className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>移除</button>
+                                  className="btn btn-ghost btn-xs text-[var(--verm)]" >移除</button>
                               </td>
                             </tr>
                           ))}
@@ -550,7 +550,7 @@ export default function PermissionsPage() {
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">{editRoleData ? '编辑角色' : '新建角色'}</h3>
               <button onClick={() => { setShowRoleModal(false); setEditRoleData(null); }}
-                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+                className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -609,7 +609,7 @@ export default function PermissionsPage() {
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">➕ 添加成员到「{selectedRole?.name || selectedRole?.code}」</h3>
               <button onClick={() => setShowAddMember(false)}
-                className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+                className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-3">
               <input value={addMemberQ} onChange={e => searchAddMember(e.target.value)}
@@ -622,8 +622,8 @@ export default function PermissionsPage() {
               )}
               <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
                 {addMemberResults.map(u => (
-                  <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
-                    style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                  <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--paper)]"
+                    style={{  border: '1px solid var(--ink-100)' }}>
                     <div className="min-w-0">
                       <div className="text-[var(--ink-700)] text-sm font-medium truncate">
                         {u.displayName} <span className="text-[var(--ink-300)] text-xs font-normal">({u.username})</span>
@@ -631,7 +631,7 @@ export default function PermissionsPage() {
                       <div className="text-[var(--ink-300)] text-[11px]">{u.orgName}</div>
                     </div>
                     {u.hasRole ? (
-                      <span className="text-[11px] px-2 py-1 rounded" style={{ color: 'var(--sage)', background: 'var(--sage-glow)' }}>✓ 已是该角色</span>
+                      <span className="text-[11px] px-2 py-1 rounded text-[var(--sage)] bg-[var(--sage-glow)]" >✓ 已是该角色</span>
                     ) : (
                       <button onClick={() => addMember(u.id)} disabled={addMemberSavingId === u.id}
                         className="btn btn-fox btn-xs">{addMemberSavingId === u.id ? '添加中…' : '添加'}</button>

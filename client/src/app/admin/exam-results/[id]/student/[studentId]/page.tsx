@@ -37,7 +37,7 @@ export default function AdminStudentResultPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push(`/admin/exam-results/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-3" style={{ color: 'var(--fox)' }}>← 返回</button>
+      <button onClick={() => router.push(`/admin/exam-results/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-3 text-[var(--fox)]" >← 返回</button>
       {loading ? (
         <div className="text-[var(--ink-300)] text-center py-16">加载中… 🦊</div>
       ) : !result ? (
@@ -61,7 +61,7 @@ export default function AdminStudentResultPage() {
                   <p className="text-[var(--ink-700)] text-sm mb-2">{a.content}</p>
                   {a.options?.map((o: any) => (<div key={o.id} className="text-xs py-0.5" style={{ color: o.isCorrect ? 'var(--sage)' : 'var(--ink-400)' }}>{o.label}. {o.content} {o.isCorrect ? '✓' : ''}</div>))}
                   <div className="text-[var(--ink-400)] text-xs mt-2">你的答案：{JSON.stringify(a.yourAnswer)} · 正确答案：{JSON.stringify(a.correctAnswer)}</div>
-                  {a.analysis && <div className="text-xs mt-1 p-2 rounded" style={{ background: 'var(--paper)', color: 'var(--ink-500)' }}>解析：{a.analysis}</div>}
+                  {a.analysis && <div className="text-xs mt-1 p-2 rounded bg-[var(--paper)] text-[var(--ink-500)]" >解析：{a.analysis}</div>}
                 </div>
               ))}
             </div>
@@ -77,7 +77,7 @@ export default function AdminStudentResultPage() {
                   <div className="mb-3"><label className="text-xs mb-1 block">处理备注</label><textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} className="input" rows={2} /></div>
                   <div className="flex gap-2">
                     <button onClick={() => handleResolve(ap.id, 'APPROVED')} className="btn btn-fox btn-sm">✅ 已处理，更新分数</button>
-                    <button onClick={() => handleResolve(ap.id, 'REJECTED')} className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>❌ 驳回</button>
+                    <button onClick={() => handleResolve(ap.id, 'REJECTED')} className="btn btn-outline btn-sm text-[var(--error)]" >❌ 驳回</button>
                   </div>
                 </>
               ) : <p className="text-sm p-3 rounded" style={{ background: ap.status === 'APPROVED' ? 'var(--success-pale)' : 'var(--error-pale)' }}>状态：{ap.status === 'APPROVED' ? '✅ 已处理' : '❌ 驳回'}</p>}

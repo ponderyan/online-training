@@ -58,7 +58,7 @@ export default function HoursCertificate({ data }: { data: HoursCertificateData 
               <td className="cert-hours-cell">{d.hours}</td>
             </tr>
           )) : (
-            <tr><td colSpan={2} style={{ textAlign: 'center', color: 'var(--ink-300)' }}>暂无学时明细</td></tr>
+            <tr><td colSpan={2} className="text-[var(--ink-300)]" style={{ textAlign: 'center',  }}>暂无学时明细</td></tr>
           )}
           <tr className="cert-total-row">
             <td><strong>合 计</strong></td>

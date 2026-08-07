@@ -188,17 +188,17 @@ export default function PapersPage() {
         </select>
         <button onClick={() => load(1)} className="btn btn-outline btn-xs">筛选</button>
         {(keyword || filterStatus || filterSubject || filterOrg) && (
-          <button onClick={() => { setKeyword(''); setFilterStatus(''); setFilterSubject(''); setFilterOrg(''); setTimeout(() => load(1), 0); }} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>清除</button>
+          <button onClick={() => { setKeyword(''); setFilterStatus(''); setFilterSubject(''); setFilterOrg(''); setTimeout(() => load(1), 0); }} className="btn btn-ghost btn-xs text-[var(--verm)]" >清除</button>
         )}
       </div>
 
       {/* 批量操作栏 */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg" style={{ background: 'var(--fox-glow)', border: '1px solid var(--fox)' }}>
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-lg bg-[var(--fox-glow)]" style={{  border: '1px solid var(--fox)' }}>
           <span className="text-[var(--fox-dark)] text-xs font-medium">已选 {selectedIds.length} 套</span>
           <button onClick={() => handleBatchStatus('FINALIZED')} className="btn btn-xs btn-outline">批量定稿</button>
           <button onClick={() => handleBatchStatus('ARCHIVED')} className="btn btn-xs btn-outline">批量归档</button>
-          <button onClick={handleBatchDelete} className="btn btn-xs" style={{ color: 'var(--verm)', borderColor: 'var(--verm)' }}>批量删除</button>
+          <button onClick={handleBatchDelete} className="btn btn-xs text-[var(--verm)] border-[var(--verm)]" >批量删除</button>
           <button onClick={() => setSelectedIds([])} className="btn btn-xs btn-ghost">取消选择</button>
         </div>
       )}
@@ -251,7 +251,7 @@ export default function PapersPage() {
                 <div className="relative">
                   <button onClick={() => setMoreMenu(moreMenu === p.id ? null : p.id)} className="btn btn-ghost btn-xs">⋯ 更多</button>
                   {moreMenu === p.id && (
-                    <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 py-1 rounded-lg shadow-lg border text-xs bg-[var(--paper-bright)] border-[var(--ink-200)]" 
                       onMouseLeave={() => setMoreMenu(null)}>
                       <button onClick={() => { handleDownload(p.id, 'word'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">下载试卷 Word</button>
                       <button onClick={() => { handleDownload(p.id, 'pdf'); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">下载 PDF</button>
@@ -259,17 +259,17 @@ export default function PapersPage() {
                         <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">修改配置</button>
                       )}
                       {p.status === 'FINALIZED' && (
-                        <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--gold-dark)' }}>转为正式</button>
+                        <button onClick={async () => { try { await api.papers.promote(p.id); toast.success('已转为正式'); load(); } catch (e: any) { toast.error('操作失败：' + e.message); } setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)] text-[var(--gold-dark)]" >转为正式</button>
                       )}
                       <button onClick={() => { router.push(`/generate?copyFrom=${p.id}`); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]">复制组卷</button>
                       {p.status !== 'ARCHIVED' && (
-                        <button onClick={() => { handleArchive(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--ink-400)' }}>归档</button>
+                        <button onClick={() => { handleArchive(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)] text-[var(--ink-400)]" >归档</button>
                       )}
                       {p.status === 'ARCHIVED' && (
-                        <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--cyan)' }}>恢复为草稿</button>
+                        <button onClick={() => { handleRestore(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)] text-[var(--cyan)]" >恢复为草稿</button>
                       )}
                       <hr className="border-[var(--ink-100)] my-1" />
-                      <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)]" style={{ color: 'var(--verm)' }}>删除</button>
+                      <button onClick={() => { setDeleteTarget(p.id); setMoreMenu(null); }} className="block w-full text-left px-3 py-1.5 hover:bg-[var(--paper-light)] text-[var(--verm)]" >删除</button>
                     </div>
                   )}
                 </div>

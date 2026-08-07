@@ -42,15 +42,15 @@ export default function StudentDetailPage() {
       {/* Back button */}
       <div className="mb-4">
         <button onClick={() => router.push('/students')}
-          className="text-xs bg-transparent border-none cursor-pointer"
-          style={{ color: 'var(--fox)' }}>← 返回学员列表</button>
+          className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+          >← 返回学员列表</button>
       </div>
 
       {/* Profile card */}
       <div className="card p-6 mb-6">
         <div className="flex items-start gap-5">
-          <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold flex-shrink-0"
-            style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold flex-shrink-0 bg-[var(--fox-pale)] text-[var(--fox)]"
+            >
             {profile.displayName?.[0] || '🦊'}
           </div>
           <div className="flex-1">
@@ -103,7 +103,7 @@ export default function StudentDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+      <div className="flex gap-1 mb-5 p-0.5 rounded-lg bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
         {[
           { key: 'exams', label: '📚 考试记录' },
           { key: 'certificates', label: '🏅 证书' },
@@ -129,7 +129,7 @@ export default function StudentDetailPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
+                <tr className="bg-[var(--paper-dark)] text-[var(--ink-400)]">
                   <th className="text-left px-4 py-3 font-medium">考试</th>
                   <th className="text-left px-4 py-3 font-medium">得分</th>
                   <th className="text-left px-4 py-3 font-medium">结果</th>
@@ -163,7 +163,7 @@ export default function StudentDetailPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
+                <tr className="bg-[var(--paper-dark)] text-[var(--ink-400)]">
                   <th className="text-left px-4 py-3 font-medium">编号</th>
                   <th className="text-left px-4 py-3 font-medium">考试</th>
                   <th className="text-left px-4 py-3 font-medium">发证日期</th>
@@ -197,7 +197,7 @@ export default function StudentDetailPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
+                <tr className="bg-[var(--paper-dark)] text-[var(--ink-400)]">
                   <th className="text-left px-4 py-3 font-medium">类型</th>
                   <th className="text-left px-4 py-3 font-medium">金额</th>
                   <th className="text-left px-4 py-3 font-medium">状态</th>

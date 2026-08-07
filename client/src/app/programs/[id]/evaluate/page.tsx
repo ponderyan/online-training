@@ -85,7 +85,7 @@ export default function EvaluatePage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push(`/programs/${params.id}`)} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回培训班</button>
+      <button onClick={() => router.push(`/programs/${params.id}`)} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回培训班</button>
 
       {existing ? (
         <div className="card p-6 max-w-lg">

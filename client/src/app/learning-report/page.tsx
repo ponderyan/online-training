@@ -125,7 +125,7 @@ function CustomLineTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={chartTooltipStyle}>
-      <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--ink-700)' }}>{label}</div>
+      <div className="text-[var(--ink-700)]" style={{ fontWeight: 600, marginBottom: 4,  }}>{label}</div>
       {payload.map((entry: any, idx: number) => (
         <div key={idx} style={{ color: entry.color, fontSize: 12 }}>
           {entry.name}: {entry.value}分
@@ -299,7 +299,7 @@ export default function LearningReportPage() {
                 </span>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                <div className="rounded-lg p-3 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">📅</span>
                     <span className="text-[var(--ink-400)] text-xs">累计学习天数</span>
@@ -309,7 +309,7 @@ export default function LearningReportPage() {
                     <span className="text-[var(--ink-400)] text-xs font-normal ml-1">天</span>
                   </div>
                 </div>
-                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                <div className="rounded-lg p-3 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">✏️</span>
                     <span className="text-[var(--ink-400)] text-xs">练习数量</span>
@@ -319,17 +319,17 @@ export default function LearningReportPage() {
                     <span className="text-[var(--ink-400)] text-xs font-normal ml-1">题</span>
                   </div>
                 </div>
-                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                <div className="rounded-lg p-3 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">🎯</span>
                     <span className="text-[var(--ink-400)] text-xs">平均正确率</span>
                   </div>
-                  <div className="stat-card-value" style={{ fontSize: '1.5rem', color: 'var(--fox)' }}>
+                  <div className="stat-card-value text-[var(--fox)]" style={{ fontSize: '1.5rem',  }}>
                     {avgAccuracy}
                     <span className="text-[var(--ink-400)] text-xs font-normal ml-1">%</span>
                   </div>
                 </div>
-                <div className="rounded-lg p-3" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                <div className="rounded-lg p-3 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">⚠️</span>
                     <span className="text-[var(--ink-400)] text-xs">薄弱环节</span>
@@ -406,7 +406,7 @@ export default function LearningReportPage() {
             </div>
             <div className="mt-2">
               <button onClick={() => router.push('/my-certificates')}
-                className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                className="text-xs text-[var(--fox)]" style={{  textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                 查看全部证书 →
               </button>
             </div>
@@ -435,8 +435,8 @@ export default function LearningReportPage() {
           {practiceTrend.length < 3 ? (
             <div
               onClick={() => router.push('/practice')}
-              className="flex flex-col items-center justify-center py-12 cursor-pointer"
-              style={{ color: 'var(--ink-300)' }}
+              className="flex flex-col items-center justify-center py-12 cursor-pointer text-[var(--ink-300)]"
+              
             >
               <p className="text-xs">
                 继续练习，积累更多记录后自动生成趋势图 →
@@ -475,16 +475,16 @@ export default function LearningReportPage() {
                       const data = payload[0]?.payload;
                       return (
                         <div style={chartTooltipStyle}>
-                          <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--ink-700)' }}>
+                          <div className="text-[var(--ink-700)]" style={{ fontWeight: 600, marginBottom: 4,  }}>
                             {label}
                           </div>
-                          <div style={{ color: 'var(--fox)', fontSize: 12 }}>
+                          <div className="text-[var(--fox)]" style={{  fontSize: 12 }}>
                             正确率: {data?.accuracy ?? 0}%
                           </div>
-                          <div style={{ color: 'var(--ink-400)', fontSize: 12 }}>
+                          <div className="text-[var(--ink-400)]" style={{  fontSize: 12 }}>
                             总题数: {data?.totalQuestions ?? 0}
                           </div>
-                          <div style={{ color: 'var(--ink-400)', fontSize: 12 }}>
+                          <div className="text-[var(--ink-400)]" style={{  fontSize: 12 }}>
                             正确: {data?.correctCount ?? 0}
                           </div>
                           {payload.slice(1).map((entry: any, idx: number) => (
@@ -673,8 +673,8 @@ export default function LearningReportPage() {
                   <div
                     key={kp.kpId}
                     onClick={() => router.push('/practice')}
-                    className="cursor-pointer p-3 rounded-lg transition-all hover:shadow-sm"
-                    style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}
+                    className="cursor-pointer p-3 rounded-lg transition-all hover:shadow-sm bg-[var(--paper)]"
+                    style={{  border: '1px solid var(--ink-100)' }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[var(--ink-700)] text-sm font-medium">
@@ -711,7 +711,7 @@ export default function LearningReportPage() {
                 ))}
                 <div className="text-center mt-2">
                   <button onClick={() => router.push('/practice')}
-                    className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    className="text-xs text-[var(--fox)]" style={{  textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                     去练习巩固 →
                   </button>
                 </div>
@@ -765,7 +765,7 @@ export default function LearningReportPage() {
                     </thead>
                     <tbody>
                       {last7Days.map((day, idx) => (
-                        <tr key={day.date} className="border-t" style={{ borderColor: 'rgba(139,129,116,0.12)' }}>
+                        <tr key={day.date} className="border-t border-[rgba(139,129,116,0.12)]" >
                           <td className="text-[var(--ink-600)] py-2 pr-2 font-medium">
                             {day.label}
                           </td>
@@ -802,8 +802,8 @@ export default function LearningReportPage() {
               {programProgress.map((prog) => (
                 <div
                   key={prog.programId}
-                  className="p-4 rounded-lg"
-                  style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}
+                  className="p-4 rounded-lg bg-[var(--paper)]"
+                  style={{  border: '1px solid var(--ink-100)' }}
                 >
                   <div className="text-[var(--ink-700)] text-sm font-medium mb-2">
                     {prog.programName}

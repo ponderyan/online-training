@@ -152,15 +152,15 @@ export default function LearningHourTypesPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEdit(t)}
-                        className="text-xs bg-transparent border-none cursor-pointer"
-                        style={{ color: 'var(--fox)' }}
+                        className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+                        
                       >
                         编辑
                       </button>
                       <button
                         onClick={() => handleDelete(t.id)}
-                        className="text-xs bg-transparent border-none cursor-pointer"
-                        style={{ color: 'var(--error)' }}
+                        className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]"
+                        
                       >
                         删除
                       </button>
@@ -181,8 +181,8 @@ export default function LearningHourTypesPage() {
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }}
+            className="rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[var(--paper)]"
+            style={{  border: '1px solid var(--ink-200)' }}
             onClick={e => e.stopPropagation()}
           >
             <h3 className="font-semibold text-base mb-4">

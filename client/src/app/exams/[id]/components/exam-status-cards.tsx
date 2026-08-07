@@ -31,7 +31,7 @@ export default function ExamStatusCards({ exam, students, isOffline }: Props) {
   return (
     <div className="grid grid-cols-5 gap-4 mb-6">
       {cards.map((s, i) => (
-        <div key={i} className="rounded-xl p-4 text-center transition-all" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+        <div key={i} className="rounded-xl p-4 text-center transition-all bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
           <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           <p className="text-[var(--ink-400)] text-xs mt-1">{s.label}</p>
         </div>

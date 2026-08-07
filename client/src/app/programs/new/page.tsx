@@ -92,7 +92,7 @@ export default function NewProgramPage() {
     <AppLayout>
       <div className="max-w-3xl mx-auto">
         <button onClick={() => router.push('/programs')}
-          className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>
+          className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >
           ← 返回培训班列表
         </button>
 
@@ -100,7 +100,7 @@ export default function NewProgramPage() {
         <p className="page-subtitle mb-6">填写培训班基本信息，系统将自动生成培训班编号</p>
 
         {error && (
-          <div className="text-xs px-4 py-2 rounded-lg mb-4" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+          <div className="text-xs px-4 py-2 rounded-lg mb-4 bg-[var(--verm-glow)] text-[var(--verm)]" >
             ⚠ {error}
           </div>
         )}

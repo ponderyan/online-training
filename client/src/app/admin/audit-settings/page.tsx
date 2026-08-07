@@ -101,8 +101,8 @@ export default function AuditSettingsPage() {
             <button
               onClick={handleManualArchive}
               disabled={archiving}
-              className="px-4 py-2 rounded-lg text-sm border transition-colors"
-              style={{ borderColor: 'var(--error-light)', color: 'var(--error)', background: 'var(--error-pale)' }}
+              className="px-4 py-2 rounded-lg text-sm border transition-colors border-[var(--error-light)] text-[var(--error)] bg-[var(--error-pale)]"
+              
             >
               {archiving ? '清理中…' : '🗑 立即清理'}
             </button>
@@ -113,8 +113,8 @@ export default function AuditSettingsPage() {
             <p className="text-[var(--ink-400)] text-xs mb-2">归档策略配置（保留天数、自动清理开关）：</p>
             <Link 
               href="/admin/system-config"
-              className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-              style={{ color: 'var(--fox)', background: 'var(--fox-pale)' }}
+              className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors text-[var(--fox)] bg-[var(--fox-pale)]"
+              
             >
               ⚙️ 前往配置中心 → 审计日志
             </Link>

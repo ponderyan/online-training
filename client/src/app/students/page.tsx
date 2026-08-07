@@ -163,8 +163,8 @@ export default function StudentsPage() {
   );
 
   const StudentCard = ({ s }: { s: any }) => (
-    <div key={s.id} className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md"
-      style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}
+    <div key={s.id} className="rounded-xl p-5 transition-all cursor-pointer hover:shadow-md bg-[var(--paper-bright)]"
+      style={{  border: '1px solid var(--ink-100)' }}
       onClick={() => router.push(`/students/${s.id}`)}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -349,7 +349,7 @@ export default function StudentsPage() {
           <div className="modal-card max-w-[500px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">{editStudent ? '编辑学员' : '添加学员'}</h3>
-              <button onClick={() => { setShowAdd(false); setEditStudent(null); }} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => { setShowAdd(false); setEditStudent(null); }} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body">
               <div className="grid grid-cols-2 gap-4">
@@ -435,7 +435,7 @@ export default function StudentsPage() {
           <div className="modal-card max-w-[480px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">📂 班级分组管理</h3>
-              <button onClick={() => setShowGroup(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowGroup(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body">
               {groups.length === 0 ? (
@@ -453,7 +453,7 @@ export default function StudentsPage() {
                         if (!confirm(`确认删除分组"${g.name}"？学员将变为无分组状态。`)) return;
                         await api.students.deleteGroup(g.id);
                         loadGroups();
-                      }} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                      }} className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
                     </div>

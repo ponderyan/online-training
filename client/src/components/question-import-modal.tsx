@@ -147,7 +147,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
 
                 <div className="bg-[var(--paper)] mt-4 p-3 rounded">
                   <p className="text-[var(--ink-500)] text-xs font-medium mb-1.5">填写说明</p>
-                  <ul className="text-xs space-y-0.5" style={{ color: 'var(--ink-400)', lineHeight: '1.7' }}>
+                  <ul className="text-xs space-y-0.5 text-[var(--ink-400)]" style={{  lineHeight: '1.7' }}>
                     <li>· 每种题型独立一个 sheet 页</li>
                     <li>· 难度：易 / 较易 / 较难 / 难</li>
                     <li>· 单选填 A/B/C/D；多选用逗号分隔</li>

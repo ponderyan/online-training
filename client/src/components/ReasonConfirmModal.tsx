@@ -40,8 +40,8 @@ export default function ReasonConfirmModal({
   const canConfirm = required ? trimmed.length > 0 : true;
 
   return (
-    <div className="modal-overlay" onClick={onCancel} style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+    <div className="modal-overlay bg-[rgba(0,0,0,0.45)]" onClick={onCancel} style={{
+      position: 'fixed', inset: 0,  zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{

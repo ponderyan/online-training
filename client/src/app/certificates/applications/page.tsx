@@ -107,8 +107,8 @@ export default function CertificateApplications() {
                   {statusFilter === 'PENDING' && (
                     <td>
                       <div className="flex gap-1">
-                        <button onClick={() => handleApprove(a.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--cyan)' }}>批准</button>
-                        <button onClick={() => setRejectId(a.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>驳回</button>
+                        <button onClick={() => handleApprove(a.id)} className="btn btn-ghost btn-xs text-[var(--cyan)]" >批准</button>
+                        <button onClick={() => setRejectId(a.id)} className="btn btn-ghost btn-xs text-[var(--verm)]" >驳回</button>
                       </div>
                     </td>
                   )}
@@ -129,7 +129,7 @@ export default function CertificateApplications() {
           <div className="modal-card max-w-[400px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="font-serif font-bold text-sm">驳回证书申请</h3>
-              <button onClick={() => setRejectId(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setRejectId(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-3">
               <label className="text-[var(--ink-400)] block text-xs">驳回原因 *</label>
@@ -139,7 +139,7 @@ export default function CertificateApplications() {
             <div className="modal-footer">
               <button onClick={() => { setRejectId(null); setRejectReason(''); }} className="btn btn-ghost btn-sm">取消</button>
               <button onClick={handleReject} disabled={!rejectReason}
-                className="btn btn-sm" style={{ background: 'var(--verm)', color: 'white', opacity: !rejectReason ? 0.5 : 1 }}>
+                className="btn btn-sm bg-[var(--verm)]" style={{  color: 'white', opacity: !rejectReason ? 0.5 : 1 }}>
                 确认驳回
               </button>
             </div>

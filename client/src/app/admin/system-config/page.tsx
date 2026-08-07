@@ -148,10 +148,10 @@ export default function SystemConfigPage() {
               position: 'relative', transition: 'background 0.2s',
               display: 'inline-block',
             }}>
-              <span style={{
+              <span className="bg-[var(--paper-bright)]" style={{
                 position: 'absolute', top: '2px', left: val === 'true' ? '18px' : '2px',
                 width: '16px', height: '16px', borderRadius: '50%',
-                background: 'var(--paper-bright)', transition: 'left 0.2s',
+                 transition: 'left 0.2s',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }} />
             </span>
@@ -211,10 +211,10 @@ export default function SystemConfigPage() {
     <AppLayout>
       {/* Toast */}
       {toast && (
-        <div style={{
+        <div className="text-[#fff]" style={{
           position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 9999, background: toast.includes('失败') ? 'var(--error)' : 'var(--sage)',
-          color: '#fff', padding: '10px 24px', borderRadius: '8px',
+           padding: '10px 24px', borderRadius: '8px',
           fontSize: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           transition: 'opacity 0.3s',
         }}>

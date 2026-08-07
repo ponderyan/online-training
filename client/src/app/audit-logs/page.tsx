@@ -216,7 +216,7 @@ export default function AuditLogsPage() {
                     log.eventSource === 'API' ? '🔌 接口' :
                     '—'
                   }</td>
-                  <td className="text-xs" style={{ color: 'var(--ink-500)', maxWidth: 160 }}>
+                  <td className="text-xs text-[var(--ink-500)]" style={{  maxWidth: 160 }}>
                     {log.changeReason ? (
                       <span className="truncate block" style={{ maxWidth: 160 }} title={log.changeReason}>{log.changeReason}</span>
                     ) : <span className="text-[var(--ink-300)]">—</span>}
@@ -225,7 +225,7 @@ export default function AuditLogsPage() {
                   <td>
                     {(log.before || log.after) ? (
                       <button onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
-                        className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+                        className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >
                         {expandedRow === log.id ? '收起' : '查看'}
                       </button>
                     ) : <span className="text-[var(--ink-300)] text-xs">—</span>}
@@ -239,17 +239,17 @@ export default function AuditLogsPage() {
             const log = logs.find(l => l.id === expandedRow);
             if (!log) return null;
             return (
-              <div className="p-4 border-t" style={{ borderColor: 'var(--ink-100)', background: 'var(--paper-dark)' }}>
+              <div className="p-4 border-t border-[var(--ink-100)] bg-[var(--paper-dark)]" >
                 <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                   <div>
                     <div className="text-[var(--ink-400)] font-medium text-[10px] mb-1">变更前 (before):</div>
-                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                    <pre className="p-2 rounded overflow-auto max-h-40 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.before, null, 2) || '—'}
                     </pre>
                   </div>
                   <div>
                     <div className="text-[var(--ink-400)] font-medium text-[10px] mb-1">变更后 (after):</div>
-                    <pre className="p-2 rounded overflow-auto max-h-40" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+                    <pre className="p-2 rounded overflow-auto max-h-40 bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
                       {JSON.stringify(log.after, null, 2) || '—'}
                     </pre>
                   </div>

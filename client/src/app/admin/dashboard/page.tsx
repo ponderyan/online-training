@@ -183,10 +183,10 @@ function AgencyTable({
                 <div className="flex items-center gap-2">
                   <div className="bg-[var(--ink-100)] h-2 rounded-full flex-1">
                     <div
-                      className="h-full rounded-full"
+                      className="h-full rounded-full bg-[var(--fox)]"
                       style={{
                         width: `${(row.totalHours / maxHours) * 100}%`,
-                        background: 'var(--fox)',
+                        
                       }}
                     />
                   </div>

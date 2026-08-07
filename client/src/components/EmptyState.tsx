@@ -50,7 +50,7 @@ export default function EmptyState({
   return (
     <div className={`flex flex-col items-center justify-center text-center ${py} px-4`}>
       <div
-        style={{ lineHeight: 1, marginBottom: 12, opacity: 0.9, color: 'var(--fox)' }}
+        className="text-[var(--fox)]" style={{ lineHeight: 1, marginBottom: 12, opacity: 0.9,  }}
         aria-hidden
       >
         {LucideIcon ? (
@@ -60,13 +60,13 @@ export default function EmptyState({
         ) : null}
       </div>
       <p
-        className="font-medium"
-        style={{ color: 'var(--ink-500)', fontSize: '0.92rem', marginBottom: description ? 6 : 0 }}
+        className="font-medium text-[var(--ink-500)]"
+        style={{  fontSize: '0.92rem', marginBottom: description ? 6 : 0 }}
       >
         {title}
       </p>
       {description && (
-        <p style={{ color: 'var(--ink-300)', fontSize: '0.8rem', maxWidth: 360 }}>{description}</p>
+        <p className="text-[var(--ink-300)]" style={{  fontSize: '0.8rem', maxWidth: 360 }}>{description}</p>
       )}
       {children && <div className="mt-4 flex items-center justify-center gap-2">{children}</div>}
     </div>

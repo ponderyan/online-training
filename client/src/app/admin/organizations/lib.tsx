@@ -57,7 +57,7 @@ export function highlightText(text: string, keyword: string) {
   return (
     <>
       {text.substring(0, idx)}
-      <span style={{ background: 'rgba(232,125,48,0.15)', borderRadius: '2px', padding: '0 1px' }}>{text.substring(idx, idx + keyword.length)}</span>
+      <span className="bg-[rgba(232,125,48,0.15)]" style={{  borderRadius: '2px', padding: '0 1px' }}>{text.substring(idx, idx + keyword.length)}</span>
       {text.substring(idx + keyword.length)}
     </>
   );

@@ -85,7 +85,7 @@ export default function QuestionTable({
                   disabled={q.status === 'ARCHIVED'}
                   style={{ cursor: q.status === 'ARCHIVED' ? 'not-allowed' : 'pointer', accentColor: 'var(--fox)', opacity: q.status === 'ARCHIVED' ? 0.3 : 1 }} />
               </td>
-              <td className="text-center text-xs" style={{ color: 'var(--ink-300)', fontFamily: 'monospace' }}>
+              <td className="text-center text-xs text-[var(--ink-300)]" style={{  fontFamily: 'monospace' }}>
                 {(page - 1) * pageSize + idx + 1}
               </td>
               <td>
@@ -94,7 +94,7 @@ export default function QuestionTable({
               <td><span className="tag tag-ink">{TYPE_LABELS[q.type]}</span></td>
               <td><span className={`tag ${DIFF_LABELS[q.difficulty]?.cls}`}>{DIFF_LABELS[q.difficulty]?.label}</span></td>
               <td><span className="tag tag-gold">{q.subject?.code}</span></td>
-              <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 0, overflow: 'hidden' }}>
+              <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 0, overflow: 'hidden' }}>
                 {q.materialName ? (
                   <span className="max-w-[100%] truncate block" title={`${q.materialName}${q.chapterTitle ? ` > ${q.chapterTitle}` : ''}`}>
                     📖 {q.materialName}{q.chapterTitle ? ` > ${q.chapterTitle}` : ''}
@@ -142,11 +142,11 @@ export default function QuestionTable({
                       style={{ opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}>{editingId === q.id ? '…' : '编辑'}</button>
                     {q.status === 'PUBLISHED' ? (
                       <button onClick={(e) => { e.stopPropagation(); onToggleStatus(q); }}
-                        className="btn btn-xs" style={{ color: 'var(--verm)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                        className="btn btn-xs text-[var(--verm)]" style={{  opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                         disabled={isViewOnly}>停用</button>
                     ) : (
                       <button onClick={(e) => { e.stopPropagation(); onToggleStatus(q); }}
-                        className="btn btn-xs" style={{ color: 'var(--cyan)', opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
+                        className="btn btn-xs text-[var(--cyan)]" style={{  opacity: isViewOnly ? 0.4 : 1, cursor: isViewOnly ? 'not-allowed' : 'pointer' }}
                         disabled={isViewOnly}>启用</button>
                     )}
                     <button onClick={(e) => { e.stopPropagation(); onOpenKp(q); }}

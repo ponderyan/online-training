@@ -142,7 +142,7 @@ export default function ProctoringDetail() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/proctoring')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回监考列表</button>
+      <button onClick={() => router.push('/proctoring')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回监考列表</button>
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="page-title">监考面板</h1>
@@ -185,8 +185,8 @@ export default function ProctoringDetail() {
           <div key={s.sessionId} onClick={() => openDetail(s.sessionId)}
             className="rounded-xl p-4 transition-all cursor-pointer flex items-center gap-4"
             style={{ background: getBgColor(s), border: `1px solid ${s.suspicionLevel >= 3 ? 'var(--error-light)' : 'var(--ink-100)'}` }}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-              style={{ background: 'rgba(232,122,48,0.1)', color: 'var(--fox)' }}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[rgba(232,122,48,0.1)] text-[var(--fox)]"
+              >
               {s.studentName?.[0] || '?'}
             </div>
             <div className="flex-1 min-w-0">
@@ -215,7 +215,7 @@ export default function ProctoringDetail() {
           <div className="bg-[var(--paper-bright)] w-[500px] h-full overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-[var(--ink-700)] font-semibold text-base">考生详情</h2>
-              <button onClick={() => setShowDetail(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowDetail(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
 
             {detailLoading ? (
@@ -225,7 +225,7 @@ export default function ProctoringDetail() {
                 {/* Info card */}
                 <div className="bg-[var(--paper-dark)] rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style={{ background: 'rgba(232,122,48,0.1)', color: 'var(--fox)' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold bg-[rgba(232,122,48,0.1)] text-[var(--fox)]" >
                       {selectedSession.studentName?.[0] || '?'}
                     </div>
                     <div>
@@ -250,7 +250,7 @@ export default function ProctoringDetail() {
                   {selectedSession.tabSwitchTimeline?.length > 0 ? (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {selectedSession.tabSwitchTimeline.map((t: any, i: number) => (
-                        <div key={i} className="text-xs px-3 py-1.5 rounded" style={{ background: 'var(--error-pale)', color: 'var(--error)' }}>
+                        <div key={i} className="text-xs px-3 py-1.5 rounded bg-[var(--error-pale)] text-[var(--error)]" >
                           {new Date(t.time).toLocaleString('zh-CN')} — {t.action}
                         </div>
                       ))}
@@ -305,15 +305,15 @@ export default function ProctoringDetail() {
                 {selectedSession.status !== 'SUBMITTED' && (
                   <div className="space-y-2 pt-2">
                     <button onClick={() => setWarnModal({ sessionId: selectedSession.sessionId })}
-                      className="btn w-full text-sm py-2" style={{ border: '1px solid var(--fox)', color: 'var(--fox)' }}>
+                      className="btn w-full text-sm py-2 text-[var(--fox)]" style={{ border: '1px solid var(--fox)',  }}>
                       ⚠️ 发送警告
                     </button>
                     <button onClick={() => setExtendTarget(selectedSession.sessionId)}
-                      className="btn w-full text-sm py-2" style={{ border: '1px solid var(--cyan)', color: 'var(--cyan)' }}>
+                      className="btn w-full text-sm py-2 text-[var(--cyan)]" style={{ border: '1px solid var(--cyan)',  }}>
                       ⏱ 延长10分钟
                     </button>
                     <button onClick={() => setForceSubmitModal({ sessionId: selectedSession.sessionId })}
-                      className="btn w-full text-sm py-2" style={{ border: '1px solid #e53935', color: 'var(--error)' }}>
+                      className="btn w-full text-sm py-2 text-[var(--error)]" style={{ border: '1px solid #e53935',  }}>
                       🛑 强制交卷
                     </button>
                   </div>
@@ -329,7 +329,7 @@ export default function ProctoringDetail() {
       {/* Warn Modal */}
       {warnModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setWarnModal(null)}>
-          <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-sm bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-sm mb-4">⚠️ 发送警告</h3>
             <textarea value={warnMessage} onChange={e => setWarnMessage(e.target.value)}
               className="input w-full mb-4" rows={3} placeholder="警告内容，如：请注意，系统检测到切屏行为" />
@@ -358,7 +358,7 @@ export default function ProctoringDetail() {
 
       {forceSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setForceSubmitModal(null)}>
-          <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-sm bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="text-[var(--error)] font-semibold text-sm mb-2">🛑 强制交卷</h3>
             <p className="text-[var(--ink-400)] text-xs mb-4">此操作将强制提交该考生的试卷，不可撤销。</p>
             <input value={forceSubmitReason} onChange={e => setForceSubmitReason(e.target.value)}

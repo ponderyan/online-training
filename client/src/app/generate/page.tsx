@@ -460,13 +460,13 @@ function GeneratePageContent() {
           {/* 分值校验 */}
           <div className="mb-4">
             {!scoreValid ? (
-              <div className="px-4 py-2.5 rounded-lg text-sm"
-                style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>
+              <div className="px-4 py-2.5 rounded-lg text-sm bg-[var(--verm-glow)] text-[var(--verm)]"
+                >
                 ⚠ 题型总分 {totalFromTypes()} 分 ≠ 试卷总分 {totalScore} 分
               </div>
             ) : (
-              <div className="px-4 py-2.5 rounded-lg text-sm"
-                style={{ background: 'var(--cyan-glow)', color: 'var(--cyan)' }}>
+              <div className="px-4 py-2.5 rounded-lg text-sm bg-[var(--cyan-glow)] text-[var(--cyan)]"
+                >
                 ✓ 题型总分 {totalFromTypes()} 分 = 试卷总分 {totalScore} 分
               </div>
             )}
@@ -481,8 +481,8 @@ function GeneratePageContent() {
               <div className="flex gap-1.5">
                 {DIFF_PRESETS.map(p => (
                   <button key={p.label} onClick={() => setDifficulty(p.value)}
-                    className="text-xs px-2 py-0.5 rounded border border-solid cursor-pointer hover:opacity-70 transition-opacity"
-                    style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-500)', background: 'var(--paper)' }}>{p.label}</button>
+                    className="text-xs px-2 py-0.5 rounded border border-solid cursor-pointer hover:opacity-70 transition-opacity border-[var(--ink-200)] text-[var(--ink-500)] bg-[var(--paper)]"
+                    >{p.label}</button>
                 ))}
               </div>
             </div>
@@ -508,8 +508,8 @@ function GeneratePageContent() {
                   <span className="text-[var(--ink-500)] text-xs">{DIFF_LABELS[i]}</span>
                   <input type="number" min={0} max={100} value={difficulty[d]}
                     onChange={e => setDifficultyValue(d, Number(e.target.value))}
-                    className="w-14 text-xs text-center rounded border border-solid py-0.5"
-                    style={{ borderColor: 'var(--ink-200)', color: 'var(--ink-700)', background: 'var(--paper)' }} />
+                    className="w-14 text-xs text-center rounded border border-solid py-0.5 border-[var(--ink-200)] text-[var(--ink-700)] bg-[var(--paper)]"
+                    />
                   <span className="text-[var(--ink-400)] text-xs">%</span>
                 </div>
               ))}
@@ -589,14 +589,14 @@ function GeneratePageContent() {
 
           {/* 必选题提示 */}
           {includeIds.length > 0 && (
-            <div className="card p-4" style={{ borderLeft: '3px solid var(--fox)', background: 'var(--fox-pale)' }}>
+            <div className="card p-4 bg-[var(--fox-pale)]" style={{ borderLeft: '3px solid var(--fox)',  }}>
               <div className="flex items-center gap-2 text-sm">
                 <span>📌</span>
                 <span className="text-[var(--fox-dark)]">
                   已从题库选定 <strong>{includeIds.length}</strong> 道必选题，将优先放入试卷
                 </span>
-                <button onClick={() => setIncludeIds([])} className="btn btn-ghost btn-xs ml-auto"
-                  style={{ color: 'var(--ink-300)' }}>清除</button>
+                <button onClick={() => setIncludeIds([])} className="btn btn-ghost btn-xs ml-auto text-[var(--ink-300)]"
+                  >清除</button>
               </div>
             </div>
           )}
@@ -613,14 +613,14 @@ function GeneratePageContent() {
             ) : (
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {templates.map(t => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 p-2 rounded text-xs"
-                    style={{ background: 'var(--paper)', color: 'var(--ink-500)' }}>
+                  <div key={t.id} className="flex items-center justify-between gap-2 p-2 rounded text-xs bg-[var(--paper)] text-[var(--ink-500)]"
+                    >
                     <span className="truncate flex-1">{t.name}</span>
                     <div className="flex gap-1 flex-shrink-0">
                       <button onClick={() => applyTemplate(t)}
-                        className="btn btn-ghost btn-xs" style={{ color: 'var(--gold)' }}>应用</button>
+                        className="btn btn-ghost btn-xs text-[var(--gold)]" >应用</button>
                       <button onClick={() => deleteTemplate(t.id, t.name)}
-                        className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                        className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>✕</button>
                     </div>

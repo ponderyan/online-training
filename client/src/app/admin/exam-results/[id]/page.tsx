@@ -50,8 +50,8 @@ export default function AdminExamResultsPage() {
                 if (!confirm('确认发布所有未发布的成绩？')) return;
                 await api.exams.admin.publishScores(examId);
                 window.location.reload();
-              }} className="px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all"
-                style={{ background: 'var(--fox)', color: '#fff' }}>
+              }} className="px-4 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all bg-[var(--fox)] text-[#fff]"
+                >
                 📢 发布成绩
               </button>
             </div>
@@ -72,7 +72,7 @@ export default function AdminExamResultsPage() {
                     <td>{s.isPassed ? <span className="text-[var(--sage)]">✅ 通过</span> : <span className="text-[var(--error)]">❌ 未通过</span>}</td>
                     <td><span className="text-xs px-2 py-0.5 rounded" style={{ background: s.scoringStatus === 'PUBLISHED' ? 'var(--sage-glow)' : 'var(--fox-glow)', color: s.scoringStatus === 'PUBLISHED' ? 'var(--sage)' : 'var(--ink-300)' }}>{s.scoringStatus}</span></td>
                     <td>{s.appealStatus ? <span style={{ color: s.appealStatus === 'PENDING' ? 'var(--fox-dark)' : 'var(--sage)' }}>{s.appealStatus === 'PENDING' ? '🔴 待处理' : '✅ 已处理'}</span> : '—'}</td>
-                    <td><button onClick={() => router.push(`/admin/exam-results/${examId}/student/${s.studentId}`)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>查看</button></td>
+                    <td><button onClick={() => router.push(`/admin/exam-results/${examId}/student/${s.studentId}`)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >查看</button></td>
                   </tr>
                 ))}
               </tbody>

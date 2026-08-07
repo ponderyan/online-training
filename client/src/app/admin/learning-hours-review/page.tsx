@@ -136,7 +136,7 @@ export default function LearningHoursReviewPage() {
                       <td className="text-[var(--ink-400)] text-xs">{h.type?.name || '—'}</td>
                       <td className="text-sm font-medium">{h.hours}h</td>
                       <td>{h.evidenceUrl ? <a href={h.evidenceUrl} target="_blank" className="text-[var(--fox)] text-xs">查看附件</a> : '—'}</td>
-                      <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.note || h.description || ''}>{h.note || h.description || '—'}</td>
+                      <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.note || h.description || ''}>{h.note || h.description || '—'}</td>
                       <td className="text-[var(--ink-300)] text-xs">{new Date(h.recordedAt).toLocaleString('zh-CN')}</td>
                     </tr>
                   ))}
@@ -148,7 +148,7 @@ export default function LearningHoursReviewPage() {
               <button onClick={handleApprove} disabled={selected.size === 0}
                 className="btn btn-fox btn-sm">✅ 批量通过 ({selected.size})</button>
               <button onClick={() => setRejectModal(true)} disabled={selected.size === 0}
-                className="btn btn-outline btn-sm" style={{ color: 'var(--error)' }}>❌ 批量驳回 ({selected.size})</button>
+                className="btn btn-outline btn-sm text-[var(--error)]" >❌ 批量驳回 ({selected.size})</button>
             </div>
           </>
         )
@@ -173,10 +173,10 @@ export default function LearningHoursReviewPage() {
                     <td className="text-sm font-medium">{h.hours}h</td>
                     <td>
                       {h.status === 'REJECTED'
-                        ? <span className="tag" style={{ background: 'var(--verm-glow)', color: 'var(--error)', fontSize: '10px' }}>❌ 驳回</span>
-                        : <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontSize: '10px' }}>✅ 通过</span>}
+                        ? <span className="tag bg-[var(--verm-glow)] text-[var(--error)]" style={{   fontSize: '10px' }}>❌ 驳回</span>
+                        : <span className="tag bg-[var(--sage-glow)] text-[var(--sage)]" style={{   fontSize: '10px' }}>✅ 通过</span>}
                     </td>
-                    <td className="text-xs" style={{ color: 'var(--ink-400)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
+                    <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
                       {h.reviewComment || '—'}
                     </td>
                     <td className="text-[var(--ink-300)] text-xs">
@@ -193,7 +193,7 @@ export default function LearningHoursReviewPage() {
 
       {/* 驳回弹窗 */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" 
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(false); }}>
           <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-base font-semibold mb-2">驳回原因</h3>
@@ -201,7 +201,7 @@ export default function LearningHoursReviewPage() {
               rows={3} className="input w-full" placeholder="请输入驳回原因…" />
             <div className="flex gap-2 mt-4">
               <button onClick={() => setRejectModal(false)} className="btn btn-outline btn-sm flex-1">取消</button>
-              <button onClick={handleReject} disabled={!rejectReason.trim()} className="btn btn-sm flex-1" style={{ background: 'var(--error)', color: '#fff' }}>确认驳回</button>
+              <button onClick={handleReject} disabled={!rejectReason.trim()} className="btn btn-sm flex-1 bg-[var(--error)] text-[#fff]" >确认驳回</button>
             </div>
           </div>
         </div>

@@ -305,8 +305,8 @@ export default function ExamResult() {
 
         {/* Stats Bar */}
         {subjectivePending && (
-          <div className="mb-6 p-4 rounded-lg flex items-center gap-3"
-            style={{ background: 'var(--gold-glow)', border: '1px solid var(--gold-light)', color: 'var(--gold-dark)' }}>
+          <div className="mb-6 p-4 rounded-lg flex items-center gap-3 bg-[var(--gold-glow)] text-[var(--gold-dark)]"
+            style={{  border: '1px solid var(--gold-light)',  }}>
             <span className="text-xl">⏳</span>
             <div>
               <p className="font-semibold text-sm">主观题阅卷中</p>
@@ -378,7 +378,7 @@ export default function ExamResult() {
               {kpAnalysis.strongest && (
                 <div>
                   <span className="text-[var(--ink-400)]">💪 最强：</span>
-                  <span style={{ color: 'var(--sage)', fontWeight: 600 }}>
+                  <span className="text-[var(--sage)]" style={{  fontWeight: 600 }}>
                     {kpAnalysis.strongest.kpName}
                   </span>
                   <span className="text-[var(--ink-300)]"> — 继续保持</span>
@@ -387,7 +387,7 @@ export default function ExamResult() {
               {kpAnalysis.weakest && (
                 <div>
                   <span className="text-[var(--ink-400)]">⚠️ 最弱：</span>
-                  <span style={{ color: 'var(--verm)', fontWeight: 600 }}>
+                  <span className="text-[var(--verm)]" style={{  fontWeight: 600 }}>
                     {kpAnalysis.weakest.kpName}
                   </span>
                   <span className="text-[var(--ink-300)]"> — 建议回看相关课程</span>
@@ -399,8 +399,8 @@ export default function ExamResult() {
 
         {/* ═══ 薄弱考点推荐课程 ═══ */}
         {recommendations?.recommendedCourses?.length > 0 && (
-          <div className="rounded-xl p-6 mb-8" style={{
-            background: 'var(--paper-bright)',
+          <div className="rounded-xl p-6 mb-8 bg-[var(--paper-bright)]" style={{
+            
             border: '1px solid var(--ink-100)',
             maxHeight: maxRecHeight > 0 ? maxRecHeight : undefined,
             overflowY: 'auto',
@@ -419,8 +419,8 @@ export default function ExamResult() {
                 </div>
                 <div className="space-y-1.5">
                   {group.courses.map((course: any) => (
-                    <div key={course.id} className="flex items-center justify-between p-2.5 rounded-lg text-xs" style={{
-                      background: 'var(--paper)',
+                    <div key={course.id} className="flex items-center justify-between p-2.5 rounded-lg text-xs bg-[var(--paper)]" style={{
+                      
                       border: '1px solid var(--ink-100)',
                     }}>
                       <div className="flex items-center gap-2 min-w-0">
@@ -479,15 +479,15 @@ export default function ExamResult() {
                     <div className="flex-1 min-w-0">
                       {/* Question header */}
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--ink-100)', color: 'var(--ink-500)' }}>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--ink-100)] text-[var(--ink-500)]" >
                           #{i + 1}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--fox-glow)] text-[var(--fox)]" >
                           {TYPE_NAMES[a.questionType] || a.questionType}
                         </span>
                         {kpAnalysis?.questionKps?.[a.questionId]?.map(kp => (
-                          <span key={kp.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                            style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+                          <span key={kp.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[var(--fox-glow)] text-[var(--fox-dark)]"
+                            >
                             {kp.code || kp.name}
                           </span>
                         ))}
@@ -562,7 +562,7 @@ export default function ExamResult() {
                           <summary className="text-[var(--fox)] text-xs cursor-pointer inline-flex items-center gap-1 font-medium">
                             <span className="transition-transform group-open:rotate-90">▶</span> 查看解析
                           </summary>
-                          <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: 'var(--paper-alt)', border: '1px solid var(--ink-100)', color: 'var(--ink-500)' }}>
+                          <div className="mt-2 p-3 rounded-lg text-xs bg-[var(--paper-alt)] text-[var(--ink-500)]" style={{  border: '1px solid var(--ink-100)',  }}>
                             {a.analysis}
                           </div>
                         </details>
@@ -585,14 +585,14 @@ export default function ExamResult() {
 
       {/* 成绩变动记录 Modal（脱敏版，不含操作人） */}
       {showScoreChanges && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(0,0,0,0.45)]" 
           onClick={() => setShowScoreChanges(false)}>
           <div className="rounded-2xl p-6 max-w-md w-[90%] max-h-[80vh] overflow-y-auto" style={{ background: 'var(--paper-bright, #fff)' }}
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[var(--ink-700)] text-base font-bold m-0">📊 成绩变动记录</h3>
               <button onClick={() => setShowScoreChanges(false)}
-                className="bg-transparent border-none cursor-pointer text-lg" style={{ color: 'var(--ink-300)' }}>✕</button>
+                className="bg-transparent border-none cursor-pointer text-lg text-[var(--ink-300)]" >✕</button>
             </div>
 
             {loadingChanges ? (
@@ -617,7 +617,7 @@ export default function ExamResult() {
                     </div>
                     {c.reason && (
                       <p className="text-[var(--ink-500)] text-xs mt-1">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded mr-1" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{c.action}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded mr-1 bg-[var(--fox-glow)] text-[var(--fox)]" >{c.action}</span>
                         {c.reason}
                       </p>
                     )}

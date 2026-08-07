@@ -79,7 +79,7 @@ export default function CourseDetailPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/courses')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回课程列表</button>
+      <button onClick={() => router.push('/courses')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回课程列表</button>
 
       <div className="mb-6">
         <div>
@@ -108,7 +108,7 @@ export default function CourseDetailPage() {
       <div className="card p-0 overflow-hidden">
         <div className="border-[var(--ink-200)] px-5 py-3 border-b flex items-center justify-between">
           <h3 className="font-semibold text-sm">关联视频课程（{videoLinks.length}）</h3>
-          <button onClick={openLinkModal} className="text-xs px-3 py-1 rounded-md border cursor-pointer" style={{ borderColor: 'var(--fox)', color: 'var(--fox)', background: 'transparent' }}>
+          <button onClick={openLinkModal} className="text-xs px-3 py-1 rounded-md border cursor-pointer border-[var(--fox)] text-[var(--fox)]" style={{   background: 'transparent' }}>
             管理关联
           </button>
         </div>
@@ -148,7 +148,7 @@ export default function CourseDetailPage() {
 
       {/* 管理关联视频弹窗 */}
       {linkModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" >
           <div className="bg-[var(--paper-bright)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
             <div className="border-[var(--ink-200)] px-5 py-4 border-b">
               <h3 className="font-semibold text-sm">管理关联视频课程</h3>
@@ -183,10 +183,10 @@ export default function CourseDetailPage() {
               )}
             </div>
             <div className="border-[var(--ink-200)] px-5 py-3 border-t flex justify-end gap-2">
-              <button onClick={() => setLinkModalOpen(false)} className="px-4 py-1.5 text-xs rounded-md border cursor-pointer" style={{ borderColor: 'var(--ink-300)', color: 'var(--ink-400)', background: 'var(--paper-bright)' }}>
+              <button onClick={() => setLinkModalOpen(false)} className="px-4 py-1.5 text-xs rounded-md border cursor-pointer border-[var(--ink-300)] text-[var(--ink-400)] bg-[var(--paper-bright)]" >
                 取消
               </button>
-              <button onClick={saveLinks} disabled={saving} className="px-4 py-1.5 text-xs rounded-md border-none cursor-pointer text-white" style={{ background: 'var(--fox)', opacity: saving ? 0.6 : 1 }}>
+              <button onClick={saveLinks} disabled={saving} className="px-4 py-1.5 text-xs rounded-md border-none cursor-pointer text-white bg-[var(--fox)]" style={{  opacity: saving ? 0.6 : 1 }}>
                 {saving ? '保存中…' : `保存（已选${selectedVideoIds.length}个）`}
               </button>
             </div>

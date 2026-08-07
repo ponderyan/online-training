@@ -273,7 +273,7 @@ export default function ProgramDetailPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/programs')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回培训班列表</button>
+      <button onClick={() => router.push('/programs')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回培训班列表</button>
 
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -291,7 +291,7 @@ export default function ProgramDetailPage() {
         <div className="flex gap-2">
           {(NEXT_STATUS[program.status] || []).map(action => (
             <button key={action.target} onClick={() => openStatusModal(action)}
-              className="btn btn-sm" style={{ background: action.target === 'PREPARING' ? 'var(--verm)' : 'var(--fox)', color: '#fff', border: 'none' }}>
+              className="btn btn-sm text-[#fff]" style={{ background: action.target === 'PREPARING' ? 'var(--verm)' : 'var(--fox)',  border: 'none' }}>
               {action.label}
             </button>
           ))}
@@ -312,7 +312,7 @@ export default function ProgramDetailPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 mb-5 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+      <div className="flex gap-1 mb-5 p-0.5 rounded-lg bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
         {['students', 'exams', 'dashboard', 'schedule', 'evaluations', 'status', 'attendance', 'evidences', 'filing', 'hours'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
@@ -413,8 +413,8 @@ export default function ProgramDetailPage() {
                       <td>{s.location || '—'}</td>
                       <td>
                         <div className="flex gap-2">
-                          <button onClick={() => openEditSchedule(s)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                          <button onClick={() => openEditSchedule(s)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >编辑</button>
+                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                         </div>
                       </td>
                     </tr>
@@ -485,8 +485,8 @@ export default function ProgramDetailPage() {
                 <div className="text-[var(--ink-300)] py-8 text-center text-xs">暂无状态变更记录</div>
               ) : statusLogs.map((log: any) => (
                 <div key={log.id} className="relative pb-6">
-                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                    style={{ background: 'var(--paper)', borderColor: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)' }} />
+                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 bg-[var(--paper)]"
+                    style={{  borderColor: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)' }} />
                   <div className="text-[var(--ink-400)] text-xs">
                     {new Date(log.createdAt).toLocaleString('zh-CN')}
                   </div>
@@ -636,7 +636,7 @@ export default function ProgramDetailPage() {
                       <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
                       <td className="text-[var(--ink-400)] text-xs">{e.notes || '—'}</td>
                       <td>
-                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                       </td>
                     </tr>
                   ))}
@@ -649,7 +649,7 @@ export default function ProgramDetailPage() {
           {/* Upload Modal */}
           {uploadModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => !uploading && setUploadModal(false)}>
-              <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl p-6 w-full max-w-md bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
                 <h3 className="font-semibold text-base mb-4">上传证据文件</h3>
                 <div className="space-y-3">
                   <div>
@@ -759,7 +759,7 @@ export default function ProgramDetailPage() {
           {/* Filing Submit Modal */}
           {filingModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setFilingModal(false)}>
-              <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl p-6 w-full max-w-md bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
                 <h3 className="font-semibold text-base mb-4">提交备案</h3>
                 <div className="space-y-3">
                   <div>
@@ -800,7 +800,7 @@ export default function ProgramDetailPage() {
       {/* Schedule Modal */}
       {showScheduleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowScheduleModal(false)}>
-          <div className="rounded-xl p-6 w-full max-w-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-4">{editingSchedule ? '编辑排课' : '添加排课'}</h3>
             <div className="space-y-3">
               <div>
@@ -847,7 +847,7 @@ export default function ProgramDetailPage() {
       {/* Status Change Modal */}
       {statusModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setStatusModal(null)}>
-          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-md bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-2">确认{statusModal.label}</h3>
             <p className="text-[var(--ink-400)] text-sm mb-4">{statusModal.confirm || '确认执行此操作？'}</p>
             <div className="mb-4">

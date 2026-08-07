@@ -270,7 +270,7 @@ export default function OrganizationsPage() {
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="🔍 搜索组织名称/编码…" className="input text-xs" style={{ height: 32, paddingRight: search ? 28 : undefined }} />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-sm leading-none" style={{ color: 'var(--ink-300)' }} title="清除搜索">✕</button>
+              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-sm leading-none text-[var(--ink-300)]" title="清除搜索">✕</button>
             )}
           </div>
           <div className="card flex-1 overflow-y-auto p-2" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); onDrop(null); }}>

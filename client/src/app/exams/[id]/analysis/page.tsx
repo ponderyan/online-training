@@ -41,7 +41,7 @@ export default function ExamAnalysisPage() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.back()} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回</button>
+      <button onClick={() => router.back()} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回</button>
       <h1 className="page-title">成绩分析 · {exam?.title || ''}</h1>
       <p className="page-subtitle mb-6">试卷总分：{overview?.totalScore || '—'}</p>
 
@@ -99,7 +99,7 @@ export default function ExamAnalysisPage() {
             <div key={q.questionId} className="bg-[var(--paper-dark)] rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[var(--ink-300)] text-[10px] font-mono">#{idx + 1}</span>
-                <span className="tag text-[10px]" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{TYPE_NAMES[q.type] || q.type}</span>
+                <span className="tag text-[10px] bg-[var(--fox-glow)] text-[var(--fox)]" >{TYPE_NAMES[q.type] || q.type}</span>
                 <span className="text-[var(--ink-500)] text-xs flex-1 truncate">{q.content}</span>
                 <span className="text-[var(--ink-300)] text-[10px]">{q.score}分</span>
               </div>

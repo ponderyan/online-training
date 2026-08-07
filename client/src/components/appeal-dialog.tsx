@@ -33,7 +33,7 @@ export default function AppealDialog({ examId, isOpen, onClose, onSubmitted }: A
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" 
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-md p-6">
         <h3 className="text-[var(--ink-700)] text-lg font-semibold mb-2">📝 分数申诉</h3>
@@ -43,8 +43,8 @@ export default function AppealDialog({ examId, isOpen, onClose, onSubmitted }: A
           className="input w-full" />
         {error && <p className="text-[var(--error)] text-xs mt-1">{error}</p>}
         <div className="flex gap-3 mt-4">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium"
-            style={{ border: '1px solid var(--ink-200)', color: 'var(--ink-500)' }}>取消</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-[var(--ink-500)]"
+            style={{ border: '1px solid var(--ink-200)',  }}>取消</button>
           <button onClick={handleSubmit} disabled={submitting}
             className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white"
             style={{ background: submitting ? 'var(--ink-300)' : 'var(--fox)' }}>

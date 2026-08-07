@@ -115,7 +115,7 @@ export default function AssignPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <button onClick={() => router.push(`/grading/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-2" style={{ color: 'var(--fox)' }}>← 返回阅卷</button>
+        <button onClick={() => router.push(`/grading/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-2 text-[var(--fox)]" >← 返回阅卷</button>
         <h1 className="page-title">阅卷指派 · {exam?.title || ''}</h1>
         <p className="page-subtitle">多选学员 + 多选题型，组合分派给阅卷员</p>
       </div>
@@ -123,7 +123,7 @@ export default function AssignPage() {
       <div className="flex gap-4 mb-6">
         {/* 左栏：学员列表 */}
         <div className="flex-1 card overflow-hidden">
-          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
             <span>学员（{students.length}）</span>
             <label className="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" checked={selectedSessionIds.length === students.length && students.length > 0}
@@ -153,7 +153,7 @@ export default function AssignPage() {
 
         {/* 中栏：题型列表 */}
         <div className="w-64 card overflow-hidden">
-          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
             <span>主观题型（{paperQuestions.length}）</span>
             <label className="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" checked={selectedQuestionIds.length === paperQuestions.length && paperQuestions.length > 0}
@@ -173,7 +173,7 @@ export default function AssignPage() {
                       else setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== pq.id));
                     }}
                     className="accent-[var(--fox)]" />
-                  <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>{typeName}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--fox)]" >{typeName}</span>
                   <span className="text-[var(--ink-600)] text-sm truncate flex-1">{pq.question?.content || `题目 #${pq.id}`}</span>
                   <span className="text-[var(--ink-300)] text-xs">{pq.score}分</span>
                 </label>
@@ -211,7 +211,7 @@ export default function AssignPage() {
 
       {/* 已有分派表格 */}
       <div className="card overflow-hidden">
-        <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+        <div className="px-4 py-3 text-xs font-medium flex items-center justify-between text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
           <span>已有分派（{assignments.length} 条）</span>
           {assignSummary && (
             <span className="text-[var(--ink-300)] text-[10px]">
@@ -245,7 +245,7 @@ export default function AssignPage() {
                 <td className="text-[var(--ink-300)] text-xs">{new Date(a.assignedAt).toLocaleDateString('zh-CN')}</td>
                 <td>
                   <div className="flex gap-2">
-                    <button onClick={() => handleRemove(a.id)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>移除</button>
+                    <button onClick={() => handleRemove(a.id)} className="btn btn-ghost btn-xs text-[var(--verm)]" >移除</button>
                   </div>
                 </td>
               </tr>
@@ -263,7 +263,7 @@ export default function AssignPage() {
               const count = assignments.filter((a: any) => a.graderId === gid).length;
               return (
                 <button key={gid} onClick={() => handleClearGrader(gid)}
-                  className="text-[10px] px-2 py-1 rounded" style={{ border: '1px solid var(--ink-200)', color: 'var(--verm)' }}>
+                  className="text-[10px] px-2 py-1 rounded text-[var(--verm)]" style={{ border: '1px solid var(--ink-200)',  }}>
                   清除{grader?.displayName || `#${gid}`}（{count}条）
                 </button>
               );

@@ -175,18 +175,18 @@ export default function LearningHourCertificates() {
                     <td>
                       <div className="flex gap-1">
                         <button onClick={() => setDetailItem(item)}
-                          className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-400)' }}>详情</button>
+                          className="btn btn-ghost btn-xs text-[var(--ink-400)]" >详情</button>
                         {item.approvalStatus === 'APPROVED' && (
                           <>
                             <a href={`/api/learning-hour-certificates/${item.id}/pdf`} target="_blank"
                               className="text-[var(--cyan)] btn btn-ghost btn-xs">📥 PDF</a>
                             <button onClick={() => setRevokeItem(item)}
-                              className="btn btn-ghost btn-xs" style={{ color: 'var(--neutral-500)' }}>撤销</button>
+                              className="btn btn-ghost btn-xs text-[var(--neutral-500)]" >撤销</button>
                           </>
                         )}
                         {item.approvalStatus === 'PENDING' && (
                           <button onClick={() => { setReviewItem(item); setReviewNote(''); setReviewAction(null); }}
-                            className="btn btn-ghost btn-xs" style={{ color: 'var(--fox)' }}>审核</button>
+                            className="btn btn-ghost btn-xs text-[var(--fox)]" >审核</button>
                         )}
                       </div>
                     </td>
@@ -205,7 +205,7 @@ export default function LearningHourCertificates() {
           <div className="modal-card max-w-[480px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="font-serif font-bold text-sm">📜 学时证明详情</h3>
-              <button onClick={() => setDetailItem(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setDetailItem(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-3">
               <div className="grid grid-cols-2 gap-3 text-xs">
@@ -280,7 +280,7 @@ export default function LearningHourCertificates() {
           <div className="modal-card max-w-[420px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="font-serif font-bold text-sm">审核学时证明</h3>
-              <button onClick={() => setReviewItem(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setReviewItem(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-3">
               <div className="text-xs space-y-1">
@@ -298,12 +298,12 @@ export default function LearningHourCertificates() {
               <button onClick={() => setReviewItem(null)} className="btn btn-outline btn-sm flex-1">取消</button>
               <button onClick={() => { setReviewAction('reject'); handleReview(); }}
                 disabled={processing}
-                className="btn btn-sm" style={{ background: 'var(--error)', color: 'white', opacity: processing ? 0.5 : 1 }}>
+                className="btn btn-sm bg-[var(--error)]" style={{  color: 'white', opacity: processing ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '驳回'}
               </button>
               <button onClick={() => { setReviewAction('approve'); handleReview(); }}
                 disabled={processing}
-                className="btn btn-sm" style={{ background: 'var(--sage)', color: 'white', opacity: processing ? 0.5 : 1 }}>
+                className="btn btn-sm bg-[var(--sage)]" style={{  color: 'white', opacity: processing ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '通过'}
               </button>
             </div>
@@ -317,7 +317,7 @@ export default function LearningHourCertificates() {
           <div className="modal-card max-w-[400px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="font-serif font-bold text-sm">撤销学时证明</h3>
-              <button onClick={() => setRevokeItem(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setRevokeItem(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-3">
               <p className="text-[var(--ink-400)] text-xs">
@@ -332,7 +332,7 @@ export default function LearningHourCertificates() {
             <div className="modal-footer">
               <button onClick={() => { setRevokeItem(null); setRevokeReason(''); }} className="btn btn-outline btn-sm">取消</button>
               <button onClick={handleRevoke} disabled={!revokeReason.trim() || processing}
-                className="btn btn-sm" style={{ background: 'var(--neutral-500)', color: 'white', opacity: (!revokeReason.trim() || processing) ? 0.5 : 1 }}>
+                className="btn btn-sm bg-[var(--neutral-500)]" style={{  color: 'white', opacity: (!revokeReason.trim() || processing) ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '确认撤销'}
               </button>
             </div>

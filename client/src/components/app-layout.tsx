@@ -114,8 +114,8 @@ export default function AppLayout({ children, fullBleed = false }: { children: R
       )}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top header bar */}
-        <header className="flex items-center justify-between px-3 sm:px-6 py-2.5" style={{
-          background: 'var(--topbar-bg)',
+        <header className="flex items-center justify-between px-3 sm:px-6 py-2.5 bg-[var(--topbar-bg)]" style={{
+          
           borderBottom: '1px solid var(--topbar-border)',
           minHeight: 48,
         }}>

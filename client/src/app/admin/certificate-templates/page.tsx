@@ -232,7 +232,7 @@ export default function CertificateTemplatesPage() {
               />
               {searchInput && (
                 <button onClick={() => setSearchInput('')} title="清除"
-                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink-300)', fontSize: 14 }}>✕</button>
+                  className="text-[var(--color-ink-300)]" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer',  fontSize: 14 }}>✕</button>
               )}
             </div>
             {/* 状态 */}
@@ -264,7 +264,7 @@ export default function CertificateTemplatesPage() {
               </button>
             ))}
             <div style={{ flex: 1 }} />
-            <span style={{ fontSize: 12.5, color: 'var(--color-ink-300)' }}>
+            <span className="text-[var(--color-ink-300)]" style={{ fontSize: 12.5,  }}>
               共 <b className="text-[var(--color-ink-600)]">{visible.length}</b> 个模板
             </span>
           </div>
@@ -272,18 +272,18 @@ export default function CertificateTemplatesPage() {
 
         {/* ═══ 内容区 ═══ */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 70, color: 'var(--color-ink-300)' }}>
+          <div className="text-[var(--color-ink-300)]" style={{ textAlign: 'center', padding: 70,  }}>
             <div style={{ fontSize: 30, marginBottom: 10 }} className="animate-pulse-fast">📜</div>
             加载中…
           </div>
         ) : visible.length === 0 ? (
           /* 空状态 */
-          <div style={{ textAlign: 'center', padding: '70px 20px', background: 'var(--color-paper-bright)', border: '1px dashed var(--color-ink-100)', borderRadius: 14 }}>
+          <div className="bg-[var(--color-paper-bright)]" style={{ textAlign: 'center', padding: '70px 20px',  border: '1px dashed var(--color-ink-100)', borderRadius: 14 }}>
             <div style={{ fontSize: 52, marginBottom: 14, opacity: .8 }}>{hasFilters ? '🔍' : '📜'}</div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink-600)', margin: '0 0 6px' }}>
+            <p className="text-[var(--color-ink-600)]" style={{ fontSize: 15, fontWeight: 600,  margin: '0 0 6px' }}>
               {hasFilters ? '没有匹配的模板' : '还没有证书模板'}
             </p>
-            <p style={{ fontSize: 13, color: 'var(--color-ink-300)', margin: '0 0 18px' }}>
+            <p className="text-[var(--color-ink-300)]" style={{ fontSize: 13,  margin: '0 0 18px' }}>
               {hasFilters ? '试试调整搜索关键词或筛选条件' : '从内置模板快速开始，或空白新建自由设计'}
             </p>
             {hasFilters ? (
@@ -305,13 +305,13 @@ export default function CertificateTemplatesPage() {
                   {/* 缩略图 */}
                   <div className="ct-thumb" onClick={() => setPreviewTpl(tpl)}>
                     <span className="ct-badge" style={{ left: 10, background: m.bg, color: m.color }}>{m.label}</span>
-                    {tpl.isSystem && <span className="ct-badge" style={{ left: 10, top: 38, background: 'rgba(58,54,48,.88)', color: '#fff' }}>🔒 系统内置</span>}
-                    {tpl.isDefault && <span className="ct-badge" style={{ right: 10, background: 'rgba(201,160,58,.92)', color: '#fff' }}>★ 默认</span>}
-                    {!tpl.isActive && <span className="ct-badge" style={{ right: tpl.isDefault ? 64 : 10, background: 'rgba(90,83,72,.85)', color: '#fff' }}>已停用</span>}
+                    {tpl.isSystem && <span className="ct-badge bg-[rgba(58,54,48,.88)] text-[#fff]" style={{ left: 10, top: 38,   }}>🔒 系统内置</span>}
+                    {tpl.isDefault && <span className="ct-badge bg-[rgba(201,160,58,.92)] text-[#fff]" style={{ right: 10,   }}>★ 默认</span>}
+                    {!tpl.isActive && <span className="ct-badge bg-[rgba(90,83,72,.85)] text-[#fff]" style={{ right: tpl.isDefault ? 64 : 10,   }}>已停用</span>}
                     {tpl.thumbnail ? (
                       <img src={tpl.thumbnail} alt={tpl.name} />
                     ) : (
-                      <span style={{ color: 'var(--color-ink-200)', fontSize: 13 }}>暂无缩略图</span>
+                      <span className="text-[var(--color-ink-200)]" style={{  fontSize: 13 }}>暂无缩略图</span>
                     )}
                     {/* hover 快捷操作 */}
                     <div className="ct-overlay" onClick={e => e.stopPropagation()}>
@@ -322,11 +322,11 @@ export default function CertificateTemplatesPage() {
                   </div>
                   {/* 信息 */}
                   <div style={{ padding: '12px 14px 13px' }}>
-                    <h4 style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 600, color: 'var(--color-ink-800)', fontFamily: 'var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</h4>
-                    <p style={{ margin: '0 0 9px', fontSize: 12, color: 'var(--color-ink-300)', height: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <h4 className="text-[var(--color-ink-800)]" style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 600,  fontFamily: 'var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</h4>
+                    <p className="text-[var(--color-ink-300)]" style={{ margin: '0 0 9px', fontSize: 12,  height: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {tpl.description || '暂无描述'}
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11.5, color: 'var(--color-ink-300)' }}>
+                    <div className="text-[var(--color-ink-300)]" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11.5,  }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>👤 {tpl.creatorName || `用户#${tpl.createdBy}`}</span>
                       <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span title="使用次数（已签发证书数）" style={{ color: (tpl.usageCount ?? 0) > 0 ? 'var(--color-fox)' : undefined }}>📄 {tpl.usageCount ?? 0}</span>
@@ -346,18 +346,18 @@ export default function CertificateTemplatesPage() {
               return (
                 <div key={tpl.id} className="ct-row" style={{ opacity: tpl.isActive ? 1 : 0.62 }}>
                   <div onClick={() => setPreviewTpl(tpl)}
-                    style={{ width: 92, height: 65, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: 'var(--paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--color-ink-100)' }}>
-                    {tpl.thumbnail ? <img src={tpl.thumbnail} alt={tpl.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: 11, color: 'var(--color-ink-200)' }}>无图</span>}
+                    className="bg-[var(--paper)]" style={{ width: 92, height: 65, flexShrink: 0, borderRadius: 7, overflow: 'hidden',  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--color-ink-100)' }}>
+                    {tpl.thumbnail ? <img src={tpl.thumbnail} alt={tpl.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span className="text-[var(--color-ink-200)]" style={{ fontSize: 11,  }}>无图</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--color-ink-800)', fontFamily: 'var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
+                      <span className="text-[var(--color-ink-800)]" style={{ fontSize: 14.5, fontWeight: 600,  fontFamily: 'var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
                       <span className="tag" style={{ background: m.bg, color: m.color }}>{m.label}</span>
                       {tpl.isDefault && <span className="tag tag-gold">★ 默认</span>}
                       {tpl.isSystem && <span className="tag tag-ink">🔒 系统内置</span>}
                       {!tpl.isActive && <span className="tag tag-ink">已停用</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--color-ink-300)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="text-[var(--color-ink-300)]" style={{ fontSize: 12,  marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {tpl.description || '暂无描述'} · 👤 {tpl.creatorName || `用户#${tpl.createdBy}`} · {tpl.orgId ? `组织#${tpl.orgId}` : '平台级'} · 📄 {tpl.usageCount ?? 0} 次使用 · 更新于 {fmtDate(tpl.updatedAt)}
                     </div>
                   </div>
@@ -380,7 +380,7 @@ export default function CertificateTemplatesPage() {
             <div className="modal-card" style={{ maxWidth: 760 }} onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h3 style={{ margin: 0, fontSize: 17, fontFamily: 'var(--font-serif)', color: 'var(--color-ink-800)' }}>{previewTpl.name}</h3>
+                  <h3 className="text-[var(--color-ink-800)]" style={{ margin: 0, fontSize: 17, fontFamily: 'var(--font-serif)',  }}>{previewTpl.name}</h3>
                   <span className="tag" style={{ background: typeMeta(previewTpl.type).bg, color: typeMeta(previewTpl.type).color }}>{typeMeta(previewTpl.type).label}</span>
                   {previewTpl.isDefault && <span className="tag tag-gold">★ 默认</span>}
                   {previewTpl.isSystem && <span className="tag tag-ink">🔒 系统内置</span>}
@@ -393,11 +393,11 @@ export default function CertificateTemplatesPage() {
                   {previewTpl.thumbnail ? (
                     <img src={previewTpl.thumbnail} alt={previewTpl.name} style={{ maxWidth: '100%', maxHeight: 380, objectFit: 'contain', borderRadius: 4 }} />
                   ) : (
-                    <div style={{ padding: '60px 0', color: 'var(--color-ink-200)' }}>暂无缩略图</div>
+                    <div className="text-[var(--color-ink-200)]" style={{ padding: '60px 0',  }}>暂无缩略图</div>
                   )}
                 </div>
-                {previewTpl.description && <p style={{ margin: '14px 0 0', fontSize: 13, color: 'var(--color-ink-500)' }}>{previewTpl.description}</p>}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 20px', marginTop: 14, fontSize: 12.5, color: 'var(--color-ink-400)' }}>
+                {previewTpl.description && <p className="text-[var(--color-ink-500)]" style={{ margin: '14px 0 0', fontSize: 13,  }}>{previewTpl.description}</p>}
+                <div className="text-[var(--color-ink-400)]" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 20px', marginTop: 14, fontSize: 12.5,  }}>
                   <div>👤 创建者：{previewTpl.creatorName || `用户#${previewTpl.createdBy}`}</div>
                   <div>🏢 归属：{previewTpl.orgId ? `组织 #${previewTpl.orgId}` : '平台级模板'}</div>
                   <div>🕐 创建时间：{fmtDate(previewTpl.createdAt)}</div>
@@ -424,8 +424,8 @@ export default function CertificateTemplatesPage() {
             <div className="modal-card" style={{ maxWidth: 880 }} onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 17, fontFamily: 'var(--font-serif)', color: 'var(--color-ink-800)' }}>从模板创建</h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 12.5, color: 'var(--color-ink-300)' }}>选择一个内置版式，快速开始设计</p>
+                  <h3 className="text-[var(--color-ink-800)]" style={{ margin: 0, fontSize: 17, fontFamily: 'var(--font-serif)',  }}>从模板创建</h3>
+                  <p className="text-[var(--color-ink-300)]" style={{ margin: '3px 0 0', fontSize: 12.5,  }}>选择一个内置版式，快速开始设计</p>
                 </div>
                 <button onClick={() => setShowPresetModal(false)} className="btn btn-ghost btn-icon">✕</button>
               </div>
@@ -433,25 +433,25 @@ export default function CertificateTemplatesPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(232px, 1fr))', gap: 16 }}>
                   {/* 空白模板 */}
                   <div onClick={handleCreate} className="ct-card" style={{ cursor: 'pointer', borderStyle: 'dashed' }}>
-                    <div style={{ aspectRatio: '1123 / 794', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 42, color: 'var(--color-ink-200)' }}>＋</div>
+                    <div className="text-[var(--color-ink-200)]" style={{ aspectRatio: '1123 / 794', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 42,  }}>＋</div>
                     <div style={{ padding: '10px 14px', borderTop: '1px solid var(--color-ink-100)' }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-ink-800)' }}>空白模板</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-ink-300)', marginTop: 2 }}>从零开始自由设计</div>
+                      <div className="text-[var(--color-ink-800)]" style={{ fontSize: 14, fontWeight: 600,  }}>空白模板</div>
+                      <div className="text-[var(--color-ink-300)]" style={{ fontSize: 12,  marginTop: 2 }}>从零开始自由设计</div>
                     </div>
                   </div>
                   {/* 内置预设 */}
                   {TEMPLATE_PRESETS.map(preset => (
                     <div key={preset.key} onClick={() => !creatingPreset && handleCreateFromPreset(preset)} className="ct-card"
                       style={{ cursor: creatingPreset ? 'wait' : 'pointer', opacity: creatingPreset && creatingPreset !== preset.key ? 0.5 : 1 }}>
-                      <div style={{ aspectRatio: '1123 / 794', overflow: 'hidden', position: 'relative', background: 'var(--neutral-100)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                      <div className="bg-[var(--neutral-100)]" style={{ aspectRatio: '1123 / 794', overflow: 'hidden', position: 'relative',  display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
                         <div style={{ transform: 'scale(0.21)', transformOrigin: 'top center', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(preset.canvas, PRESET_PREVIEW_DATA) }} />
                         {creatingPreset === preset.key && (
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(250,246,239,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--color-fox-dark)' }}>创建中…</div>
+                          <div className="bg-[rgba(250,246,239,.75)] text-[var(--color-fox-dark)]" style={{ position: 'absolute', inset: 0,  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,  }}>创建中…</div>
                         )}
                       </div>
                       <div style={{ padding: '10px 14px', borderTop: `3px solid ${preset.accent}` }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-ink-800)' }}>{preset.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--color-ink-300)', marginTop: 2 }}>{preset.description}</div>
+                        <div className="text-[var(--color-ink-800)]" style={{ fontSize: 14, fontWeight: 600,  }}>{preset.name}</div>
+                        <div className="text-[var(--color-ink-300)]" style={{ fontSize: 12,  marginTop: 2 }}>{preset.description}</div>
                       </div>
                     </div>
                   ))}

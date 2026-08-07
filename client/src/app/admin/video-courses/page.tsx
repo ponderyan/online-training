@@ -257,7 +257,7 @@ export default function VideoCoursesPage() {
                       {v.coverUrl ? (
                         <img src={assetUrl(v.coverUrl)} alt="" className="rounded flex-shrink-0" style={{ width: 40, height: 27, objectFit: 'cover' }} />
                       ) : (
-                        <div className="rounded flex-shrink-0 flex items-center justify-center text-xs" style={{ width: 40, height: 27, background: 'var(--ink-100)' }}>🎬</div>
+                        <div className="rounded flex-shrink-0 flex items-center justify-center text-xs bg-[var(--ink-100)]" style={{ width: 40, height: 27,  }}>🎬</div>
                       )}
                       <div>
                         <div className="text-sm font-medium">{v.name}</div>
@@ -265,7 +265,7 @@ export default function VideoCoursesPage() {
                       </div>
                     </div>
                     {/* hover 浮动信息 */}
-                    <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-200)' }}>
+                    <div className="hidden group-hover/row:block absolute left-2 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg border text-xs bg-[var(--paper-bright)] border-[var(--ink-200)]" >
                       <p className="font-semibold text-sm mb-1">{v.name}</p>
                       {v.description && <p className="text-[var(--ink-400)] mb-1.5">{v.description.length > 80 ? v.description.slice(0, 80) + '…' : v.description}</p>}
                       <div className="text-[var(--ink-400)] flex gap-4">
@@ -278,7 +278,7 @@ export default function VideoCoursesPage() {
                   <td>
                     <div className="flex flex-wrap gap-1">
                       <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${TYPE_COLORS[v.type] || 'var(--neutral-400)'} 10%, transparent)`, color: TYPE_COLORS[v.type] || 'var(--neutral-400)' }}>{TYPE_NAMES[v.type] || v.type}</span>
-                      {v.isContinuingEducation && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>继续教育</span>}
+                      {v.isContinuingEducation && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--sage-glow)] text-[var(--sage)]" >继续教育</span>}
                     </div>
                   </td>
                   <td className="text-[var(--ink-400)] text-xs">{v.instructorName || '—'}{v.instructorLevel ? ` (${v.instructorLevel})` : ''}</td>
@@ -291,12 +291,12 @@ export default function VideoCoursesPage() {
                   <td>
                     {v.url ? (
                       v.url.startsWith('http') ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(21,101,192,0.09)', color: 'var(--blue)' }}>🔗 外部链接</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(21,101,192,0.09)] text-[var(--blue)]" >🔗 外部链接</span>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ 已上传</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--sage-glow)] text-[var(--sage)]" >✅ 已上传</span>
                       )
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--ink-300)' }}>⏳ 待上传</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--ink-300)]" >⏳ 待上传</span>
                     )}
                   </td>
                   <td className="text-[var(--ink-400)] text-xs">
@@ -306,36 +306,36 @@ export default function VideoCoursesPage() {
                   </td>
                   <td>
                     <div className="flex gap-2">
-                      <button onClick={() => setDetailVideo(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>详情</button>
-                      <button onClick={() => setPreviewVideo(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>预览</button>
+                      <button onClick={() => setDetailVideo(v)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >详情</button>
+                      <button onClick={() => setPreviewVideo(v)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >预览</button>
                       {v.status === 'DRAFT' && (
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--sage)' }}>上架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer text-[var(--sage)]" >上架</button>
                       )}
                       {v.status === 'PUBLISHED' && (
                         <button onClick={async () => {
                           if (!confirm('下架后学员端将无法观看此视频，确定下架吗？')) return;
                           await fetch('/api/video-courses/' + v.id + '/unpublish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>下架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >下架</button>
                       )}
                       {v.status === 'UNPUBLISHED' && (
                         <button onClick={async () => {
                           await fetch('/api/video-courses/' + v.id + '/publish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
                           load();
-                        }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--sage)' }}>重新上架</button>
+                        }} className="text-xs bg-transparent border-none cursor-pointer text-[var(--sage)]" >重新上架</button>
                       )}
-                      <button onClick={() => openEdit(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-500)' }}>修改</button>
-                      <button onClick={() => openLogs(v)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>日志</button>
+                      <button onClick={() => openEdit(v)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--ink-500)]" >修改</button>
+                      <button onClick={() => openLogs(v)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >日志</button>
                       <button onClick={async () => {
                         if (v.status !== 'UNPUBLISHED') {
                           if (!confirm('删除前需要先下架，确定下架并删除吗？')) return;
                           await fetch('/api/video-courses/' + v.id + '/unpublish', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).catch(() => {});
                         }
                         if (confirm('确定删除该视频课程吗？')) { await api.videoCourses.delete(v.id); load(); }
-                      }} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                      }} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                       <span className="text-[var(--ink-300)] text-[10px] ml-1 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0">双击预览</span>
                     </div>
                   </td>
@@ -351,7 +351,7 @@ export default function VideoCoursesPage() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto py-8"
           onClick={() => !saving && setModalOpen(false)}>
-          <div className="rounded-xl p-6 w-full max-w-2xl" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }}
+          <div className="rounded-xl p-6 w-full max-w-2xl bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }}
             onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-4">{editId ? '编辑视频课程' : '新建视频课程'}</h3>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
@@ -387,7 +387,7 @@ export default function VideoCoursesPage() {
                 </div>
                 <div>
                   <label className="text-[var(--ink-400)] text-xs mb-1 block">视频时长</label>
-                  <input value={form.duration} readOnly className="input w-full" style={{ background: 'var(--paper)', color: form.duration ? 'var(--ink-600)' : 'var(--ink-300)' }} placeholder="上传视频后自动提取" />
+                  <input value={form.duration} readOnly className="input w-full bg-[var(--paper)]" style={{  color: form.duration ? 'var(--ink-600)' : 'var(--ink-300)' }} placeholder="上传视频后自动提取" />
                 </div>
               </div>
               {/* 视频文件 — 渐进式交互 */}
@@ -421,21 +421,21 @@ export default function VideoCoursesPage() {
                 {uploadingVideo ? (
                   <p className="text-[var(--fox)] text-xs">正在上传视频…</p>
                 ) : uploadFile ? (
-                  <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                     <span className="text-base">📹</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs truncate font-medium">{uploadFile.name}</p>
                       <p className="text-[var(--ink-300)] text-[10px]">{(uploadFile.size / 1024 / 1024).toFixed(1)} MB</p>
                     </div>
-                    <button onClick={() => setUploadFile(null)} className="text-xs bg-transparent border-none cursor-pointer flex-shrink-0" style={{ color: 'var(--verm)' }}>✕</button>
+                    <button onClick={() => setUploadFile(null)} className="text-xs bg-transparent border-none cursor-pointer flex-shrink-0 text-[var(--verm)]" >✕</button>
                   </div>
                 ) : form.url ? (
-                  <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                     <span className="text-base">🔗</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs truncate font-medium">{form.url}</p>
                     </div>
-                    <button onClick={() => { setForm((prev: any) => ({ ...prev, url: '' })); setShowVideoUrlInput(false); }} className="text-xs bg-transparent border-none cursor-pointer flex-shrink-0" style={{ color: 'var(--verm)' }}>✕</button>
+                    <button onClick={() => { setForm((prev: any) => ({ ...prev, url: '' })); setShowVideoUrlInput(false); }} className="text-xs bg-transparent border-none cursor-pointer flex-shrink-0 text-[var(--verm)]" >✕</button>
                   </div>
                 ) : showVideoUrlInput ? (
                   <div className="flex items-center gap-2">
@@ -449,7 +449,7 @@ export default function VideoCoursesPage() {
                 ) : (
                   <div className="flex gap-2">
                     <button onClick={() => videoFileRef.current?.click()} className="btn btn-outline btn-xs">📁 选择视频文件</button>
-                    <button onClick={() => setShowVideoUrlInput(true)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>🔗 或粘贴链接</button>
+                    <button onClick={() => setShowVideoUrlInput(true)} className="btn btn-ghost btn-xs text-[var(--ink-300)]" >🔗 或粘贴链接</button>
                   </div>
                 )}
               </div>
@@ -494,7 +494,7 @@ export default function VideoCoursesPage() {
                       <img src={assetUrl(form.coverUrl)} alt="封面预览" className="rounded" style={{ width: 100, height: 56, objectFit: 'cover', border: '1px solid var(--ink-100)' }} />
                       <div className="flex flex-col gap-1">
                         <button onClick={() => coverFileRef.current?.click()} className="btn btn-outline btn-xs">更换图片</button>
-                        <button onClick={() => setForm((prev: any) => ({ ...prev, coverUrl: '' }))} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>✕ 移除</button>
+                        <button onClick={() => setForm((prev: any) => ({ ...prev, coverUrl: '' }))} className="btn btn-ghost btn-xs text-[var(--verm)]" >✕ 移除</button>
                       </div>
                     </div>
                   </div>
@@ -506,7 +506,7 @@ export default function VideoCoursesPage() {
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => coverFileRef.current?.click()} className="btn btn-outline btn-xs">选择图片</button>
-                      <button onClick={() => setShowCoverUrlInput(true)} className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}>或粘贴链接 ›</button>
+                      <button onClick={() => setShowCoverUrlInput(true)} className="btn btn-ghost btn-xs text-[var(--ink-300)]" >或粘贴链接 ›</button>
                     </div>
                   </div>
                 )}
@@ -571,10 +571,10 @@ export default function VideoCoursesPage() {
       {/* Detail Modal */}
       {detailVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDetailVideo(null)}>
-          <div className="rounded-xl p-6 w-full max-w-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-semibold text-base">📋 {detailVideo.name}</h3>
-              <button onClick={() => setDetailVideo(null)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setDetailVideo(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -614,7 +614,7 @@ export default function VideoCoursesPage() {
                   <span className="text-[var(--ink-300)] text-xs block mb-1">关联课程</span>
                   <div className="flex flex-wrap gap-1">
                     {detailVideo.courseLinks.map((cl: any) => (
-                      <span key={cl.id} className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>
+                      <span key={cl.id} className="tag bg-[rgba(123,31,162,0.09)] text-[var(--purple)]" style={{   fontSize: '10px' }}>
                         {cl.course?.name || '课程#' + cl.courseId}
                       </span>
                     ))}
@@ -677,10 +677,10 @@ export default function VideoCoursesPage() {
       {/* Log Modal */}
       {logModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setLogModal(false)}>
-          <div className="rounded-xl p-6 w-full max-w-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-base">📋 操作日志 — {logVideoName}</h3>
-              <button onClick={() => setLogModal(false)} className="text-sm bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setLogModal(false)} className="text-sm bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             {logs.length === 0 ? (
               <p className="text-[var(--ink-300)] py-8 text-center text-xs">暂无操作记录</p>
@@ -689,8 +689,8 @@ export default function VideoCoursesPage() {
                 <div className="bg-[var(--ink-200)] absolute left-3.5 top-2 bottom-2 w-0.5" />
                 {logs.map((log: any) => (
                   <div key={log.id} className="relative pb-5">
-                    <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2"
-                      style={{ background: 'var(--paper)', borderColor: 'var(--fox)' }} />
+                    <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 bg-[var(--paper)] border-[var(--fox)]"
+                      />
                     <div className="text-[var(--ink-300)] text-xs">
                       {new Date(log.createdAt).toLocaleString('zh-CN')}
                     </div>

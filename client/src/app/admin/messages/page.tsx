@@ -160,7 +160,7 @@ export default function AdminMessagesPage() {
       </div>
 
       {/* Tab */}
-      <div className="flex gap-1 mb-6 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+      <div className="flex gap-1 mb-6 p-0.5 rounded-lg bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setView(t.key)}
             className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
@@ -173,7 +173,7 @@ export default function AdminMessagesPage() {
       {/* ═══ 收件箱 ═══ */}
       {view === 'inbox' && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
             <span>收件箱</span>
             <button onClick={loadInbox} className="text-[var(--fox)] text-[10px] bg-transparent border-none cursor-pointer">刷新</button>
           </div>
@@ -187,7 +187,7 @@ export default function AdminMessagesPage() {
                 <div key={n.id} className="px-4 py-3" style={{ background: n.isRead ? 'transparent' : 'var(--fox-glow)' }}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--fox-pale)] text-[var(--fox)]" >
                         {MSG_TYPE_LABELS[n.type] || n.type}
                       </span>
                       {!n.isRead && <span className="bg-[var(--fox)] w-1.5 h-1.5 rounded-full" />}
@@ -225,7 +225,7 @@ export default function AdminMessagesPage() {
                 <label key={u.id} className="flex items-center gap-2 p-2 rounded cursor-pointer text-xs hover:bg-[var(--fox-glow)]"
                   style={{ background: selectedIds.includes(u.id) ? 'var(--fox-glow)' : 'transparent' }}>
                   <input type="checkbox" checked={selectedIds.includes(u.id)} onChange={() => toggleSelect(u.id)} className="accent-[var(--fox)] w-3.5 h-3.5" />
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>{u.displayName?.[0] || '?'}</span>
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 bg-[var(--fox-pale)] text-[var(--fox)]" >{u.displayName?.[0] || '?'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{u.displayName}</div>
                     <div className="text-[var(--ink-300)]">{u.phone || '—'}</div>
@@ -287,7 +287,7 @@ export default function AdminMessagesPage() {
       {/* ═══ 发送记录 ═══ */}
       {view === 'history' && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+          <div className="px-4 py-3 text-xs font-medium flex items-center justify-between text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
             <span>发送记录</span>
             <button onClick={loadSentHistory} className="text-[var(--fox)] text-[10px] bg-transparent border-none cursor-pointer">刷新</button>
           </div>
@@ -319,7 +319,7 @@ export default function AdminMessagesPage() {
                   <div key={key}>
                     <div className="px-4 py-3 cursor-pointer hover:bg-[var(--fox-glow)] transition-colors" onClick={() => toggleExpand(key)}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[var(--fox-pale)] text-[var(--fox)]" >
                           {MSG_TYPE_LABELS[batch.type] || batch.type}
                         </span>
                         <span className="text-[var(--ink-300)] text-[10px]">{new Date(batch.createdAt).toLocaleString('zh-CN')}</span>
@@ -349,7 +349,7 @@ export default function AdminMessagesPage() {
                           (n.channels || []).forEach((c: any) => { nMap[c.channel] = c; });
                           return (
                             <div key={n.id} className="flex items-center gap-2 pl-4 py-0.5">
-                              <span className="inline-block w-5 h-5 rounded text-center text-[9px] leading-5 flex-shrink-0" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>{n.displayName?.[0] || '?'}</span>
+                              <span className="inline-block w-5 h-5 rounded text-center text-[9px] leading-5 flex-shrink-0 bg-[var(--fox-pale)] text-[var(--fox)]" >{n.displayName?.[0] || '?'}</span>
                               <span className="font-medium w-20 truncate">{n.displayName}</span>
                               {(['in_app', 'email', 'sms'] as const).map(c => {
                                 const s = nMap[c]?.status || 'DISABLED';

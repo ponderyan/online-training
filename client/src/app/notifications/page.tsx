@@ -263,13 +263,13 @@ export default function NotificationsPage() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page <= 1}
-            style={{
+            className="bg-[var(--paper-bright)]" style={{
               padding: '6px 12px',
               borderRadius: 6,
               fontSize: 13,
               cursor: page <= 1 ? 'not-allowed' : 'pointer',
               border: `1px solid ${INK_200}`,
-              background: 'var(--paper-bright)',
+              
               color: page <= 1 ? INK_200 : INK_600,
               opacity: page <= 1 ? 0.5 : 1,
             }}
@@ -316,13 +316,13 @@ export default function NotificationsPage() {
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            style={{
+            className="bg-[var(--paper-bright)]" style={{
               padding: '6px 12px',
               borderRadius: 6,
               fontSize: 13,
               cursor: page >= totalPages ? 'not-allowed' : 'pointer',
               border: `1px solid ${INK_200}`,
-              background: 'var(--paper-bright)',
+              
               color: page >= totalPages ? INK_200 : INK_600,
               opacity: page >= totalPages ? 0.5 : 1,
             }}

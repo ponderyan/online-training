@@ -28,12 +28,12 @@ export default function InstructorDetail() {
 
   return (
     <AppLayout>
-      <button onClick={() => router.push('/instructors')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回讲师列表</button>
+      <button onClick={() => router.push('/instructors')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回讲师列表</button>
 
       {/* Info card */}
       <div className="card p-6 mb-5">
         <div className="flex items-start gap-5">
-          <div className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl font-bold flex-shrink-0" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl font-bold flex-shrink-0 bg-[var(--fox-pale)] text-[var(--fox)]" >
             {inst.realName?.[0] || '👨‍🏫'}
           </div>
           <div className="flex-1">

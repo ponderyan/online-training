@@ -14,7 +14,7 @@ export default function SettingsPage() {
   }, [router]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--neutral-400)' }}>
+    <div className="text-[var(--neutral-400)]" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh',  }}>
       正在跳转至配置中心…
     </div>
   );

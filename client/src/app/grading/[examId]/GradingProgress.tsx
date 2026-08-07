@@ -186,7 +186,7 @@ export default function GradingProgress({ examId, exam, students }: GradingProgr
           <div className="text-[var(--ink-400)] text-xs font-medium mb-2">状态分布</div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(statusSummary).filter(([, v]) => (v as number) > 0).map(([k, v]) => (
-              <span key={k} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--paper-dark)', color: 'var(--ink-500)' }}>
+              <span key={k} className="text-xs px-3 py-1.5 rounded-lg bg-[var(--paper-dark)] text-[var(--ink-500)]" >
                 {k}: <strong className="num">{String(v)}</strong>
               </span>
             ))}
@@ -215,7 +215,7 @@ export default function GradingProgress({ examId, exam, students }: GradingProgr
                 {questionStats.map((qs: any) => (
                   <tr key={qs.pqId} style={{ borderBottom: '1px solid var(--ink-100)' }}>
                     <td className="py-2.5 px-2">
-                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] mr-1.5" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] mr-1.5 bg-[var(--fox-glow)] text-[var(--fox)]" >
                         {qs.type === 'SINGLE_CHOICE' ? '单选' : qs.type === 'MULTIPLE_CHOICE' ? '多选' : qs.type === 'TRUE_FALSE' ? '判断' : qs.type === 'FILL_BLANK' ? '填空' : qs.type === 'SHORT_ANSWER' ? '简答' : qs.type}
                       </span>
                       <span className="text-[var(--ink-600)]">{qs.content}</span>

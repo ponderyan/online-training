@@ -22,7 +22,7 @@ interface OrgDetailPanelProps {
 
 function ScopeStat({ label, value, suffix, hint }: { label: string; value: number; suffix?: string; hint?: string }) {
   return (
-    <div className="rounded-lg p-3" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+    <div className="rounded-lg p-3 bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
       <div className="text-[var(--ink-400)] text-xs mb-1">{label}</div>
       <div className="text-[var(--ink-700)] text-xl font-bold">
         {value}<span className="text-[var(--ink-300)] text-xs font-normal ml-0.5">{suffix}</span>
@@ -43,7 +43,7 @@ export default function OrgDetailPanel({ node, dataScope, orgUsers, orgAgencies,
             <div className="flex items-center gap-2">
               <h2 className="text-[var(--ink-700)] font-bold text-base">{node.name}</h2>
               <span className="tag tag-ink text-[10px]">{node.code}</span>
-              <span className="tag text-[10px]" style={{ background: 'var(--fox-pale)', color: 'var(--fox-dark)' }}>
+              <span className="tag text-[10px] bg-[var(--fox-pale)] text-[var(--fox-dark)]" >
                 {LEVEL_LABELS[node.level] || `Level ${node.level}`}
               </span>
             </div>
@@ -58,7 +58,7 @@ export default function OrgDetailPanel({ node, dataScope, orgUsers, orgAgencies,
             <button onClick={() => onCreate(node)} className="btn btn-ghost btn-xs">+ 子组织</button>
             <button onClick={() => onMigrate(node)} className="btn btn-ghost btn-xs">🔄 迁移学员</button>
             <button onClick={() => onEdit(node)} className="btn btn-ghost btn-xs">编辑</button>
-            <button onClick={() => onDelete(node)} className="btn btn-ghost btn-xs" style={{ color: 'var(--verm)' }}>删除</button>
+            <button onClick={() => onDelete(node)} className="btn btn-ghost btn-xs text-[var(--verm)]" >删除</button>
           </div>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function OrgDetailPanel({ node, dataScope, orgUsers, orgAgencies,
           ) : (
             <div className="space-y-3">
               {orgUsers.groups.map(g => (
-                <div key={g.roleCode} className="rounded-lg p-3" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                <div key={g.roleCode} className="rounded-lg p-3 bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ background: g.color || 'var(--ink-300)' }} />
                     <span className="text-[var(--ink-600)] text-xs font-medium">{g.roleName}</span>
@@ -97,7 +97,7 @@ export default function OrgDetailPanel({ node, dataScope, orgUsers, orgAgencies,
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {g.users.map(u => (
-                      <span key={u.id} className="text-xs px-2 py-1 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-500)' }}>
+                      <span key={u.id} className="text-xs px-2 py-1 rounded bg-[var(--paper-dark)] text-[var(--ink-500)]" >
                         {u.displayName} <span className="text-[var(--ink-300)]">({u.username})</span>
                       </span>
                     ))}
@@ -119,10 +119,10 @@ export default function OrgDetailPanel({ node, dataScope, orgUsers, orgAgencies,
         ) : (
           <div className="space-y-2 mt-2">
             {orgAgencies.map((a: any) => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+              <div key={a.id} className="flex items-center justify-between rounded-lg px-3 py-2 bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--ink-600)] text-sm font-medium">{a.name}</span>
-                  {a.shortName && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>{a.shortName}</span>}
+                  {a.shortName && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--paper-dark)] text-[var(--ink-400)]" >{a.shortName}</span>}
                   <span className={`tag ${a.isActive ? 'tag-cyan' : 'tag-ink'} text-[10px]`}>{a.isActive ? '启用' : '停用'}</span>
                 </div>
                 <div className="text-[var(--ink-400)] flex items-center gap-3 text-xs">

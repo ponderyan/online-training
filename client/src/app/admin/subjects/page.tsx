@@ -153,12 +153,12 @@ export default function SubjectsAdminPage() {
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {s.name}
-                    {s.isSystem && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'var(--warning-pale)', color: 'var(--fox-dark)' }}>系统</span>}
+                    {s.isSystem && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--warning-pale)] text-[var(--fox-dark)]" >系统</span>}
                   </td>
                   <td className="text-[var(--ink-400)] px-4 py-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       {s.organization ? (
-                        <span className="px-1.5 py-0.5 rounded" style={{ background: 'var(--ink-50)', color: 'var(--ink-500)' }}>
+                        <span className="px-1.5 py-0.5 rounded bg-[var(--ink-50)] text-[var(--ink-500)]" >
                           {s.organization.code} - {s.organization.name}
                         </span>
                       ) : <span className="text-[var(--ink-300)]">平台级</span>}
@@ -169,7 +169,7 @@ export default function SubjectsAdminPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'var(--ink-300)', maxWidth: 200 }}>
+                  <td className="px-4 py-3 text-xs text-[var(--ink-300)]" style={{  maxWidth: 200 }}>
                     {s.description || '—'}
                   </td>
                   <td className="px-4 py-3 text-center">{s._count?.chapters ?? 0}</td>
@@ -194,7 +194,7 @@ export default function SubjectsAdminPage() {
                     <div className="flex items-center justify-center gap-2">
                       {s.manageable !== false ? (
                         <>
-                          <button onClick={() => openEdit(s)} className="text-xs cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
+                          <button onClick={() => openEdit(s)} className="text-xs cursor-pointer text-[var(--fox)]" >编辑</button>
                           {s.isSystem || s.organization?.orgType === 'ASSOCIATION' ? (
                             <span className="text-[var(--ink-200)] text-xs" title={s.isSystem ? '系统内置科目不可删除' : '协会级科目不可删除，仅可停用'}>删除</span>
                           ) : (
@@ -218,7 +218,7 @@ export default function SubjectsAdminPage() {
 
       {/* 新增/编辑弹窗 */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" >
           <div className="card p-6 w-[420px]">
             <h3 className="text-base font-semibold mb-4">{editingId ? '编辑科目' : '新增科目'}</h3>
             <div className="space-y-3">

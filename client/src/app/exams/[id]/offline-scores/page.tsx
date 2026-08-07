@@ -212,8 +212,8 @@ export default function OfflineScoresPage() {
           </div>
         </div>
 
-        {error && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>⚠ {error}</div>}
-        {success && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--success-pale)', color: 'var(--green)' }}>✓ {success}</div>}
+        {error && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg bg-[var(--verm-glow)] text-[var(--verm)]" >⚠ {error}</div>}
+        {success && <div className="mb-4 text-xs px-4 py-2.5 rounded-lg bg-[var(--success-pale)] text-[var(--green)]" >✓ {success}</div>}
 
         {/* 工具栏 */}
         <div className="flex gap-3 mb-4 flex-wrap">
@@ -229,7 +229,7 @@ export default function OfflineScoresPage() {
           <button onClick={() => window.open(api.offlineExams.seatTableExcelUrl(examId), '_blank')} className="btn btn-outline btn-xs">📊 座位表Excel</button>
           <button onClick={() => window.open(api.offlineExams.seatTablePdfUrl(examId), '_blank')} className="btn btn-outline btn-xs">🖨️ 座位表PDF</button>
           {['SCORE_PUBLISHED', 'SCORE_CONFIRMED'].includes(exam?.status) && (
-            <button onClick={handleCreateRetake} className="btn btn-outline btn-xs" style={{ borderColor: 'var(--verm)', color: 'var(--verm)' }}>📝 创建补考</button>
+            <button onClick={handleCreateRetake} className="btn btn-outline btn-xs border-[var(--verm)] text-[var(--verm)]" >📝 创建补考</button>
           )}
           <button onClick={() => router.push(`/exams/${examId}`)} className="btn btn-ghost btn-xs">← 返回详情</button>
         </div>
@@ -268,7 +268,7 @@ export default function OfflineScoresPage() {
               {sessions.map(s => {
                 const score = scores.find(sc => sc.sessionId === s.id);
                 return (
-                  <tr key={s.id} className="border-t" style={{ borderColor: 'var(--ink-50)', background: s.absent ? 'var(--paper)' : 'white' }}>
+                  <tr key={s.id} className="border-t border-[var(--ink-50)]" style={{  background: s.absent ? 'var(--paper)' : 'white' }}>
                     <td className="text-[var(--ink-400)] px-4 py-2.5">{s.seatNumber || '-'}</td>
                     <td className="px-4 py-2.5 font-medium">{s.student?.displayName || `#${s.studentId}`}</td>
                     {questionTypes.map(t => (
@@ -282,7 +282,7 @@ export default function OfflineScoresPage() {
                     <td className="text-center px-3 py-2.5">
                       {s.absent ? <span className="tag tag-verm">缺考</span> :
                        score ? <span className="tag tag-green">已录入</span> :
-                       <span className="tag" style={{ background: 'var(--ink-50)', color: 'var(--ink-400)' }}>待录入</span>}
+                       <span className="tag bg-[var(--ink-50)] text-[var(--ink-400)]" >待录入</span>}
                     </td>
                     <td className="text-center px-3 py-2.5">
                       {(canEnterScores || canMarkAbsent) && (
@@ -316,7 +316,7 @@ export default function OfflineScoresPage() {
 
       {/* 录入弹窗 */}
       {editSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)]" >
           <div className="card p-6 w-[420px] max-h-[80vh] overflow-y-auto">
             <h3 className="text-sm font-bold mb-4">录入成绩 — {editSession.student?.displayName}</h3>
             <div className="space-y-3">

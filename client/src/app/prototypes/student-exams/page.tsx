@@ -21,7 +21,7 @@ export default function StudentExamsPrototype() {
   return (
     <div className="bg-[var(--paper)] min-h-dvh-fb">
       {/* Top bar — student header */}
-      <header className="sticky top-0 z-10 border-b" style={{ background: 'var(--paper-bright)', borderColor: 'var(--ink-100)' }}>
+      <header className="sticky top-0 z-10 border-b bg-[var(--paper-bright)] border-[var(--ink-100)]" >
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-[var(--fox-glow)] w-8 h-8 rounded-lg flex items-center justify-center">
@@ -35,7 +35,7 @@ export default function StudentExamsPrototype() {
             <span className="cursor-pointer hover:text-[var(--fox)]">📊 我的成绩</span>
             <span className="bg-[var(--ink-100)] w-px h-4" />
             <span className="flex items-center gap-1.5 cursor-pointer">
-              <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>张</span>
+              <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold bg-[var(--fox-glow)] text-[var(--fox)]" >张</span>
               张三
             </span>
           </div>
@@ -82,7 +82,7 @@ export default function StudentExamsPrototype() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-[var(--ink-800)] font-serif font-bold text-sm">{e.name}</h3>
                     {e.type === '随到随考' && (
-                      <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: 'var(--cyan-glow)', color: 'var(--cyan)' }}>随到随考</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-[var(--cyan-glow)] text-[var(--cyan)]" >随到随考</span>
                     )}
                   </div>
 
@@ -102,7 +102,7 @@ export default function StudentExamsPrototype() {
                     <div className="mt-3">
                       <div className="flex items-center gap-3">
                         <div className="bg-[var(--paper-dark)] flex-1 h-1.5 rounded-full">
-                          <div className="h-1.5 rounded-full transition-all" style={{ width: `${e.progress}%`, background: 'var(--fox)' }} />
+                          <div className="h-1.5 rounded-full transition-all bg-[var(--fox)]" style={{ width: `${e.progress}%`,  }} />
                         </div>
                         <span className="text-[var(--fox)] text-xs font-medium">{e.progress}%</span>
                       </div>
@@ -160,7 +160,7 @@ export default function StudentExamsPrototype() {
           <div className="modal-card max-w-[560px] animate-fadeSlide">
             <div className="modal-header">
               <h3 className="font-serif font-bold text-base">📋 考试须知</h3>
-              <button onClick={() => setShowExamInstructions(false)} className="text-lg bg-transparent border-none cursor-pointer" style={{ color: 'var(--ink-300)' }}>✕</button>
+              <button onClick={() => setShowExamInstructions(false)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
             </div>
             <div className="modal-body space-y-4">
               <div className="bg-[var(--fox-glow)] p-4 rounded-lg">
@@ -197,7 +197,7 @@ export default function StudentExamsPrototype() {
 
       {/* Prototype note */}
       <div className="max-w-5xl mx-auto px-6 pb-8">
-        <div className="p-4 rounded-lg text-xs" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+        <div className="p-4 rounded-lg text-xs bg-[var(--fox-glow)] text-[var(--fox-dark)]" >
           🦊 这是二期原型的交互演示，数据为模拟数据。等你回来一起审需求和调整。
         </div>
       </div>

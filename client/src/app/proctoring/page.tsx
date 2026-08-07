@@ -214,7 +214,7 @@ export default function ProctoringHome() {
 
                   <div className="flex flex-col items-end gap-1 ml-4 flex-shrink-0">
                     {exam.abnormalCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: 'var(--verm-glow)', color: 'var(--error)' }}>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--verm-glow)] text-[var(--error)]" >
                         ⚠️ {exam.abnormalCount} 异常
                       </span>
                     )}

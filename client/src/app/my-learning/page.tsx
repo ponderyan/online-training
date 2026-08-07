@@ -115,15 +115,15 @@ export default function MyLearningPage() {
 
   const statusBadge = (status: string | null) => {
     if (status === 'PUBLISHED' || status === 'ADJUSTED') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--sage)' }}>已发布</span>;
+      return <span className="text-xs text-[var(--sage)]" style={{ fontWeight: 600,  }}>已发布</span>;
     }
     if (status === 'GRADED') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--fox)' }}>已评分</span>;
+      return <span className="text-xs text-[var(--fox)]" style={{ fontWeight: 600,  }}>已评分</span>;
     }
     if (status === 'GRADING') {
-      return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--fox-light)' }}>评分中</span>;
+      return <span className="text-xs text-[var(--fox-light)]" style={{ fontWeight: 600,  }}>评分中</span>;
     }
-    return <span className="text-xs" style={{ fontWeight: 600, color: 'var(--ink-300)' }}>待评分</span>;
+    return <span className="text-xs text-[var(--ink-300)]" style={{ fontWeight: 600,  }}>待评分</span>;
   };
 
   const hourStatusBadge = (status: string) => {
@@ -216,7 +216,7 @@ export default function MyLearningPage() {
             </div>
             <div className="mt-2">
               <button onClick={() => router.push('/my-certificates')}
-                className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                className="text-xs text-[var(--fox)]" style={{  textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                 查看全部证书 →
               </button>
             </div>
@@ -249,7 +249,7 @@ export default function MyLearningPage() {
                   </thead>
                   <tbody>
                     {data?.examStats.recentExams.map((exam, i) => (
-                      <tr key={i} className="border-t" style={{ borderColor: 'rgba(139,129,116,0.12)' }}>
+                      <tr key={i} className="border-t border-[rgba(139,129,116,0.12)]" >
                         <td className="py-2.5 pr-2">
                           <div className="text-[var(--ink-700)] font-medium">
                             {exam.examTitle}
@@ -273,7 +273,7 @@ export default function MyLearningPage() {
             {(data?.examStats.recentExams.length ?? 0) > 0 && (
               <div className="mt-3 text-right">
                 <button onClick={() => router.push('/exam/results')}
-                  className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  className="text-xs text-[var(--fox)]" style={{  textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                   查看全部成绩 →
                 </button>
               </div>
@@ -293,8 +293,8 @@ export default function MyLearningPage() {
             ) : (
               <div className="space-y-3">
                 {data?.hoursStats.recentRecords.map((rec) => (
-                  <div key={rec.id} className="flex items-center justify-between py-1.5 border-b"
-                    style={{ borderColor: 'rgba(139,129,116,0.08)' }}>
+                  <div key={rec.id} className="flex items-center justify-between py-1.5 border-b border-[rgba(139,129,116,0.08)]"
+                    >
                     <div className="min-w-0 flex-1 mr-3">
                       <div className="text-[var(--ink-700)] text-xs font-medium truncate">
                         {rec.programName}
@@ -317,7 +317,7 @@ export default function MyLearningPage() {
             {(data?.hoursStats.recentRecords.length ?? 0) > 0 && (
               <div className="mt-3 text-right">
                 <button onClick={() => router.push('/learning-hours')}
-                  className="text-xs" style={{ color: 'var(--fox)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  className="text-xs text-[var(--fox)]" style={{  textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
                   查看全部学时 →
                 </button>
               </div>
@@ -413,8 +413,8 @@ export default function MyLearningPage() {
                         </span>
                         {!isCompleted && (
                           <button onClick={() => toggleComplete(step.kpId)}
-                            className="text-[10px] px-2 py-0.5 rounded border-none cursor-pointer ml-auto flex-shrink-0"
-                            style={{ background: 'var(--ink-100)', color: 'var(--ink-500)' }}>
+                            className="text-[10px] px-2 py-0.5 rounded border-none cursor-pointer ml-auto flex-shrink-0 bg-[var(--ink-100)] text-[var(--ink-500)]"
+                            >
                             标记完成
                           </button>
                         )}
@@ -422,8 +422,8 @@ export default function MyLearningPage() {
                       {step.courses?.length > 0 && (
                         <div className="ml-9 space-y-1">
                           {step.courses.map((course: any) => (
-                            <div key={course.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs"
-                              style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                            <div key={course.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs bg-[var(--paper)]"
+                              style={{  border: '1px solid var(--ink-100)' }}>
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-[var(--ink-600)] truncate">{course.title}</span>
                                 {course.duration != null && (
@@ -431,8 +431,8 @@ export default function MyLearningPage() {
                                 )}
                               </div>
                               <button onClick={() => router.push(`/video/${course.id}`)}
-                                className="text-xs px-2.5 py-1 rounded-md border-none cursor-pointer font-medium flex-shrink-0 ml-2"
-                                style={{ background: 'var(--fox)', color: 'white' }}>
+                                className="text-xs px-2.5 py-1 rounded-md border-none cursor-pointer font-medium flex-shrink-0 ml-2 bg-[var(--fox)]"
+                                style={{  color: 'white' }}>
                                 去学习
                               </button>
                             </div>

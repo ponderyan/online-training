@@ -56,7 +56,7 @@ export default function ExamOfficerDashboard({ stats, loading }: any) {
               <div className="space-y-2">
                 {d.upcomingExams.map((e: any) => (
                   <div key={e.id} onClick={() => router.push(`/exams/${e.id}`)}
-                    className="flex items-center justify-between p-3 rounded-lg cursor-pointer" style={{ background: 'var(--paper-dark)' }}>
+                    className="flex items-center justify-between p-3 rounded-lg cursor-pointer bg-[var(--paper-dark)]" >
                     <span className="text-sm font-medium text-[var(--ink-600)]">{e.title}</span>
                     <span className="text-xs text-[var(--ink-300)]">
                       {new Date(e.startTime).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

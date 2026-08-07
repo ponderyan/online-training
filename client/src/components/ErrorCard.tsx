@@ -36,11 +36,11 @@ export default function ErrorCard({
       <div style={{ fontSize: '2.2rem', lineHeight: 1, marginBottom: 10 }} aria-hidden>
         ❌
       </div>
-      <p className="font-medium" style={{ color: 'var(--verm)', fontSize: '0.92rem', marginBottom: 4 }}>
+      <p className="font-medium text-[var(--verm)]" style={{  fontSize: '0.92rem', marginBottom: 4 }}>
         {message}
       </p>
       {description && (
-        <p style={{ color: 'var(--ink-300)', fontSize: '0.8rem', maxWidth: 360 }}>{description}</p>
+        <p className="text-[var(--ink-300)]" style={{  fontSize: '0.8rem', maxWidth: 360 }}>{description}</p>
       )}
       {onRetry && (
         <button className="btn btn-outline btn-sm mt-4" onClick={onRetry}>

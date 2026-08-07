@@ -14,8 +14,8 @@ export default function ExamStudentList({ students, isOffline, lastUpdated, exam
     : { ASSIGNED: '未开始', ACTIVE: '考试中', PAUSED: '已断线', SUBMITTED: '已提交' };
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
-      <div className="px-5 py-3 flex items-center justify-between text-xs" style={{ color: 'var(--ink-400)', borderBottom: '1px solid var(--ink-100)' }}>
+    <div className="rounded-xl overflow-hidden bg-[var(--paper-bright)]" style={{  border: '1px solid var(--ink-100)' }}>
+      <div className="px-5 py-3 flex items-center justify-between text-xs text-[var(--ink-400)]" style={{  borderBottom: '1px solid var(--ink-100)' }}>
         <span>考生状态 · 共{students.length}人</span>
         <div className="flex items-center gap-3">
           {lastUpdated && (
@@ -33,8 +33,8 @@ export default function ExamStudentList({ students, isOffline, lastUpdated, exam
         {students.map(s => (
           <div key={s.id} className="px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-[var(--fox-glow)] text-[var(--fox)]"
+                >
                 {s.student?.displayName?.[0] || '?'}
               </div>
               <div>

@@ -90,15 +90,15 @@ export default function LearningCenterPage() {
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-3xl opacity-30">🎬</div>
                       )}
-                      <div className="absolute bottom-0 left-0 right-0 h-1.5" style={{ background: 'rgba(0,0,0,0.15)' }}>
-                        <div className="h-full" style={{ width: `${pct}%`, background: 'var(--fox)', transition: 'width 0.3s' }} />
+                      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[rgba(0,0,0,0.15)]" >
+                        <div className="h-full bg-[var(--fox)]" style={{ width: `${pct}%`,  transition: 'width 0.3s' }} />
                       </div>
                     </div>
                     <div className="p-3">
                       <h3 className="font-medium text-sm truncate">{v.name}</h3>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-[var(--fox)] text-xs font-medium">{pct}%</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-[var(--fox-glow)] text-[var(--fox)]" >
                           继续学习 →
                         </span>
                       </div>
@@ -158,22 +158,22 @@ export default function LearningCenterPage() {
                     <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-30">🎬</div>
                   )}
                   {/* Type badge */}
-                  <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-medium"
+                  <span className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-medium text-[#fff]"
                     style={{
                       background: v.type === 'PUBLIC' ? 'rgba(0,137,123,0.8)' : 'rgba(21,101,192,0.8)',
-                      color: '#fff',
+                      
                     }}>
                     {TYPE_NAMES[v.type] || v.type}
                   </span>
                   {v.isContinuingEducation && (
-                    <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded font-medium"
-                      style={{ background: 'rgba(123,31,162,0.8)', color: '#fff' }}>
+                    <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded font-medium bg-[rgba(123,31,162,0.8)] text-[#fff]"
+                      >
                       计学时
                     </span>
                   )}
                   {/* Progress overlay */}
                   {pct > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-[rgba(0,0,0,0.2)]" >
                       <div className="h-full" style={{
                         width: `${completed ? 100 : pct}%`,
                         background: completed ? 'var(--sage)' : 'var(--fox)',
@@ -192,11 +192,11 @@ export default function LearningCenterPage() {
                     </span>
                   </div>
                   {completed ? (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--sage-glow)', color: 'var(--sage)' }}>✅ 已完成</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-[var(--sage-glow)] text-[var(--sage)]" >✅ 已完成</span>
                   ) : pct > 0 ? (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中 {pct}%</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-[var(--fox-glow)] text-[var(--fox)]" >学习中 {pct}%</span>
                   ) : (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded" style={{ background: 'var(--cyan-glow)', color: 'var(--info)' }}>未开始</span>
+                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-[var(--cyan-glow)] text-[var(--info)]" >未开始</span>
                   )}
                   <span className="text-[var(--fox)] block mt-2 text-xs font-medium">
                     {completed ? '复习查看 →' : pct > 0 ? '继续学习 →' : '开始学习 →'}

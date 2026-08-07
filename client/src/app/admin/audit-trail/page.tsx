@@ -132,7 +132,7 @@ export default function AuditTrailPage() {
                     <div className="text-[var(--ink-700)] text-xs font-medium truncate">{name}</div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[var(--ink-300)] text-[10px] font-mono">#{entity.id}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>{entity.status}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--paper-dark)] text-[var(--ink-400)]" >{entity.status}</span>
                     </div>
                   </button>
                 );
@@ -161,7 +161,7 @@ export default function AuditTrailPage() {
               <div className="border-[var(--ink-100)] mb-5 pb-4 border-b">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[var(--ink-700)] text-lg font-bold m-0">{trail.entityName}</h2>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>#{trail.entityId}</span>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-[var(--paper-dark)] text-[var(--ink-400)]" >#{trail.entityId}</span>
                 </div>
                 <p className="text-[var(--ink-400)] text-xs mt-1">共 {trail.events.length} 个事件 · 按时间倒序</p>
               </div>
@@ -193,7 +193,7 @@ export default function AuditTrailPage() {
                                 {event.eventType}
                               </span>
                               {event.fromState && event.toState && (
-                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: 'var(--ink-400)' }}>
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--paper-dark)] text-[var(--ink-400)]" >
                                   {event.fromState} → {event.toState}
                                 </span>
                               )}
@@ -202,8 +202,8 @@ export default function AuditTrailPage() {
                           </div>
                           {hasDetail && (
                             <button onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
-                              className="text-[10px] bg-transparent border-none cursor-pointer whitespace-nowrap flex-shrink-0"
-                              style={{ color: 'var(--fox)' }}>
+                              className="text-[10px] bg-transparent border-none cursor-pointer whitespace-nowrap flex-shrink-0 text-[var(--fox)]"
+                              >
                               {isExpanded ? '收起' : '详情'}
                             </button>
                           )}

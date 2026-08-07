@@ -377,26 +377,26 @@ export default function CertificateTemplateEditor() {
 
   return (
     <AppLayout fullBleed>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--neutral-50)' }}>
+      <div className="bg-[var(--neutral-50)]" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',  }}>
         {/* ═══ 顶栏 ═══ */}
-        <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--ink-100)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, background: 'var(--paper-bright)', fontSize: 13 }}>
+        <div className="bg-[var(--paper-bright)]" style={{ padding: '6px 12px', borderBottom: '1px solid var(--ink-100)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4,  fontSize: 13 }}>
           <button onClick={() => router.push('/admin/certificate-templates')} title="返回模板列表" style={{ ...toolBtnStyle, display: 'inline-flex', alignItems: 'center', gap: 3 }}>← 返回</button>
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <input value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ border: 'none', fontSize: 14, fontWeight: 600, width: 180, outline: 'none' }} />
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <button onClick={undo} disabled={!canUndo} title="撤销 (⌘Z)" style={toolBtnStyle}>↩</button>
           <button onClick={redo} disabled={!canRedo} title="重做 (⌘Z)" style={toolBtnStyle}>↪</button>
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <button onClick={() => addElement('text')} style={toolBtnStyle}>T 文本</button>
           <button onClick={() => addElement('variable-text')} style={toolBtnStyle}>{'{{}'} 变量</button>
           <button onClick={() => addElement('rect')} style={toolBtnStyle}>□ 矩形</button>
           <button onClick={() => addElement('divider')} style={toolBtnStyle}>— 线</button>
           <button onClick={() => addElement('image')} style={toolBtnStyle}>🖼 图</button>
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <button onClick={deleteSelected} disabled={!selectedId} style={{ ...toolBtnStyle, color: selectedId ? 'var(--error)' : 'var(--neutral-200)' }}>🗑</button>
           {selectedId && <>
-            <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
-            <span style={{ fontSize: 10, color: 'var(--neutral-400)' }}>对齐</span>
+            <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
+            <span className="text-[var(--neutral-400)]" style={{ fontSize: 10,  }}>对齐</span>
             <button onClick={() => alignToCanvas('left')} style={toolBtnStyle} title="左对齐">⇤</button>
             <button onClick={() => alignToCanvas('centerH')} style={toolBtnStyle} title="水平居中">⇔</button>
             <button onClick={() => alignToCanvas('right')} style={toolBtnStyle} title="右对齐">⇥</button>
@@ -406,14 +406,14 @@ export default function CertificateTemplateEditor() {
           </>}
           <div style={{ flex: 1 }} />
           <button onClick={zoomOut} style={toolBtnStyle} title="缩小 (⌘-)">−</button>
-          <span style={{ fontSize: 11, color: 'var(--neutral-500)', width: 40, textAlign: 'center', cursor: 'pointer' }} onClick={zoomFit} title="点击适应窗口 (⌘0)">{(scale * 100).toFixed(0)}%</span>
+          <span className="text-[var(--neutral-500)]" style={{ fontSize: 11,  width: 40, textAlign: 'center', cursor: 'pointer' }} onClick={zoomFit} title="点击适应窗口 (⌘0)">{(scale * 100).toFixed(0)}%</span>
           <button onClick={zoomIn} style={toolBtnStyle} title="放大 (⌘+)">＋</button>
           <button onClick={zoomFit} style={toolBtnStyle} title="适应窗口 (⌘0)">⤢</button>
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <button onClick={() => bgFileRef.current?.click()} style={toolBtnStyle} title="上传底版图片">🖼 底版</button>
           <input ref={bgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBgUpload} />
-          {canvas.backgroundImage && <button onClick={clearBgImage} style={{ ...toolBtnStyle, color: 'var(--error)' }} title="清除底版">✕底版</button>}
-          <div style={{ width: 1, height: 20, background: 'var(--neutral-200)' }} />
+          {canvas.backgroundImage && <button onClick={clearBgImage} className="text-[var(--error)]" style={{ ...toolBtnStyle,  }} title="清除底版">✕底版</button>}
+          <div className="bg-[var(--neutral-200)]" style={{ width: 1, height: 20,  }} />
           <select value={renderMode} onChange={e => setRenderMode(e.target.value as RenderMode)} style={{ fontSize: 11, padding: '2px 4px', border: '1px solid var(--ink-100)', borderRadius: 3 }} title="渲染模式">
             <option value="preview">预览(全部)</option>
             <option value="print">打印(动态层)</option>
@@ -425,14 +425,14 @@ export default function CertificateTemplateEditor() {
             <option value={300}>300dpi</option>
           </select>
           <button onClick={() => setShowPreview(!showPreview)} style={toolBtnStyle}>{showPreview ? '✏️ 编辑' : '👁 预览'}</button>
-          <button onClick={exportPdf} disabled={exporting} style={{ ...toolBtnStyle, background: 'var(--neutral-50)' }}>{exporting ? '...' : '📄 PDF'}</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: '4px 14px', background: 'var(--fox)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>{saving ? '保存中' : '💾 保存'}</button>
+          <button onClick={exportPdf} disabled={exporting} className="bg-[var(--neutral-50)]" style={{ ...toolBtnStyle,  }}>{exporting ? '...' : '📄 PDF'}</button>
+          <button onClick={handleSave} disabled={saving} className="bg-[var(--fox)] text-[#fff]" style={{ padding: '4px 14px',   border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>{saving ? '保存中' : '💾 保存'}</button>
         </div>
 
         {/* ═══ 主体 ═══ */}
         <div ref={bodyRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* 画布区 */}
-          <div ref={canvasAreaRef} style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30, background: 'var(--neutral-200)' }}>
+          <div ref={canvasAreaRef} className="bg-[var(--neutral-200)]" style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 30,  }}>
             {showPreview ? (
               <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} dangerouslySetInnerHTML={{ __html: renderCanvasToHtml(canvas, previewData, { mode: renderMode }) }} />
             ) : (
@@ -508,7 +508,7 @@ export default function CertificateTemplateEditor() {
           />
 
           {/* ═══ 右侧面板 ═══ */}
-          <div style={{ width: panelWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', background: 'var(--paper-bright)' }}>
+          <div className="bg-[var(--paper-bright)]" style={{ width: panelWidth, flexShrink: 0, display: 'flex', flexDirection: 'column',  }}>
             {/* Tab 切换 */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--ink-100)' }}>
               <button onClick={() => setRightPanel('props')} style={tabStyle(rightPanel === 'props')}>属性</button>
@@ -517,7 +517,7 @@ export default function CertificateTemplateEditor() {
 
             <div style={{ flex: 1, overflow: 'auto', padding: 10, fontSize: 12 }}>
               {rightPanel === 'props' ? (
-                selectedEl ? <PropertyPanel el={selectedEl} updateProp={updateProp} onToggleLayer={toggleLayer} /> : <p style={{ color: 'var(--neutral-400)', textAlign: 'center', marginTop: 40 }}>选择元素查看属性</p>
+                selectedEl ? <PropertyPanel el={selectedEl} updateProp={updateProp} onToggleLayer={toggleLayer} /> : <p className="text-[var(--neutral-400)]" style={{  textAlign: 'center', marginTop: 40 }}>选择元素查看属性</p>
               ) : (
                 <LayerPanel elements={canvas.elements} selectedId={selectedId} onSelect={setSelectedId} onMove={moveLayer} onLock={toggleLock} onHidden={toggleHidden} onToggleLayer={toggleLayer} />
               )}
@@ -525,9 +525,9 @@ export default function CertificateTemplateEditor() {
 
             {/* 预览数据（可折叠，默认收起以释放属性/图层空间） */}
             <div style={{ borderTop: '1px solid var(--ink-100)', fontSize: 12 }}>
-              <button onClick={() => setShowPreviewVars(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--neutral-500)' }}>
+              <button onClick={() => setShowPreviewVars(v => !v)} className="text-[var(--neutral-500)]" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer',  }}>
                 <span>🧪 预览变量</span>
-                <span style={{ color: 'var(--neutral-300)', fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
+                <span className="text-[var(--neutral-300)]" style={{  fontSize: 10 }}>{showPreviewVars ? '▾' : '▸'}</span>
               </button>
               {showPreviewVars && (
                 <div style={{ padding: '0 10px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -556,7 +556,7 @@ function renderVariableChips(template: string) {
     const m = part.match(/\{\{\s*(\w+)\s*\}\}/);
     if (m) {
       const label = VAR_LABELS[m[1]] || m[1];
-      return <span key={i} style={{ background: 'var(--blue-pale)', color: 'var(--blue)', padding: '0 4px', borderRadius: 3, fontSize: '0.9em', fontWeight: 500 }}>[{label}]</span>;
+      return <span key={i} className="bg-[var(--blue-pale)] text-[var(--blue)]" style={{   padding: '0 4px', borderRadius: 3, fontSize: '0.9em', fontWeight: 500 }}>[{label}]</span>;
     }
     return <span key={i}>{part}</span>;
   });
@@ -570,11 +570,11 @@ function renderElementPreview(el: CanvasElement) {
     case 'rect': return <div style={{ width: '100%', height: '100%', background: p.fill || 'transparent', border: `${p.strokeWidth || 1}px ${p.borderStyle || 'solid'} ${p.stroke || 'var(--neutral-200)'}`, borderRadius: p.radius || 0 }} />;
     case 'divider': return <div style={{ width: '100%', borderTop: `${p.thickness}px ${p.style} ${p.color}` }} />;
     case 'auto-field': return <span style={{ fontSize: p.fontSize, color: p.color }}>[{p.field}]</span>;
-    case 'image': return p.src ? <img src={p.src} style={{ width: '100%', height: '100%', objectFit: p.fit || 'contain' }} alt="" /> : <span style={{ color: 'var(--neutral-200)', fontSize: 11 }}>🖼 图片</span>;
-    case 'qrcode': return <div style={{ width: '100%', height: '100%', border: '1px dashed #999', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--neutral-50)', flexDirection: 'column' as const }}><span style={{ fontSize: 20 }}>⊞</span><span style={{ fontSize: 9, color: 'var(--neutral-400)' }}>QR</span></div>;
+    case 'image': return p.src ? <img src={p.src} style={{ width: '100%', height: '100%', objectFit: p.fit || 'contain' }} alt="" /> : <span className="text-[var(--neutral-200)]" style={{  fontSize: 11 }}>🖼 图片</span>;
+    case 'qrcode': return <div className="bg-[var(--neutral-50)]" style={{ width: '100%', height: '100%', border: '1px dashed #999', display: 'flex', alignItems: 'center', justifyContent: 'center',  flexDirection: 'column' as const }}><span style={{ fontSize: 20 }}>⊞</span><span className="text-[var(--neutral-400)]" style={{ fontSize: 9,  }}>QR</span></div>;
     case 'seal': return <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid ' + (p.color || 'var(--error)'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.color || 'var(--error)', fontSize: 10, textAlign: 'center' as const }}>{p.text || '印章'}</div>;
-    case 'barcode': return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, #fff 2px, #fff 4px)' }}><span style={{ background: 'var(--paper-bright)', padding: '0 4px', fontSize: 9 }}>{p.dataTemplate}</span></div>;
-    default: return <span style={{ color: 'var(--neutral-400)', fontSize: 11 }}>[{el.type}]</span>;
+    case 'barcode': return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, #fff 2px, #fff 4px)' }}><span className="bg-[var(--paper-bright)]" style={{  padding: '0 4px', fontSize: 9 }}>{p.dataTemplate}</span></div>;
+    default: return <span className="text-[var(--neutral-400)]" style={{  fontSize: 11 }}>[{el.type}]</span>;
   }
 }
 
@@ -587,7 +587,7 @@ function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasElement; u
         <button onClick={() => onToggleLayer(el.id)} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid ' + (el.layer === 'design' ? 'var(--fox-light)' : 'var(--sage-light)'), borderRadius: 3, background: el.layer === 'design' ? 'var(--fox-pale)' : 'var(--success-pale)', cursor: 'pointer' }}>
           {el.layer === 'design' ? '🎨 底版层' : '🖨 打印层'}
         </button>
-        <span style={{ fontSize: 10, color: 'var(--neutral-400)', marginLeft: 4 }}>{el.layer === 'design' ? '打印时跳过' : '打印时输出'}</span>
+        <span className="text-[var(--neutral-400)]" style={{ fontSize: 10,  marginLeft: 4 }}>{el.layer === 'design' ? '打印时跳过' : '打印时输出'}</span>
       </PropRow>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
         <PropRow label="X"><input type="number" value={el.x} onChange={e => updateProp('x', Number(e.target.value))} style={inputStyle} /></PropRow>
@@ -597,7 +597,7 @@ function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasElement; u
       </div>
       {el.rotation !== undefined && <PropRow label="旋转"><input type="number" value={el.rotation} onChange={e => updateProp('rotation', Number(e.target.value))} style={inputStyle} />°</PropRow>}
       {p.content !== undefined && <PropRow label="内容"><textarea value={p.content} onChange={e => updateProp('content', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow>}
-      {p.template !== undefined && <div><PropRow label="模板"><textarea value={p.template} onChange={e => updateProp('template', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow><div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>{AVAILABLE_VARS.map(v => <button key={v.key} onClick={() => updateProp('template', p.template + '{{' + v.key + '}}')} style={{ fontSize: 10, padding: '1px 5px', border: '1px solid var(--ink-100)', borderRadius: 3, background: 'var(--neutral-50)', cursor: 'pointer' }} title={'{{' + v.key + '}}'}>{v.label}</button>)}</div></div>}
+      {p.template !== undefined && <div><PropRow label="模板"><textarea value={p.template} onChange={e => updateProp('template', e.target.value)} style={{ ...inputStyle, height: 50, resize: 'vertical' }} /></PropRow><div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>{AVAILABLE_VARS.map(v => <button key={v.key} onClick={() => updateProp('template', p.template + '{{' + v.key + '}}')} className="bg-[var(--neutral-50)]" style={{ fontSize: 10, padding: '1px 5px', border: '1px solid var(--ink-100)', borderRadius: 3,  cursor: 'pointer' }} title={'{{' + v.key + '}}'}>{v.label}</button>)}</div></div>}
       {p.fontSize !== undefined && <PropRow label="字号"><input type="number" value={p.fontSize} onChange={e => updateProp('fontSize', Number(e.target.value))} style={{ ...inputStyle, width: 60 }} /></PropRow>}
       {p.fontFamily !== undefined && <PropRow label="字体"><input value={p.fontFamily} onChange={e => updateProp('fontFamily', e.target.value)} style={inputStyle} /></PropRow>}
       {p.color !== undefined && <PropRow label="颜色"><div style={{ display: 'flex', gap: 4, alignItems: 'center' }}><input type="color" value={p.color} onChange={e => updateProp('color', e.target.value)} style={{ width: 28, height: 22, border: 'none', padding: 0 }} /><input value={p.color} onChange={e => updateProp('color', e.target.value)} style={{ ...inputStyle, flex: 1 }} /></div></PropRow>}
@@ -644,7 +644,7 @@ function LayerPanel({ elements, selectedId, onSelect, onMove, onLock, onHidden, 
 }
 
 function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 36, color: 'var(--neutral-500)', flexShrink: 0 }}>{label}</span>{children}</div>;
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="text-[var(--neutral-500)]" style={{ width: 36,  flexShrink: 0 }}>{label}</span>{children}</div>;
 }
 
 // ── 样式常量 ──

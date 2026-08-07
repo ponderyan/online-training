@@ -165,7 +165,7 @@ export default function EvaluationsPage() {
                 <td className="text-[var(--ink-400)] text-xs max-w-[200px] truncate">{e.comment || '—'}</td>
                 {canManage && (
                   <td>
-                    <button onClick={() => handleDelete(e.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                    <button onClick={() => handleDelete(e.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                   </td>
                 )}
               </tr>

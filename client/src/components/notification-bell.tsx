@@ -112,16 +112,16 @@ export default function NotificationBell({ user }: { user: any }) {
         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
         🔔
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
-            style={{ background: 'var(--error)', minWidth: 18, height: 18, fontSize: 10, lineHeight: '18px' }}>
+          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 flex items-center justify-center rounded-full text-[10px] font-bold text-white bg-[var(--error)]"
+            style={{  minWidth: 18, height: 18, fontSize: 10, lineHeight: '18px' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl overflow-hidden shadow-xl"
-          style={{ background: 'var(--paper-bright)', border: '1px solid var(--ink-100)' }}>
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl overflow-hidden shadow-xl bg-[var(--paper-bright)]"
+          style={{  border: '1px solid var(--ink-100)' }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--ink-100)' }}>
             <span className="text-[var(--ink-700)] text-sm font-semibold">消息通知</span>
             {unreadCount > 0 && (
@@ -159,7 +159,7 @@ export default function NotificationBell({ user }: { user: any }) {
 
           <div className="px-4 py-2.5 text-center" style={{ borderTop: '1px solid var(--ink-100)' }}>
             <button onClick={() => { setOpen(false); router.push('/notifications'); }}
-              className="text-xs bg-transparent border-none cursor-pointer w-full" style={{ color: 'var(--fox)' }}>
+              className="text-xs bg-transparent border-none cursor-pointer w-full text-[var(--fox)]" >
               查看全部 →
             </button>
           </div>

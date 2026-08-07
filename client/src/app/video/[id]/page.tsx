@@ -202,16 +202,16 @@ export default function VideoPlayPage() {
     return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-dvh-fb" style={{ background: '#16161d', color: '#9ca3af' }}>加载中… 🦊</div>;
-  if (error) return <div className="flex items-center justify-center min-h-dvh-fb" style={{ background: '#16161d', color: '#9ca3af' }}>{error}</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-dvh-fb bg-[#16161d] text-[#9ca3af]" >加载中… 🦊</div>;
+  if (error) return <div className="flex items-center justify-center min-h-dvh-fb bg-[#16161d] text-[#9ca3af]" >{error}</div>;
   if (!video) return null;
 
   return (
-    <div style={{ background: '#16161d', minHeight: '100vh', color: '#e5e7eb' }}>
+    <div className="bg-[#16161d] text-[#e5e7eb]" style={{  minHeight: '100vh',  }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3" style={{ background: '#16161d', borderBottom: '1px solid #3f3f46' }}>
-        <button onClick={() => router.push('/video')} style={{ background: 'none', border: 'none', color: 'var(--fox)', cursor: 'pointer', fontSize: 13 }}>← 返回</button>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>🦊 狐学</span>
+      <div className="flex items-center justify-between px-6 py-3 bg-[#16161d]" style={{  borderBottom: '1px solid #3f3f46' }}>
+        <button onClick={() => router.push('/video')} className="text-[var(--fox)]" style={{ background: 'none', border: 'none',  cursor: 'pointer', fontSize: 13 }}>← 返回</button>
+        <span className="text-[#9ca3af]" style={{ fontSize: 12,  }}>🦊 狐学</span>
       </div>
 
       <div className="flex" style={{ maxWidth: 1400, margin: '0 auto' }}>
@@ -229,15 +229,15 @@ export default function VideoPlayPage() {
 
           {/* 弹题覆盖层 */}
           {activeQuiz && (
-            <div className="mt-3 p-4 rounded-lg" style={{ background: '#16161d', border: '1px solid #444' }}>
-              <p className="text-sm font-medium mb-3" style={{ color: '#fff' }}>📋 {activeQuiz.question}</p>
+            <div className="mt-3 p-4 rounded-lg bg-[#16161d]" style={{  border: '1px solid #444' }}>
+              <p className="text-sm font-medium mb-3 text-[#fff]" >📋 {activeQuiz.question}</p>
               <div className="space-y-2">
                 {(JSON.parse(activeQuiz.options) as string[]).map((opt, idx) => (
                   <button key={idx} onClick={() => handleQuizSubmit(idx)}
-                    className="block w-full text-left px-3 py-2 rounded text-sm transition-colors"
+                    className="block w-full text-left px-3 py-2 rounded text-sm transition-colors text-[#e5e7eb]"
                     style={{
                       background: quizAnswer === idx ? (idx === activeQuiz.correctIndex ? 'var(--sage)' : 'var(--error)') : 'var(--neutral-800)',
-                      color: '#e5e7eb', border: '1px solid #444', cursor: 'pointer',
+                       border: '1px solid #444', cursor: 'pointer',
                     }}>
                     {String.fromCharCode(65 + idx)}. {opt}
                   </button>
@@ -271,7 +271,7 @@ export default function VideoPlayPage() {
                 {video.type === 'PUBLIC' ? '公共课' : '专项课'}
               </span>
               {video.isContinuingEducation && (
-                <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(46,125,50,0.2)', color: 'var(--sage-light)' }}>继续教育</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[rgba(46,125,50,0.2)] text-[var(--sage-light)]" >继续教育</span>
               )}
             </div>
             <div className="text-[var(--neutral-400)] text-xs space-y-1">
@@ -315,7 +315,7 @@ export default function VideoPlayPage() {
                       {rv.coverUrl ? (
                         <img src={mediaURL(rv.coverUrl)} alt="" className="rounded flex-shrink-0" style={{ width: 40, height: 27, objectFit: 'cover' }} />
                       ) : (
-                        <div className="rounded flex-shrink-0 flex items-center justify-center" style={{ width: 40, height: 27, background: 'var(--neutral-700)', fontSize: 12 }}>🎬</div>
+                        <div className="rounded flex-shrink-0 flex items-center justify-center bg-[var(--neutral-700)]" style={{ width: 40, height: 27,  fontSize: 12 }}>🎬</div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs truncate">{rv.name}</p>

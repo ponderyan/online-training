@@ -169,8 +169,8 @@ export default function CreateExam() {
             <div className="grid grid-cols-3 gap-4">
               {SCENARIOS.map(s => (
                 <div key={s.id} onClick={() => selectScenario(s.id)}
-                  className="card p-5 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md text-center"
-                  style={{ borderColor: 'var(--ink-100)' }}>
+                  className="card p-5 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md text-center border-[var(--ink-100)]"
+                  >
                   <div className="text-3xl mb-3">{s.icon}</div>
                   <h3 className="text-sm font-bold mb-1">{s.title}</h3>
                   <p className="text-[var(--ink-400)] text-xs">{s.desc}</p>
@@ -347,7 +347,7 @@ export default function CreateExam() {
                 <div className="border-[var(--ink-100)] pt-4 border-t">
                   <label className="text-[var(--ink-500)] block text-xs font-semibold mb-3">🏫 考场信息</label>
                   {locations.map((loc, idx) => (
-                    <div key={idx} className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-lg" style={{ background: 'var(--paper)', border: '1px solid var(--ink-100)' }}>
+                    <div key={idx} className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-100)' }}>
                       <div>
                         <label className="text-[var(--ink-400)] block text-xs mb-1">考场名称</label>
                         <input value={loc.name} onChange={e => { const arr = [...locations]; arr[idx] = { ...arr[idx], name: e.target.value }; setLocations(arr); }}
@@ -370,7 +370,7 @@ export default function CreateExam() {
                       </div>
                       {locations.length > 1 && (
                         <button onClick={() => setLocations(locations.filter((_, i) => i !== idx))}
-                          className="col-span-2 text-xs text-right" style={{ color: 'var(--verm)' }}>删除此考场</button>
+                          className="col-span-2 text-xs text-right text-[var(--verm)]" >删除此考场</button>
                       )}
                     </div>
                   ))}
@@ -426,7 +426,7 @@ export default function CreateExam() {
                 </div>
               </div>
 
-              {error && <div className="text-xs px-4 py-2.5 rounded-lg" style={{ background: 'var(--verm-glow)', color: 'var(--verm)' }}>⚠ {error}</div>}
+              {error && <div className="text-xs px-4 py-2.5 rounded-lg bg-[var(--verm-glow)] text-[var(--verm)]" >⚠ {error}</div>}
               <div className="flex gap-3 pt-2">
                 <button onClick={handleCreate} disabled={loading} className="btn btn-fox btn-sm">{loading ? '创建中…' : '创建考试'}</button>
                 <button onClick={() => router.push('/exams')} className="btn btn-outline btn-sm">取消</button>

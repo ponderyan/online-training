@@ -197,7 +197,7 @@ export default function AgencyRadarPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/agencies')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>← 返回</button>
+          <button onClick={() => router.push('/agencies')} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >← 返回</button>
           <h1 className="page-title mb-0">📡 机构质量雷达</h1>
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function AgencyRadarPage() {
                     <div className="space-y-0 overflow-hidden rounded-lg" style={{ border: '1px solid var(--ink-100)' }}>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="text-xs" style={{ background: 'var(--paper-dark)', color: INK_400 }}>
+                          <tr className="text-xs bg-[var(--paper-dark)]" style={{  color: INK_400 }}>
                             <th className="text-left px-3 py-2 font-medium">维度</th>
                             <th className="text-right px-3 py-2 font-medium">得分</th>
                             <th className="text-right px-3 py-2 font-medium">明细</th>

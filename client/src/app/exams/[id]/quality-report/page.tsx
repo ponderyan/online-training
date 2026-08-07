@@ -122,8 +122,8 @@ function QuestionDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }}
+      <div className="rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[var(--paper)]"
+        style={{  border: '1px solid var(--ink-200)' }}
         onClick={e => e.stopPropagation()}>
 
         {loading && <div className="p-12 text-center text-xs" style={{ color: INK_300 }}>加载中…</div>}
@@ -140,14 +140,14 @@ function QuestionDetailModal({
           <>
             {/* 负区分度红色警告 */}
             {detail.discrimination !== null && detail.discrimination < 0 && (
-              <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: 'var(--verm-glow)', color: 'var(--error)', border: '1px solid #e5393544' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs font-medium bg-[var(--verm-glow)] text-[var(--error)]" style={{   border: '1px solid #e5393544' }}>
                 ⚠️ 此题区分度为负，高分段答对率低于低分段，请重点核查
               </div>
             )}
 
             {/* 样本量过小提示 */}
             {sampleTooSmall && (
-              <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
+              <div className="p-3 mb-4 rounded-lg text-xs bg-[var(--gold-glow)] text-[var(--fox)]" style={{   border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
                 ℹ️ 样本量过小（{detail.sampleCount} 人），数据仅供参考
               </div>
             )}
@@ -158,7 +158,7 @@ function QuestionDetailModal({
             </h3>
 
             {/* 题干 */}
-            <div className="p-3 rounded-lg mb-4 text-sm" style={{ background: 'var(--paper-dark)', whiteSpace: 'pre-wrap' }}>
+            <div className="p-3 rounded-lg mb-4 text-sm bg-[var(--paper-dark)]" style={{  whiteSpace: 'pre-wrap' }}>
               {detail.content}
             </div>
 
@@ -354,7 +354,7 @@ export default function ExamQualityReportPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>← 返回</button>
+          <button onClick={() => router.back()} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >← 返回</button>
           <h1 className="page-title mb-0">📋 试卷质检报告</h1>
         </div>
         <button onClick={() => window.print()}
@@ -363,17 +363,17 @@ export default function ExamQualityReportPage() {
 
       {/* 边界状态提示 */}
       {smallSample && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs bg-[var(--gold-glow)] text-[var(--fox)]" style={{   border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
           ℹ️ 样本量过小（{overview.totalExaminees} 人），数据仅供参考
         </div>
       )}
       {allFullMarks && (
-        <div className="p-3 mb-4 rounded-lg text-xs" style={{ background: 'var(--gold-glow)', color: 'var(--fox)', border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs bg-[var(--gold-glow)] text-[var(--fox)]" style={{   border: '1px solid color-mix(in srgb, var(--gold) 27%, transparent)' }}>
           ℹ️ 所有学员成绩完全相同，成绩无区分度
         </div>
       )}
       {allGoodDistinction && (
-        <div className="p-3 mb-4 rounded-lg text-xs font-medium" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', border: '1px solid #2e7d3244' }}>
+        <div className="p-3 mb-4 rounded-lg text-xs font-medium bg-[var(--sage-glow)] text-[var(--sage)]" style={{   border: '1px solid #2e7d3244' }}>
           ✅ 试卷质量良好，所有题目区分度 ≥ 0.30，无需调整
         </div>
       )}
@@ -394,7 +394,7 @@ export default function ExamQualityReportPage() {
 
           {/* ═══ 题目质量列表 ═══ */}
           <div className="card overflow-hidden" style={CARD_STYLE}>
-            <div className="px-5 py-3 border-b text-xs font-medium" style={{ color: INK_400, borderColor: 'var(--ink-200)' }}>
+            <div className="px-5 py-3 border-b text-xs font-medium border-[var(--ink-200)]" style={{ color: INK_400,  }}>
               题目质量分析 · 共 {report.questions.length} 题 · 默认按区分度升序（问题最大排在前面）
             </div>
 
@@ -404,7 +404,7 @@ export default function ExamQualityReportPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs border-b" style={{ color: INK_400, borderColor: 'var(--ink-200)' }}>
+                    <tr className="text-xs border-b border-[var(--ink-200)]" style={{ color: INK_400,  }}>
                       <th className="text-left px-4 py-2.5 font-medium cursor-pointer select-none" onClick={() => toggleSort('index')}>
                         序号{sortArrow('index')}
                       </th>
@@ -424,10 +424,10 @@ export default function ExamQualityReportPage() {
                       const disc = discLevel(q.discrimination);
                       const sampleWarn = q.sampleCount > 0 && q.sampleCount < 30;
                       return (
-                        <tr key={q.id} className="border-t" style={{ borderColor: 'var(--ink-100)', opacity: sampleWarn ? 0.7 : 1 }}>
+                        <tr key={q.id} className="border-t border-[var(--ink-100)]" style={{  opacity: sampleWarn ? 0.7 : 1 }}>
                           <td className="px-4 py-3 text-xs font-mono" style={{ color: INK_400 }}>{q.index}</td>
                           <td className="px-4 py-3">
-                            <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--paper-dark)', color: INK_400 }}>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--paper-dark)]" style={{  color: INK_400 }}>
                               {TYPE_NAMES[q.type] || q.type}
                             </span>
                           </td>
@@ -446,7 +446,7 @@ export default function ExamQualityReportPage() {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button onClick={() => setDetailQId(q.id)}
-                              className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+                              className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >
                               详情
                             </button>
                           </td>

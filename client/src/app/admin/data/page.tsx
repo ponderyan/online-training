@@ -54,7 +54,7 @@ export default function DataArchivePage() {
         <p className="page-subtitle">导出数据报表 · 查看导出日志</p>
       </div>
 
-      <div className="flex gap-1 mb-5 p-0.5 rounded-lg" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+      <div className="flex gap-1 mb-5 p-0.5 rounded-lg bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
         {(['export', 'logs'] as const).map(t => (
           <button key={t} onClick={() => setActiveExportTab(t)}
             className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"

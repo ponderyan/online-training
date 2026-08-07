@@ -202,8 +202,8 @@ export default function LearningHoursPage() {
                                 a.click(); URL.revokeObjectURL(url);
                               }).catch(() => toast.error('下载失败'));
                             }}
-                              className="text-xs bg-transparent border-none cursor-pointer"
-                              style={{ color: 'var(--fox)' }}>📥 下载</button>
+                              className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]"
+                              >📥 下载</button>
                           )}
                         </td>
                       </tr>
@@ -260,7 +260,7 @@ export default function LearningHoursPage() {
 
       {/* 申请学时证明弹窗 */}
       {applyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]" 
           onClick={e => { if (e.target === e.currentTarget) setApplyModal(false); }}>
           <div className="bg-[var(--paper-bright)] rounded-2xl w-full max-w-md p-6"
             onClick={e => e.stopPropagation()}>

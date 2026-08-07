@@ -113,7 +113,7 @@ export function SkeletonTable({ rows = 6, cols = 4 }: { rows?: number; cols?: nu
   return (
     <div style={{ overflow: 'hidden' }}>
       {/* 表头 */}
-      <div style={{ display: 'flex', gap: 0, padding: '10px 14px', borderBottom: '1px solid var(--color-ink-100)', background: 'var(--color-paper)' }}>
+      <div className="bg-[var(--color-paper)]" style={{ display: 'flex', gap: 0, padding: '10px 14px', borderBottom: '1px solid var(--color-ink-100)',  }}>
         {Array.from({ length: cols }).map((_, i) => (
           <div key={i} style={{ flex: 1, padding: '0 8px' }}>
             <SkeletonBar width="60%" height={10} />

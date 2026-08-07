@@ -269,13 +269,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                   <input value={b} onChange={e => { const n = [...blanks]; n[i] = e.target.value; setBlanks(n); }}
                     className="input" />
                   <button onClick={() => setBlanks(blanks.filter((_, j) => j !== i))}
-                    className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                    className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>✕</button>
                 </div>
               ))}
               <button onClick={() => setBlanks([...blanks, ''])}
-                className="text-xs" style={{ color: 'var(--ink-300)' }}
+                className="text-xs text-[var(--ink-300)]" 
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>+ 添加填空位</button>
             </div>
@@ -292,12 +292,12 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
           {type === 'CASE_STUDY' && (
             <div className="space-y-3 mb-4">
               {subQuestions.map((sq, i) => (
-                <div key={i} className="p-4 border rounded" style={{ borderColor: 'var(--ink-100)', background: 'rgba(239, 233, 220, 0.4)' }}>
+                <div key={i} className="p-4 border rounded border-[var(--ink-100)]" style={{  background: 'rgba(239, 233, 220, 0.4)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[var(--ink-500)] text-xs font-medium">子问题 {i + 1}</span>
                     {subQuestions.length > 1 && (
                       <button onClick={() => setSubQuestions(subQuestions.filter((_, j) => j !== i))}
-                        className="btn btn-ghost btn-xs" style={{ color: 'var(--ink-300)' }}
+                        className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>删除</button>
                     )}
@@ -311,7 +311,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                 </div>
               ))}
               <button onClick={() => setSubQuestions([...subQuestions, { content: '', answer: '' }])}
-                className="text-xs" style={{ color: 'var(--ink-300)' }}
+                className="text-xs text-[var(--ink-300)]" 
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>+ 添加子问题</button>
             </div>
@@ -346,12 +346,12 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
                     {selectedKPIds.map(id => {
                       const kp = kpTree.find(k => k.id === id);
                       return kp ? (
-                        <span key={id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>
+                        <span key={id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--fox-glow)] text-[var(--fox-dark)]"
+                          >
                           {kp.name}
                           <button onClick={() => setSelectedKPIds(prev => prev.filter(x => x !== id))}
-                            className="bg-transparent border-none cursor-pointer text-xs leading-none"
-                            style={{ color: 'var(--fox)' }}>✕</button>
+                            className="bg-transparent border-none cursor-pointer text-xs leading-none text-[var(--fox)]"
+                            >✕</button>
                         </span>
                       ) : null;
                     })}
@@ -443,7 +443,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
             <span className="tag tag-ink">{typeName}</span>
             <span className={`tag ${diffTag(question.difficulty)}`}>{diffName}</span>
             <span className="tag tag-gold">{question.subject?.code}</span>
-            {question.chapter && <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox-dark)' }}>{question.chapter.name}</span>}
+            {question.chapter && <span className="tag bg-[var(--fox-glow)] text-[var(--fox-dark)]" >{question.chapter.name}</span>}
             <span className="tag tag-ink">{sourceMap[question.source] || question.source}</span>
             <span className={`tag ${question.status === 'PUBLISHED' ? 'tag-cyan' : 'tag-verm'}`}>
               {question.status === 'PUBLISHED' ? '启用' : '停用'}
@@ -452,38 +452,38 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
 
           {/* ── 来源教材信息（蓝绿卡片，有教材关联） ── */}
           {question.materialQuestions?.[0]?.material && (
-            <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: 'var(--info-pale)', border: '1px solid color-mix(in srgb, var(--info) 35%, transparent)' }}>
+            <div className="rounded-lg px-4 py-3 flex items-center gap-3 bg-[var(--info-pale)]"
+              style={{  border: '1px solid color-mix(in srgb, var(--info) 35%, transparent)' }}>
               <span style={{ fontSize: '18px' }}>📖</span>
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--info)' }}>
+                <div className="text-[var(--info)]" style={{ fontSize: '13px', fontWeight: 600,  }}>
                   {question.materialQuestions[0].material.name}
                 </div>
                 {question.materialQuestions[0].chapter?.title && (
-                  <div style={{ fontSize: '11px', color: 'var(--info)', marginTop: '1px' }}>
+                  <div className="text-[var(--info)]" style={{ fontSize: '11px',  marginTop: '1px' }}>
                     {question.materialQuestions[0].chapter.title}
                   </div>
                 )}
               </div>
-              <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--info-pale)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
+              <span className="text-xs px-2 py-0.5 rounded bg-[var(--info-pale)] text-[var(--info)]" style={{   whiteSpace: 'nowrap' }}>
                 结构化出题
               </span>
             </div>
           )}
           {/* ── 已归档来源（金色卡片） ── */}
           {question.sourceNote && !question.materialQuestions?.[0]?.material && (
-            <div className="rounded-lg px-4 py-3 flex items-center gap-3"
-              style={{ background: 'var(--fox-pale)', border: '1px solid color-mix(in srgb, var(--gold) 35%, transparent)' }}>
+            <div className="rounded-lg px-4 py-3 flex items-center gap-3 bg-[var(--fox-pale)]"
+              style={{  border: '1px solid color-mix(in srgb, var(--gold) 35%, transparent)' }}>
               <span style={{ fontSize: '18px' }}>🗂️</span>
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gold)' }}>
+                <div className="text-[var(--gold)]" style={{ fontSize: '13px', fontWeight: 600,  }}>
                   {question.sourceNote}
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--gold-light)', marginTop: '1px' }}>
+                <div className="text-[var(--gold-light)]" style={{ fontSize: '11px',  marginTop: '1px' }}>
                   该教材已归档，试题信息保留
                 </div>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--gold-light)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>
+              <span className="text-xs px-2 py-0.5 rounded bg-[var(--gold-light)] text-[var(--gold)]" style={{   whiteSpace: 'nowrap' }}>
                 已归档
               </span>
             </div>
@@ -527,7 +527,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && question.analysis && (
             <div>
               <div className="text-[var(--ink-500)] text-xs font-medium mb-1">参考答案</div>
-              <div className="p-3 rounded text-sm" style={{ background: 'var(--cyan-glow)', color: 'var(--ink-700)' }}>
+              <div className="p-3 rounded text-sm bg-[var(--cyan-glow)] text-[var(--ink-700)]" >
                 {question.analysis}
               </div>
             </div>
@@ -537,7 +537,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           {question.analysis && !['SHORT_ANSWER', 'CASE_STUDY'].includes(question.type) && (
             <div>
               <div className="text-[var(--fox)] text-xs font-medium mb-1">解析</div>
-              <div className="p-3 rounded text-sm" style={{ background: 'var(--fox-pale)', color: 'var(--ink-700)' }}>
+              <div className="p-3 rounded text-sm bg-[var(--fox-pale)] text-[var(--ink-700)]" >
                 {question.analysis}
               </div>
             </div>
@@ -559,11 +559,11 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
           )}
 
           {/* 元信息 */}
-          <div className="pt-4 border-t text-xs space-y-1.5" style={{ borderColor: 'var(--ink-100)', color: 'var(--ink-400)' }}>
+          <div className="pt-4 border-t text-xs space-y-1.5 border-[var(--ink-100)] text-[var(--ink-400)]" >
             {question.materialQuestions?.[0]?.material && (
               <div className="flex justify-between">
                 <span>来源教材</span>
-                <span style={{ color: 'var(--ink-700)', fontWeight: 500 }}>
+                <span className="text-[var(--ink-700)]" style={{  fontWeight: 500 }}>
                   {question.materialQuestions[0].material.name}
                   {question.materialQuestions[0].chapter?.title ? ` · ${question.materialQuestions[0].chapter.title}` : ''}
                 </span>

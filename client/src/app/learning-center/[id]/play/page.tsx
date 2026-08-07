@@ -135,7 +135,7 @@ export default function LearningCenterPlayPage() {
   return (
     <AppLayout>
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={() => router.push('/learning-center')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>
+        <button onClick={() => router.push('/learning-center')} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >
           ← 返回学习中心
         </button>
         {allVideos.length > 0 && (
@@ -149,7 +149,7 @@ export default function LearningCenterPlayPage() {
       <div className="flex gap-4 items-start">
         <div className="flex-1 min-w-0">
           <div className="card p-0 overflow-hidden mb-4" style={{ maxWidth: 960 }}>
-            <div style={{ position: 'relative', paddingTop: '56.25%', background: 'var(--ink-900)' }}>
+            <div className="bg-[var(--ink-900)]" style={{ position: 'relative', paddingTop: '56.25%',  }}>
               <video ref={videoRef} className="plyr"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                 controls playsInline>
@@ -177,9 +177,9 @@ export default function LearningCenterPlayPage() {
               </div>
               <div>
                 {completed ? (
-                  <span className="tag" style={{ background: 'var(--sage-glow)', color: 'var(--sage)', fontWeight: 600 }}>🎉 已完成</span>
+                  <span className="tag bg-[var(--sage-glow)] text-[var(--sage)]" style={{   fontWeight: 600 }}>🎉 已完成</span>
                 ) : (
-                  <span className="tag" style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>学习中</span>
+                  <span className="tag bg-[var(--fox-glow)] text-[var(--fox)]" >学习中</span>
                 )}
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function LearningCenterPlayPage() {
               </div>
             )}
             {completed && (
-              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide" style={{ background: 'var(--success-pale)', border: '1px solid var(--green)' }}>
+              <div className="mt-4 p-3 rounded-lg text-center animate-fadeSlide bg-[var(--success-pale)]" style={{  border: '1px solid var(--green)' }}>
                 <span className="text-lg">🎉 恭喜完成本视频学习！</span>
               </div>
             )}

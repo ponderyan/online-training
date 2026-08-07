@@ -61,7 +61,7 @@ export default function Loading({
       aria-live="polite"
     >
       {spinner}
-      {!full && <span style={{ color: 'var(--ink-300)', fontSize: '0.8rem' }}>{text}</span>}
+      {!full && <span className="text-[var(--ink-300)]" style={{  fontSize: '0.8rem' }}>{text}</span>}
     </div>
   );
 }

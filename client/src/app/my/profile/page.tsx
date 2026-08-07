@@ -187,8 +187,8 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div onClick={() => fileInputRef.current?.click()}
-                className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold cursor-pointer overflow-hidden transition-opacity hover:opacity-80"
-                style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold cursor-pointer overflow-hidden transition-opacity hover:opacity-80 bg-[var(--fox-pale)] text-[var(--fox)]"
+                >
                 {profile.avatar ? (
                   <img src={profile.avatar} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -215,13 +215,13 @@ export default function ProfilePage() {
                     )}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <span className="text-[10px] px-2.5 py-1 rounded-full font-medium"
-                      style={{ background: 'var(--fox-glow)', color: 'var(--fox)' }}>
+                    <span className="text-[10px] px-2.5 py-1 rounded-full font-medium bg-[var(--fox-glow)] text-[var(--fox)]"
+                      >
                       {roleName[firstRole] || firstRole}
                     </span>
                     {profile.orgName && (
-                      <span className="text-[10px] px-2.5 py-1 rounded-full"
-                        style={{ background: 'var(--ink-100)', color: 'var(--ink-500)' }}>
+                      <span className="text-[10px] px-2.5 py-1 rounded-full bg-[var(--ink-100)] text-[var(--ink-500)]"
+                        >
                         🏢 {profile.orgName}
                       </span>
                     )}
@@ -243,7 +243,7 @@ export default function ProfilePage() {
         </div>
 
         {/* ═══ Tab 切换 ═══ */}
-        <div className="flex gap-1 p-0.5 rounded-lg flex-wrap" style={{ background: 'var(--paper-dark)', width: 'fit-content' }}>
+        <div className="flex gap-1 p-0.5 rounded-lg flex-wrap bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -265,7 +265,7 @@ export default function ProfilePage() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-[var(--ink-700)] text-sm font-bold">📋 基本信息</h2>
-              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--gold-glow)] text-[var(--warning)]" >编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {basicFields.map(f => renderField(f))}
@@ -306,7 +306,7 @@ export default function ProfilePage() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-[var(--ink-700)] text-sm font-bold">📞 联系信息</h2>
-              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--gold-glow)', color: 'var(--warning)' }}>编辑模式</span>}
+              {editing && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--gold-glow)] text-[var(--warning)]" >编辑模式</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
               {contactFields.map(f => renderField(f))}
@@ -365,7 +365,7 @@ export default function ProfilePage() {
               {pwdMsg && <p className="text-xs mt-2" style={{ color: pwdMsg.includes('✅') ? 'var(--sage)' : 'var(--error)' }}>{pwdMsg}</p>}
 
               {/* Login info */}
-              <div className="pt-5 mt-5 border-t grid grid-cols-2 gap-3 text-xs" style={{ borderColor: 'var(--ink-50)', color: 'var(--ink-400)' }}>
+              <div className="pt-5 mt-5 border-t grid grid-cols-2 gap-3 text-xs border-[var(--ink-50)] text-[var(--ink-400)]" >
                 <div>
                   <span className="text-[var(--ink-300)] block">上次登录</span>
                   {profile.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString('zh-CN') : '—'}
@@ -382,8 +382,8 @@ export default function ProfilePage() {
         {/* ═══ 固定底部保存按钮（编辑模式下显示）═══ */}
         {editing && (activeTab === 'basic' || activeTab === 'contact') && (
           <div
-            className="sticky bottom-0 flex justify-end gap-3 py-3 px-4 -mx-0 border-t"
-            style={{ borderColor: 'var(--ink-100)', background: 'var(--paper-bright)' }}
+            className="sticky bottom-0 flex justify-end gap-3 py-3 px-4 -mx-0 border-t border-[var(--ink-100)] bg-[var(--paper-bright)]"
+            
           >
             <button onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">取消</button>
             <button onClick={handleSave} disabled={saving} className="btn btn-fox btn-sm">

@@ -129,7 +129,7 @@ export default function AiConfigsPage() {
               {configs.map((c: any) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
-                  <td><span className="tag" style={{ background: 'rgba(123,31,162,0.09)', color: 'var(--purple)', fontSize: '10px' }}>{PROVIDER_NAMES[c.provider] || c.provider}</span></td>
+                  <td><span className="tag bg-[rgba(123,31,162,0.09)] text-[var(--purple)]" style={{   fontSize: '10px' }}>{PROVIDER_NAMES[c.provider] || c.provider}</span></td>
                   <td className="text-[var(--ink-400)] text-xs font-mono">{c.modelVersion || '—'}</td>
                   <td className="text-[var(--ink-400)] text-xs">{c.apiBaseUrl || '—'}</td>
                   <td className="text-[var(--ink-300)] text-xs font-mono">{maskKey(c.apiKey)}</td>
@@ -140,8 +140,8 @@ export default function AiConfigsPage() {
                   </td>
                   <td>
                     <div className="flex gap-2">
-                      <button onClick={() => openEdit(c)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>编辑</button>
-                      <button onClick={() => handleDelete(c.id)} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--error)' }}>删除</button>
+                      <button onClick={() => openEdit(c)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >编辑</button>
+                      <button onClick={() => handleDelete(c.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
                     </div>
                   </td>
                 </tr>
@@ -155,8 +155,8 @@ export default function AiConfigsPage() {
       {/* Edit/Create Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            style={{ background: 'var(--paper)', border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[var(--paper)]"
+            style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-base mb-4">{editId ? '编辑 AI 配置' : '新建 AI 配置'}</h3>
             <form className="space-y-3" autoComplete="off" onSubmit={e => e.preventDefault()}>
               <div>
