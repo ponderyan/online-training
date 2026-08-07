@@ -201,7 +201,7 @@ export default function OfflineScoresPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="page-title">✍️ {exam?.title} — 成绩管理</h1>
+            <h1 className="page-title">{exam?.title} — 成绩管理</h1>
             <p className="page-subtitle">线下笔试 · 成绩录入与管理</p>
           </div>
           <div className="flex items-center gap-3">

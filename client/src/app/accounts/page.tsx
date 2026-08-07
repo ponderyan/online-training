@@ -177,7 +177,7 @@ export default function AccountsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="page-title">👤 账户管理</h1>
+          <h1 className="page-title">账户管理</h1>
           <p className="page-subtitle">共 {total} 个用户</p>
         </div>
         <button onClick={() => { setShowModal(true); setEditUser(null); setForm({ username: '', displayName: '', password: '123456', phone: '', email: '', organization: '', title: '', studentNumber: '', gender: '', batchId: '', idCard: '', education: '', educationSchool: '', major: '', graduationDate: '', professionalTitle: '', professionalLevel: '' }); setSelectedRoles(['STUDENT']); }}

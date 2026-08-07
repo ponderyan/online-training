@@ -108,7 +108,7 @@ export default function AiConfigsPage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">🤖 AI 配置</h1>
+          <h1 className="page-title">AI 配置</h1>
           <p className="page-subtitle">管理 AI 模型接入配置 · 共 {configs.length} 个配置</p>
         </div>
         <button onClick={openNew} className="btn btn-fox btn-sm">➕ 新建配置</button>

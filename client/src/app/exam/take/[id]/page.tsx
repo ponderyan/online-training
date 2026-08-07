@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { LayoutGrid } from 'lucide-react';
 
 import SubmitConfirmModal from '../components/SubmitConfirmModal';
 import AlertModal from '../components/AlertModal';
@@ -473,7 +474,7 @@ export default function ExamTake() {
           className="lg:hidden fixed right-4 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[var(--ink-900)] text-white text-sm shadow-lg cursor-pointer border-none"
           style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         >
-          <span>🗂️</span>
+          <LayoutGrid size={16} />
           <span className="tabular-nums">{answeredCount}/{totalQuestions}</span>
         </button>
 

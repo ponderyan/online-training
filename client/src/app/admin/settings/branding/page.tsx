@@ -51,7 +51,7 @@ export default function BrandingPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🎨 品牌设置</h1>
+        <h1 className="page-title">品牌设置</h1>
         <p className="page-subtitle">自定义网站名称、LOGO、页脚等品牌信息</p>
       </div>
 

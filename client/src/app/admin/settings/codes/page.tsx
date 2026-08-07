@@ -28,6 +28,7 @@ export default function OrgCodesSettingsPage() {
 
   // 编码规则
   const [rules, setRules] = useState<{ separator: string; autoGenerate: boolean; includeLevel: boolean } | null>(null);
+  const [confirmDelId, setConfirmDelId] = useState<number | null>(null);
   const [rulesSaving, setRulesSaving] = useState(false);
 
   // 预览
@@ -69,8 +70,7 @@ export default function OrgCodesSettingsPage() {
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const deleteAbbreviation = async (id: number, keyword: string) => {
-    if (!confirm(`确认删除「${keyword}」？`)) return;
+  const deleteAbbreviation = async (id: number) => {
     try {
       await api.orgCodes.deleteAbbreviation(id);
       load();
@@ -110,7 +110,7 @@ export default function OrgCodesSettingsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🔤 组织编码管理</h1>
+        <h1 className="page-title">组织编码管理</h1>
         <p className="page-subtitle">缩写词典维护 · 编码预览 · 编码总览</p>
       </div>
 
@@ -143,7 +143,7 @@ export default function OrgCodesSettingsPage() {
                 <div className="text-[var(--ink-500)] flex items-center gap-2 text-xs">
                   <span style={{ width: 64 }}>分隔符</span>
                   <input value={rules.separator} maxLength={2}
-                    onChange={e => setRules({ ...rules, separator: e.target.value.replace(/[^\w.@/]/g, '') })}
+                    onChange={e => setRules({ ...rules, separator: e.target.value.replace(/[^\w.@/\-]/g, '') })}
                     className="input text-xs" style={{ width: 56, padding: '2px 6px' }} />
                   <span className="text-[var(--ink-300)]">父编码与缩写之间的连接符</span>
                 </div>
@@ -187,8 +187,14 @@ export default function OrgCodesSettingsPage() {
                     <span className="tag tag-ink" style={{ fontSize: 9 }}>{a.category || '—'}</span>
                     <button onClick={() => { setEditId(a.id); setEditKeyword(a.keyword); setEditAbbr(a.abbr); }}
                       className="bg-transparent border-none cursor-pointer text-xs" style={{ color: 'var(--ink-300)' }}>✎</button>
-                    <button onClick={() => deleteAbbreviation(a.id, a.keyword)}
-                      className="bg-transparent border-none cursor-pointer text-xs" style={{ color: 'var(--ink-300)' }}>🗑</button>
+                    <button onClick={() => {
+                        if (confirmDelId === a.id) { setConfirmDelId(null); deleteAbbreviation(a.id); }
+                        else { setConfirmDelId(a.id); setTimeout(() => setConfirmDelId(c => (c === a.id ? null : c)), 3000); }
+                      }}
+                      className="bg-transparent border-none cursor-pointer text-xs"
+                      style={{ color: confirmDelId === a.id ? 'var(--verm)' : 'var(--ink-300)', fontWeight: confirmDelId === a.id ? 700 : 400 }}>
+                      {confirmDelId === a.id ? '确认?' : '🗑'}
+                    </button>
                   </>
                 )}
               </div>

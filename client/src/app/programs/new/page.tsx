@@ -96,7 +96,7 @@ export default function NewProgramPage() {
           ← 返回培训班列表
         </button>
 
-        <h1 className="page-title">📋 新建培训班</h1>
+        <h1 className="page-title">新建培训班</h1>
         <p className="page-subtitle mb-6">填写培训班基本信息，系统将自动生成培训班编号</p>
 
         {error && (

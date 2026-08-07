@@ -115,7 +115,7 @@ export default function EditExam() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="page-title">✏️ 编辑考试场次</h1>
+        <h1 className="page-title">编辑考试场次</h1>
         <p className="page-subtitle mb-6">修改考试配置（草稿状态）</p>
 
         <div className="space-y-5">

@@ -60,6 +60,12 @@ export default defineConfig({
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
+      name: 'org-codes',
+      testMatch: /org-codes\.spec\.ts/,
+      dependencies: ['setup-admin'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
+    {
       name: 'mobile-devices-smoke',
       testMatch: /mobile-devices-smoke\.spec\.ts/,
       dependencies: ['setup-admin'],

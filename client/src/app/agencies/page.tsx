@@ -85,7 +85,7 @@ export default function AgenciesPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">🏢 招生机构管理</h1>
+          <h1 className="page-title">招生机构管理</h1>
           <p className="page-subtitle">共 {total} 个合作机构</p>
         </div>
         {!isAgencyAdmin && (

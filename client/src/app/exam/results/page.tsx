@@ -36,7 +36,7 @@ export default function ExamResultsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📊 考试成绩</h1>
+        <h1 className="page-title">考试成绩</h1>
         <p className="page-subtitle">已公布成绩的考试</p>
       </div>
 

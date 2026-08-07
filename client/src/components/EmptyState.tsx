@@ -1,6 +1,19 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import {
+  ClipboardList, Clock, Library, BarChart3, Brain, Bell, Search, MonitorPlay,
+  Inbox, PenLine, BookOpen, Calendar, GraduationCap, Users, ThumbsUp, Award, Video,
+} from 'lucide-react';
+
+/** emoji → Lucide 图标映射（二期组件化：调用方仍传 emoji，组件内部渲染矢量图标） */
+const EMOJI_ICON_MAP: Record<string, React.ComponentType<any>> = {
+  '📋': ClipboardList, '🕐': Clock, '📚': Library, '📊': BarChart3, '🧠': Brain,
+  '🔔': Bell, '🔍': Search, '📺': MonitorPlay, '📭': Inbox, '📝': PenLine,
+  '📖': BookOpen, '📅': Calendar, '👨🏫': GraduationCap, '👥': Users,
+  '👍': ThumbsUp, '🏅': Award, '🎥': Video,
+};
+// 🦊 品牌吉祥物保留 emoji（Lucide 无狐狸图标）
 
 /**
  * 空状态组件 —— 列表无数据时的友好占位
@@ -12,7 +25,7 @@ import type { ReactNode } from 'react';
  *   </EmptyState>
  */
 interface EmptyStateProps {
-  /** emoji 或轻量插图 */
+  /** emoji（自动映射为 Lucide 矢量图标）或轻量插图 */
   icon?: string;
   /** 主标题，简短、具体 */
   title?: string;
@@ -32,13 +45,19 @@ export default function EmptyState({
   size = 'default',
 }: EmptyStateProps) {
   const py = size === 'small' ? 'py-8' : 'py-14';
+  const LucideIcon = EMOJI_ICON_MAP[icon];
+  const px = size === 'small' ? 32 : 42;
   return (
     <div className={`flex flex-col items-center justify-center text-center ${py} px-4`}>
       <div
-        style={{ fontSize: size === 'small' ? '2rem' : '2.6rem', lineHeight: 1, marginBottom: 12, opacity: 0.9 }}
+        style={{ lineHeight: 1, marginBottom: 12, opacity: 0.9, color: 'var(--fox)' }}
         aria-hidden
       >
-        {icon}
+        {LucideIcon ? (
+          <LucideIcon size={px} strokeWidth={1.5} />
+        ) : icon ? (
+          <span style={{ fontSize: size === 'small' ? '2rem' : '2.6rem' }}>{icon}</span>
+        ) : null}
       </div>
       <p
         className="font-medium"

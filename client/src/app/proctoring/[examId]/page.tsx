@@ -145,7 +145,7 @@ export default function ProctoringDetail() {
       <button onClick={() => router.push('/proctoring')} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回监考列表</button>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="page-title">🎥 监考面板</h1>
+        <h1 className="page-title">监考面板</h1>
         <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
       </div>
 

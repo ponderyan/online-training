@@ -153,7 +153,7 @@ export default function MyLearningPage() {
       <div className="max-w-5xl mx-auto">
         {/* 标题 */}
         <div className="mb-8">
-          <h1 className="page-title">📚 我的学习</h1>
+          <h1 className="page-title">我的学习</h1>
           <p className="page-subtitle">学习进度总览 · 考试 · 学时 · 证书</p>
         </div>
 

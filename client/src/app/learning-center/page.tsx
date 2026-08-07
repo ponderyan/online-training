@@ -47,7 +47,7 @@ export default function LearningCenterPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📺 学习中心</h1>
+        <h1 className="page-title">学习中心</h1>
         <p className="page-subtitle">观看视频课程 · 累计学时</p>
       </div>
 

@@ -98,7 +98,7 @@ export default function LearningHourTypesPage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">📋 学时类型</h1>
+          <h1 className="page-title">学时类型</h1>
           <p className="page-subtitle">管理学时类型字典 · 共 {types.length} 个类型</p>
         </div>
         <button onClick={openNew} className="btn btn-fox btn-sm">➕ 新建类型</button>

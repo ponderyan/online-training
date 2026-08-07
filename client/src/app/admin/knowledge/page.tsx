@@ -116,7 +116,7 @@ export default function KnowledgePage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">📚 知识库管理</h1>
+          <h1 className="page-title">知识库管理</h1>
           <p className="page-subtitle">管理教材知识文档 · 共 {total} 个文档</p>
         </div>
         <button onClick={() => setShowUpload(true)} className="btn btn-fox btn-sm">➕ 上传文档</button>

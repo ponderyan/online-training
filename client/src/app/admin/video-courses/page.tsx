@@ -204,7 +204,7 @@ export default function VideoCoursesPage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">🎬 视频课程管理</h1>
+          <h1 className="page-title">视频课程管理</h1>
           <p className="page-subtitle">独立管理所有视频课程 · 共 {total} 个</p>
         </div>
         <button onClick={openNew} className="btn btn-fox btn-sm">➕ 新建视频课程</button>

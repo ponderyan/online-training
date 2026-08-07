@@ -75,7 +75,7 @@ export default function EvaluationsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📋 评价管理</h1>
+        <h1 className="page-title">评价管理</h1>
         <p className="page-subtitle">查看学员对培训班及讲师的评价反馈</p>
       </div>
 

@@ -25,7 +25,7 @@ export default function ExamTranscriptPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">📊 成绩单 · {data.examTitle || ''}</h1>
+          <h1 className="page-title">成绩单 · {data.examTitle || ''}</h1>
           <p className="page-subtitle">
             共 {data.totalStudents || 0} 人 · 平均分 {(data.averageScore || 0).toFixed(1)} · 通过率 {passRate}%
           </p>

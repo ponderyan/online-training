@@ -120,7 +120,7 @@ export default function SubjectsAdminPage() {
     <AppLayout>
       <div className="mb-7 flex items-center justify-between">
         <div>
-          <h1 className="page-title">📚 科目管理</h1>
+          <h1 className="page-title">科目管理</h1>
           <p className="page-subtitle">管理培训科目 · 共 {subjects.length} 个科目</p>
         </div>
         <button onClick={openCreate} className="btn-primary">+ 新增科目</button>

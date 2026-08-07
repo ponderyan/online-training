@@ -253,7 +253,7 @@ export default function KnowledgePointsPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">🧠 知识点管理</h1>
+          <h1 className="page-title">知识点管理</h1>
           <p className="page-subtitle">
             {subjectId === 0
               ? '树形层级结构'

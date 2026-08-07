@@ -76,7 +76,7 @@ export default function AuditTrailPage() {
   if (!hasPermission) {
     return (
       <AppLayout>
-        <div className="mb-6"><h1 className="page-title">🔍 全链审计</h1><p className="page-subtitle">业务实体生命周期追溯</p></div>
+        <div className="mb-6"><h1 className="page-title">全链审计</h1><p className="page-subtitle">业务实体生命周期追溯</p></div>
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">🔒</p>
           <p className="text-[var(--ink-300)]">您没有查看审计日志的权限</p>
@@ -89,7 +89,7 @@ export default function AuditTrailPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🔍 全链审计</h1>
+        <h1 className="page-title">全链审计</h1>
         <p className="page-subtitle">业务实体生命周期追溯 · 创建 → 状态流转 → 交卷判分 → 发证</p>
       </div>
 

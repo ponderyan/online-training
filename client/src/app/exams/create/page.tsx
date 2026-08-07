@@ -159,7 +159,7 @@ export default function CreateExam() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="page-title">📋 创建考试场次</h1>
+        <h1 className="page-title">创建考试场次</h1>
         <p className="page-subtitle mb-6">{step === 'scenario' ? '先选择考试场景，再调整详细配置' : '配置考试详细参数'}</p>
 
         {/* ── 步骤1：场景选择 ── */}

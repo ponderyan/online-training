@@ -29,7 +29,7 @@ export default function MyAppealsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">⚖️ 成绩申诉</h1>
+        <h1 className="page-title">成绩申诉</h1>
         <p className="page-subtitle">我的申诉记录</p>
       </div>
 

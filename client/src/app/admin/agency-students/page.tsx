@@ -133,7 +133,7 @@ export default function AgencyStudentsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🏢 机构学员管理</h1>
+        <h1 className="page-title">机构学员管理</h1>
         <p className="page-subtitle">管理招生机构名下的学员</p>
       </div>
 

@@ -266,7 +266,7 @@ export default function GradingDetail() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <button onClick={() => router.push('/grading')} className="text-xs bg-transparent border-none cursor-pointer" style={{ color: 'var(--fox)' }}>← 返回</button>
-            <h1 className="page-title">📊 阅卷 · {exam?.title || ''}</h1>
+            <h1 className="page-title">阅卷 · {exam?.title || ''}</h1>
             <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: blind ? 'var(--fox)' : 'var(--ink-300)' }}>
               <input type="checkbox" checked={blind} onChange={e => setBlind(e.target.checked)} className="accent-[var(--fox)]" /> 🎭 盲批
             </label>

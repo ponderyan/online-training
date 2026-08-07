@@ -57,7 +57,7 @@ export default function InstructorsPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">👨‍🏫 讲师管理</h1>
+          <h1 className="page-title">‍🏫 讲师管理</h1>
           <p className="page-subtitle">共 {total} 名讲师</p>
         </div>
         <button onClick={() => router.push('/instructors/new')} className="btn btn-fox btn-sm">➕ 新建讲师</button>

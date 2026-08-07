@@ -42,7 +42,7 @@ export default function ExamAnalysisPage() {
   return (
     <AppLayout>
       <button onClick={() => router.back()} className="text-xs bg-transparent border-none cursor-pointer mb-4" style={{ color: 'var(--fox)' }}>← 返回</button>
-      <h1 className="page-title">📊 成绩分析 · {exam?.title || ''}</h1>
+      <h1 className="page-title">成绩分析 · {exam?.title || ''}</h1>
       <p className="page-subtitle mb-6">试卷总分：{overview?.totalScore || '—'}</p>
 
       {/* Overview cards */}

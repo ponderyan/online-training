@@ -38,7 +38,7 @@ export default function ExamSessionsPrototype() {
         </div>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="page-title">🏫 考试场次管理</h1>
+            <h1 className="page-title">考试场次管理</h1>
             <p className="page-subtitle mt-1">
               管理所有考试场次 · 创建统一开考或随到随考 · 实时监控考试状态
             </p>

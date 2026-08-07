@@ -155,7 +155,7 @@ export default function AdminMessagesPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📢 消息中心</h1>
+        <h1 className="page-title">消息中心</h1>
         <p className="page-subtitle">收件箱 · 发送消息 · 发送记录</p>
       </div>
 

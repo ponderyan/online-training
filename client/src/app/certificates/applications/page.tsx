@@ -53,7 +53,7 @@ export default function CertificateApplications() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">🏅 证书申请审批</h1>
+          <h1 className="page-title">证书申请审批</h1>
           <p className="page-subtitle">审核通过后自动生成证书</p>
         </div>
         {selectedIds.length > 0 && (

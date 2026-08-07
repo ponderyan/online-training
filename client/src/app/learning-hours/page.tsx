@@ -90,7 +90,7 @@ export default function LearningHoursPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📊 我的学时</h1>
+        <h1 className="page-title">我的学时</h1>
         <p className="page-subtitle">查看学习记录和学时统计</p>
       </div>
 

@@ -64,7 +64,7 @@ export default function FilingPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">🏢 开班备案</h1>
+        <h1 className="page-title">开班备案</h1>
         <p className="page-subtitle">共 {total} 条记录 · 培训机构提交备案 · 秘书处审核</p>
       </div>
 

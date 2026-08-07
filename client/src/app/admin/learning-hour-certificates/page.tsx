@@ -103,7 +103,7 @@ export default function LearningHourCertificates() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">📜 学时证明</h1>
+          <h1 className="page-title">学时证明</h1>
           <p className="page-subtitle">管理学员学时证明申请 · 共 {total} 份</p>
         </div>
       </div>

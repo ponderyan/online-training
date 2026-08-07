@@ -254,7 +254,7 @@ export default function OrganizationsPage() {
     <AppLayout>
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">🏢 组织管理</h1>
+          <h1 className="page-title">组织管理</h1>
           <p className="page-subtitle">多层级组织架构 · 拖拽可调整层级</p>
         </div>
         <div className="flex gap-2">

@@ -99,7 +99,7 @@ const LEVEL_LABELS: Record<string, string> = {
   '危险': '危险',
 };
 
-const WEAK_GRADIENT = 'linear-gradient(90deg, #ef4444, #dc2626)';
+const WEAK_GRADIENT = 'linear-gradient(90deg, var(--verm-light), var(--verm))';
 const PIE_COLORS = ['var(--fox)', 'var(--sage)', 'var(--info)', 'var(--warning)', 'var(--ink-300)', 'var(--warning)'];
 
 const chartTooltipStyle = {
@@ -265,7 +265,7 @@ export default function LearningReportPage() {
 
         {/* ════════ 1. 标题 ════════ */}
         <div className="mb-2">
-          <h1 className="page-title">📊 学习报告</h1>
+          <h1 className="page-title">学习报告</h1>
           <p className="page-subtitle">学习数据全景 · 考试趋势 · 掌握分析</p>
         </div>
 
@@ -697,10 +697,10 @@ export default function LearningReportPage() {
                         style={{
                           width: `${kp.rate}%`,
                           background: kp.rate < 40
-                            ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                            ? 'linear-gradient(90deg, var(--verm-light), var(--verm))'
                             : kp.rate < 60
-                              ? 'linear-gradient(90deg, #f59e0b, #e87a30)'
-                              : 'linear-gradient(90deg, #558b2f, #2e7d32)',
+                              ? 'linear-gradient(90deg, var(--gold-light), var(--fox))'
+                              : 'linear-gradient(90deg, var(--sage-light), var(--sage))',
                         }}
                       />
                     </div>
@@ -814,10 +814,10 @@ export default function LearningReportPage() {
                       style={{
                         width: `${prog.progressRate}%`,
                         background: prog.progressRate >= 80
-                          ? 'linear-gradient(90deg, #558b2f, #2e7d32)'
+                          ? 'linear-gradient(90deg, var(--sage-light), var(--sage))'
                           : prog.progressRate >= 50
-                            ? 'linear-gradient(90deg, #f59e0b, #e87a30)'
-                            : 'linear-gradient(90deg, #e87a30, #c9601e)',
+                            ? 'linear-gradient(90deg, var(--gold-light), var(--fox))'
+                            : 'linear-gradient(90deg, var(--fox), var(--fox-dark))',
                       }}
                     />
                   </div>

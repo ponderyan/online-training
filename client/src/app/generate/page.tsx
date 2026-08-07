@@ -299,7 +299,7 @@ function GeneratePageContent() {
   return (
     <AppLayout>
       <div className="mb-7">
-        <h1 className="page-title">🦊 智能组卷</h1>
+        <h1 className="page-title">智能组卷</h1>
         <p className="page-subtitle">告诉小狐狸你的需求，剩下的交给它 🐾</p>
       </div>
 

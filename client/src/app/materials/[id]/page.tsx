@@ -638,7 +638,7 @@ export default function MaterialDetailPage() {
               className="text-xs bg-transparent border-none cursor-pointer"
               style={{ color: 'var(--fox)' }}>← 返回教材列表</button>
           </div>
-          <h1 className="page-title">📖 {material.name}</h1>
+          <h1 className="page-title">{material.name}</h1>
           <p className="page-subtitle">
             {material.subject?.code} · {material.chapters?.length || 0} 章 · 共 {totalQuestions} 题
             &nbsp;|&nbsp;

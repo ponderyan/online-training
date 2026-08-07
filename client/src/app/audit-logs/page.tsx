@@ -111,7 +111,7 @@ export default function AuditLogsPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📋 审计日志</h1>
+        <h1 className="page-title">审计日志</h1>
         <p className="page-subtitle">共 {total} 条操作记录 · 所有变更可追溯</p>
       </div>
 

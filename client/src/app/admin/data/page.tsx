@@ -50,7 +50,7 @@ export default function DataArchivePage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="page-title">📦 数据归档</h1>
+        <h1 className="page-title">数据归档</h1>
         <p className="page-subtitle">导出数据报表 · 查看导出日志</p>
       </div>
 

@@ -210,7 +210,7 @@ export default function CertificateTemplatesPage() {
         {/* ═══ 页头 ═══ */}
         <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <h1 className="page-title">📜 证书模板管理</h1>
+            <h1 className="page-title">证书模板管理</h1>
             <p className="page-subtitle">设计与制作结业证书、学时证明的版式模板，支持批量发证</p>
           </div>
           <button onClick={() => setShowPresetModal(true)} className="btn btn-outline btn-sm">📋 从模板创建</button>

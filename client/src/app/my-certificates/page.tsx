@@ -181,7 +181,7 @@ export default function MyCertificatesPage() {
     <AppLayout>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="page-title">🏅 我的证书</h1>
+          <h1 className="page-title">我的证书</h1>
           <p className="page-subtitle">{user?.displayName || '学员'} · 共 {cards.length} 份（有效 {activeCount}）</p>
         </div>
 

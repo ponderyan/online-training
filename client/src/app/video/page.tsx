@@ -72,7 +72,7 @@ export default function VideoListPage() {
         {/* 标题 + 统计 */}
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <h1 className="page-title">🎬 视频课程</h1>
+            <h1 className="page-title">视频课程</h1>
             <p className="page-subtitle">公共课 + 已报名专项课 · 在线学习累计学时</p>
           </div>
           {stats && (

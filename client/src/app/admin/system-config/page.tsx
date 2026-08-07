@@ -224,7 +224,7 @@ export default function SystemConfigPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="page-title">🦊 配置中心</h1>
+        <h1 className="page-title">配置中心</h1>
         <p className="page-subtitle">管理系统全局参数配置</p>
       </div>
 

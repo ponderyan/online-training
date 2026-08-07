@@ -116,7 +116,7 @@ export default function AssignPage() {
     <AppLayout>
       <div className="mb-6">
         <button onClick={() => router.push(`/grading/${examId}`)} className="text-xs bg-transparent border-none cursor-pointer mb-2" style={{ color: 'var(--fox)' }}>← 返回阅卷</button>
-        <h1 className="page-title">📋 阅卷指派 · {exam?.title || ''}</h1>
+        <h1 className="page-title">阅卷指派 · {exam?.title || ''}</h1>
         <p className="page-subtitle">多选学员 + 多选题型，组合分派给阅卷员</p>
       </div>
 

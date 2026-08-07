@@ -25,7 +25,7 @@ export default function AdminExamResultsPage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">📊 考试结果</h1>
+          <h1 className="page-title">考试结果</h1>
           <p className="page-subtitle">管理端 · 查看所有考生成绩</p>
         </div>
         <button onClick={() => router.push('/exams')} className="btn btn-outline btn-sm">← 返回</button>
