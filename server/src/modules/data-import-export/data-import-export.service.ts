@@ -159,7 +159,7 @@ export class DataImportExportService {
   }
 
   private async importQuestions(rows: string[][], log: any) {
-    const validTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+    const validTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
     const validDifficulties = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'];
 
     for (let i = 0; i < rows.length; i++) {

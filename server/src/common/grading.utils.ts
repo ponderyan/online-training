@@ -1,7 +1,7 @@
 import { PrismaService } from '../modules/prisma/prisma.service.js';
 
 /** 主观题题型（需要人工评分 / AI辅助评分） */
-export const SUBJECTIVE_TYPES = new Set(['SHORT_ANSWER', 'CASE_STUDY']);
+export const SUBJECTIVE_TYPES = new Set(['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY']);
 
 /** 客观题题型（系统自动判分） */
 export const OBJECTIVE_TYPES = new Set(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK']);

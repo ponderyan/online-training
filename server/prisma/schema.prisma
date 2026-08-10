@@ -19,6 +19,7 @@ enum QuestionType {
   FILL_BLANK
   SHORT_ANSWER
   CASE_STUDY
+  ESSAY
 }
 
 enum Difficulty {

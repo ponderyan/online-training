@@ -216,7 +216,7 @@ export default function GradingProgress({ examId, exam, students }: GradingProgr
                   <tr key={qs.pqId} style={{ borderBottom: '1px solid var(--ink-100)' }}>
                     <td className="py-2.5 px-2">
                       <span className="inline-block px-1.5 py-0.5 rounded text-[10px] mr-1.5 bg-[var(--fox-glow)] text-[var(--fox)]" >
-                        {qs.type === 'SINGLE_CHOICE' ? '单选' : qs.type === 'MULTIPLE_CHOICE' ? '多选' : qs.type === 'TRUE_FALSE' ? '判断' : qs.type === 'FILL_BLANK' ? '填空' : qs.type === 'SHORT_ANSWER' ? '简答' : qs.type}
+                        {qs.type === 'SINGLE_CHOICE' ? '单选' : qs.type === 'MULTIPLE_CHOICE' ? '多选' : qs.type === 'TRUE_FALSE' ? '判断' : qs.type === 'FILL_BLANK' ? '填空' : qs.type === 'SHORT_ANSWER' ? '简答' : qs.type === 'ESSAY' ? '论文' : qs.type}
                       </span>
                       <span className="text-[var(--ink-600)]">{qs.content}</span>
                     </td>

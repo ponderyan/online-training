@@ -24,7 +24,7 @@ import { useCopyProtection } from '../hooks/use-copy-protection';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 
 interface QuestionData {

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { SUBJECTIVE_TYPES } from '../../common/grading.utils.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { Prisma, QuestionType } from '@prisma/client';
@@ -6,7 +7,7 @@ import { Prisma, QuestionType } from '@prisma/client';
 @Injectable()
 export class QuestionsService {
   private static readonly VALID_DIFFICULTIES = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'];
-  private static readonly VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+  private static readonly VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
 
   constructor(
     private prisma: PrismaService,
@@ -540,7 +541,7 @@ export class QuestionsService {
     if (!question) throw new NotFoundException('题目不存在');
 
     // 1.2: 主观题(简答/案例)自评模式 — 不判对错，不计入正确率
-    const isSubjective = question.type === 'SHORT_ANSWER' || question.type === 'CASE_STUDY';
+    const isSubjective = SUBJECTIVE_TYPES.has(question.type);
     const isCorrect = isSubjective ? false : this.checkAnswer(question, data.answer);
 
     const record = await this.prisma.practiceRecord.upsert({

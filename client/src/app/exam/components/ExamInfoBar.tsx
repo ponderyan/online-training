@@ -7,6 +7,7 @@ const TYPE_ICONS: Record<string, string> = {
   FILL_BLANK: '＿＿',
   SHORT_ANSWER: '📝',
   CASE_STUDY: '📄',
+  ESSAY: '✍️',
 };
 
 export default function ExamInfoBar({
@@ -72,7 +73,8 @@ export default function ExamInfoBar({
        currentQuestionType === 'TRUE_FALSE' ? '判断题' :
        currentQuestionType === 'FILL_BLANK' ? '填空题' :
        currentQuestionType === 'SHORT_ANSWER' ? '简答题' :
-       currentQuestionType === 'CASE_STUDY' ? '案例题' : currentQuestionType)
+       currentQuestionType === 'CASE_STUDY' ? '案例题' :
+      currentQuestionType === 'ESSAY' ? '论文题' : currentQuestionType)
     : '';
   const typeIcon = currentQuestionType ? (TYPE_ICONS[currentQuestionType] || '❓') : '';
 

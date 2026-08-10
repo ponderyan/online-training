@@ -4,7 +4,7 @@
 
 export const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 export const ALL_TYPES = Object.keys(TYPE_NAMES);
 
@@ -39,6 +39,11 @@ export const TYPE_SHEETS: Record<string, { headers: string[]; sample: string[]; 
   SHORT_ANSWER: {
     headers: ['题干', '参考答案', '难度', '章节名称', '解析'],
     sample: ['请简述数据生命周期管理的主要阶段。', '规划、采集、存储、使用、共享、归档、销毁', '难', '数据生命周期', '七个阶段缺一不可。'],
+    colMap: ['content', 'analysis', 'difficulty', 'chapter', 'extraAnalysis'],
+  },
+  ESSAY: {
+    headers: ['题干（论文题目）', '评分要点', '难度', '章节名称', '解析'],
+    sample: ['试论述数据治理体系建设的关键要素与实施路径。', '论点明确（30%）；论据充分（30%）；结构清晰（20%）；结论合理（20%）', '难', '数据治理实施', '需覆盖组织、制度、技术、运营四个维度。'],
     colMap: ['content', 'analysis', 'difficulty', 'chapter', 'extraAnalysis'],
   },
   CASE_STUDY: {

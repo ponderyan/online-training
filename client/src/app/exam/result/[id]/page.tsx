@@ -65,7 +65,7 @@ const LEVEL_COLORS: Record<string, string> = {
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 
 function DonutChart({ correct, wrong, pending }: { correct: number; wrong: number; pending: number }) {
@@ -208,7 +208,7 @@ export default function ExamResult() {
   const subjectivePending = result.finalScore === null && result.subjectiveScore === null;
 
   // 主观题类型
-  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY'];
+  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
 
   return (
     <>

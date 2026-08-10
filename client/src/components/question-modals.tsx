@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 const DIFF_NAMES: Record<string, string> = {
   EASY: '易', MEDIUM_EASY: '较易', MEDIUM_HARD: '较难', HARD: '难',
@@ -136,7 +136,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
           { label: 'A', content: '正确', isCorrect: correctAnswer === 'true' },
           { label: 'B', content: '错误', isCorrect: correctAnswer === 'false' },
         ];
-      } else if (type === 'SHORT_ANSWER') {
+      } else if (type === 'SHORT_ANSWER' || type === 'ESSAY') {
         body.analysis = analysis || undefined;
       } else if (type === 'FILL_BLANK') {
         body.blanks = blanks.filter(b => b).map(b => ({ answer: b }));
@@ -281,10 +281,11 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
             </div>
           )}
 
-          {type === 'SHORT_ANSWER' && (
+          {(type === 'SHORT_ANSWER' || type === 'ESSAY') && (
             <div className="mb-4">
               <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">参考答案</label>
-              <textarea value={analysis} onChange={e => setAnalysis(e.target.value)} rows={3}
+              <textarea value={analysis} onChange={e => setAnalysis(e.target.value)} rows={type === 'ESSAY' ? 6 : 3}
+                placeholder={type === 'ESSAY' ? '论文题建议填写评分要点（论点、论据、结构等采分维度）' : undefined}
                 className="input textarea" />
             </div>
           )}
@@ -317,7 +318,7 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
             </div>
           )}
 
-          {type !== 'SHORT_ANSWER' && (
+          {type !== 'SHORT_ANSWER' && type !== 'ESSAY' && (
             <div className="mb-1">
               <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
                 参考解析 <span className="text-[var(--ink-300)]">（可选）</span>

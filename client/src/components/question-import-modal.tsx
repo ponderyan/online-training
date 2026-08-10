@@ -9,7 +9,7 @@ import { parseExcelFile, buildQuestionsPayload, generateTemplate } from './quest
 export default function QuestionImportModal({ open, onClose, subjects }: { open: boolean; onClose: () => void; subjects: any[] }) {
   const [step, setStep] = useState<'config' | 'preview' | 'result'>('config');
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || 1);
-  const [enabledTypes, setEnabledTypes] = useState<string[]>(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER']);
+  const [enabledTypes, setEnabledTypes] = useState<string[]>(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'ESSAY']);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function QuestionImportModal({ open, onClose, subjects }: { open:
     setUploadStatus('idle');
     setUploadError('');
     setSelectedSubject(subjects[0]?.id || 1);
-    setEnabledTypes(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER']);
+    setEnabledTypes(['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'ESSAY']);
   };
 
   const downloadTemplate = () => {

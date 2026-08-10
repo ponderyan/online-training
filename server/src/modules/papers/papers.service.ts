@@ -780,7 +780,7 @@ export class PapersService {
   private groupQuestions(paper: any) {
     const typeNames: Record<string, string> = {
       SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-      FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+      FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
     };
     const groups: Record<string, { section: string; label: string; items: any[]; totalScore: number; scorePerQ: number }> = {};
     for (const pq of paper.questions || []) {
@@ -1062,10 +1062,10 @@ export class PapersService {
     const paper = await this.findOne(id);
 
     // 按 question.type 动态分组（而非 typeSection，因为 typeSection 值不统一）
-    const typeOrder = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY'];
+    const typeOrder = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
     const typeNames: Record<string, string> = {
       SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-      FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例分析题',
+      FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例分析题', ESSAY: '论文题',
     };
     const typeGroups: Record<string, { items: any[]; totalScore: number; scorePerQ: number }> = {};
     for (const pq of paper.questions || []) {

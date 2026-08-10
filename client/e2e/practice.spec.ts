@@ -11,11 +11,11 @@ test.describe('练习模式 - 学员视角', () => {
     await expect(page.getByText('练习模式').first()).toBeVisible();
   });
 
-  test('随机练习支持全部 6 种题型选择', async ({ page }) => {
+  test('随机练习支持全部 7 种题型选择', async ({ page }) => {
     await page.goto('/practice/random');
     await page.waitForLoadState('networkidle');
     await expectNoPageError(page);
-    for (const t of ['单选题', '多选题', '判断题', '填空题', '简答题', '案例题']) {
+    for (const t of ['单选题', '多选题', '判断题', '填空题', '简答题', '案例题', '论文题']) {
       await expect(page.getByText(t, { exact: true }).first()).toBeVisible();
     }
     await expect(page.getByRole('button', { name: '开始练习' })).toBeVisible();

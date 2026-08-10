@@ -32,7 +32,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
   const scoreRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY'];
+    const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
     const pqs = (exam?.paper?.questions || []).filter((pq: any) => subjectiveTypes.includes(pq.question?.type));
     setSubjectivePqs(pqs);
     if (pqs.length > 0) setSelectedPq(pqs[0]);
@@ -146,7 +146,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
 
   const gradedCount = answers.filter(a => a.graded).length;
   const maxScore = selectedPq?.score || 0;
-  const typeNames: Record<string, string> = { SHORT_ANSWER: '简答题', CASE_STUDY: '案例题' };
+  const typeNames: Record<string, string> = { SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题' };
 
   return (
     <div className="flex gap-5" onKeyDown={handleKeyDown}>

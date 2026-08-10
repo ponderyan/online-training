@@ -10,6 +10,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   FILL_BLANK: { icon: '＿＿', label: '填空题' },
   SHORT_ANSWER: { icon: '📝', label: '简答题' },
   CASE_STUDY: { icon: '📄', label: '案例题' },
+  ESSAY: { icon: '✍️', label: '论文题' },
 };
 
 interface QuestionData {
@@ -138,7 +139,7 @@ export default function QuestionContent({ question, currentAnswer, onAnswer, isM
         </div>
       )}
 
-      {question.type === 'SHORT_ANSWER' && (
+      {(question.type === 'SHORT_ANSWER' || question.type === 'ESSAY') && (
         <RichAnswerEditor
           value={currentAnswer || ''}
           onChange={(html) => onAnswer(question.pqId, html)}

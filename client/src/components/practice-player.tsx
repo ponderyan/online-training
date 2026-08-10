@@ -7,7 +7,7 @@ import RichAnswerEditor from '@/components/RichAnswerEditor';
 
 const TYPE_LABELS: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 const DIFF_LABELS: Record<string, string> = {
   EASY: '简单', MEDIUM_EASY: '较易', MEDIUM_HARD: '较难', HARD: '困难',
@@ -443,7 +443,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
             )}
 
             {/* SHORT_ANSWER — 富文本编辑器 */}
-            {current.type === 'SHORT_ANSWER' && !submitted && mode === 'practice' && (
+            {(current.type === 'SHORT_ANSWER' || current.type === 'ESSAY') && !submitted && mode === 'practice' && (
               <div>
                 <RichAnswerEditor
                   value={answers[current.id] || ''}

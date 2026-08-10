@@ -17,6 +17,20 @@ test.describe('出题与组卷 - 管理员视角', () => {
     await expectNoPageError(page);
   });
 
+  test('录入试题弹窗支持论文题型', async ({ page }) => {
+    await page.goto('/questions');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: '录入试题' }).click();
+    await page.waitForTimeout(800);
+    // 题型下拉包含论文题
+    const typeSelect = page.locator('.modal-card select').first();
+    await expect(typeSelect.locator('option', { hasText: '论文题' })).toHaveCount(1);
+    // 选择论文题后：参考答案区展示评分要点提示，且不出现选项/子问题等其他题型表单
+    await typeSelect.selectOption('ESSAY');
+    await expect(page.locator('.modal-card textarea[placeholder*="评分要点"]')).toBeVisible();
+    await expectNoPageError(page);
+  });
+
   test('题库页面有搜索和筛选功能', async ({ page }) => {
     await page.goto('/questions');
     await page.waitForLoadState('networkidle');

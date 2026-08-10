@@ -39,7 +39,7 @@ interface QuestionDetail {
 // ── 常量 ──
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选', MULTIPLE_CHOICE: '多选', TRUE_FALSE: '判断',
-  FILL_BLANK: '填空', SHORT_ANSWER: '简答', CASE_STUDY: '案例',
+  FILL_BLANK: '填空', SHORT_ANSWER: '简答', CASE_STUDY: '案例', ESSAY: '论文',
 };
 
 const DISCRIMINATION_COLORS = {

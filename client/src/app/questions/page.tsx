@@ -202,7 +202,7 @@ export default function QuestionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-7">
         <div>
           <h1 className="page-title flex items-center gap-2"><Pencil size={22} className="text-[var(--fox)]" /> 题库管理</h1>
-          <p className="page-subtitle">共 {total} 道试题 · 6 种题型 · {subjects.length} 个科目</p>
+          <p className="page-subtitle">共 {total} 道试题 · 7 种题型 · {subjects.length} 个科目</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" size="sm" icon={<Upload size={14} />} onClick={() => setShowImport(true)}>批量导入</Button>

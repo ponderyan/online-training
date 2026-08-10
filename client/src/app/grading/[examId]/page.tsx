@@ -250,7 +250,7 @@ export default function GradingDetail() {
 
   const typeNames: Record<string, string> = {
     SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-    FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+    FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
   };
 
   const filteredStudents = viewFilter === 'mine' && assignedSessionIds.size > 0
@@ -455,7 +455,7 @@ export default function GradingDetail() {
                 {/* 分值汇总条 */}
                 {(() => {
                   const objectiveTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK'];
-                  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY'];
+                  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
                   const objAnswers = answers.filter(a => objectiveTypes.includes(a.type));
                   const subjAnswers = answers.filter(a => subjectiveTypes.includes(a.type));
                   const objScore = objAnswers.reduce((s, a) => s + (a.score || 0), 0);
@@ -511,7 +511,7 @@ export default function GradingDetail() {
                 })()}
 
                 {answers.map((a: any) => {
-                  const isSub = a.type === 'SHORT_ANSWER' || a.type === 'CASE_STUDY';
+                  const isSub = a.type === 'SHORT_ANSWER' || a.type === 'CASE_STUDY' || a.type === 'ESSAY';
                   const graded = a.score !== null;
                   const need = isSub && !graded;
                   return (
@@ -542,7 +542,7 @@ export default function GradingDetail() {
                           {isSub ? '✍️ 学员答案：' : '☑️ 学员答案：'}
                         </p>
                         <p className="mt-1 font-medium text-[var(--ink-700)]" style={{  maxHeight: isSub && String(a.yourAnswer ?? '').length > 200 ? undefined : undefined }}>
-                          {a.type === 'SHORT_ANSWER' ? (a.yourAnswer || '未作答') : a.type === 'CASE_STUDY' ? (JSON.stringify(a.yourAnswer) || '未作答') : String(a.yourAnswer ?? '-')}
+                          {(a.type === 'SHORT_ANSWER' || a.type === 'ESSAY') ? (a.yourAnswer || '未作答') : a.type === 'CASE_STUDY' ? (JSON.stringify(a.yourAnswer) || '未作答') : String(a.yourAnswer ?? '-')}
                         </p>
                       </div>
                       {need && <GradingForm answerId={a.answerId} maxScore={a.maxScore} onGrade={gradeAnswer} onNextStudent={() => {

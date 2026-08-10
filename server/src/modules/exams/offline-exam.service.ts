@@ -479,6 +479,7 @@ export class OfflineExamService {
       FILL_BLANK: '填空题',
       SHORT_ANSWER: '简答题',
       CASE_STUDY: '案例分析',
+      ESSAY: '论文题',
     };
 
     // 获取学员列表

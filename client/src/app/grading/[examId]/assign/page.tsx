@@ -40,7 +40,7 @@ export default function AssignPage() {
       setStudents(submitted);
 
       // 主观题列表 — 从 exam.paper.questions 提取
-      const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY'];
+      const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
       const subjPqs = (e?.paper?.questions || []).filter((pq: any) => subjectiveTypes.includes(pq.question?.type));
       setPaperQuestions(subjPqs);
 
@@ -164,7 +164,7 @@ export default function AssignPage() {
           </div>
           <div className="max-h-[400px] overflow-y-auto">
             {paperQuestions.map((pq: any) => {
-              const typeName = pq.question?.type === 'SHORT_ANSWER' ? '简答' : '案例';
+              const typeName = pq.question?.type === 'SHORT_ANSWER' ? '简答' : pq.question?.type === 'ESSAY' ? '论文' : '案例';
               return (
                 <label key={pq.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--fox-pale)] transition-colors">
                   <input type="checkbox" checked={selectedQuestionIds.includes(pq.id)}
