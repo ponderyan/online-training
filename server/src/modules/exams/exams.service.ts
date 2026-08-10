@@ -224,7 +224,9 @@ export class ExamsService {
 
   async finish(id: number, userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.findOne(id, userOrgId, userRoles);
-    if (exam.status === 'FINISHED') throw new BadRequestException('考试已结束');
+    // ★ 状态守卫：仅进行中的考试可结束（DRAFT 未发布、CANCELLED 已作废、成绩后阶段均不可）
+    const finishable = ['PUBLISHED', 'IN_PROGRESS', 'AWAITING_GRADING', 'GRADING_IN_PROGRESS'];
+    if (!finishable.includes(exam.status)) throw new BadRequestException(`当前状态（${exam.status}）不允许结束考试`);
 
     // 找出需要强制交卷的会话
     const activeSessions = await this.prisma.examSession.findMany({
@@ -299,6 +301,10 @@ export class ExamsService {
 
   async addStudents(examId: number, studentIds: number[], userOrgId?: number | null, userRoles?: string[]) {
     const exam = await this.findOne(examId, userOrgId, userRoles);
+
+    // ★ 状态守卫：已结束/已取消/成绩后阶段的考试禁止再分配学员
+    const closed = ['FINISHED', 'CANCELLED', 'SCORE_CONFIRMED', 'SCORE_PUBLISHED'];
+    if (closed.includes(exam.status)) throw new BadRequestException(`当前状态（${exam.status}）不允许分配学员`);
 
     // ★ 跨组织校验：非超管只能分配可见组织内的学员（或无组织学员）
     const roles = userRoles ?? [];
