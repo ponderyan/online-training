@@ -5,105 +5,12 @@ import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
+import { PERM_TREE, CRITICAL_ROLES } from './components/perm-tree';
+import { RoleListPanel } from './components/role-list-panel';
+import { RoleModal } from './components/role-modal';
+import { AddMemberModal } from './components/add-member-modal';
 
-const PERM_TREE: { key: string; icon: string; children: { permission: string; name: string }[] }[] = [
-  { key: '系统管理', icon: '⚙️', children: [
-    { permission: 'system.config', name: '系统配置' }, { permission: 'system.logs', name: '系统日志' },
-    { permission: 'system.tenant', name: '租户管理' }, { permission: 'system.dictionary', name: '数据字典' },
-    { permission: 'notification:view', name: '系统通知' },
-  ]},
-  { key: '题库管理', icon: '📝', children: [
-    { permission: 'question.create', name: '创建试题' }, { permission: 'question.edit', name: '编辑试题' },
-    { permission: 'question.delete', name: '删除试题' }, { permission: 'question.import', name: '导入试题' },
-    { permission: 'question.audit', name: '审核试题' },
-  ]},
-  { key: '试卷管理', icon: '📄', children: [
-    { permission: 'paper.view', name: '查看试卷' }, { permission: 'paper.generate', name: '生成试卷' },
-    { permission: 'paper.edit', name: '编辑试卷' }, { permission: 'paper.publish', name: '发布试卷' },
-    { permission: 'paper.download', name: '下载试卷' }, { permission: 'paper.answerSheet', name: '答题卡管理' },
-    { permission: 'template.manage', name: '管理模板' },
-  ]},
-  { key: '考试管理', icon: '📋', children: [
-    { permission: 'exam.create', name: '创建考试' }, { permission: 'exam.edit', name: '编辑考试' },
-    { permission: 'exam.delete', name: '删除考试' }, { permission: 'exam.assign', name: '分配学员' },
-    { permission: 'exam:view', name: '查看考试' },
-  ]},
-  { key: '监考', icon: '👁️', children: [
-    { permission: 'proctor.view', name: '查看监控' }, { permission: 'proctor.forceSubmit', name: '强制收卷' },
-    { permission: 'proctor.extendTime', name: '延长时长' },
-  ]},
-  { key: '判分', icon: '📊', children: [
-    { permission: 'grading.auto', name: '自动判分' }, { permission: 'grading.manual', name: '人工判分' },
-    { permission: 'grading.publish', name: '发布成绩' },
-  ]},
-  { key: '学员管理', icon: '👥', children: [
-    { permission: 'student.create', name: '创建学员' }, { permission: 'student.import', name: '导入学员' },
-    { permission: 'student.edit', name: '编辑学员' }, { permission: 'student.group', name: '管理分组' },
-  ]},
-  { key: '培训项目', icon: '📋', children: [
-    { permission: 'program:view', name: '查看项目' }, { permission: 'program:create', name: '创建项目' },
-    { permission: 'program:edit', name: '编辑项目' }, { permission: 'program:delete', name: '删除项目' },
-    { permission: 'program:enroll', name: '学员报名' },
-  ]},
-  { key: '教材出题', icon: '📖', children: [
-    { permission: 'material.upload', name: '上传教材' }, { permission: 'material.review', name: '审核试题' },
-    { permission: 'material.generate', name: 'AI 出题' },
-  ]},
-  { key: '证书', icon: '🏅', children: [
-    { permission: 'cert.issue', name: '发证' }, { permission: 'cert.revoke', name: '撤销证书' },
-    { permission: 'cert.view', name: '查看证书' }, { permission: 'cert:approve', name: '审批证书' },
-    { permission: 'cert:reject', name: '驳回申请' },
-    { permission: 'cert:application_view', name: '查看申请' },
-  ]},
-  { key: '课程管理', icon: '🎬', children: [
-    { permission: 'course:view', name: '查看课程' }, { permission: 'course:create', name: '创建课程' },
-    { permission: 'course:edit', name: '编辑课程' }, { permission: 'course:delete', name: '删除课程' },
-  ]},
-  { key: '排课管理', icon: '📅', children: [
-    { permission: 'schedule:view', name: '查看排课' }, { permission: 'schedule:create', name: '创建排课' },
-    { permission: 'schedule:edit', name: '编辑排课' }, { permission: 'schedule:delete', name: '删除排课' },
-  ]},
-  { key: '讲师管理', icon: '👨‍🏫', children: [
-    { permission: 'instructor:view', name: '查看讲师' }, { permission: 'instructor:create', name: '创建讲师' },
-    { permission: 'instructor:edit', name: '编辑讲师' }, { permission: 'instructor:delete', name: '删除讲师' },
-  ]},
-  { key: '代理机构', icon: '🤝', children: [
-    { permission: 'agency:view', name: '查看机构' }, { permission: 'agency:create', name: '创建机构' },
-    { permission: 'agency:edit', name: '编辑机构' }, { permission: 'agency:delete', name: '删除机构' },
-  ]},
-  { key: '通知公告', icon: '📢', children: [
-    { permission: 'notice.send', name: '发送通知' }, { permission: 'notice.manage', name: '管理通知' },
-  ]},
-  { key: '报表', icon: '📊', children: [
-    { permission: 'report.view', name: '查看报表' }, { permission: 'report.export', name: '导出报表' },
-  ]},
-  { key: '成绩单', icon: '📜', children: [
-    { permission: 'transcript:view', name: '查看成绩单' },
-  ]},
-  { key: '机构管理', icon: '🏢', children: [
-    { permission: 'org:view', name: '查看机构' }, { permission: 'org:create', name: '创建机构' },
-    { permission: 'org:edit', name: '编辑机构' }, { permission: 'org:delete', name: '删除机构' },
-  ]},
-  { key: '角色管理', icon: '🔐', children: [
-    { permission: 'role:view', name: '查看角色' }, { permission: 'role:create', name: '创建角色' },
-    { permission: 'role:edit', name: '编辑角色' }, { permission: 'role:delete', name: '删除角色' },
-  ]},
-  { key: '学时管理', icon: '⏱️', children: [
-    { permission: 'learningHour:view', name: '查看学时' }, { permission: 'learningHour:manage', name: '管理学时' },
-  ]},
-  { key: '评价管理', icon: '⭐', children: [
-    { permission: 'evaluation:view', name: '查看评价' }, { permission: 'evaluation:manage', name: '管理评价' },
-  ]},
-  { key: 'AI配置', icon: '🤖', children: [
-    { permission: 'aiConfig:view', name: '查看配置' }, { permission: 'aiConfig:manage', name: '管理配置' },
-  ]},
-  { key: '审计日志', icon: '📋', children: [
-    { permission: 'auditLog:view', name: '查看日志' },
-  ]},
-];
-
-const PRESET_COLORS = ['var(--error)', 'var(--fox)', 'var(--blue)', 'var(--warning)', 'var(--sage)', 'var(--purple)', 'var(--info-light)', 'var(--error)'];
-
+// ── 主页面（D 拆分后：常量/角色侧栏/两个弹窗见 components/）──
 export default function PermissionsPage() {
   const toast = useToast();
   const [roles, setRoles] = useState<any[]>([]);
@@ -201,8 +108,6 @@ export default function PermissionsPage() {
     ));
   };
 
-  // 关键角色：修改权限时需二次确认
-  const CRITICAL_ROLES = ['SUPER_ADMIN', 'ORG_ADMIN', 'EXAM_OFFICER'];
   const isCriticalRole = !!selectedRole && CRITICAL_ROLES.includes(selectedRole.code);
 
   const saveRolePerms = async () => {
@@ -286,6 +191,19 @@ export default function PermissionsPage() {
     setAddMemberSavingId(null);
   };
 
+  const openNewRole = () => {
+    setShowRoleModal(true); setEditRoleData(null);
+    setRoleForm({ name: '', code: '', description: '', color: 'var(--info-light)', copyFromRoleId: 0 });
+  };
+
+  const openEditRole = (role: any) => {
+    setEditRoleData(role);
+    setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || 'var(--info-light)', copyFromRoleId: 0 });
+    setShowRoleModal(true);
+  };
+
+  const closeRoleModal = () => { setShowRoleModal(false); setEditRoleData(null); };
+
   const handleSaveRole = async () => {
     if (!roleForm.name || (!editRoleData && !roleForm.code)) { toast.warning('请填写必要信息'); return; }
     try {
@@ -336,51 +254,15 @@ export default function PermissionsPage() {
     <AppLayout>
       <div className="flex gap-6" style={{ minHeight: 'calc(100vh - 140px)' }}>
         {/* Left: Role List */}
-        <div className="w-56 flex-shrink-0 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[var(--ink-700)] font-bold text-sm">🔐 角色</h2>
-            <button onClick={() => { setShowRoleModal(true); setEditRoleData(null); setRoleForm({ name: '', code: '', description: '', color: 'var(--info-light)', copyFromRoleId: 0 }); }}
-              className="btn btn-fox btn-xs">+ 新建</button>
-          </div>
-          <div className="flex-1 space-y-1 overflow-y-auto pr-2">
-            {matrix.map((row: any) => {
-              const role = roles.find((r: any) => r.id === row.roleId);
-              const isSelected = row.roleId === selectedRoleId;
-              const grantedCount = row.permissions?.filter((p: any) => p.granted).length || 0;
-              const color = row.color || 'var(--neutral-400)';
-              return (
-                <div key={row.roleId}
-                  className="px-3 py-2.5 rounded-lg transition-all cursor-pointer"
-                  style={{ background: isSelected ? `${color}15` : 'transparent', border: `1px solid ${isSelected ? color : 'transparent'}` }}
-                  onClick={() => { setSelectedRoleId(row.roleId); setActiveTab('perms'); }}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                      <span className="text-sm font-medium truncate" style={{ color: isSelected ? color : 'var(--ink-600)' }}>
-                        {row.roleName || row.role}
-                      </span>
-                    </div>
-                    {!role?.isSystem && (
-                      <button onClick={e => { e.stopPropagation(); setDeleteRoleTarget(row.roleId); }}
-                        className="text-[10px] bg-transparent border-none cursor-pointer flex-shrink-0 hover:opacity-70 text-[var(--ink-300)]" >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[var(--ink-300)] text-[10px]">
-                      {role?.userCount ?? 0} 人 · {grantedCount} 权限
-                    </span>
-                    <button onClick={e => { e.stopPropagation(); setEditRoleData(role); setRoleForm({ name: role.name, code: role.code, description: role.description || '', color: role.color || 'var(--info-light)', copyFromRoleId: 0 }); setShowRoleModal(true); }}
-                      className="text-[10px] bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >
-                      ✏️
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <RoleListPanel
+          matrix={matrix}
+          roles={roles}
+          selectedRoleId={selectedRoleId}
+          onSelect={(rid) => { setSelectedRoleId(rid); setActiveTab('perms'); }}
+          onNew={openNewRole}
+          onEdit={openEditRole}
+          onDelete={setDeleteRoleTarget}
+        />
 
         {/* Right: Panel */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -545,106 +427,28 @@ export default function PermissionsPage() {
 
       {/* Role Create/Edit Modal */}
       {showRoleModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowRoleModal(false); setEditRoleData(null); } }}>
-          <div className="modal-card max-w-[460px] animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">{editRoleData ? '编辑角色' : '新建角色'}</h3>
-              <button onClick={() => { setShowRoleModal(false); setEditRoleData(null); }}
-                className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
-            </div>
-            <div className="modal-body space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色名称 *</label>
-                  <input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} className="input" placeholder="如：巡考官" />
-                </div>
-                <div>
-                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">角色标识 *</label>
-                  <input value={roleForm.code} onChange={e => setRoleForm({...roleForm, code: e.target.value.toUpperCase()})} className="input"
-                    placeholder="如：PATROL" disabled={!!editRoleData} />
-                </div>
-              </div>
-              <div>
-                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">描述</label>
-                <textarea value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} className="input textarea" rows={2} />
-              </div>
-              <div>
-                <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">颜色</label>
-                <div className="flex gap-2">
-                  {PRESET_COLORS.map(c => (
-                    <button key={c} onClick={() => setRoleForm({...roleForm, color: c})}
-                      className="w-7 h-7 rounded-full border-2 transition-all cursor-pointer"
-                      style={{ background: c, borderColor: roleForm.color === c ? 'var(--neutral-700)' : 'transparent' }} />
-                  ))}
-                </div>
-              </div>
-              {!editRoleData && (
-                <div>
-                  <label className="text-[var(--ink-500)] block text-xs font-medium mb-1">复制权限自（可选）</label>
-                  <select value={roleForm.copyFromRoleId} onChange={e => setRoleForm({...roleForm, copyFromRoleId: parseInt(e.target.value)})}
-                    className="input select">
-                    <option value={0}>不复制</option>
-                    {roles.map((r: any) => (
-                      <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
-                    ))}
-                  </select>
-                  {roleForm.copyFromRoleId > 0 && (
-                    <p className="text-[var(--fox)] text-[10px] mt-1">新建的角色将获得与所选角色相同的权限</p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => { setShowRoleModal(false); setEditRoleData(null); }} className="btn btn-ghost btn-sm">取消</button>
-              <button onClick={handleSaveRole} className="btn btn-fox btn-sm">保存</button>
-            </div>
-          </div>
-        </div>
+        <RoleModal
+          roles={roles}
+          editRoleData={editRoleData}
+          roleForm={roleForm}
+          setRoleForm={setRoleForm}
+          onClose={closeRoleModal}
+          onSave={handleSaveRole}
+        />
       )}
 
       {/* Add Member Modal */}
       {showAddMember && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddMember(false); }}>
-          <div className="modal-card max-w-[480px] animate-fadeSlide">
-            <div className="modal-header">
-              <h3 className="font-serif font-bold text-base">➕ 添加成员到「{selectedRole?.name || selectedRole?.code}」</h3>
-              <button onClick={() => setShowAddMember(false)}
-                className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]" >✕</button>
-            </div>
-            <div className="modal-body space-y-3">
-              <input value={addMemberQ} onChange={e => searchAddMember(e.target.value)}
-                autoFocus placeholder="🔍 输入用户名或姓名搜索…" className="input" />
-              {addMemberLoading && (
-                <div className="text-[var(--ink-300)] text-center py-4 text-xs">搜索中…</div>
-              )}
-              {!addMemberLoading && addMemberQ.trim() && addMemberResults.length === 0 && (
-                <div className="text-[var(--ink-300)] text-center py-4 text-xs">未找到匹配用户</div>
-              )}
-              <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
-                {addMemberResults.map(u => (
-                  <div key={u.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--paper)]"
-                    style={{  border: '1px solid var(--ink-100)' }}>
-                    <div className="min-w-0">
-                      <div className="text-[var(--ink-700)] text-sm font-medium truncate">
-                        {u.displayName} <span className="text-[var(--ink-300)] text-xs font-normal">({u.username})</span>
-                      </div>
-                      <div className="text-[var(--ink-300)] text-[11px]">{u.orgName}</div>
-                    </div>
-                    {u.hasRole ? (
-                      <span className="text-[11px] px-2 py-1 rounded text-[var(--sage)] bg-[var(--sage-glow)]" >✓ 已是该角色</span>
-                    ) : (
-                      <button onClick={() => addMember(u.id)} disabled={addMemberSavingId === u.id}
-                        className="btn btn-fox btn-xs">{addMemberSavingId === u.id ? '添加中…' : '添加'}</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowAddMember(false)} className="btn btn-ghost btn-sm">完成</button>
-            </div>
-          </div>
-        </div>
+        <AddMemberModal
+          roleName={selectedRole?.name || selectedRole?.code || ''}
+          query={addMemberQ}
+          results={addMemberResults}
+          loading={addMemberLoading}
+          savingId={addMemberSavingId}
+          onSearch={searchAddMember}
+          onAdd={addMember}
+          onClose={() => setShowAddMember(false)}
+        />
       )}
 
       {/* 删除角色弹窗 */}
