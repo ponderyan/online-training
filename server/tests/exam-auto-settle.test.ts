@@ -7,10 +7,6 @@
  * 所有数据动态创建，不依赖预置 ID。需要 server 运行在 localhost:3001
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-
-// 发布后的考试不允许经 API 改时间（业务约束），模拟存量数据需直连 DB
-const db = new PrismaClient();
 
 const BASE = 'http://localhost:3001/api';
 let adminToken: string;
@@ -18,6 +14,7 @@ let adminToken: string;
 let questionId: number;
 let paperId: number;
 let examId: number;
+let examId2: number;
 let sessionIdA: number;
 const stamp = Date.now();
 const stuA = { username: `settle_a_${stamp}`, password: '123456', displayName: '结算测试A' };
@@ -60,11 +57,11 @@ describe('过期考试自动结算 + 监考大屏', () => {
   }, 30000);
 
   afterAll(async () => {
-    // 考试已 FINISHED 无法经 API 删除，直连 DB 清理
-    if (examId) await db.exam.deleteMany({ where: { id: examId } });
-    if (paperId) await db.paper.deleteMany({ where: { id: paperId } });
-    if (questionId) await db.question.deleteMany({ where: { id: questionId } });
-    await db.$disconnect();
+    // 发布后的考试 API 删不掉（业务约束），best-effort 清理，失败忽略
+    if (examId2) await api('DELETE', `/exams/${examId2}`).catch(() => {});
+    if (examId) await api('DELETE', `/exams/${examId}`).catch(() => {});
+    if (paperId) await api('DELETE', `/papers/${paperId}`).catch(() => {});
+    if (questionId) await api('DELETE', `/questions/${questionId}`).catch(() => {});
   });
 
   it('Step 1: 搭建 考试（endTime 在未来）+ 2 名学员', async () => {
@@ -144,18 +141,32 @@ describe('过期考试自动结算 + 监考大屏', () => {
     expect(sa.status).toBe('ASSIGNED');
   });
 
-  it('Step 4: endTime 改为过期 → cron 自动结算（缺考+FINISHED）', async () => {
-    await db.exam.update({ where: { id: examId }, data: { endTime: new Date(Date.now() - 60000) } });
+  it('Step 4: 直建 endTime 已过期的考试 → cron 自动结算（缺考+FINISHED）', async () => {
+    // 发布后的考试不允许经 API 改时间（业务约束），故直接创建已过期考试模拟存量
+    const now = Date.now();
+    const e = await api('POST', '/exams', {
+      title: `结算测试过期考试-${stamp}`,
+      paperId,
+      startTime: new Date(now - 10 * 60000).toISOString(),
+      endTime: new Date(now - 60000).toISOString(),
+      durationMinutes: 5,
+    });
+    expect([200, 201]).toContain(e.status);
+    examId2 = e.data.id;
+    const add = await api('POST', `/exams/${examId2}/add-students`, { studentIds: [stuAId] });
+    expect([200, 201]).toContain(add.status);
+    const pub = await api('PUT', `/exams/${examId2}/publish`);
+    expect(pub.status).toBe(200);
 
     // 轮询等待 cron（每分钟一次），最多 80 秒
     let settled: any = null;
     for (let i = 0; i < 16; i++) {
       await new Promise(r => setTimeout(r, 5000));
-      const b = await getBoard();
-      if (b.exam.status === 'FINISHED') { settled = b; break; }
+      const r = await api('GET', `/exams/${examId2}/proctoring/board`);
+      if (r.status === 200 && r.data.exam.status === 'FINISHED') { settled = r.data; break; }
     }
     expect(settled).toBeTruthy();
-    expect(settled.stats.absentCount).toBe(2);      // 两人都没开考 → 全部缺考
+    expect(settled.stats.absentCount).toBe(1);      // 未开考 → 自动缺考
     expect(settled.stats.submissionRate).toBe(100);
     for (const s of settled.sessions) {
       expect(s.absent).toBe(true);
