@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
+import { Shuffle } from 'lucide-react';
 import PracticePlayer from '@/components/practice-player';
 import { api } from '@/lib/api';
 
@@ -28,7 +29,7 @@ export default function RandomPracticePage() {
         <div className="max-w-lg mx-auto py-16">
           <div className="flex items-center justify-between mb-6">
             <button onClick={() => window.history.back()} className="btn btn-outline btn-sm">← 返回</button>
-            <h1 className="page-title mb-0">🔀 随机练习</h1>
+            <h1 className="page-title flex items-center gap-2 mb-0"><Shuffle size={20} className="text-[var(--fox)]" /> 随机练习</h1>
             <span className="w-16" />
           </div>
           <div className="card p-5 space-y-4">

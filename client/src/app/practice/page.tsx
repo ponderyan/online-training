@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
+import { PenLine } from 'lucide-react';
 import { api } from '@/lib/api';
 import EmptyState from '@/components/EmptyState';
 import ErrorCard from '@/components/ErrorCard';
@@ -44,7 +45,7 @@ export default function PracticePage() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="page-title mb-6">📝 练习模式</h1>
+        <h1  className="page-title flex items-center gap-2 mb-6"><PenLine size={20} className="text-[var(--fox)]" /> 练习模式</h1>
         <p className="page-subtitle mb-6">不计分 · 不限次 · 即时看解析</p>
 
         {/* 统计数据 — 四格方块 */}

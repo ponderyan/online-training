@@ -591,7 +591,7 @@ export default function PracticePlayer({ title, loadQuestions }: {
                     className={`
                       w-6 h-6 rounded text-[11px] font-medium border-none cursor-pointer
                       ${isCurrent ? 'bg-[var(--fox)] text-white' : ''}
-                      ${!isCurrent && isShown && isSubjective ? 'bg-[var(--amber,#f59e0b)] text-white' : ''}
+                      ${!isCurrent && isShown && isSubjective ? 'bg-[var(--gold)] text-white' : ''}
                       ${!isCurrent && isShown && !isSubjective && isCorrect ? 'bg-[var(--cyan)] text-white' : ''}
                       ${!isCurrent && isShown && !isSubjective && !isCorrect ? 'bg-[var(--verm)] text-white' : ''}
                       ${!isCurrent && !isShown ? 'bg-[var(--paper)] text-[var(--ink-300)]' : ''}

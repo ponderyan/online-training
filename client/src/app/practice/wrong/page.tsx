@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
+import { Repeat } from 'lucide-react';
 import PracticePlayer from '@/components/practice-player';
 import { api } from '@/lib/api';
 
@@ -17,7 +18,7 @@ export default function WrongReviewPage() {
     return (
       <AppLayout>
         <div className="max-w-md mx-auto py-16 text-center">
-          <h1 className="page-title mb-4">❌ 错题重练</h1>
+          <h1  className="page-title flex items-center gap-2 mb-4"><Repeat size={20} className="text-[var(--fox)]" /> 错题重练</h1>
           {wrongCount === 0 ? (
             <>
               <p className="text-[var(--ink-300)] mb-4">暂无错题，继续保持！</p>

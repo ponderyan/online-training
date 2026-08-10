@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
+import { Star } from 'lucide-react';
 import PracticePlayer from '@/components/practice-player';
 import { api } from '@/lib/api';
 
@@ -17,7 +18,7 @@ export default function FavoritePracticePage() {
     return (
       <AppLayout>
         <div className="max-w-md mx-auto py-16 text-center">
-          <h1 className="page-title mb-4">📌 收藏练习</h1>
+          <h1  className="page-title flex items-center gap-2 mb-4"><Star size={20} className="text-[var(--fox)]" /> 收藏练习</h1>
           {favCount === 0 ? (
             <>
               <p className="text-[var(--ink-300)] mb-4">暂无收藏题目</p>

@@ -72,6 +72,12 @@ export default defineConfig({
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
+      name: 'practice',
+      testMatch: /practice\.spec\.ts/,
+      dependencies: ['setup-admin', 'setup-student'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
+    {
       name: 'certificate-hours',
       testMatch: /certificate-hours\.spec\.ts/,
       dependencies: ['setup-admin', 'setup-student'],
