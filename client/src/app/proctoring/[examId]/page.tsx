@@ -13,6 +13,7 @@ const STATUS_FILTERS = [
   { key: 'OFFLINE', label: '🔴 离线' },
   { key: 'ABNORMAL', label: '⚠️ 异常' },
   { key: 'SUBMITTED', label: '✅ 已交卷' },
+  { key: 'ABSENT', label: '🚫 缺考' },
 ];
 
 export default function ProctoringDetail() {
@@ -131,6 +132,38 @@ export default function ProctoringDetail() {
     setActionLoading(false);
   };
 
+  const handleMarkAbsent = async () => {
+    if (!selectedSession) return;
+    if (!window.confirm(`确认将 ${selectedSession.studentName} 标记为缺考？将记 0 分。`)) return;
+    setActionLoading(true);
+    try {
+      await api.exams.proctoring.toggleAbsent(examId, selectedSession.sessionId, {
+        absent: true,
+        operatorName: user?.displayName || '管理员',
+      });
+      toast.success('已标记缺考');
+      openDetail(selectedSession.sessionId);
+      loadSessions(); loadOverview();
+    } catch (e: any) { toast.error(e.message); }
+    setActionLoading(false);
+  };
+
+  const handleRevokeAbsent = async () => {
+    if (!selectedSession) return;
+    if (!window.confirm(`确认撤销 ${selectedSession.studentName} 的缺考标记？撤销后该学员可重新进入考试。`)) return;
+    setActionLoading(true);
+    try {
+      await api.exams.proctoring.toggleAbsent(examId, selectedSession.sessionId, {
+        absent: false,
+        operatorName: user?.displayName || '管理员',
+      });
+      toast.success('已撤销缺考标记');
+      openDetail(selectedSession.sessionId);
+      loadSessions(); loadOverview();
+    } catch (e: any) { toast.error(e.message); }
+    setActionLoading(false);
+  };
+
   const getBgColor = (s: any) => {
     if (s.status === 'SUBMITTED') return 'white';
     if (s.suspicionLevel >= 3) return 'var(--error-pale)';
@@ -146,17 +179,24 @@ export default function ProctoringDetail() {
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="page-title">监考面板</h1>
-        <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push(`/proctoring/${examId}/board`)}
+            className="btn btn-fox btn-sm" title="座舱模式：全屏大屏监考">
+            🖥 大屏监考
+          </button>
+          <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
+        </div>
       </div>
 
       {/* Overview cards */}
-      <div className="grid grid-cols-5 gap-3 mb-5">
+      <div className="grid grid-cols-6 gap-3 mb-5">
         {[
           { label: '总考生', value: overview?.totalStudents || 0, color: 'var(--ink-600)' },
           { label: '🟢 在线', value: overview?.onlineCount || 0, color: 'var(--sage)' },
           { label: '🔴 离线', value: overview?.offlineCount || 0, color: overview?.offlineCount > 0 ? 'var(--error)' : 'var(--neutral-400)' },
           { label: '⚠️ 异常', value: overview?.abnormalCount || 0, color: (overview?.abnormalCount || 0) > 0 ? 'var(--fox)' : 'var(--neutral-400)' },
           { label: '✅ 已交卷', value: overview?.submittedCount || 0, color: 'var(--neutral-400)' },
+          { label: '🚫 缺考', value: overview?.absentCount || 0, color: (overview?.absentCount || 0) > 0 ? 'var(--verm)' : 'var(--neutral-400)' },
         ].map((s, i) => (
           <div key={i} className="card p-4 text-center">
             <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -194,7 +234,9 @@ export default function ProctoringDetail() {
                 <span className="text-[var(--ink-700)] font-medium text-sm">{s.studentName}</span>
                 {s.online && <span className="bg-[var(--sage)] w-2 h-2 rounded-full" title="在线" />}
                 {!s.online && s.status !== 'SUBMITTED' && <span className="bg-[var(--error)] w-2 h-2 rounded-full" title="离线" />}
-                {s.status === 'SUBMITTED' && <span className="text-[var(--ink-300)] text-[10px]">✅ 已交卷</span>}
+                {s.absent
+                  ? <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: 'var(--warning-pale)', color: 'var(--verm)' }}>🚫 缺考</span>
+                  : s.status === 'SUBMITTED' && <span className="text-[var(--ink-300)] text-[10px]">✅ 已交卷</span>}
               </div>
               <div className="text-[var(--ink-300)] text-[10px] mt-0.5">
                 {s.organization || '—'} · {s.remainingTime != null ? `⏱ ${Math.floor(s.remainingTime / 60)}:${String(s.remainingTime % 60).padStart(2, '0')}` : '—'}
@@ -234,7 +276,7 @@ export default function ProctoringDetail() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span className="text-[var(--ink-400)]">状态：</span>{selectedSession.status}</div>
+                    <div><span className="text-[var(--ink-400)]">状态：</span>{selectedSession.absent ? '🚫 缺考' : selectedSession.status}</div>
                     <div><span className="text-[var(--ink-400)]">在线：</span>{selectedSession.online ? '🟢 在线' : '🔴 离线'}</div>
                     <div><span className="text-[var(--ink-400)]">切屏：</span>{selectedSession.tabSwitchCount} 次</div>
                     <div><span className="text-[var(--ink-400)]">可疑度：</span>{selectedSession.suspicionLevel}</div>
@@ -302,6 +344,22 @@ export default function ProctoringDetail() {
                 </div>
 
                 {/* Action buttons */}
+                {selectedSession.absent && (
+                  <div className="space-y-2 pt-2">
+                    <button onClick={handleRevokeAbsent}
+                      className="btn w-full text-sm py-2 text-[var(--sage)]" style={{ border: '1px solid var(--sage)' }}>
+                      ↩️ 撤销缺考标记
+                    </button>
+                  </div>
+                )}
+                {!selectedSession.absent && (selectedSession.status === 'ASSIGNED' || selectedSession.status === 'PAUSED') && (
+                  <div className="space-y-2 pt-2">
+                    <button onClick={handleMarkAbsent}
+                      className="btn w-full text-sm py-2 text-[var(--verm)]" style={{ border: '1px solid var(--verm)' }}>
+                      🚫 标记缺考
+                    </button>
+                  </div>
+                )}
                 {selectedSession.status !== 'SUBMITTED' && (
                   <div className="space-y-2 pt-2">
                     <button onClick={() => setWarnModal({ sessionId: selectedSession.sessionId })}

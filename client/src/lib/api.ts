@@ -246,6 +246,9 @@ export const api = {
     // ── Phase F: 监考中心 ──
     proctoring: {
       overview: (examId: number) => request<any>(`/exams/${examId}/proctoring/overview`),
+      board: (examId: number) => request<any>(`/exams/${examId}/proctoring/board`),
+      toggleAbsent: (examId: number, sessionId: number, data: { absent: boolean; operatorName: string }) =>
+        request<any>(`/exams/${examId}/proctoring/sessions/${sessionId}/absent`, { method: 'PUT', body: JSON.stringify(data) }),
       sessions: (examId: number, params?: Record<string, string>) => {
         const qs = params ? '?' + new URLSearchParams(params).toString() : '';
         return request<{ items: any[]; total: number; page: number; pageSize: number }>(`/exams/${examId}/proctoring/sessions${qs}`);

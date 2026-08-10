@@ -16,6 +16,13 @@ export class ProctoringController {
     return this.service.getOverview(examId);
   }
 
+  @Get('board')
+  @RequirePermission(Permissions.PROCTOR_VIEW)
+  async getBoard(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.getBoard(examId);
+  }
+
   @Get('sessions')
   @RequirePermission(Permissions.PROCTOR_VIEW)
   async getSessions(
@@ -80,6 +87,18 @@ export class ProctoringController {
     const store = requestContext.getStore();
     if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
     return this.service.forceSubmit(examId, sessionId, data.reason, data.operatorName);
+  }
+
+  @Put('sessions/:sessionId/absent')
+  @RequirePermission(Permissions.PROCTOR_FORCE_SUBMIT)
+  async toggleAbsent(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() data: { absent: boolean; operatorName: string },
+    @Req() req: any,
+  ) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
+    return this.service.toggleAbsent(examId, sessionId, data.absent, data.operatorName);
   }
 
   @Put('sessions/:sessionId/extend-time')

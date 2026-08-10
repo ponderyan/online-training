@@ -43,37 +43,75 @@ export class PublishSchedulerService {
   }
 
   /**
-   * ★ 每分钟检查：endTime 已到但仍有 ACTIVE 会话 → 强制收卷
-   * 覆盖场景：学员关闭浏览器（心跳中断）后，session 不会被自动交卷
+   * ★ 每分钟检查：endTime 已过的线上考试 → 统一结算
+   * 1. ACTIVE 会话强制收卷（覆盖学员关闭浏览器/心跳中断场景）
+   * 2. ASSIGNED/PAUSED 会话自动标记缺考（0 分）——与线下 markAbsent 行为一致
+   * 3. 推进考试状态（全员结算后自动 FINISHED）
+   * 兼作存量清理：服务重启后对历史卡住的过期考试同样生效
    */
   @Cron(CronExpression.EVERY_MINUTE)
-  async forceEndExpiredSessions() {
+  async autoSettleExpiredExams() {
     const now = new Date();
 
-    // 找出所有 endTime 已过、仍有 ACTIVE session 的考试
-    const activeSessions = await this.prisma.examSession.findMany({
+    const expiredExams = await this.prisma.exam.findMany({
       where: {
-        status: 'ACTIVE',
-        exam: { endTime: { lte: now } },
+        endTime: { lte: now },
+        status: { in: ['PUBLISHED', 'IN_PROGRESS'] },
+        examMode: 'ONLINE',
       },
-      select: { id: true, examId: true },
+      select: { id: true, title: true },
     });
 
-    if (activeSessions.length === 0) return;
+    if (expiredExams.length === 0) return;
 
-    this.logger.log(`强制收卷: 发现 ${activeSessions.length} 个超时会话`);
-
-    for (const session of activeSessions) {
+    for (const exam of expiredExams) {
       try {
-        await this.prisma.examSession.update({
-          where: { id: session.id },
-          data: { status: 'SUBMITTED', submittedAt: now, remainingTime: 0, scoringStatus: 'PENDING' },
-        });
-        await this.examsService.autoGrade(session.id);
-        await this.examsService.syncExamProgress(session.examId);
+        const r = await this.settleExpiredExam(exam.id);
+        if (r.settled > 0) {
+          this.logger.log(`过期考试结算: ${exam.title} (id=${exam.id}) 收卷${r.forceSubmitted}人 缺考${r.markedAbsent}人`);
+        }
       } catch (err) {
-        this.logger.error(`强制收卷失败: sessionId=${session.id}`, err);
+        this.logger.error(`过期考试结算失败: ${exam.title} (id=${exam.id})`, err);
       }
     }
+  }
+
+  /**
+   * 结算单场过期考试（供定时任务与测试调用）
+   */
+  async settleExpiredExam(examId: number) {
+    const now = new Date();
+
+    // 1. ACTIVE → 强制收卷 + 自动判分
+    const activeSessions = await this.prisma.examSession.findMany({
+      where: { examId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    for (const session of activeSessions) {
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: { status: 'SUBMITTED', submittedAt: now, remainingTime: 0, scoringStatus: 'PENDING' },
+      });
+      await this.examsService.autoGrade(session.id);
+    }
+
+    // 2. ASSIGNED/PAUSED → 自动缺考（与线下 markAbsent 一致：SUBMITTED + 0 分 + absent 标记）
+    const absentResult = await this.prisma.examSession.updateMany({
+      where: { examId, status: { in: ['ASSIGNED', 'PAUSED'] } },
+      data: {
+        absent: true,
+        status: 'SUBMITTED',
+        submittedAt: now,
+        totalScore: 0,
+        finalScore: 0,
+        isPassed: false,
+        scoringStatus: 'PENDING',
+      },
+    });
+
+    // 3. 统一收口推进考试状态（全员 SUBMITTED → FINISHED）
+    await this.examsService.syncExamProgress(examId);
+
+    return { settled: activeSessions.length + absentResult.count, forceSubmitted: activeSessions.length, markedAbsent: absentResult.count };
   }
 }

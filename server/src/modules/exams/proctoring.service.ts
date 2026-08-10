@@ -20,13 +20,14 @@ export class ProctoringService {
 
     const sessions = await this.prisma.examSession.findMany({
       where: { examId },
-      select: { id: true, status: true, lastHeartbeatAt: true, suspicionLevel: true },
+      select: { id: true, status: true, lastHeartbeatAt: true, suspicionLevel: true, absent: true },
     });
 
     const now = new Date();
-    let onlineCount = 0, offlineCount = 0, submittedCount = 0, abnormalCount = 0;
+    let onlineCount = 0, offlineCount = 0, submittedCount = 0, abnormalCount = 0, absentCount = 0;
 
     for (const s of sessions) {
+      if (s.absent) absentCount++;
       if (s.status === 'SUBMITTED') {
         submittedCount++;
         continue;
@@ -43,7 +44,102 @@ export class ProctoringService {
       }
     }
 
-    return { totalStudents, onlineCount, offlineCount, submittedCount, abnormalCount };
+    return { totalStudents, onlineCount, offlineCount, submittedCount, abnormalCount, absentCount };
+  }
+
+  /**
+   * ★ 监考大屏（座舱模式）聚合数据
+   * 一次请求返回考试基本信息 + 全局统计 + 全员卡片 + 最近违规动态
+   */
+  async getBoard(examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: { paper: { select: { name: true, totalScore: true } } },
+    });
+    if (!exam) throw new NotFoundException('考试不存在');
+
+    const questionCount = await this.prisma.paperQuestion.count({ where: { paperId: exam.paperId } });
+
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId },
+      include: { student: { select: { displayName: true, organization: true } } },
+      orderBy: { id: 'asc' },
+    });
+
+    const now = new Date();
+    let onlineCount = 0, offlineCount = 0, submittedCount = 0, absentCount = 0, abnormalCount = 0, notStartedCount = 0;
+    const recentViolations: Array<{ sessionId: number; studentName: string; time: string; action: string }> = [];
+
+    const items = sessions.map(s => {
+      const isOnline = s.status === 'ACTIVE' && s.lastHeartbeatAt &&
+        (now.getTime() - new Date(s.lastHeartbeatAt).getTime()) / 1000 < ONLINE_THRESHOLD_SECONDS;
+      const tabSwitchCount = Array.isArray(s.violationLog) ? s.violationLog.length : 0;
+
+      if (s.absent) absentCount++;
+      if (s.status === 'SUBMITTED') submittedCount++;
+      else if (s.status === 'ACTIVE') (isOnline ? onlineCount++ : offlineCount++);
+      else notStartedCount++;
+      if (s.suspicionLevel > 0) abnormalCount++;
+
+      if (Array.isArray(s.violationLog)) {
+        for (const entry of s.violationLog as any[]) {
+          recentViolations.push({
+            sessionId: s.id,
+            studentName: s.student?.displayName || '未知',
+            time: entry.timestamp || entry.time || '',
+            action: entry.action || 'tab_switch',
+          });
+        }
+      }
+
+      return {
+        sessionId: s.id,
+        studentName: s.student?.displayName || '未知',
+        organization: s.student?.organization || '',
+        status: s.status,
+        absent: s.absent,
+        online: isOnline,
+        suspicionLevel: s.suspicionLevel,
+        tabSwitchCount,
+        remainingTime: s.remainingTime,
+        startedAt: s.startedAt,
+        submittedAt: s.submittedAt,
+        totalScore: s.totalScore,
+      };
+    });
+
+    recentViolations.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+
+    return {
+      exam: {
+        id: exam.id,
+        title: exam.title,
+        status: exam.status,
+        examMode: exam.examMode,
+        accessType: exam.accessType,
+        startTime: exam.startTime,
+        endTime: exam.endTime,
+        durationMinutes: exam.durationMinutes,
+        passingScore: exam.passingScore,
+        tabSwitchLimit: exam.tabSwitchLimit,
+        paperName: exam.paper?.name || '',
+        paperTotalScore: exam.paper?.totalScore || 0,
+        questionCount,
+      },
+      stats: {
+        totalStudents: sessions.length,
+        onlineCount,
+        offlineCount,
+        notStartedCount,
+        submittedCount,
+        absentCount,
+        abnormalCount,
+        submissionRate: sessions.length > 0 ? Math.round((submittedCount / sessions.length) * 100) : 0,
+      },
+      sessions: items,
+      recentViolations: recentViolations.slice(0, 20),
+      serverTime: now,
+    };
   }
 
   async getSessions(examId: number, params: {
@@ -77,6 +173,7 @@ export class ProctoringService {
         studentName: s.student?.displayName || '未知',
         organization: s.student?.organization || '',
         status: s.status,
+        absent: s.absent,
         online: isOnline,
         suspicionLevel: s.suspicionLevel,
         violationLog: s.violationLog,
@@ -97,6 +194,7 @@ export class ProctoringService {
         if (params.status === 'ABNORMAL') return s.suspicionLevel > 0;
         if (params.status === 'SUBMITTED') return s.status === 'SUBMITTED';
         if (params.status === 'ACTIVE') return s.status === 'ACTIVE';
+        if (params.status === 'ABSENT') return s.absent;
         return true;
       });
     }
@@ -140,6 +238,7 @@ export class ProctoringService {
       studentName: session.student?.displayName || '未知',
       organization: session.student?.organization || '',
       status: session.status,
+      absent: session.absent,
       online: isOnline,
       suspicionLevel: session.suspicionLevel,
       violationLog: session.violationLog,
@@ -245,5 +344,55 @@ export class ProctoringService {
     });
 
     return { success: true, newRemainingTime };
+  }
+
+  /**
+   * 人工标记/撤销缺考（线上监考）
+   * - 标记缺考：仅对未开考（ASSIGNED/PAUSED）会话
+   * - 撤销缺考：恢复 ASSIGNED、清除 0 分记录，学员可重新进入考试
+   */
+  async toggleAbsent(examId: number, sessionId: number, absent: boolean, operatorName: string) {
+    const session = await this.prisma.examSession.findFirst({ where: { id: sessionId, examId } });
+    if (!session) throw new NotFoundException('考试会话不存在');
+
+    if (absent) {
+      if (session.absent) throw new BadRequestException('该考生已被标记缺考');
+      if (session.status === 'ACTIVE') throw new BadRequestException('考生正在作答中，请使用强制交卷');
+      if (session.status === 'SUBMITTED') throw new BadRequestException('考生已交卷，不能标记缺考');
+      await this.prisma.examSession.update({
+        where: { id: sessionId },
+        data: { absent: true, status: 'SUBMITTED', submittedAt: new Date(), totalScore: 0, finalScore: 0, isPassed: false },
+      });
+    } else {
+      if (!session.absent) throw new BadRequestException('该考生未被标记缺考');
+      await this.prisma.examSession.update({
+        where: { id: sessionId },
+        data: { absent: false, status: 'ASSIGNED', submittedAt: null, totalScore: null, finalScore: null, isPassed: null, scoringStatus: 'PENDING' },
+      });
+    }
+
+    // 审计日志
+    const action = { timestamp: new Date().toISOString(), action: absent ? 'MARK_ABSENT' : 'REVOKE_ABSENT', message: absent ? '人工标记缺考' : '撤销缺考标记', operatorName };
+    const existingActions = Array.isArray(session.proctorActions) ? session.proctorActions : [];
+    await this.prisma.examSession.update({
+      where: { id: sessionId },
+      data: { proctorActions: [...existingActions, action] },
+    });
+
+    // ★ 统一收口：重算 submittedCount 与考试状态
+    if (absent) {
+      await this.examsService.syncExamProgress(examId);
+    } else {
+      // 撤销缺考：syncExamProgress 只前进不回退，需显式将 FINISHED 回退为 IN_PROGRESS（学员重新可考）
+      const examRow = await this.prisma.exam.findUnique({ where: { id: examId }, select: { endTime: true } });
+      const backStatus = examRow && examRow.endTime <= new Date() ? 'IN_PROGRESS' : undefined;
+      await this.prisma.exam.update({
+        where: { id: examId },
+        data: { status: backStatus ?? 'IN_PROGRESS' },
+      });
+      await this.examsService.syncExamProgress(examId);
+    }
+
+    return { sessionId, absent };
   }
 }
