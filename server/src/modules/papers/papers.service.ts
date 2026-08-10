@@ -32,7 +32,7 @@ export class PapersService {
     return [userOrgId, ...descendants.map(d => d.id)];
   }
 
-  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; subjectId?: number; filterOrgId?: number; userOrgId?: number | null; userRoles?: string[] }) {
+  async findAll(params: { page?: number; pageSize?: number; keyword?: string; status?: string; subjectId?: number; filterOrgId?: number; sort?: string; userOrgId?: number | null; userRoles?: string[] }) {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
@@ -63,9 +63,16 @@ export class PapersService {
     if (params.subjectId) where.subjectId = params.subjectId;
     if (params.filterOrgId) where.orgId = params.filterOrgId;
 
+    // ★ 排序：默认最新；支持总分升/降、题量降序
+    const orderBy =
+      params.sort === 'totalScore_desc' ? { totalScore: 'desc' as const } :
+      params.sort === 'totalScore_asc' ? { totalScore: 'asc' as const } :
+      params.sort === 'questions_desc' ? { questions: { _count: 'desc' as const } } :
+      { createdAt: 'desc' as const };
+
     const [items, total] = await Promise.all([
       this.prisma.paper.findMany({
-        where, skip, take: pageSize, orderBy: { createdAt: 'desc' },
+        where, skip, take: pageSize, orderBy,
         include: {
           subject: { select: { name: true, code: true } },
           creator: { select: { displayName: true } },
@@ -384,6 +391,7 @@ export class PapersService {
       throw new BadRequestException(`题型分值合计(${subtotalCheck})与总分(${totalScore})不一致`);
     }
 
+
     // Part 4: 内容级去重兜底 — 防止题库中存在内容高度相似的题目被同时选入
     if (selectedQuestions.length > 1) {
       const qIds = selectedQuestions.map(sq => sq.questionId);
@@ -441,6 +449,22 @@ export class PapersService {
             }
           }
         }
+      }
+    }
+
+
+    // ★ 题量校验：题库不足时明确报错，禁止静默产出缺题试卷
+    {
+      const actualByType: Record<string, number> = {};
+      for (const sq of selectedQuestions) actualByType[sq.typeSection] = (actualByType[sq.typeSection] || 0) + 1;
+      const shortfalls: string[] = [];
+      for (const tc of data.typeConfigs) {
+        if (tc.count <= 0) continue;
+        const actual = actualByType[tc.questionType] || 0;
+        if (actual < tc.count) shortfalls.push(`${tc.questionType} 需 ${tc.count} 题、实际 ${actual} 题`);
+      }
+      if (shortfalls.length > 0) {
+        throw new BadRequestException(`题库题量不足，组卷失败：${shortfalls.join('；')}。请先补充题库或调整组卷配置。`);
       }
     }
 
@@ -613,20 +637,21 @@ export class PapersService {
 
   async uploadWord(id: number, file: Express.Multer.File) {
     const paper = await this.findOne(id);
-    if (paper.status === 'DRAFT') throw new BadRequestException('Draft papers cannot generate PDF');
+    if (paper.status === 'DRAFT') throw new BadRequestException('草稿试卷请使用试题编辑器维护；印刷版 Word 上传仅支持已定稿/正式试卷');
 
-    const uploadDir = join('/var/www/exam-system', 'paper-files', String(id));
+    const baseDir = process.env.PAPER_FILES_DIR || join(process.cwd(), 'uploads');
+    const uploadDir = join(baseDir, 'paper-files', String(id));
     await mkdir(uploadDir, { recursive: true });
 
     const docxPath = join(uploadDir, 'edited.docx');
     await writeFile(docxPath, file.buffer);
 
     try {
-      execSync(`soffice --headless --convert-to pdf --outdir ${uploadDir} ${docxPath}`, {
+      execSync(`soffice --headless --convert-to pdf --outdir "${uploadDir}" "${docxPath}"`, {
         timeout: 30000,
       });
     } catch {
-      throw new BadRequestException('PDF conversion failed. Check that LibreOffice is installed and the Word file is valid.');
+      throw new BadRequestException('PDF 转换失败：请确认服务器已安装 LibreOffice，且上传的 Word 文件有效。');
     }
 
     const pdfPath = join(uploadDir, 'edited.pdf');

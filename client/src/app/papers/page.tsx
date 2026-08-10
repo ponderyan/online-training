@@ -29,6 +29,7 @@ export default function PapersPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
   const [filterOrg, setFilterOrg] = useState('');
+  const [sortBy, setSortBy] = useState('');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [orgs, setOrgs] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -43,6 +44,7 @@ export default function PapersPage() {
       if (filterStatus) params.set('status', filterStatus);
       if (filterSubject) params.set('subjectId', filterSubject);
       if (filterOrg) params.set('orgId', filterOrg);
+      if (sortBy) params.set('sort', sortBy);
       const data = await api.papers.list(params.toString());
       setPapers(data.items || []);
       setTotal(data.total);
@@ -106,7 +108,7 @@ export default function PapersPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`/api/papers/${paperId}/upload-word`, { method: 'POST', body: formData });
+      const res = await fetch(`/api/papers/${paperId}/upload-word`, { method: 'POST', body: formData, headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
       if (!res.ok) throw new Error('上传失败');
       toast.success('Word 上传成功，PDF 已生成');
     } catch (e: any) {
@@ -186,9 +188,15 @@ export default function PapersPage() {
           <option value="">全部组织</option>
           {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.code} - {o.name}</option>)}
         </select>
+        <select value={sortBy} onChange={e => { setSortBy(e.target.value); }} className="input" style={{ maxWidth: 130 }}>
+          <option value="">最新优先</option>
+          <option value="totalScore_desc">总分高→低</option>
+          <option value="totalScore_asc">总分低→高</option>
+          <option value="questions_desc">题量多→少</option>
+        </select>
         <button onClick={() => load(1)} className="btn btn-outline btn-xs">筛选</button>
-        {(keyword || filterStatus || filterSubject || filterOrg) && (
-          <button onClick={() => { setKeyword(''); setFilterStatus(''); setFilterSubject(''); setFilterOrg(''); setTimeout(() => load(1), 0); }} className="btn btn-ghost btn-xs text-[var(--verm)]" >清除</button>
+        {(keyword || filterStatus || filterSubject || filterOrg || sortBy) && (
+          <button onClick={() => { setKeyword(''); setFilterStatus(''); setFilterSubject(''); setFilterOrg(''); setSortBy(''); setTimeout(() => load(1), 0); }} className="btn btn-ghost btn-xs text-[var(--verm)]" >清除</button>
         )}
       </div>
 
@@ -333,9 +341,10 @@ export default function PapersPage() {
                           answer = '见参考答案详情';
                         }
                         return (
-                          <div key={pq.id} className="border-[var(--ink-100)] flex gap-3 text-xs py-1 border-b border-dashed last:border-b-0">
-                            <span className="text-[var(--ink-300)]">{i + 1}.</span>
-                            <span className="text-[var(--cyan)]">{answer}</span>
+                          <div key={pq.id} className="border-[var(--ink-100)] flex gap-3 text-xs py-1.5 border-b border-dashed last:border-b-0">
+                            <span className="text-[var(--ink-300)] flex-shrink-0">{i + 1}.</span>
+                            <span className="text-[var(--ink-600)] flex-1 leading-relaxed">{q?.content || '—'}</span>
+                            <span className="text-[var(--cyan)] flex-shrink-0 font-medium">{answer}</span>
                           </div>
                         );
                       })}

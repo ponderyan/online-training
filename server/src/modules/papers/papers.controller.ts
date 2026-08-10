@@ -13,7 +13,7 @@ export class PapersController {
 
   @Get()
   @RequirePermission(Permissions.PAPER_EDIT)
-  findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string, @Query('orgId') orgId?: string) {
+  findAll(@Req() req: any, @Query('page') page?: string, @Query('pageSize') pageSize?: string, @Query('keyword') keyword?: string, @Query('status') status?: string, @Query('subjectId') subjectId?: string, @Query('orgId') orgId?: string, @Query('sort') sort?: string) {
     return this.service.findAll({
       page: page ? parseInt(page) : undefined,
       pageSize: pageSize ? parseInt(pageSize) : undefined,
@@ -21,6 +21,7 @@ export class PapersController {
       status: status || undefined,
       subjectId: subjectId ? parseInt(subjectId) : undefined,
       filterOrgId: orgId ? parseInt(orgId) : undefined,
+      sort: sort || undefined,
       userOrgId: req.user?.orgId ?? null,
       userRoles: req.user?.roles,
     });
