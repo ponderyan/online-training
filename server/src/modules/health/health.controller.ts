@@ -22,7 +22,7 @@ export class HealthController {
       uptime: process.uptime(),
       db: dbStatus,
       responseTime: Date.now() - start,
-      version: '0.9.2',
+      version: '0.9.4',
     };
   }
 }

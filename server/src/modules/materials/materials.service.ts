@@ -453,6 +453,7 @@ export class MaterialsService {
         question.knowledgePoint,
         question.sourceChunk,
         { materialName: question.material.name, chapterTitle: chapter?.title, orgId: subject?.orgId },
+        { minAnswerWords: question.minAnswerWords, rubric: question.rubric },
       );
 
       updateData.questionId = imported.id;
@@ -512,6 +513,7 @@ export class MaterialsService {
         q.knowledgePoint,
         q.sourceChunk,
         { materialName: material.name, chapterTitle: chTitle, orgId: material.subject?.orgId },
+        { minAnswerWords: q.minAnswerWords, rubric: q.rubric },
       );
       await this.prisma.materialQuestion.update({
         where: { id: q.id },
@@ -538,6 +540,7 @@ export class MaterialsService {
     knowledgePoint: string | null,
     sourceChunk: string | null,
     context?: { materialName?: string; chapterTitle?: string | null; orgId?: number | null },
+    essayExtras?: { minAnswerWords?: number | null; rubric?: any },
   ) {
     // P0-1: 智能匹配 Subject 的 Chapter（按名称模糊匹配，兜底取第一个）
     const chapterId = await this.resolveSubjectChapter(subjectId, context?.chapterTitle || undefined);
@@ -569,6 +572,8 @@ export class MaterialsService {
         difficulty: difficulty as any,
         source: 'AI_IMPORT',
         status: 'PUBLISHED',
+        minAnswerWords: Number.isInteger(essayExtras?.minAnswerWords) ? essayExtras!.minAnswerWords : null,
+        rubric: Array.isArray(essayExtras?.rubric) && essayExtras!.rubric.length > 0 ? essayExtras!.rubric : undefined,
         orgId: context?.orgId ?? null,  // P0-3: 机构归属
         sourceNote: context?.materialName
           ? `来源教材：${context.materialName}${context.chapterTitle ? ` > ${context.chapterTitle}` : ''}`
@@ -795,6 +800,8 @@ export class MaterialsService {
                 blanks: q.blanks || undefined,
                 answer: q.answer || null,
                 explanation: q.explanation || null,
+                minAnswerWords: Number.isInteger(q.minAnswerWords) ? q.minAnswerWords : null,
+                rubric: Array.isArray(q.rubric) && q.rubric.length > 0 ? q.rubric : undefined,
                 suggestedGroup: q.suggestedGroup || 'EXAM_GROUP',
                 reviewStatus: 'PENDING',
                 ...(qualityFlag ? { reviewNote: `[质量标记] ${qualityFlag}` } : {}),
@@ -849,7 +856,7 @@ export class MaterialsService {
 
 核心要求：
 1. 严格基于教材内容出题，不要编造教材中没有的知识点
-2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)
+2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)、论文题(ESSAY)
 3. 难度标注必须严格遵循以下标准：
 ${difficultyBlock}
 4. 标注所属知识点(knowledgePoint)
@@ -858,7 +865,8 @@ ${difficultyBlock}
 7. 判断题答案填 true 或 false
 8. 填空题需给出正确答案
 9. 简答题需给出参考答案要点（至少3个要点）
-10. 题目覆盖教材的重点和难点，避免重复考查同一知识点
+10. 论文题给出论文题目，并在 answer 字段写写作要点（至少4条）、rubric 字段给3-5条采分点（{description, points, type:add|deduct}）、minAnswerWords 给最低字数要求（500-2000的整数）
+11. 题目覆盖教材的重点和难点，避免重复考查同一知识点
 
 答案规范（极其重要）：
 - 选择题的 answer 字段必须填写正确选项的 label，如单选 "A"，多选 "A,B,C"
@@ -873,7 +881,10 @@ type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填)
 {"type":"SINGLE_CHOICE","difficulty":"MEDIUM_EASY","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"数字化转型的核心目标是？","options":[{"label":"A","content":"降低人力成本","isCorrect":false},{"label":"B","content":"重塑业务流程和组织架构","isCorrect":true},{"label":"C","content":"增加IT设备采购","isCorrect":false},{"label":"D","content":"实现无纸化办公","isCorrect":false}],"answer":"B","explanation":"教材明确指出数字化转型是企业利用数字技术重塑业务流程和组织架构的过程，而非简单的成本削减或设备采购。","suggestedGroup":"EXAM_GROUP"}
 
 示例（填空题）：
-{"type":"FILL_BLANK","difficulty":"EASY","knowledgePoint":"云计算","sourceChunk":"云计算的三大服务模式为IaaS、PaaS和SaaS","content":"云计算的三大服务模式为____、____和____。","blanks":[{"blankIndex":0,"answer":"IaaS"},{"blankIndex":1,"answer":"PaaS"},{"blankIndex":2,"answer":"SaaS"}],"answer":"IaaS,PaaS,SaaS","explanation":"教材原文：云计算的三大服务模式为IaaS（基础设施即服务）、PaaS（平台即服务）和SaaS（软件即服务）。","suggestedGroup":"EXAM_GROUP"}`;
+{"type":"FILL_BLANK","difficulty":"EASY","knowledgePoint":"云计算","sourceChunk":"云计算的三大服务模式为IaaS、PaaS和SaaS","content":"云计算的三大服务模式为____、____和____。","blanks":[{"blankIndex":0,"answer":"IaaS"},{"blankIndex":1,"answer":"PaaS"},{"blankIndex":2,"answer":"SaaS"}],"answer":"IaaS,PaaS,SaaS","explanation":"教材原文：云计算的三大服务模式为IaaS（基础设施即服务）、PaaS（平台即服务）和SaaS（软件即服务）。","suggestedGroup":"EXAM_GROUP"}
+
+示例（论文题）：
+{"type":"ESSAY","difficulty":"MEDIUM_HARD","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"结合教材内容，论述企业数字化转型的实施路径与关键风险。","answer":"写作要点：1)战略定位与顶层设计；2)技术选型与数据治理；3)组织变革与人才培养；4)风险识别与合规管控","minAnswerWords":800,"rubric":[{"description":"论点明确、结构完整","points":6,"type":"add"},{"description":"论据充分且引用教材观点","points":6,"type":"add"},{"description":"结合实际案例分析","points":5,"type":"add"},{"description":"逻辑混乱或偏离主题","points":5,"type":"deduct"}],"explanation":"教材从战略、技术、组织、风险四个维度阐述了数字化转型的实施框架，论文应围绕该框架展开论述。","suggestedGroup":"EXAM_GROUP"}`;
 
     // 如果有按比例分配的章节题量，优先使用；否则回退到 batchNote 整份说明
     let countNote = '';
@@ -899,7 +910,7 @@ ${
 返回格式（严格 JSON 数组，不要有任何其他文字）：
 [
   {
-    "type": "SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|FILL_BLANK|SHORT_ANSWER",
+    "type": "SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|FILL_BLANK|SHORT_ANSWER|ESSAY",
     "difficulty": "EASY|MEDIUM_EASY|MEDIUM_HARD|HARD",
     "knowledgePoint": "知识点名称",
     "sourceChunk": "引用的原文片段(20-50字)",
@@ -1037,6 +1048,7 @@ ${
       '判断题': 'TRUE_FALSE',
       '填空题': 'FILL_BLANK',
       '简答题': 'SHORT_ANSWER',
+      '论文题': 'ESSAY',
     };
     const counts: Record<string, number> = {};
     for (const [cn, en] of Object.entries(mapping)) {
@@ -1054,6 +1066,7 @@ ${
       'TRUE_FALSE': '判断题',
       'FILL_BLANK': '填空题',
       'SHORT_ANSWER': '简答题',
+      'ESSAY': '论文题',
     };
     const parts: string[] = [];
     for (const [type, count] of Object.entries(counts)) {
@@ -1399,6 +1412,8 @@ ${
                       blanks: q.blanks || undefined,
                       answer: q.answer || null,
                       explanation: q.explanation || null,
+                      minAnswerWords: Number.isInteger(q.minAnswerWords) ? q.minAnswerWords : null,
+                      rubric: Array.isArray(q.rubric) && q.rubric.length > 0 ? q.rubric : undefined,
                       suggestedGroup: q.suggestedGroup || 'EXAM_GROUP',
                       reviewStatus: 'PENDING',
                     },
@@ -1487,13 +1502,15 @@ ${
       'TRUE_FALSE': '判断题',
       'FILL_BLANK': '填空题',
       'SHORT_ANSWER': '简答题',
+      'ESSAY': '论文题',
     };
 
     const typeInstructions = cfg.type === 'SINGLE_CHOICE' ? '提供4个选项(A/B/C/D)' :
       cfg.type === 'MULTIPLE_CHOICE' ? '提供4-5个选项' :
       cfg.type === 'TRUE_FALSE' ? '答案填true或false' :
       cfg.type === 'FILL_BLANK' ? '给出正确答案及填空位置' :
-      cfg.type === 'SHORT_ANSWER' ? '给出参考答案要点' : '';
+      cfg.type === 'SHORT_ANSWER' ? '给出参考答案要点' :
+      cfg.type === 'ESSAY' ? '给出论文题目、写作要点(answer)、评分标准rubric与最低字数minAnswerWords' : '';
 
     // 3级难度映射到4级：易->EASY, 中->MEDIUM_EASY+MEDIUM_HARD(各半), 难->HARD
     const dEasy = cfg.difficultyEasy ?? 30;
@@ -1648,7 +1665,7 @@ ${content.slice(0, 15000)}
     if (!material.batchNote?.trim()) throw new BadRequestException('该教材没有出题要求(batchNote)，无法自动生成出题计划');
 
     const counts = this.parseQuestionCounts(material.batchNote);
-    const validTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'];
+    const validTypes = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'ESSAY'];
     const configs: any[] = [];
 
     for (const ch of material.chapters) {
@@ -1950,7 +1967,7 @@ function validateAndFixQuestion(q: any): { question: any; warnings: string[]; va
   }
 
   // 1. 类型验证
-  const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER'];
+  const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'ESSAY'];
   if (!VALID_TYPES.includes(fixed.type)) {
     warnings.push(`无效题型: ${fixed.type}，回退至 SINGLE_CHOICE`);
     fixed.type = 'SINGLE_CHOICE';
@@ -2049,6 +2066,28 @@ function validateAndFixQuestion(q: any): { question: any; warnings: string[]; va
         warnings.push('填空题缺少空白(blanks)和答案(answer)，丢弃');
         valid = false;
       }
+    }
+  }
+
+  // 6b. 论文题：写作要点(answer)必填，rubric/minAnswerWords 规范化（2026-08-11）
+  if (fixed.type === 'ESSAY') {
+    if (!fixed.answer || !String(fixed.answer).trim()) {
+      warnings.push('论文题缺少写作要点(answer)，丢弃');
+      valid = false;
+    }
+    if (!Number.isInteger(fixed.minAnswerWords) || fixed.minAnswerWords <= 0) {
+      fixed.minAnswerWords = 500;
+    } else if (fixed.minAnswerWords > 5000) {
+      fixed.minAnswerWords = 5000;
+    }
+    if (Array.isArray(fixed.rubric)) {
+      fixed.rubric = fixed.rubric
+        .filter((r: any) => r && String(r.description || '').trim() && Number(r.points) > 0)
+        .slice(0, 10)
+        .map((r: any) => ({ description: String(r.description).trim(), points: Number(r.points), type: r.type === 'deduct' ? 'deduct' : 'add' }));
+      if (fixed.rubric.length === 0) fixed.rubric = null;
+    } else {
+      fixed.rubric = null;
     }
   }
 

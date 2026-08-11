@@ -22,6 +22,8 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [correctAnswers, setCorrectAnswers] = useState<string[]>([]);
   const [blanks, setBlanks] = useState<string[]>(['']);
+  const [minAnswerWords, setMinAnswerWords] = useState('');
+  const [rubricItems, setRubricItems] = useState<{ description: string; points: number; type: 'add' | 'deduct' }[]>([]);
   const [subQuestions, setSubQuestions] = useState<{ content: string; answer: string }[]>([{ content: '', answer: '' }]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -80,7 +82,18 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
     } else {
       setSubQuestions([{ content: '', answer: '' }]);
     }
+
+    // 论文题增强字段回填（2026-08-11）
+    setMinAnswerWords(editQuestion.minAnswerWords ? String(editQuestion.minAnswerWords) : '');
+    setRubricItems(Array.isArray(editQuestion.rubric)
+      ? editQuestion.rubric.map((r: any) => ({ description: r.description || '', points: r.points || 1, type: r.type === 'deduct' ? 'deduct' : 'add' }))
+      : []);
   }, [editQuestion]);
+
+  // 新建模式打开时重置论文题增强字段
+  useEffect(() => {
+    if (open && !editQuestion) { setMinAnswerWords(''); setRubricItems([]); }
+  }, [open, editQuestion]);
 
   // Load KP tree when modal opens（按当前科目过滤）
   useEffect(() => {
@@ -138,6 +151,11 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
         ];
       } else if (type === 'SHORT_ANSWER' || type === 'ESSAY') {
         body.analysis = analysis || undefined;
+        // 论文题增强：作答最低字数 + 评分标准（2026-08-11）
+        const mw = parseInt(minAnswerWords, 10);
+        body.minAnswerWords = Number.isFinite(mw) && mw > 0 ? mw : null;
+        const cleanRubric = rubricItems.filter(r => r.description.trim() && r.points > 0);
+        body.rubric = cleanRubric.length > 0 ? cleanRubric : null;
       } else if (type === 'FILL_BLANK') {
         body.blanks = blanks.filter(b => b).map(b => ({ answer: b }));
       } else if (type === 'CASE_STUDY') {
@@ -287,6 +305,42 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
               <textarea value={analysis} onChange={e => setAnalysis(e.target.value)} rows={type === 'ESSAY' ? 6 : 3}
                 placeholder={type === 'ESSAY' ? '论文题建议填写评分要点（论点、论据、结构等采分维度）' : undefined}
                 className="input textarea" />
+            </div>
+          )}
+
+          {type === 'ESSAY' && (
+            <div className="mb-4 p-4 border rounded border-[var(--ink-100)] bg-[var(--paper-50)]">
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">作答要求</label>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-[var(--ink-500)]">最低字数</span>
+                <input type="number" min={0} max={20000} value={minAnswerWords}
+                  onChange={e => setMinAnswerWords(e.target.value)} placeholder="如 800"
+                  className="input w-40" />
+                <span className="text-xs text-[var(--ink-300)]">交卷时硬校验，留空不限制</span>
+              </div>
+              <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">
+                评分标准 <span className="text-[var(--ink-300)]">（可选，定稿时随卷快照，阅卷时可调整）</span>
+              </label>
+              <div className="space-y-2">
+                {rubricItems.map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <select value={item.type} onChange={e => { const n = [...rubricItems]; n[i] = { ...n[i], type: e.target.value as 'add' | 'deduct' }; setRubricItems(n); }} className="input select w-20">
+                      <option value="add">加分</option>
+                      <option value="deduct">扣分</option>
+                    </select>
+                    <input type="number" min={1} max={100} value={item.points}
+                      onChange={e => { const n = [...rubricItems]; n[i] = { ...n[i], points: parseInt(e.target.value) || 0 }; setRubricItems(n); }}
+                      className="input w-20" title="分值" />
+                    <input placeholder="采分点描述，如：论点明确、结构完整" value={item.description}
+                      onChange={e => { const n = [...rubricItems]; n[i] = { ...n[i], description: e.target.value }; setRubricItems(n); }}
+                      className="input flex-1" />
+                    <button onClick={() => setRubricItems(rubricItems.filter((_, j) => j !== i))}
+                      className="btn btn-ghost btn-xs text-[var(--ink-300)]">✕</button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setRubricItems([...rubricItems, { description: '', points: 5, type: 'add' }])}
+                className="text-xs text-[var(--ink-300)] mt-2">+ 添加采分点</button>
             </div>
           )}
 

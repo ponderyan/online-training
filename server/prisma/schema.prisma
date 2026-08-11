@@ -470,6 +470,10 @@ model Question {
   sourceNote      String?        @map("source_note") @db.VarChar(300) // 来源快照
   createdBy       Int?           @map("created_by") // 出题人用户ID
 
+  // ── 论文题增强（2026-08-11）──
+  minAnswerWords  Int?           @map("min_answer_words") // 作答最低字数要求（ESSAY/SHORT_ANSWER，交卷硬校验）
+  rubric          Json?          // 参考评分标准: [{description, points, type:add|deduct}]
+
   // ── 机构归属（2026-07-02）──
   orgId Int?          @map("org_id")
   org   Organization? @relation(fields: [orgId], references: [id])
@@ -872,6 +876,10 @@ model MaterialQuestion {
   blanks      Json? // [{position, answer}]
   answer      String? @db.Text // 简答/案例参考答案
   explanation String? @db.Text // 解析
+
+  // ── 论文题增强（2026-08-11）──
+  minAnswerWords Int?  @map("min_answer_words") // 作答最低字数（论文题）
+  rubric         Json? // 参考评分标准: [{description, points, type:add|deduct}]
 
   // 建议分组
   suggestedGroup String? @default("EXAM_GROUP") @map("suggested_group") // PRACTICE_GROUP / EXAM_GROUP / COMMON_GROUP

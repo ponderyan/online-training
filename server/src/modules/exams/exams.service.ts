@@ -488,6 +488,9 @@ export class ExamsService {
     }
     // remainingTime<=0 时不拒绝：前端倒计时归零会触发交卷，后端应接受（heartbeat 可能尚未同步）
 
+    // ★ 论文/简答题作答字数硬校验（2026-08-11）：低于题目要求则拒绝交卷
+    await this.validateEssayMinWords(session.exam.paperId, answers || [], session.answers || []);
+
     // ★ 交卷幂等（竞态防护）：用条件更新作原子锁——只有第一个把状态推进到
     // SUBMITTED 的请求能继续，并发重复提交（双开标签页/网络重试/崩溃恢复）
     // 在 updateMany.count===0 时被拒，保证 autoGrade 只执行一次。
@@ -517,6 +520,43 @@ export class ExamsService {
       select: { totalScore: true, subjectiveScore: true, finalScore: true, scoringStatus: true, isPassed: true },
     });
     return { success: true, ...updatedSession };
+  }
+
+  /**
+   * 论文/简答题最低字数校验（2026-08-11）：
+   * 快照优先（定稿冻结的 minAnswerWords），HTML 去标签后统计字符数，
+   * 任一题不达标则整体拒绝交卷并列出题目。
+   */
+  private async validateEssayMinWords(
+    paperId: number | null | undefined,
+    submitted: { paperQuestionId: number; answer: any }[],
+    savedAnswers: any[],
+  ) {
+    if (!paperId) return;
+    const pqs = await this.prisma.paperQuestion.findMany({
+      where: { paperId },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, sortOrder: true, snapshot: true, question: { select: { type: true, content: true, minAnswerWords: true } } },
+    });
+    const submittedMap = new Map(submitted.map(a => [a.paperQuestionId, a.answer]));
+    const violations: string[] = [];
+    let idx = 0;
+    for (const pq of pqs) {
+      idx += 1;
+      const snap: any = pq.snapshot || {};
+      const min = snap.minAnswerWords ?? pq.question?.minAnswerWords;
+      const type = snap.type ?? pq.question?.type;
+      if (!min || min <= 0 || (type !== 'ESSAY' && type !== 'SHORT_ANSWER')) continue;
+      const raw = submittedMap.has(pq.id) ? submittedMap.get(pq.id) : savedAnswers.find((a: any) => a.paperQuestionId === pq.id)?.answer;
+      const text = String(raw ?? '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, '');
+      if (text.length < min) {
+        const title = String(snap.content ?? pq.question?.content ?? '').replace(/<[^>]+>/g, '').trim().slice(0, 20);
+        violations.push(`第${idx}题「${title}${title.length >= 20 ? '…' : ''}」要求不少于${min}字（当前${text.length}字）`);
+      }
+    }
+    if (violations.length > 0) {
+      throw new BadRequestException(`作答字数不足，无法交卷：${violations.join('；')}`);
+    }
   }
 
   /**
@@ -929,6 +969,7 @@ export class ExamsService {
       questions: exam.paper.questions.map((pq: any) => ({
         pqId: pq.id, questionId: pq.question.id, type: pq.question.type,
         content: pq.question.content, score: pq.score,
+        minAnswerWords: pq.snapshot?.minAnswerWords ?? pq.question.minAnswerWords ?? null,
         options: pq.question.options.map((o: any) => ({
           id: o.id, questionId: o.questionId,
           label: o.label, content: o.content, sortOrder: o.sortOrder,

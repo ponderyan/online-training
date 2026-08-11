@@ -23,6 +23,7 @@ interface QuestionData {
   blanks: { id: number; blankIndex: number; answer: string }[];
   subQuestions: { id: number; content: string; score: number | null }[];
   yourAnswer: any;
+  minAnswerWords?: number | null; // 论文题增强：作答最低字数（2026-08-11）
 }
 
 interface Props {
@@ -140,12 +141,24 @@ export default function QuestionContent({ question, currentAnswer, onAnswer, isM
       )}
 
       {(question.type === 'SHORT_ANSWER' || question.type === 'ESSAY') && (
-        <RichAnswerEditor
-          value={currentAnswer || ''}
-          onChange={(html) => onAnswer(question.pqId, html)}
-          maxChars={2000}
-          placeholder="请输入你的答案…"
-        />
+        <div>
+          {question.minAnswerWords ? (() => {
+            const len = String(currentAnswer || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, '').length;
+            const ok = len >= question.minAnswerWords!;
+            return (
+              <div className={`flex items-center gap-1.5 mb-2 text-xs ${ok ? 'text-[var(--jade,#2e7d5b)]' : 'text-[var(--verm)]'}`}>
+                <span>{ok ? '✔' : '⚠'}</span>
+                <span>要求不少于 {question.minAnswerWords} 字，当前 {len} 字（交卷时校验）</span>
+              </div>
+            );
+          })() : null}
+          <RichAnswerEditor
+            value={currentAnswer || ''}
+            onChange={(html) => onAnswer(question.pqId, html)}
+            maxChars={question.type === 'ESSAY' ? 5000 : 2000}
+            placeholder="请输入你的答案…"
+          />
+        </div>
       )}
 
       {question.type === 'CASE_STUDY' && (

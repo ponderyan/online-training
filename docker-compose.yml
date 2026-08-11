@@ -5,6 +5,11 @@ services:
   db:
     image: mysql:8.0
     container_name: foxlearn-db
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-foxlearn_root_2026}
@@ -29,6 +34,11 @@ services:
       context: ./server
       dockerfile: Dockerfile
     container_name: foxlearn-server
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     depends_on:
       db:
@@ -39,6 +49,7 @@ services:
       SITE_URL: ${SITE_URL:-http://localhost}
       NODE_ENV: production
       PORT: 3001
+      TZ: ${TZ:-Asia/Shanghai}
     ports:
       - "3001:3001"
     volumes:
@@ -57,6 +68,11 @@ services:
       args:
         NEXT_PUBLIC_API_BASE: ${SITE_URL:-http://localhost}
     container_name: foxlearn-client
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     depends_on:
       server:
@@ -72,6 +88,11 @@ services:
   nginx:
     image: nginx:alpine
     container_name: foxlearn-nginx
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     depends_on:
       - client

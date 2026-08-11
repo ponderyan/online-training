@@ -211,11 +211,13 @@ export class QuestionsService {
     options?: { label: string; content: string; isCorrect: boolean }[];
     blanks?: { answer: string }[];
     subQuestions?: { content: string; answer?: string; score?: number }[];
+    minAnswerWords?: number | null;
+    rubric?: { description: string; points: number; type: 'add' | 'deduct' }[] | null;
     tagIds?: number[];
     createdBy?: number;
     orgId?: number | null;
   }) {
-    const { options, blanks, subQuestions, tagIds, createdBy, orgId, ...questionData } = data;
+    const { options, blanks, subQuestions, tagIds, createdBy, orgId, minAnswerWords, rubric, ...questionData } = data;
 
     // ── 枚举校验 ──
     if (data.difficulty && !QuestionsService.VALID_DIFFICULTIES.includes(data.difficulty)) {
@@ -224,12 +226,19 @@ export class QuestionsService {
     if (data.type && !QuestionsService.VALID_TYPES.includes(data.type)) {
       throw new BadRequestException(`无效题型：${data.type}（可选：${QuestionsService.VALID_TYPES.join('/')}）`);
     }
+    // ── 论文题增强字段校验（2026-08-11）──
+    if (data.minAnswerWords != null && (!Number.isInteger(data.minAnswerWords) || data.minAnswerWords < 0 || data.minAnswerWords > 20000)) {
+      throw new BadRequestException('无效的作答最低字数：需为 0-20000 的整数');
+    }
+    this.validateRubric(data.rubric);
 
     return this.prisma.question.create({
       data: {
         ...questionData,
         createdBy,
         orgId: orgId ?? null,
+        minAnswerWords: minAnswerWords ?? null,
+        rubric: rubric ? (rubric as any) : undefined,
         difficulty: data.difficulty as any,
         options: options ? { create: options.map((o, i) => ({ ...o, sortOrder: i })) } : undefined,
         blanks: blanks ? { create: blanks.map((b, i) => ({ ...b, blankIndex: i, sortOrder: i })) } : undefined,
@@ -248,6 +257,8 @@ export class QuestionsService {
     options?: { label: string; content: string; isCorrect: boolean }[];
     blanks?: { answer: string }[];
     subQuestions?: { content: string; answer?: string; score?: number }[];
+    minAnswerWords?: number | null;
+    rubric?: { description: string; points: number; type: 'add' | 'deduct' }[] | null;
     tagIds?: number[];
   }, userOrgId?: number | null, userRoles?: string[]) {
     const q = await this.findOne(id, userOrgId, userRoles);
@@ -265,11 +276,20 @@ export class QuestionsService {
     if (data.type && !QuestionsService.VALID_TYPES.includes(data.type)) {
       throw new BadRequestException(`无效题型：${data.type}（可选：${QuestionsService.VALID_TYPES.join('/')}）`);
     }
+    // ── 论文题增强字段校验（2026-08-11）──
+    if (data.minAnswerWords != null && (!Number.isInteger(data.minAnswerWords) || data.minAnswerWords < 0 || data.minAnswerWords > 20000)) {
+      throw new BadRequestException('无效的作答最低字数：需为 0-20000 的整数');
+    }
+    this.validateRubric(data.rubric);
 
-    const { options, blanks, subQuestions, tagIds, ...scalarData } = data;
+    const { options, blanks, subQuestions, tagIds, minAnswerWords, rubric, ...scalarData } = data;
 
     // 构建更新 payload
     const updateData: any = { ...scalarData };
+
+    // 论文题增强字段：rubric 为 null 时用 DbNull 清空（2026-08-11）
+    if (minAnswerWords !== undefined) updateData.minAnswerWords = minAnswerWords;
+    if (rubric !== undefined) updateData.rubric = rubric === null ? Prisma.DbNull : rubric;
 
     // 选项：先删后建
     if (options !== undefined) {
@@ -313,6 +333,21 @@ export class QuestionsService {
         tags: { include: { tag: true } },
       },
     });
+  }
+
+  /** 评分标准结构校验（论文题增强，2026-08-11） */
+  private validateRubric(rubric: any) {
+    if (rubric == null) return;
+    if (!Array.isArray(rubric) || rubric.length > 20) {
+      throw new BadRequestException('评分标准(rubric)必须为数组且不超过20条');
+    }
+    for (const item of rubric) {
+      if (!item || typeof item.description !== 'string' || !item.description.trim()
+        || !Number.isFinite(item.points) || item.points <= 0 || item.points > 100
+        || (item.type !== 'add' && item.type !== 'deduct')) {
+        throw new BadRequestException('评分标准项格式错误：需 {description, points(1-100), type:add|deduct}');
+      }
+    }
   }
 
   async remove(id: number, userOrgId?: number | null, userRoles?: string[]) {

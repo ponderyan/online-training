@@ -570,7 +570,11 @@ export class PapersService {
             options: pq.question.options,
             blanks: pq.question.blanks,
             subQuestions: pq.question.subQuestions,
+            minAnswerWords: pq.question.minAnswerWords ?? null,
+            rubric: pq.question.rubric ?? null,
           },
+          // 试卷题级 rubric 为空时继承题库参考评分标准（2026-08-11）
+          ...(pq.rubric ? {} : (pq.question.rubric ? { rubric: pq.question.rubric as any } : {})),
         },
       });
     }
@@ -615,7 +619,11 @@ export class PapersService {
     for (const pq of paperQuestions) {
       await this.prisma.paperQuestion.update({
         where: { id: pq.id },
-        data: { snapshot: { content: pq.question.content, analysis: pq.question.analysis, type: pq.question.type, options: pq.question.options, blanks: pq.question.blanks, subQuestions: pq.question.subQuestions } },
+        data: {
+          snapshot: { content: pq.question.content, analysis: pq.question.analysis, type: pq.question.type, options: pq.question.options, blanks: pq.question.blanks, subQuestions: pq.question.subQuestions, minAnswerWords: pq.question.minAnswerWords ?? null, rubric: pq.question.rubric ?? null },
+          // 试卷题级 rubric 为空时继承题库参考评分标准（2026-08-11）
+          ...(pq.rubric ? {} : (pq.question.rubric ? { rubric: pq.question.rubric as any } : {})),
+        },
       });
     }
 
