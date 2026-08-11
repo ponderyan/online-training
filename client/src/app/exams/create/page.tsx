@@ -270,6 +270,12 @@ export default function CreateExam() {
                   </div>
                 </div>
                 {!endTime && startTime && <p className="text-[var(--ink-300)] text-[10px] mt-1">结束时间留空时默认为开考后 7 天窗口</p>}
+                {/* ★ 时间语义提示（2026-08-12）：开考时间/结束时间/答题时长三者关系 */}
+                <p data-testid="time-mode-hint" className="text-[var(--ink-400)] text-[10px] mt-1 leading-relaxed">
+                  {timeMode === 'FIXED'
+                    ? `🔒 统一开考：开考时间即全员开考时刻，每人计时 ${durationMinutes} 分钟；迟到考生时间自动裁剪（不补时），结束时间强制收卷。建议窗口与答题时长一致。`
+                    : `🚪 随到随考：考生在窗口内任意时间进入，各自从进入起计时 ${durationMinutes} 分钟；结束时间为硬截止，届时未完成强制收卷。`}
+                </p>
                 {windowHint && (
                   <div data-testid="exam-window-hint" className={`text-xs mt-2 px-3 py-2 rounded-lg border ${windowHint.level === 'error' ? 'text-red-600 bg-red-50 border-red-200' : 'text-amber-600 bg-amber-50 border-amber-200'}`}>
                     {windowHint.text}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
@@ -16,14 +16,16 @@ const STATUS_FILTERS = [
   { key: 'ABSENT', label: '🚫 缺考' },
 ];
 
+const fmtWin = (d: string | Date) => new Date(d).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
 export default function ProctoringDetail() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.examId as string);
   const toast = useToast();
   const [user, setUser] = useState<any>(null);
-  const [overview, setOverview] = useState<any>(null);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [board, setBoard] = useState<any>(null);
+  const [clock, setClock] = useState(new Date());
   const [filter, setFilter] = useState('');
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(true);
@@ -45,35 +47,60 @@ export default function ProctoringDetail() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
-  const loadOverview = useCallback(async () => {
-    try { setOverview(await api.exams.proctoring.overview(examId)); } catch {}
-  }, [examId]);
-
-  const loadSessions = useCallback(async () => {
+  // ★ 单一数据源（2026-08-12）：board 接口一次返回考试全字段 + stats + sessions，替代 overview+sessions 两次请求
+  const loadData = useCallback(async () => {
     try {
-      const params: Record<string, string> = { pageSize: '200' };
-      if (filter) params.status = filter;
-      const data = await api.exams.proctoring.sessions(examId, params);
-      const filtered = keyword
-        ? data.items.filter(s => s.studentName.includes(keyword) || s.organization.includes(keyword))
-        : data.items;
-      setSessions(filtered);
+      setBoard(await api.exams.proctoring.board(examId));
       setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
     } catch {}
-  }, [examId, filter, keyword]);
+  }, [examId]);
 
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setUser(JSON.parse(u));
-    loadOverview();
-    loadSessions();
+    loadData();
     setLoading(false);
-    intervalRef.current = setInterval(() => {
-      loadOverview();
-      loadSessions();
-    }, 15000);
+    intervalRef.current = setInterval(loadData, 15000);
     return () => clearInterval(intervalRef.current);
-  }, [loadOverview, loadSessions]);
+  }, [loadData]);
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const examInfo = board?.exam;
+  const overview = board?.stats;
+
+  // 客户端筛选（board 一次返回全员）
+  const sessions = useMemo(() => {
+    let items: any[] = board?.sessions || [];
+    if (filter === 'ONLINE') items = items.filter(s => s.online && !s.absent && s.status !== 'SUBMITTED');
+    else if (filter === 'OFFLINE') items = items.filter(s => !s.online && !s.absent && s.status !== 'SUBMITTED');
+    else if (filter === 'ABNORMAL') items = items.filter(s => s.suspicionLevel > 0);
+    else if (filter === 'SUBMITTED') items = items.filter(s => s.status === 'SUBMITTED');
+    else if (filter === 'ABSENT') items = items.filter(s => s.absent);
+    if (keyword) items = items.filter(s => (s.studentName || '').includes(keyword) || (s.organization || '').includes(keyword));
+    return items;
+  }, [board, filter, keyword]);
+
+  // 考试窗口倒计时（与考生个人答题倒计时是两个概念）
+  const windowLine = (() => {
+    if (!examInfo) return '';
+    const nowMs = clock.getTime();
+    const startMs = new Date(examInfo.startTime).getTime();
+    const endMs = new Date(examInfo.endTime).getTime();
+    if (nowMs < startMs) {
+      const mins = Math.ceil((startMs - nowMs) / 60000);
+      return `⏳ 距开考 ${mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} 分钟`}`;
+    }
+    if (nowMs <= endMs) {
+      const left = endMs - nowMs;
+      const endClock = new Date(endMs).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      return `🟢 进行中 · 窗口剩余 ${Math.floor(left / 3600000)}h ${Math.floor((left % 3600000) / 60000)}m · ${endClock} 强制收卷`;
+    }
+    return '⏹ 考试窗口已结束';
+  })();
 
   const openDetail = async (sessionId: number) => {
     setDetailLoading(true);
@@ -112,7 +139,7 @@ export default function ProctoringDetail() {
         operatorName: user?.displayName || '管理员',
       });
       setForceSubmitModal(null); setForceSubmitReason(''); setConfirmText('');
-      loadSessions(); loadOverview();
+      loadData();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -143,7 +170,7 @@ export default function ProctoringDetail() {
       });
       toast.success('已标记缺考');
       openDetail(selectedSession.sessionId);
-      loadSessions(); loadOverview();
+      loadData();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -159,7 +186,7 @@ export default function ProctoringDetail() {
       });
       toast.success('已撤销缺考标记');
       openDetail(selectedSession.sessionId);
-      loadSessions(); loadOverview();
+      loadData();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -178,7 +205,7 @@ export default function ProctoringDetail() {
       <button onClick={() => router.push('/proctoring')} className="text-xs bg-transparent border-none cursor-pointer mb-4 text-[var(--fox)]" >← 返回监考列表</button>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="page-title">监考面板</h1>
+        <h1 className="page-title">📋 {examInfo?.title || '监考面板'}</h1>
         <div className="flex items-center gap-3">
           <button onClick={() => router.push(`/proctoring/${examId}/board`)}
             className="btn btn-fox btn-sm" title="座舱模式：全屏大屏监考">
@@ -187,6 +214,20 @@ export default function ProctoringDetail() {
           <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
         </div>
       </div>
+
+      {/* ★ 考试信息条（2026-08-12）：试卷/时长/窗口/时间模式一目了然 */}
+      {examInfo && (
+        <div className="card px-4 py-3 mb-4 flex items-center gap-x-4 gap-y-1 flex-wrap text-xs text-[var(--ink-400)]">
+          <span>📄 {examInfo.paperName} · {examInfo.questionCount} 题 / {examInfo.paperTotalScore} 分</span>
+          <span data-testid="panel-duration">⏱ 答题时长 {examInfo.durationMinutes} 分钟</span>
+          <span data-testid="panel-window">📅 {fmtWin(examInfo.startTime)} ~ {fmtWin(examInfo.endTime)}（结束时间为硬截止）</span>
+          <span className="px-1.5 py-0.5 rounded font-medium" style={{ background: 'var(--fox-pale)', color: 'var(--fox)' }}>
+            {examInfo.timeMode === 'FIXED' ? '🔒 统一开考' : '🚪 随到随考'}
+          </span>
+          <span>🔄 切屏上限 {examInfo.tabSwitchLimit > 0 ? `${examInfo.tabSwitchLimit} 次` : '未限制'}</span>
+          <span className="ml-auto font-medium text-[var(--ink-600)]" data-testid="panel-window-line">{windowLine}</span>
+        </div>
+      )}
 
       {/* Overview cards */}
       <div className="grid grid-cols-6 gap-3 mb-5">

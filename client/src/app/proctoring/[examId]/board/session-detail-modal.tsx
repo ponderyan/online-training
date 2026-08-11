@@ -11,6 +11,13 @@ import { api } from '@/lib/api';
 const fmtTime = (d: string | Date | null) => d ? new Date(d).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 const fmtClock = (secs: number) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
 
+// ★ 警告预设话术（2026-08-12）：切屏提醒 / 摄像头提醒 / 催促交卷
+const WARN_PRESETS = [
+  '系统检测到切屏行为，请遵守考试纪律。',
+  '请保持摄像头开启并正对屏幕，勿离开画面。',
+  '考试时间即将结束，请抓紧作答并提交。',
+];
+
 const ACTION_LABELS: Record<string, string> = {
   WARN: '⚠️ 警告', FORCE_SUBMIT: '🔒 强制交卷', MARK_ABSENT: '🚫 标记缺考', REVOKE_ABSENT: '↩️ 撤销缺考',
   EXTEND_TIME: '⏱ 延长时间', AUTO_REMINDER: '⏰ 系统提醒', tab_switch: '🔄 切屏',
@@ -21,9 +28,10 @@ interface Props {
   sessionId: number;
   onClose: () => void;
   onChanged: () => void; // 操作成功后刷新大屏
+  onToast?: (msg: string) => void; // 操作反馈 toast（由大屏页提供）
 }
 
-export default function SessionDetailModal({ examId, sessionId, onClose, onChanged }: Props) {
+export default function SessionDetailModal({ examId, sessionId, onClose, onChanged, onToast }: Props) {
   const [detail, setDetail] = useState<any>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
@@ -46,9 +54,9 @@ export default function SessionDetailModal({ examId, sessionId, onClose, onChang
 
   useEffect(() => { load(); }, [load]);
 
-  const runAction = async (key: string, fn: () => Promise<any>) => {
+  const runAction = async (key: string, fn: () => Promise<any>, okMsg = '✅ 操作成功') => {
     setBusy(key);
-    try { await fn(); onChanged(); await load(); }
+    try { await fn(); onToast?.(okMsg); onChanged(); await load(); }
     catch (e: any) { alert(e.message || '操作失败'); }
     finally { setBusy(''); }
   };
@@ -97,12 +105,21 @@ export default function SessionDetailModal({ examId, sessionId, onClose, onChang
             {/* 快捷操作 */}
             <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 10, padding: 12, marginBottom: 14 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#38bdf8' }}>⚡ 快捷操作</div>
+              {/* 警告预设话术 */}
+              <div data-testid="warn-presets" style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                {WARN_PRESETS.map(p => (
+                  <button key={p} onClick={() => setWarnMsg(p)}
+                    style={{ background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24', borderRadius: 999, padding: '3px 10px', fontSize: 10, cursor: 'pointer' }}>
+                    {p}
+                  </button>
+                ))}
+              </div>
               {/* 警告 */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
                 <input value={warnMsg} onChange={e => setWarnMsg(e.target.value)} placeholder="警告内容，将实时推送给考生…"
                   style={{ flex: 1, background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 6, color: '#e2e8f0', padding: '6px 10px', fontSize: 12 }} />
                 <button disabled={!canWarn || !warnMsg.trim() || busy === 'warn'} data-testid="btn-warn"
-                  onClick={() => runAction('warn', () => api.exams.proctoring.warn(examId, sessionId, { message: warnMsg.trim(), operatorName }))}
+                  onClick={() => runAction('warn', () => api.exams.proctoring.warn(examId, sessionId, { message: warnMsg.trim(), operatorName }), '⚠️ 警告已发送，将实时展示在考生端')}
                   style={{ ...btn('#fbbf24'), opacity: canWarn && warnMsg.trim() ? 1 : 0.45 }}>
                   {busy === 'warn' ? '发送中…' : '⚠️ 警告'}
                 </button>
@@ -112,7 +129,7 @@ export default function SessionDetailModal({ examId, sessionId, onClose, onChang
                 <input value={forceReason} onChange={e => setForceReason(e.target.value)} placeholder="强制交卷原因（记入审计）…"
                   style={{ flex: 1, background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 6, color: '#e2e8f0', padding: '6px 10px', fontSize: 12 }} />
                 <button disabled={!canForce || !forceReason.trim() || busy === 'force'} data-testid="btn-force-submit"
-                  onClick={() => { if (confirm(`确认强制收卷「${detail.studentName}」？此操作不可撤销。`)) runAction('force', () => api.exams.proctoring.forceSubmit(examId, sessionId, { reason: forceReason.trim(), operatorName })); }}
+                  onClick={() => { if (confirm(`确认强制收卷「${detail.studentName}」？此操作不可撤销。`)) runAction('force', () => api.exams.proctoring.forceSubmit(examId, sessionId, { reason: forceReason.trim(), operatorName }), '🔒 已强制收卷'); }}
                   style={{ ...btn('#f87171'), opacity: canForce && forceReason.trim() ? 1 : 0.45 }}>
                   {busy === 'force' ? '收卷中…' : '🔒 强制交卷'}
                 </button>
@@ -126,7 +143,7 @@ export default function SessionDetailModal({ examId, sessionId, onClose, onChang
                   <option value={1}>+1分钟</option><option value={3}>+3分钟</option><option value={5}>+5分钟</option><option value={10}>+10分钟</option>
                 </select>
                 <button disabled={!canExtend || !extendReason.trim() || busy === 'extend'} data-testid="btn-extend"
-                  onClick={() => runAction('extend', () => api.exams.proctoring.extendTime(examId, sessionId, { extraSeconds: extendMin * 60, reason: extendReason.trim(), operatorName }))}
+                  onClick={() => runAction('extend', () => api.exams.proctoring.extendTime(examId, sessionId, { extraSeconds: extendMin * 60, reason: extendReason.trim(), operatorName }), `⏱ 已延长 ${extendMin} 分钟`)}
                   style={{ ...btn('#38bdf8'), opacity: canExtend && extendReason.trim() ? 1 : 0.45 }}>
                   {busy === 'extend' ? '延时中…' : '⏱ 延时'}
                 </button>
@@ -135,12 +152,12 @@ export default function SessionDetailModal({ examId, sessionId, onClose, onChang
               <div>
                 {canAbsent && (
                   <button disabled={busy === 'absent'} data-testid="btn-absent"
-                    onClick={() => { if (confirm(`确认将「${detail.studentName}」标记为缺考？`)) runAction('absent', () => api.exams.proctoring.toggleAbsent(examId, sessionId, { absent: true, operatorName })); }}
+                    onClick={() => { if (confirm(`确认将「${detail.studentName}」标记为缺考？`)) runAction('absent', () => api.exams.proctoring.toggleAbsent(examId, sessionId, { absent: true, operatorName }), '🚫 已标记缺考'); }}
                     style={btn('#fb923c')}>🚫 标记缺考</button>
                 )}
                 {canRevokeAbsent && (
                   <button disabled={busy === 'absent'} data-testid="btn-revoke-absent"
-                    onClick={() => { if (confirm(`确认撤销「${detail.studentName}」的缺考标记？学员可重新进入考试。`)) runAction('absent', () => api.exams.proctoring.toggleAbsent(examId, sessionId, { absent: false, operatorName })); }}
+                    onClick={() => { if (confirm(`确认撤销「${detail.studentName}」的缺考标记？学员可重新进入考试。`)) runAction('absent', () => api.exams.proctoring.toggleAbsent(examId, sessionId, { absent: false, operatorName }), '↩️ 已撤销缺考'); }}
                     style={btn('#34d399')}>↩️ 撤销缺考</button>
                 )}
                 {!canAbsent && !canRevokeAbsent && <span style={{ fontSize: 11, color: '#64748b' }}>当前状态不支持缺考操作</span>}

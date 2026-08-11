@@ -117,6 +117,7 @@ export class ProctoringService {
         title: exam.title,
         status: exam.status,
         examMode: exam.examMode,
+        timeMode: exam.timeMode,
         accessType: exam.accessType,
         startTime: exam.startTime,
         endTime: exam.endTime,

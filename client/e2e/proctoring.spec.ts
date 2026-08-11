@@ -91,6 +91,11 @@ test.describe('监考中心', () => {
     await page.waitForTimeout(2000);
     await expectNoPageError(page);
 
+    // ★ 考试信息头（2026-08-12）：真实考试名 + 答题时长 + 窗口 + 倒计时语义
+    await expect(page.getByText(`监考E2E考试-${stamp}`).first()).toBeVisible();
+    await expect(page.getByTestId('panel-duration')).toContainText('答题时长 60 分钟');
+    await expect(page.getByTestId('panel-window')).toContainText('硬截止');
+    await expect(page.getByTestId('panel-window-line')).toContainText(/进行中|距开考|已结束/);
     // 概览卡片含缺考项（含筛选 tab，取首个）
     await expect(page.getByText('🚫 缺考').first()).toBeVisible();
     // 大屏入口按钮
@@ -110,6 +115,11 @@ test.describe('监考中心', () => {
     await expect(page.getByText(/交卷进度/)).toBeVisible();
     // 统计条关键项
     await expect(page.getByText('总考生').first()).toBeVisible();
+    // ★ 时间语义澄清（2026-08-12）：答题时长与窗口拆分显示 + 强制收卷时刻
+    await expect(page.getByText(/答题时长 60 分钟/)).toBeVisible();
+    await expect(page.getByTestId('board-timeline')).toContainText(/窗口剩余.*强制收卷|距开考|已截止/);
+    // ★ 第 8 格：切屏违规（与"异常"区分）
+    await expect(page.getByText('🔄 切屏违规')).toBeVisible();
     // 违规动态面板
     await expect(page.getByText('⚠️ 违规动态')).toBeVisible();
     // 退出/全屏按钮
@@ -134,8 +144,9 @@ test.describe('监考中心', () => {
     }
     await card.click();
     await expect(page.getByTestId('session-detail-modal')).toBeVisible();
-    // 快捷操作按钮齐备
+    // 快捷操作按钮齐备 + 警告预设话术（2026-08-12）
     await expect(page.getByTestId('btn-warn')).toBeVisible();
+    await expect(page.getByTestId('warn-presets')).toBeVisible();
     await expect(page.getByTestId('btn-force-submit')).toBeVisible();
     // 监考留痕区存在
     await expect(page.getByText('📋 监考操作留痕')).toBeVisible();
