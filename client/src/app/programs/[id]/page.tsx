@@ -4,32 +4,22 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
-import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { api } from '@/lib/api';
+import { STATUS_NAMES, STATUS_COLORS, NEXT_STATUS } from './program-constants';
 import HoursTab from './hours-tab';
 import DashboardTab from './dashboard-tab';
+import StudentsTab from './students-tab';
+import ScheduleTab from './schedule-tab';
+import EvaluationsTab from './evaluations-tab';
+import StatusTab from './status-tab';
+import AttendanceTab from './attendance-tab';
+import EvidencesTab from './evidences-tab';
+import FilingTab from './filing-tab';
 
-const STATUS_NAMES: Record<string, string> = {
-  PREPARING: '筹备中', ENROLLING: '报名中', IN_PROGRESS: '进行中',
-  REVIEWING: '待审核', CERTIFYING: '发证中', COMPLETED: '已结业', CANCELLED: '已取消',
-};
-const STATUS_COLORS: Record<string, string> = {
-  PREPARING: 'var(--ink-300)', ENROLLING: 'var(--info)', IN_PROGRESS: 'var(--fox)',
-  REVIEWING: 'var(--fox)', CERTIFYING: 'var(--purple)', COMPLETED: 'var(--sage)', CANCELLED: 'var(--neutral-300)',
-};
-const NEXT_STATUS: Record<string, { label: string; target: string; confirm?: string }[]> = {
-  PREPARING: [{ label: '开放报名', target: 'ENROLLING', confirm: '确认开放报名？报名开始后学员可自主报名。' }],
-  ENROLLING: [{ label: '开始培训', target: 'IN_PROGRESS', confirm: '确认开始培训？开课后将锁定学员名单。' }],
-  IN_PROGRESS: [{ label: '提交审核', target: 'REVIEWING', confirm: '确认提交审核？提交后等待协会审核。' }],
-  REVIEWING: [
-    { label: '批准发证', target: 'CERTIFYING', confirm: '确认批准发证？将触发证书批量生成。' },
-    { label: '退回筹备', target: 'PREPARING', confirm: '退回到筹备阶段？退回后可修改信息重新提交。' },
-  ],
-  CERTIFYING: [{ label: '完成结业', target: 'COMPLETED', confirm: '确认完成结业？此操作不可逆。' }],
-};
-
-const LEVEL_NAMES: Record<string, string> = {
-  JUNIOR: '初级', MIDDLE: '中级', SENIOR: '高级', EXPERT: '专家',
+const TAB_LABELS: Record<string, string> = {
+  students: '👥 学员名单', exams: '📋 考试', dashboard: '📊 数据看板', schedule: '📅 课表',
+  evaluations: '⭐ 评价', status: '🔄 状态流转', attendance: '✅ 出勤', evidences: '📎 证据',
+  filing: '🏢 备案', hours: '⏱ 学时',
 };
 
 export default function ProgramDetailPage() {
@@ -40,62 +30,10 @@ export default function ProgramDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('students');
 
-  // Status modal
+  // Status modal（页头状态流转按钮触发）
   const [statusModal, setStatusModal] = useState<{ target: string; label: string; confirm?: string } | null>(null);
   const [statusReason, setStatusReason] = useState('');
   const [statusChanging, setStatusChanging] = useState(false);
-
-  // Status logs
-  const [statusLogs, setStatusLogs] = useState<any[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
-
-  // Phase 1c: 出勤
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
-  const [editAttendance, setEditAttendance] = useState<Record<number, string>>({});
-  const [attendanceReason, setAttendanceReason] = useState('');
-  const [attendanceSaving, setAttendanceSaving] = useState<number | null>(null);
-
-  // Phase 1c: 证据
-  const [evidences, setEvidences] = useState<any[]>([]);
-  const [evidencesLoading, setEvidencesLoading] = useState(false);
-  const [uploadModal, setUploadModal] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadType, setUploadType] = useState('ATTENDANCE_SHEET');
-  const [uploadNotes, setUploadNotes] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [signinGenerating, setSigninGenerating] = useState(false);
-  const [deleteEvidenceTarget, setDeleteEvidenceTarget] = useState<number | null>(null);
-  const [deleteScheduleTarget, setDeleteScheduleTarget] = useState<number | null>(null);
-
-  // 删除证据文件（带原因）
-  const handleEvidenceDeleteWithReason = async (reason: string) => {
-    if (deleteEvidenceTarget === null) return;
-    try {
-      await api.trainingPrograms.deleteEvidence(Number(params.id), deleteEvidenceTarget);
-      toast.success('证据文件已删除');
-      setDeleteEvidenceTarget(null);
-      loadEvidences();
-    } catch (e: any) { toast.error('删除失败：' + e.message); }
-  };
-
-  // 删除排课（带原因）
-  const handleScheduleDeleteWithReason = async (reason: string) => {
-    if (deleteScheduleTarget === null) return;
-    try {
-      await api.schedules.delete(deleteScheduleTarget);
-      toast.success('排课已删除');
-      setDeleteScheduleTarget(null);
-      loadSchedules();
-    } catch (e: any) { toast.error('删除失败：' + e.message); }
-  };
-
-  // Phase 1c: 备案
-  const [filing, setFiling] = useState<any>(null);
-  const [filingLoading, setFilingLoading] = useState(false);
-  const [filingModal, setFilingModal] = useState(false);
-  const [filingForm, setFilingForm] = useState({ agencyName: '', agencyContact: '', agencyPhone: '' });
-  const [filingSubmitting, setFilingSubmitting] = useState(false);
 
   const openStatusModal = (action: { target: string; label: string; confirm?: string }) => {
     setStatusModal(action);
@@ -113,26 +51,6 @@ export default function ProgramDetailPage() {
     setStatusChanging(false);
   };
 
-  const loadStatusLogs = async () => {
-    setLogsLoading(true);
-    try { setStatusLogs(await api.trainingPrograms.getStatusLogs(Number(params.id)) || []); } catch {}
-    setLogsLoading(false);
-  };
-
-  // Schedule modal state
-  const [schedules, setSchedules] = useState<any[]>([]);
-  // Evaluations state
-  const [evals, setEvals] = useState<any[]>([]);
-  const [evalStats, setEvalStats] = useState<any>(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<any>(null);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [instructors, setInstructors] = useState<any[]>([]);
-  const [scheduleForm, setScheduleForm] = useState<any>({
-    courseId: '', instructorId: '', startTime: '', endTime: '', location: '', remark: '',
-  });
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-
   const load = async () => {
     try {
       const p = await api.trainingPrograms.get(Number(params.id));
@@ -141,132 +59,6 @@ export default function ProgramDetailPage() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
-
-  // Phase 1c: 出勤
-  const loadAttendance = async () => {
-    setAttendanceLoading(true);
-    try {
-      const data = await api.trainingPrograms.getAttendance(Number(params.id));
-      setAttendanceRecords(data || []);
-      const edits: Record<number, string> = {};
-      (data || []).forEach((r: any) => { edits[r.id] = r.actualDays?.toString() || '0'; });
-      setEditAttendance(edits);
-    } catch {}
-    setAttendanceLoading(false);
-  };
-
-  // Phase 1c: 证据
-  const loadEvidences = async () => {
-    setEvidencesLoading(true);
-    try { setEvidences(await api.trainingPrograms.getEvidences(Number(params.id)) || []); } catch {}
-    setEvidencesLoading(false);
-  };
-
-  // Phase 1c: 备案
-  const loadFiling = async () => {
-    setFilingLoading(true);
-    try {
-      const all = await api.filing.list({ pageSize: 100 });
-      const progFiling = (all.items || []).find((f: any) => f.programId === Number(params.id) || f.program?.id === Number(params.id));
-      setFiling(progFiling || null);
-    } catch {}
-    setFilingLoading(false);
-  };
-
-  const loadSchedules = async () => {
-    try {
-      const data = await api.schedules.getByProgram(Number(params.id));
-      setSchedules(data || []);
-    } catch {}
-  };
-
-  // Load schedules when tab changes
-  useEffect(() => {
-    if (activeTab === 'schedule') loadSchedules();
-    if (activeTab === 'evaluations') loadEvaluations();
-    if (activeTab === 'status') loadStatusLogs();
-    if (activeTab === 'attendance') loadAttendance();
-    if (activeTab === 'evidences') loadEvidences();
-    if (activeTab === 'filing') loadFiling();
-  }, [activeTab]);
-
-  const loadEvaluations = async () => {
-    try {
-      const [ev, st] = await Promise.all([
-        api.evaluations.byProgram(Number(params.id)).catch(() => []),
-        api.evaluations.programStats(Number(params.id)).catch(() => null),
-      ]);
-      setEvals(ev as any[] || []);
-      setEvalStats(st);
-    } catch {}
-  };
-
-  // Schedule handlers
-  const openNewSchedule = async () => {
-    try {
-      const [c, i] = await Promise.all([
-        api.courses.list({ pageSize: '200' }),
-        api.instructors.list({ pageSize: '200' }),
-      ]);
-      setCourses(c.items || []);
-      setInstructors(i.items?.filter((x: any) => x.status === 'ACTIVE') || []);
-    } catch {}
-    setEditingSchedule(null);
-    setScheduleForm({
-      courseId: '', instructorId: '', startTime: '', endTime: '',
-      location: program?.location || '', remark: '',
-    });
-    setShowScheduleModal(true);
-  };
-
-  const openEditSchedule = async (s: any) => {
-    try {
-      const [c, i] = await Promise.all([
-        api.courses.list({ pageSize: '200' }),
-        api.instructors.list({ pageSize: '200' }),
-      ]);
-      setCourses(c.items || []);
-      setInstructors(i.items?.filter((x: any) => x.status === 'ACTIVE') || []);
-    } catch {}
-    setEditingSchedule(s);
-    setScheduleForm({
-      courseId: s.courseId?.toString() || '',
-      instructorId: s.instructorId?.toString() || '',
-      startTime: s.startTime?.slice(0, 16) || '',
-      endTime: s.endTime?.slice(0, 16) || '',
-      location: s.location || program?.location || '',
-      remark: s.remark || '',
-    });
-    setShowScheduleModal(true);
-  };
-
-  const handleScheduleSave = async () => {
-    if (!scheduleForm.courseId || !scheduleForm.startTime || !scheduleForm.endTime) {
-      toast.warning('请填写课程、开始时间和结束时间'); return;
-    }
-    setScheduleLoading(true);
-    try {
-      const data = {
-        programId: Number(params.id),
-        courseId: parseInt(scheduleForm.courseId),
-        instructorId: scheduleForm.instructorId ? parseInt(scheduleForm.instructorId) : null,
-        startTime: scheduleForm.startTime,
-        endTime: scheduleForm.endTime,
-        location: scheduleForm.location || null,
-        remark: scheduleForm.remark || null,
-      };
-      if (editingSchedule) {
-        await api.schedules.update(editingSchedule.id, data);
-      } else {
-        await api.schedules.create(data);
-      }
-      setShowScheduleModal(false);
-      loadSchedules();
-    } catch (e: any) { toast.error('操作失败：' + e.message); }
-    setScheduleLoading(false);
-  };
-
-  // handleScheduleDelete 已由 ReasonConfirmModal + handleScheduleDeleteWithReason 替代
 
   if (loading) return <AppLayout><div className="text-[var(--ink-300)] text-center py-16">小狐狸正在加载… 🦊</div></AppLayout>;
   if (!program) return null;
@@ -313,64 +105,16 @@ export default function ProgramDetailPage() {
       </div>
 
       <div className="flex gap-1 mb-5 p-0.5 rounded-lg bg-[var(--paper-dark)]" style={{  width: 'fit-content' }}>
-        {['students', 'exams', 'dashboard', 'schedule', 'evaluations', 'status', 'attendance', 'evidences', 'filing', 'hours'].map(tab => (
+        {Object.keys(TAB_LABELS).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer"
             style={{ background: activeTab === tab ? 'var(--paper)' : 'transparent', color: activeTab === tab ? 'var(--fox)' : 'var(--ink-400)', boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
-            {tab === 'students' ? '👥 学员名单' : tab === 'exams' ? '📋 考试' : tab === 'dashboard' ? '📊 数据看板' : tab === 'schedule' ? '📅 课表' : tab === 'evaluations' ? '⭐ 评价' : tab === 'status' ? '🔄 状态流转' : tab === 'attendance' ? '✅ 出勤' : tab === 'evidences' ? '📎 证据' : tab === 'filing' ? '🏢 备案' : '⏱ 学时'}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
-      {activeTab === 'students' && (
-        <div className="card p-0 overflow-hidden">
-          {(!program.enrollments || program.enrollments.length === 0) ? (
-            <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无学员报名</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <div className="overflow-x-auto">
-              <table className="list-table">
-                <thead><tr>
-                  <th>序号</th>
-                  <th>姓名</th>
-                  <th>手机号</th>
-                  <th>推荐单位</th>
-                  <th>报名来源</th>
-                  <th>报名时间</th>
-                  <th>缴费金额</th>
-                  <th>缴费时间</th>
-                  <th>报名状态</th>
-                </tr></thead>
-                <tbody>{program.enrollments.map((e: any, i: number) => {
-                  const feeStatusNames: Record<string, string> = { UNPAID: '未缴费', PAID: '已缴费', REFUNDED: '已退款', PARTIAL: '部分缴费' };
-                  const enrollStatusNames: Record<string, string> = { ENROLLED: '已报名', COMPLETED: '已完成', CANCELLED: '已取消', DROPPED: '已退学' };
-                  return (
-                    <tr key={e.id}>
-                      <td className="text-[var(--ink-300)] text-xs font-mono">{i + 1}</td>
-                      <td className="font-medium">{e.student?.displayName || '—'}</td>
-                      <td>{e.student?.phone || '—'}</td>
-                      <td className="text-[var(--ink-400)] text-xs">{e.student?.organization || e.agency?.name || '—'}</td>
-                      <td className="text-xs">{e.enrollSource || '系统录入'}</td>
-                      <td className="text-[var(--ink-300)] text-xs">{e.createdAt ? new Date(e.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
-                      <td>{e.feeAmount ? `¥${e.feeAmount.toLocaleString()}` : '—'}</td>
-                      <td className="text-[var(--ink-300)] text-xs">{e.paidAt ? new Date(e.paidAt).toLocaleDateString('zh-CN') : '—'}</td>
-                      <td>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded" style={{
-                          background: e.feeStatus === 'PAID' ? 'var(--cyan-glow)' : e.feeStatus === 'REFUNDED' ? 'var(--verm-glow)' : 'var(--fox-glow)',
-                          color: e.feeStatus === 'PAID' ? 'var(--info)' : e.feeStatus === 'REFUNDED' ? 'var(--error)' : 'var(--ink-300)',
-                        }}>
-                          {feeStatusNames[e.feeStatus] || e.feeStatus}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}</tbody>
-              </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {activeTab === 'students' && <StudentsTab enrollments={program.enrollments || []} />}
 
       {activeTab === 'exams' && (
         <div className="text-[var(--ink-300)] card p-10 text-center text-xs">
@@ -378,471 +122,21 @@ export default function ProgramDetailPage() {
         </div>
       )}
 
-      {activeTab === 'dashboard' && (
-        <DashboardTab programId={params.id as string} />
-      )}
+      {activeTab === 'dashboard' && <DashboardTab programId={params.id as string} />}
 
-      {activeTab === 'schedule' && (
-        <div>
-          <div className="flex justify-end mb-3">
-            <button onClick={openNewSchedule} className="btn btn-fox btn-sm">➕ 添加排课</button>
-          </div>
-          <div className="card p-0 overflow-hidden">
-            {schedules.length === 0 ? (
-              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无排课记录</div>
-            ) : (
-              <div className="overflow-x-auto">
-              <table className="list-table">
-                <thead>
-                  <tr>
-                    <th>开始时间</th>
-                    <th>结束时间</th>
-                    <th>课程</th>
-                    <th>讲师</th>
-                    <th>地点</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {schedules.map((s: any) => (
-                    <tr key={s.id}>
-                      <td>{new Date(s.startTime).toLocaleString('zh-CN')}</td>
-                      <td>{new Date(s.endTime).toLocaleString('zh-CN')}</td>
-                      <td className="font-medium">{s.course?.name || '—'}</td>
-                      <td>{s.instructor ? `${s.instructor.realName}${s.instructor.title ? ` (${s.instructor.title})` : ''}` : '—'}</td>
-                      <td>{s.location || '—'}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button onClick={() => openEditSchedule(s)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--fox)]" >编辑</button>
-                          <button onClick={() => setDeleteScheduleTarget(s.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {activeTab === 'schedule' && <ScheduleTab programId={Number(params.id)} defaultLocation={program.location} />}
 
-      {activeTab === 'evaluations' && (
-        <div>
-          {evalStats && (
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {[
-                { label: '评价人数', value: evalStats.count, color: 'var(--ink-600)' },
-                { label: '课程内容', value: `${'★'.repeat(Math.floor(evalStats.contentRating))}${evalStats.contentRating % 1 >= 0.5 ? '☆' : ''} ${evalStats.contentRating}`, color: 'var(--fox)' },
-                { label: '讲师教学', value: `${'★'.repeat(Math.floor(evalStats.instructorRating))} ${evalStats.instructorRating}`, color: 'var(--cyan)' },
-                { label: '总体评分', value: `${'★'.repeat(Math.floor(evalStats.overallRating))} ${evalStats.overallRating}`, color: 'var(--sage)' },
-              ].map((s, i) => (
-                <div key={i} className="card p-4 text-center">
-                  <div className="text-sm font-bold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-[var(--ink-400)] text-xs mt-1">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="card p-0 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="list-table">
-              <thead><tr><th>学员</th><th>时间</th><th>内容</th><th>讲师</th><th>总体</th><th>评语</th></tr></thead>
-              <tbody>
-                {evals.map((e: any) => (
-                  <tr key={e.id}>
-                    <td>{e.isAnonymous ? '匿名' : e.student?.displayName || '—'}</td>
-                    <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
-                    <td className="text-center">{'★'.repeat(e.contentRating)}</td>
-                    <td className="text-center">{'★'.repeat(e.instructorRating)}</td>
-                    <td className="text-center"><strong style={{ color: e.overallRating >= 4 ? 'var(--sage)' : e.overallRating >= 3 ? 'var(--gold)' : 'var(--verm)' }}>{'★'.repeat(e.overallRating)}</strong></td>
-                    <td className="text-[var(--ink-400)] text-xs max-w-[200px] truncate">{e.comment || '—'}</td>
-                  </tr>
-                ))}
-                {evals.length === 0 && <tr><td colSpan={6} className="text-[var(--ink-300)] text-center py-8 text-xs">暂无评价</td></tr>}
-              </tbody>
-            </table>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'evaluations' && <EvaluationsTab programId={Number(params.id)} />}
 
-      {activeTab === 'status' && (
-        <div>
-          <div className="card p-5 mb-6 text-center">
-            <div className="text-[var(--ink-400)] text-xs mb-2">当前状态</div>
-            <div className="text-2xl font-bold mb-1" style={{ color: STATUS_COLORS[program.status] || 'var(--neutral-400)' }}>
-              {STATUS_NAMES[program.status] || program.status}
-            </div>
-          </div>
-          <div className="card p-5">
-            <h3 className="text-[var(--ink-700)] text-sm font-semibold mb-4">状态变更记录</h3>
-            <div className="relative pl-8">
-              <div className="bg-[var(--ink-200)] absolute left-3.5 top-2 bottom-2 w-0.5" />
-              {logsLoading ? (
-                <div className="text-[var(--ink-300)] py-8 text-center text-xs">加载中…</div>
-              ) : statusLogs.length === 0 ? (
-                <div className="text-[var(--ink-300)] py-8 text-center text-xs">暂无状态变更记录</div>
-              ) : statusLogs.map((log: any) => (
-                <div key={log.id} className="relative pb-6">
-                  <div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 bg-[var(--paper)]"
-                    style={{  borderColor: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)' }} />
-                  <div className="text-[var(--ink-400)] text-xs">
-                    {new Date(log.createdAt).toLocaleString('zh-CN')}
-                  </div>
-                  <div className="text-sm mt-0.5">
-                    <span style={{ color: STATUS_COLORS[log.fromStatus] || 'var(--neutral-400)' }}>
-                      {STATUS_NAMES[log.fromStatus] || log.fromStatus || '初始'}
-                    </span>
-                    {' → '}
-                    <span style={{ color: STATUS_COLORS[log.toStatus] || 'var(--neutral-400)', fontWeight: 600 }}>
-                      {STATUS_NAMES[log.toStatus] || log.toStatus}
-                    </span>
-                  </div>
-                  <div className="text-[var(--ink-400)] text-xs mt-0.5">
-                    {log.operator?.displayName || '系统'}{log.reason ? ` · ${log.reason}` : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'status' && <StatusTab programId={Number(params.id)} status={program.status} />}
 
-      {activeTab === 'attendance' && (
-        <div>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="card p-4 text-center">
-              <div className="text-[var(--fox)] text-2xl font-bold">{attendanceRecords.length}</div>
-              <div className="text-[var(--ink-400)] text-xs mt-1">学员总数</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-[var(--info)] text-2xl font-bold">
-                {attendanceRecords.length > 0
-                  ? Math.round(attendanceRecords.reduce((s, r) => s + (r.attendanceRate || 0), 0) / attendanceRecords.length)
-                  : 0}%
-              </div>
-              <div className="text-[var(--ink-400)] text-xs mt-1">平均出勤率</div>
-            </div>
-            <div className="card p-4 text-center">
-              <div className="text-[var(--blue)] text-2xl font-bold">{attendanceRecords[0]?.totalDays || 0}</div>
-              <div className="text-[var(--ink-400)] text-xs mt-1">总排课天数</div>
-            </div>
-          </div>
-          <div className="card p-0 overflow-hidden">
-            {attendanceLoading ? (
-              <div className="text-[var(--ink-300)] p-10 text-center text-xs">加载中…</div>
-            ) : attendanceRecords.length === 0 ? (
-              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无出勤记录，请先添加学员和排课</div>
-            ) : (
-              <div className="overflow-x-auto">
-              <table className="list-table">
-                <thead><tr><th>序号</th><th>姓名</th><th>推荐单位</th><th>总天数</th><th>实际出勤</th><th>出勤率</th><th>操作</th></tr></thead>
-                <tbody>
-                  {attendanceRecords.map((r: any, i: number) => {
-                    const canEdit = program.status === 'IN_PROGRESS' || program.status === 'REVIEWING';
-                    const saving = attendanceSaving === r.id;
-                    return (
-                      <tr key={r.id}>
-                        <td className="text-[var(--ink-300)] text-xs font-mono">{i + 1}</td>
-                        <td className="font-medium">{r.student?.displayName || '—'}</td>
-                        <td className="text-[var(--ink-400)] text-xs">{r.student?.organization || '—'}</td>
-                        <td>{r.totalDays}</td>
-                        <td>
-                          {canEdit ? (
-                            <input type="number" min={0} max={r.totalDays}
-                              value={editAttendance[r.id] ?? r.actualDays ?? 0}
-                              onChange={e => setEditAttendance({ ...editAttendance, [r.id]: e.target.value })}
-                              className="input" style={{ width: 70 }} />
-                          ) : (
-                            <span>{r.actualDays ?? 0}</span>
-                          )}
-                        </td>
-                        <td><span className="font-semibold" style={{ color: (r.attendanceRate || 0) >= 80 ? 'var(--info)' : 'var(--fox)' }}>{r.attendanceRate || 0}%</span></td>
-                        <td>
-                          {canEdit && (
-                            <button onClick={async () => {
-                              setAttendanceSaving(r.id);
-                              try {
-                                await api.trainingPrograms.updateAttendance(Number(params.id), r.studentId || r.student?.id, {
-                                  actualDays: parseInt(editAttendance[r.id] || '0'),
-                                  reason: '管理员编辑',
-                                });
-                                loadAttendance();
-                              } catch (e: any) { toast.error('保存失败：' + e.message); }
-                              setAttendanceSaving(null);
-                            }} disabled={saving} className="btn btn-outline btn-xs text-xs">
-                              {saving ? '保存中…' : '保存'}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {activeTab === 'attendance' && <AttendanceTab programId={Number(params.id)} programStatus={program.status} />}
 
-      {activeTab === 'evidences' && (
-        <div>
-          <div className="flex gap-3 mb-4">
-            <button onClick={async () => {
-              setSigninGenerating(true);
-              try {
-                const res = await fetch(`/api/training-programs/${params.id}/generate-signin-sheet`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `签到表_${program.name}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-                a.click();
-                URL.revokeObjectURL(url);
-              } catch (e: any) { toast.error('生成失败：' + e.message); }
-              setSigninGenerating(false);
-            }} disabled={signinGenerating} className="btn btn-fox btn-sm">
-              {signinGenerating ? '生成中…' : '📄 生成签到表'}
-            </button>
-            <button onClick={() => setUploadModal(true)} className="btn btn-outline btn-sm">📎 上传证据文件</button>
-          </div>
+      {activeTab === 'evidences' && <EvidencesTab programId={Number(params.id)} programName={program.name} />}
 
-          <div className="card p-0 overflow-hidden">
-            {evidencesLoading ? (
-              <div className="text-[var(--ink-300)] p-10 text-center text-xs">加载中…</div>
-            ) : evidences.length === 0 ? (
-              <div className="text-[var(--ink-300)] p-10 text-center text-xs">暂无证据文件</div>
-            ) : (
-              <div className="overflow-x-auto">
-              <table className="list-table">
-                <thead><tr><th>文件名</th><th>类型</th><th>上传者</th><th>上传时间</th><th>备注</th><th>操作</th></tr></thead>
-                <tbody>
-                  {evidences.map((e: any) => (
-                    <tr key={e.id}>
-                      <td>
-                        <a href={api.trainingPrograms.downloadEvidence(Number(params.id), e.id)}
-                          target="_blank" className="text-[var(--fox)] text-sm">{e.fileName}</a>
-                      </td>
-                      <td><span className="tag" style={{
-                        background: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--cyan-glow)' : 'var(--fox-glow)',
-                        color: e.evidenceType === 'ATTENDANCE_SHEET' ? 'var(--info)' : 'var(--ink-300)',
-                        fontSize: '10px',
-                      }}>{e.evidenceType === 'ATTENDANCE_SHEET' ? '签到表' : e.evidenceType === 'SCORING' ? '成绩表' : e.evidenceType === 'SCHEDULE' ? '排课表' : '其他'}</span></td>
-                      <td className="text-[var(--ink-400)] text-xs">{e.uploadedBy?.displayName || '—'}</td>
-                      <td className="text-[var(--ink-300)] text-xs">{new Date(e.createdAt).toLocaleString('zh-CN')}</td>
-                      <td className="text-[var(--ink-400)] text-xs">{e.notes || '—'}</td>
-                      <td>
-                        <button onClick={() => setDeleteEvidenceTarget(e.id)} className="text-xs bg-transparent border-none cursor-pointer text-[var(--error)]" >删除</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            )}
-          </div>
+      {activeTab === 'hours' && <HoursTab programId={params.id as string} />}
 
-          {/* Upload Modal */}
-          {uploadModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => !uploading && setUploadModal(false)}>
-              <div className="rounded-xl p-6 w-full max-w-md bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-                <h3 className="font-semibold text-base mb-4">上传证据文件</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">文件</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="input w-full" />
-                  </div>
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">证据类型</label>
-                    <select value={uploadType} onChange={e => setUploadType(e.target.value)} className="input select w-full">
-                      <option value="ATTENDANCE_SHEET">签到表</option>
-                      <option value="SCORING">成绩表</option>
-                      <option value="SCHEDULE">排课表</option>
-                      <option value="OTHER">其他</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
-                    <input value={uploadNotes} onChange={e => setUploadNotes(e.target.value)} className="input w-full" placeholder="可选" />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={async () => {
-                      if (!uploadFile) { toast.warning('请选择文件'); return; }
-                      setUploading(true);
-                      try {
-                        const fd = new FormData();
-                        fd.append('file', uploadFile);
-                        fd.append('evidenceType', uploadType);
-                        fd.append('notes', uploadNotes);
-                        await api.trainingPrograms.uploadEvidence(Number(params.id), fd);
-                        setUploadModal(false);
-                        setUploadFile(null);
-                        setUploadNotes('');
-                        loadEvidences();
-                      } catch (e: any) { toast.error('上传失败：' + e.message); }
-                      setUploading(false);
-                    }} disabled={uploading} className="btn btn-fox btn-sm">{uploading ? '上传中…' : '上传'}</button>
-                    <button onClick={() => setUploadModal(false)} className="btn btn-outline btn-sm">取消</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'hours' && (
-        <HoursTab programId={params.id as string} />
-      )}
-
-      {activeTab === 'filing' && (
-        <div>
-          <div className="card p-5 mb-6 text-center">
-            <div className="text-[var(--ink-400)] text-xs mb-2">备案状态</div>
-            <div className="text-2xl font-bold mb-1" style={{
-              color: !filing ? 'var(--ink-300)' : filing.status === 'PENDING' ? 'var(--fox)' : filing.status === 'APPROVED' ? 'var(--sage)' : 'var(--error)',
-            }}>
-              {!filing ? '未提交' : filing.status === 'PENDING' ? '待审核' : filing.status === 'APPROVED' ? '已通过' : '已驳回'}
-            </div>
-          </div>
-
-          {!filing && (
-            <div className="card p-6 text-center">
-              <p className="text-[var(--ink-400)] text-sm mb-4">尚未提交备案</p>
-              <button onClick={async () => {
-                const evs = await api.trainingPrograms.getEvidences(Number(params.id)).catch(() => []);
-                if (!evs || evs.length === 0) { toast.warning('请先上传签到表扫描件后再提交备案'); return; }
-                setFilingForm({ agencyName: '', agencyContact: '', agencyPhone: '' });
-                setFilingModal(true);
-              }} className="btn btn-fox">提交备案</button>
-            </div>
-          )}
-
-          {filing && (
-            <div className="space-y-4">
-              <div className="card p-5">
-                <h3 className="text-sm font-semibold mb-3">审核信息</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-[var(--ink-400)] text-xs">机构名称</span><p>{filing.agencyName}</p></div>
-                  <div><span className="text-[var(--ink-400)] text-xs">联系人</span><p>{filing.agencyContact} ({filing.agencyPhone})</p></div>
-                  <div><span className="text-[var(--ink-400)] text-xs">提交人</span><p>{filing.submittedBy?.displayName || '—'}</p></div>
-                  <div><span className="text-[var(--ink-400)] text-xs">提交时间</span><p>{filing.submittedAt ? new Date(filing.submittedAt).toLocaleString('zh-CN') : '—'}</p></div>
-                </div>
-              </div>
-
-              {filing.reviewedBy && (
-                <div className="card p-5">
-                  <h3 className="text-sm font-semibold mb-3">审核记录</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-[var(--ink-400)] text-xs">审核人</span><p>{filing.reviewedBy?.displayName || '—'}</p></div>
-                    <div><span className="text-[var(--ink-400)] text-xs">审核时间</span><p>{filing.reviewedAt ? new Date(filing.reviewedAt).toLocaleString('zh-CN') : '—'}</p></div>
-                  </div>
-                  {filing.reviewComment && (
-                    <div className="mt-2"><span className="text-[var(--ink-400)] text-xs">审核意见</span><p className="text-sm mt-1">{filing.reviewComment}</p></div>
-                  )}
-                </div>
-              )}
-
-              {filing.status === 'APPROVED' && (
-                <div className="bg-[var(--sage-glow)] card p-5 text-center">
-                  <p className="text-[var(--sage)] text-sm font-semibold">✅ 备案已通过</p>
-                  <p className="text-[var(--ink-400)] text-xs mt-1">培训班状态已自动更新为「报名中」</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Filing Submit Modal */}
-          {filingModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setFilingModal(false)}>
-              <div className="rounded-xl p-6 w-full max-w-md bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-                <h3 className="font-semibold text-base mb-4">提交备案</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">机构名称 *</label>
-                    <input value={filingForm.agencyName} onChange={e => setFilingForm({ ...filingForm, agencyName: e.target.value })} className="input w-full" placeholder="例如：XX培训机构" />
-                  </div>
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">联系人 *</label>
-                    <input value={filingForm.agencyContact} onChange={e => setFilingForm({ ...filingForm, agencyContact: e.target.value })} className="input w-full" placeholder="姓名" />
-                  </div>
-                  <div>
-                    <label className="text-[var(--ink-400)] text-xs mb-1 block">联系电话 *</label>
-                    <input value={filingForm.agencyPhone} onChange={e => setFilingForm({ ...filingForm, agencyPhone: e.target.value })} className="input w-full" placeholder="手机号" />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={async () => {
-                      if (!filingForm.agencyName || !filingForm.agencyContact || !filingForm.agencyPhone) {
-                        toast.warning('请填写完整信息'); return;
-                      }
-                      setFilingSubmitting(true);
-                      try {
-                        await api.trainingPrograms.submitFiling(Number(params.id), filingForm);
-                        setFilingModal(false);
-                        loadFiling();
-                        load();
-                      } catch (e: any) { toast.error('提交失败：' + e.message); }
-                      setFilingSubmitting(false);
-                    }} disabled={filingSubmitting} className="btn btn-fox btn-sm">{filingSubmitting ? '提交中…' : '提交'}</button>
-                    <button onClick={() => setFilingModal(false)} className="btn btn-outline btn-sm">取消</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Schedule Modal */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowScheduleModal(false)}>
-          <div className="rounded-xl p-6 w-full max-w-lg bg-[var(--paper)]" style={{  border: '1px solid var(--ink-200)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-base mb-4">{editingSchedule ? '编辑排课' : '添加排课'}</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[var(--ink-400)] text-xs mb-1 block">课程 *</label>
-                <select value={scheduleForm.courseId} onChange={e => setScheduleForm({ ...scheduleForm, courseId: e.target.value })} className="input select w-full">
-                  <option value="">选择课程…</option>
-                  {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}{c.code ? ` (${c.code})` : ''}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[var(--ink-400)] text-xs mb-1 block">讲师</label>
-                <select value={scheduleForm.instructorId} onChange={e => setScheduleForm({ ...scheduleForm, instructorId: e.target.value })} className="input select w-full">
-                  <option value="">不指定</option>
-                  {instructors.map((i: any) => <option key={i.id} value={i.id}>{i.realName}{i.title ? ` (${i.title})` : ''}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[var(--ink-400)] text-xs mb-1 block">开始时间 *</label>
-                  <input type="datetime-local" value={scheduleForm.startTime} onChange={e => setScheduleForm({ ...scheduleForm, startTime: e.target.value })} className="input w-full" />
-                </div>
-                <div>
-                  <label className="text-[var(--ink-400)] text-xs mb-1 block">结束时间 *</label>
-                  <input type="datetime-local" value={scheduleForm.endTime} onChange={e => setScheduleForm({ ...scheduleForm, endTime: e.target.value })} className="input w-full" />
-                </div>
-              </div>
-              <div>
-                <label className="text-[var(--ink-400)] text-xs mb-1 block">上课地点</label>
-                <input value={scheduleForm.location} onChange={e => setScheduleForm({ ...scheduleForm, location: e.target.value })} className="input w-full" placeholder={program?.location || '默认使用培训班地点'} />
-              </div>
-              <div>
-                <label className="text-[var(--ink-400)] text-xs mb-1 block">备注</label>
-                <input value={scheduleForm.remark} onChange={e => setScheduleForm({ ...scheduleForm, remark: e.target.value })} className="input w-full" />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={handleScheduleSave} disabled={scheduleLoading} className="btn btn-fox btn-sm">{scheduleLoading ? '保存中…' : '保存'}</button>
-                <button onClick={() => setShowScheduleModal(false)} className="btn btn-outline btn-sm">取消</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'filing' && <FilingTab programId={Number(params.id)} onProgramChanged={load} />}
 
       {/* Status Change Modal */}
       {statusModal && (
@@ -863,27 +157,6 @@ export default function ProgramDetailPage() {
           </div>
         </div>
       )}
-
-      {/* 排课删除弹窗 */}
-      <ReasonConfirmModal
-        open={deleteScheduleTarget !== null}
-        title="🗑 删除排课记录"
-        required
-        presetReasons={['排课时间调整', '课程变更', '创建错误']}
-        confirmText="确认删除"
-        onConfirm={handleScheduleDeleteWithReason}
-        onCancel={() => setDeleteScheduleTarget(null)}
-      />
-      {/* 证据文件删除弹窗 */}
-      <ReasonConfirmModal
-        open={deleteEvidenceTarget !== null}
-        title="🗑 删除文件"
-        required
-        presetReasons={['文件上传错误', '文件已过时', '重复上传']}
-        confirmText="确认删除"
-        onConfirm={handleEvidenceDeleteWithReason}
-        onCancel={() => setDeleteEvidenceTarget(null)}
-      />
     </AppLayout>
   );
 }
