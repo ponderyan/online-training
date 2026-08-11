@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
+import { useProctoringBoard } from '@/lib/use-proctoring-ws';
 import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 
 const STATUS_FILTERS = [
@@ -24,7 +25,6 @@ export default function ProctoringDetail() {
   const examId = parseInt(params.examId as string);
   const toast = useToast();
   const [user, setUser] = useState<any>(null);
-  const [board, setBoard] = useState<any>(null);
   const [clock, setClock] = useState(new Date());
   const [filter, setFilter] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -32,7 +32,6 @@ export default function ProctoringDetail() {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [sessionMessages, setSessionMessages] = useState<any[]>([]);
   const [showDetail, setShowDetail] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState('');
   const [detailLoading, setDetailLoading] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
@@ -45,24 +44,14 @@ export default function ProctoringDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [extendTarget, setExtendTarget] = useState<number | null>(null);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
-
-  // ★ 单一数据源（2026-08-12）：board 接口一次返回考试全字段 + stats + sessions，替代 overview+sessions 两次请求
-  const loadData = useCallback(async () => {
-    try {
-      setBoard(await api.exams.proctoring.board(examId));
-      setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
-    } catch {}
-  }, [examId]);
+  // ★ 数据通道（2026-08-12 升级）：WS 实时推送（与大屏共用 hook），失败自动降级 15s 轮询
+  const { board, lastRefresh, wsMode, refresh } = useProctoringBoard(examId, { pollMs: 15000 });
 
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setUser(JSON.parse(u));
-    loadData();
     setLoading(false);
-    intervalRef.current = setInterval(loadData, 15000);
-    return () => clearInterval(intervalRef.current);
-  }, [loadData]);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -102,6 +91,12 @@ export default function ProctoringDetail() {
     return '⏹ 考试窗口已结束';
   })();
 
+  // ★ 违规记录导出（2026-08-12）：window.open 无法带 header，走 query token（JWT 策略已支持多提取器）
+  const exportViolations = () => {
+    const token = localStorage.getItem('token') || '';
+    window.open(`/api/exams/${examId}/proctoring/violations/export?token=${encodeURIComponent(token)}`, '_blank');
+  };
+
   const openDetail = async (sessionId: number) => {
     setDetailLoading(true);
     setShowDetail(true);
@@ -139,7 +134,7 @@ export default function ProctoringDetail() {
         operatorName: user?.displayName || '管理员',
       });
       setForceSubmitModal(null); setForceSubmitReason(''); setConfirmText('');
-      loadData();
+      refresh();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -170,7 +165,7 @@ export default function ProctoringDetail() {
       });
       toast.success('已标记缺考');
       openDetail(selectedSession.sessionId);
-      loadData();
+      refresh();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -186,7 +181,7 @@ export default function ProctoringDetail() {
       });
       toast.success('已撤销缺考标记');
       openDetail(selectedSession.sessionId);
-      loadData();
+      refresh();
     } catch (e: any) { toast.error(e.message); }
     setActionLoading(false);
   };
@@ -207,11 +202,20 @@ export default function ProctoringDetail() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="page-title">📋 {examInfo?.title || '监考面板'}</h1>
         <div className="flex items-center gap-3">
+          <button onClick={exportViolations} data-testid="btn-export-violations"
+            className="btn btn-outline btn-sm" title="导出本场考试违规与监考操作记录（CSV）">
+            📥 导出违规记录
+          </button>
           <button onClick={() => router.push(`/proctoring/${examId}/board`)}
             className="btn btn-fox btn-sm" title="座舱模式：全屏大屏监考">
             🖥 大屏监考
           </button>
-          <div className="text-[var(--ink-300)] text-[10px]">刷新于 {lastRefresh} · 自动每15秒更新</div>
+          <div className="text-[var(--ink-300)] text-[10px]">
+            <span style={{ color: wsMode === 'live' ? 'var(--sage)' : wsMode === 'polling' ? 'var(--fox)' : 'var(--ink-300)' }}>
+              {wsMode === 'live' ? '● 实时推送' : wsMode === 'polling' ? '◌ 轮询模式' : '◌ 连接中…'}
+            </span>
+            {' '}· 刷新于 {lastRefresh}
+          </div>
         </div>
       </div>
 

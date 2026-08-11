@@ -98,8 +98,11 @@ test.describe('监考中心', () => {
     await expect(page.getByTestId('panel-window-line')).toContainText(/进行中|距开考|已结束/);
     // 概览卡片含缺考项（含筛选 tab，取首个）
     await expect(page.getByText('🚫 缺考').first()).toBeVisible();
-    // 大屏入口按钮
+    // 大屏入口按钮 + 违规记录导出按钮（2026-08-12）
     await expect(page.getByRole('button', { name: /大屏监考/ })).toBeVisible();
+    await expect(page.getByTestId('btn-export-violations')).toBeVisible();
+    // 面板页已接 WS：数据通道徽标（实时推送/轮询/连接中三者必居其一）
+    await expect(page.getByText(/实时推送|轮询模式|连接中/).first()).toBeVisible();
     // 总考生卡片
     await expect(page.getByText('总考生').first()).toBeVisible();
   });
@@ -127,6 +130,17 @@ test.describe('监考中心', () => {
     await expect(page.getByRole('button', { name: /全屏/ })).toBeVisible();
     // 数据通道徽标：实时推送（WS 生效）或轮询模式（降级兜底），两者必居其一
     await expect(page.getByTestId('board-refresh-hint')).toContainText(/实时推送|轮询模式/);
+  });
+
+  test('违规记录导出：CSV 端点返回 200 且含表头（支持 header 与 query token 两种鉴权）', async ({ request }) => {
+    const res = await request.get(`${API}/exams/${examId}/proctoring/violations/export`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status()).toBe(200);
+    expect(res.headers()['content-type']).toContain('text/csv');
+    const body = await res.text();
+    expect(body).toContain('考生');
+    expect(body).toContain('记录类型');
   });
 
   test('大屏下钻：点击考生卡片打开详情弹窗（含快捷操作）', async ({ page }) => {

@@ -322,6 +322,12 @@ export default function ExamTake() {
                 return [...prev, ...newMessages.filter((m: any) => !existing.has(m.id))];
               });
               for (const m of newMessages) {
+                if (m.messageType === 'WARN') {
+                  // ★ 弹窗级强提醒（2026-08-12）：监考员警告必须阻断式弹窗确认（不覆盖 FORCE_END）
+                  setAlertModal(prev => prev?.type === 'FORCE_END'
+                    ? prev
+                    : { type: 'TAB_WARN', message: `⚠️ 监考员警告：${m.content}` });
+                }
                 if (m.messageType === 'AUTO_REMINDER') {
                   setAlertModal({ type: 'TIME_REMINDER', message: m.content.replace(/ @threshold:\d+$/, '') });
                 }

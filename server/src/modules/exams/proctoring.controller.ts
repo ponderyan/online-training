@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, Query, ParseIntPipe, Req } from '@nestjs/common';
+import { Controller, Get, Put, Param, Body, Query, ParseIntPipe, Req, Res } from '@nestjs/common';
 import { ProctoringService } from './proctoring.service.js';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator.js';
 import { Permissions } from '../../common/permissions.constants.js';
@@ -21,6 +21,16 @@ export class ProctoringController {
   async getBoard(@Param('examId', ParseIntPipe) examId: number, @Req() req: any) {
     await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
     return this.service.getBoard(examId);
+  }
+
+  @Get('violations/export')
+  @RequirePermission(Permissions.PROCTOR_VIEW)
+  async exportViolations(@Param('examId', ParseIntPipe) examId: number, @Req() req: any, @Res() res: any) {
+    await this.examAccess.assertAccess(examId, req.user?.orgId ?? null, req.user?.roles);
+    const csv = await this.service.exportViolationsCsv(examId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=violations_exam${examId}.csv`);
+    res.send(csv);
   }
 
   @Get('sessions')

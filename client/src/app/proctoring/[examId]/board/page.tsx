@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import SessionDetailModal from './session-detail-modal';
+import { useProctoringBoard } from '@/lib/use-proctoring-ws';
 
 /**
  * 监考大屏 · 座舱模式
@@ -43,11 +44,7 @@ export default function ProctoringBoard() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.examId as string);
-  const [board, setBoard] = useState<any>(null);
-  const [error, setError] = useState('');
-  const [lastRefresh, setLastRefresh] = useState('');
   const [clock, setClock] = useState(new Date());
-  const [wsMode, setWsMode] = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [drillSessionId, setDrillSessionId] = useState<number | null>(null);
   const [quickWarn, setQuickWarn] = useState<{ sessionId: number; studentName: string; message: string } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -62,93 +59,19 @@ export default function ProctoringBoard() {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
   }, []);
 
-  const applyBoard = useCallback((data: any) => {
-    const list: any[] = data?.recentViolations || [];
-    if (seenViolations.current.size > 0) {
-      for (const v of list) {
-        const key = `${v.sessionId}|${v.time}`;
-        if (!seenViolations.current.has(key)) pushToast(`⚠️ ${v.studentName} ${v.action === 'tab_switch' ? '切屏' : v.action} +1`, 'warn');
-      }
-    }
-    seenViolations.current = new Set(list.map(v => `${v.sessionId}|${v.time}`));
-    setBoard(data);
-    setError('');
-    setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
-  }, [pushToast]);
-
-  const loadPolling = useCallback(async () => {
-    try {
-      applyBoard(await api.exams.proctoring.board(examId));
-    } catch (e: any) {
-      setError(e.message || '加载失败');
-    }
-  }, [examId, applyBoard]);
-
-  // ══ WebSocket 实时通道（失败降级轮询） ══
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let closed = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let pingTimer: ReturnType<typeof setInterval> | null = null;
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
-    let attempts = 0;
-
-    const startPollingFallback = () => {
-      setWsMode('polling');
-      if (pollTimer) return;
-      loadPolling();
-      pollTimer = setInterval(loadPolling, 10000);
-    };
-
-    const connect = () => {
-      if (closed) return;
-      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const url = `${proto}://${window.location.host}/ws/proctoring`;
-      try { ws = new WebSocket(url); } catch { startPollingFallback(); return; }
-      setWsMode(attempts === 0 ? 'connecting' : 'polling');
-
-      ws.onopen = () => {
-        const token = localStorage.getItem('token');
-        if (!token) { startPollingFallback(); return; }
-        ws?.send(JSON.stringify({ event: 'auth', data: { token } }));
-      };
-      ws.onmessage = (ev) => {
-        let msg: any;
-        try { msg = JSON.parse(ev.data); } catch { return; }
-        if (msg.event === 'auth:ok') {
-          ws?.send(JSON.stringify({ event: 'subscribe', data: { examId } }));
-        } else if (msg.event === 'board:update') {
-          attempts = 0;
-          setWsMode('live');
-          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-          applyBoard(msg.data);
-        } else if (msg.event === 'error') {
-          // 鉴权/权限失败 → 退回轮询（REST 有同样的守卫，体验一致）
-          startPollingFallback();
+  // ★ 数据通道（2026-08-12 hook 化）：WS 实时（/ws/proctoring），与监考面板页共用，失败自动降级 10s 轮询
+  const { board, error, lastRefresh, wsMode, refresh } = useProctoringBoard(examId, {
+    onFrame: (data: any) => {
+      const list: any[] = data?.recentViolations || [];
+      if (seenViolations.current.size > 0) {
+        for (const v of list) {
+          const key = `${v.sessionId}|${v.time}`;
+          if (!seenViolations.current.has(key)) pushToast(`⚠️ ${v.studentName} ${v.action === 'tab_switch' ? '切屏' : v.action} +1`, 'warn');
         }
-      };
-      ws.onclose = () => {
-        if (closed) return;
-        startPollingFallback();
-        attempts += 1;
-        // 指数退避重连：2s → 4s → … 上限 30s
-        retryTimer = setTimeout(connect, Math.min(2000 * Math.pow(2, attempts - 1), 30000));
-      };
-      ws.onerror = () => { ws?.close(); };
-      // 心跳保活（25s < nginx 60s 超时余量充足）
-      pingTimer = setInterval(() => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'ping' })); }, 25000);
-    };
-
-    connect();
-
-    return () => {
-      closed = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      if (pingTimer) clearInterval(pingTimer);
-      if (pollTimer) clearInterval(pollTimer);
-      ws?.close();
-    };
-  }, [examId, applyBoard, loadPolling]);
+      }
+      seenViolations.current = new Set(list.map((v: any) => `${v.sessionId}|${v.time}`));
+    },
+  });
 
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -358,7 +281,7 @@ export default function ProctoringBoard() {
                     await api.exams.proctoring.warn(examId, quickWarn.sessionId, { message: quickWarn.message.trim(), operatorName });
                     pushToast(`⚠️ 已向 ${quickWarn.studentName} 发送警告`);
                     setQuickWarn(null);
-                    loadPolling();
+                    refresh();
                   } catch (e: any) { pushToast(`发送失败：${e.message || '未知错误'}`, 'warn'); }
                 }}
                 style={{ flex: 1, background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', borderRadius: 8, padding: '8px 0', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
@@ -377,7 +300,7 @@ export default function ProctoringBoard() {
       {drillSessionId != null && (
         <SessionDetailModal examId={examId} sessionId={drillSessionId}
           onClose={() => setDrillSessionId(null)}
-          onChanged={loadPolling}
+          onChanged={refresh}
           onToast={pushToast} />
       )}
     </div>

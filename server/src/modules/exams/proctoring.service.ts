@@ -144,6 +144,47 @@ export class ProctoringService {
     };
   }
 
+  /**
+   * ★ 违规记录导出（2026-08-12）：violationLog + 监考操作留痕合一表
+   * 返回 CSV 文本（UTF-8 BOM，Excel 直接打开中文不乱码）
+   */
+  async exportViolationsCsv(examId: number): Promise<string> {
+    const exam = await this.prisma.exam.findUnique({ where: { id: examId }, select: { title: true } });
+    if (!exam) throw new NotFoundException('考试不存在');
+
+    const sessions = await this.prisma.examSession.findMany({
+      where: { examId },
+      include: { student: { select: { displayName: true, organization: true } } },
+    });
+
+    const esc = (v: unknown) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const fmt = (t: unknown) => (t ? new Date(t as string).toLocaleString('zh-CN', { hour12: false }) : '');
+
+    const rows: string[][] = [['考生', '所属机构', '记录类型', '详情', '操作人', '时间']];
+    for (const s of sessions) {
+      const name = s.student?.displayName || '未知';
+      const org = s.student?.organization || '';
+      if (Array.isArray(s.violationLog)) {
+        for (const entry of s.violationLog as any[]) {
+          const action = entry.action === 'tab_switch' || !entry.action ? '切屏' : entry.action;
+          rows.push([name, org, '违规', action, '—', fmt(entry.timestamp || entry.time)]);
+        }
+      }
+      if (Array.isArray(s.proctorActions)) {
+        for (const a of s.proctorActions as any[]) {
+          rows.push([name, org, '监考操作', `${a.action}${a.message ? '：' + a.message : ''}`, a.operatorName || '', fmt(a.timestamp)]);
+        }
+      }
+    }
+    rows.sort((a, b) => (b[5] || '').localeCompare(a[5] || ''));
+    // 表头保持首行
+    const header = rows.shift()!;
+    return '\uFEFF' + [header, ...rows].map(r => r.map(esc).join(',')).join('\r\n') + '\r\n';
+  }
+
   async getSessions(examId: number, params: {
     status?: string; keyword?: string;
     page?: number; pageSize?: number;
