@@ -4,123 +4,18 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import FoxLogo from '@/components/fox-logo';
 import ScoreReportModal from './ScoreReportModal';
-
-interface AnswerDetail {
-  questionId: number;
-  yourAnswer: any;
-  correctAnswer: any;
-  isCorrect: boolean | null;
-  score: number | null;
-  graderNote: string | null;
-  questionContent: string;
-  questionType: string;
-  options: { label: string; content: string }[];
-  analysis: string | null;
-}
-
-interface ExamResult {
-  examTitle: string;
-  paperName: string;
-  totalScore: number | null;
-  subjectiveScore: number | null;
-  finalScore: number | null;
-  isPassed: boolean | null;
-  submittedAt: string;
-  published?: boolean;
-  message?: string;
-  answers: AnswerDetail[];
-}
-
-interface KpInfo {
-  id: number;
-  name: string;
-  code: string | null;
-}
-
-interface KpAnalysisItem {
-  kpId: number;
-  kpName: string;
-  kpCode: string;
-  totalQuestions: number;
-  correct: number;
-  rate: number;
-  level: string;
-}
-
-interface KpAnalysisData {
-  kpResults: KpAnalysisItem[];
-  questionKps: Record<number, KpInfo[]>;
-  overallRate: number;
-  weakest: { kpId: number; kpName: string; rate: number } | null;
-  strongest: { kpId: number; kpName: string; rate: number } | null;
-}
-
-const LEVEL_COLORS: Record<string, string> = {
-  '优秀': 'var(--sage)',
-  '良好': 'var(--sage-light)',
-  '一般': 'var(--gold)',
-  '薄弱': 'var(--verm)',
-  '危险': 'var(--verm)',
-};
-
-const TYPE_NAMES: Record<string, string> = {
-  SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
-};
-
-function DonutChart({ correct, wrong, pending }: { correct: number; wrong: number; pending: number }) {
-  const total = correct + wrong + pending;
-  if (total === 0) return null;
-  const c = (correct / total) * 100;
-  const w = (wrong / total) * 100;
-  const p = (pending / total) * 100;
-
-  return (
-    <div className="relative w-32 h-32 flex-shrink-0">
-      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-        {/* Background */}
-        <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--ink-50)" strokeWidth="2.5" />
-        {/* Correct */}
-        {correct > 0 && (
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--sage)" strokeWidth="2.5"
-            strokeDasharray={`${c} ${100 - c}`}
-            strokeDashoffset="0"
-            style={{ transition: 'stroke-dasharray 0.6s ease' }} />
-        )}
-        {/* Wrong */}
-        {wrong > 0 && (
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--verm)" strokeWidth="2.5"
-            strokeDasharray={`${w} ${100 - w}`}
-            strokeDashoffset={String(-c)}
-            style={{ transition: 'stroke-dasharray 0.6s ease' }} />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-[var(--ink-700)]">{total}</span>
-        <span className="text-[9px] text-[var(--ink-300)]">总题数</span>
-      </div>
-    </div>
-  );
-}
-
-function formatAnswer(a: AnswerDetail): string {
-  if (a.questionType === 'MULTIPLE_CHOICE' && Array.isArray(a.yourAnswer)) return a.yourAnswer.join(', ');
-  if (a.questionType === 'FILL_BLANK' && Array.isArray(a.yourAnswer)) return a.yourAnswer.map((v: string, i: number) => `空${i + 1}: ${v}`).join('; ');
-  return String(a.yourAnswer ?? '未作答');
-}
-
-function formatCorrect(a: AnswerDetail): string {
-  if (a.questionType === 'MULTIPLE_CHOICE' && Array.isArray(a.correctAnswer)) return a.correctAnswer.join(', ');
-  if (a.questionType === 'FILL_BLANK' && Array.isArray(a.correctAnswer)) return a.correctAnswer.map((v: string, i: number) => `空${i + 1}: ${v}`).join('; ');
-  return String(a.correctAnswer ?? '-');
-}
+import type { ExamResult as ExamResultData, KpAnalysisData } from './result-constants';
+import { DonutChart } from './donut-chart';
+import { KpAnalysisCard } from './kp-analysis-card';
+import { RecommendationsCard } from './recommendations-card';
+import { AnswerDetailList } from './answer-detail-list';
+import { ScoreChangesModal } from './score-changes-modal';
 
 export default function ExamResult() {
   const params = useParams();
   const router = useRouter();
-  const [result, setResult] = useState<ExamResult | null>(null);
+  const [result, setResult] = useState<ExamResultData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showScoreChanges, setShowScoreChanges] = useState(false);
   const [scoreChanges, setScoreChanges] = useState<any[]>([]);
@@ -206,9 +101,6 @@ export default function ExamResult() {
   const isPassed = result.isPassed === true;
   const showCertEntry = result.isPassed === true && result.published === true;
   const subjectivePending = result.finalScore === null && result.subjectiveScore === null;
-
-  // 主观题类型
-  const subjectiveTypes = ['SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
 
   return (
     <>
@@ -331,249 +223,16 @@ export default function ExamResult() {
 
         {/* ═══ 考点画像 ═══ */}
         {kpAnalysis && kpAnalysis.kpResults.length > 0 && (
-          <div ref={kpSectionRef} className="rounded-xl p-6 mb-8 card">
-            <h3 className="text-sm font-semibold mb-4 text-[var(--ink-700)]">📊 我的考点画像</h3>
-
-            {/* Overall rate */}
-            <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: '1px solid var(--ink-100)' }}>
-              <span className="text-xs text-[var(--ink-400)]">综合掌握率</span>
-              <div className="flex-1 h-2.5 rounded-full bg-[var(--ink-100)]">
-                <div className="h-full rounded-full transition-all" style={{
-                  width: `${kpAnalysis.overallRate}%`,
-                  background: kpAnalysis.overallRate >= 80 ? 'var(--sage)' : kpAnalysis.overallRate >= 60 ? 'var(--gold)' : 'var(--verm)',
-                }} />
-              </div>
-              <span className="text-sm font-bold text-[var(--ink-600)]">{kpAnalysis.overallRate}%</span>
-            </div>
-
-            {/* Individual KP bars */}
-            {kpAnalysis.kpResults.map(kp => (
-              <div key={kp.kpId} className="flex items-center gap-3 mb-2.5">
-                <div className="w-28 text-xs font-medium truncate flex-shrink-0 text-[var(--ink-600)]"
-                  title={kp.kpName}>
-                  {kp.kpCode || kp.kpName}
-                </div>
-                <div className="flex-1 h-2 rounded-full bg-[var(--ink-100)]">
-                  <div className="h-full rounded-full transition-all duration-500" style={{
-                    width: `${kp.rate}%`,
-                    background: LEVEL_COLORS[kp.level] || 'var(--gold)',
-                  }} />
-                </div>
-                <div className="w-9 text-right text-xs font-medium text-[var(--ink-500)]">
-                  {kp.rate}%
-                </div>
-                <div className="w-12 text-right">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{
-                    background: `color-mix(in srgb, ${(LEVEL_COLORS[kp.level] || 'var(--gold)')} 10%, transparent)`,
-                    color: LEVEL_COLORS[kp.level] || 'var(--gold)',
-                  }}>
-                    {kp.level}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {/* Strongest / Weakest hints */}
-            <div className="mt-4 pt-3 flex items-center gap-6 text-xs" style={{ borderTop: '1px solid var(--ink-100)' }}>
-              {kpAnalysis.strongest && (
-                <div>
-                  <span className="text-[var(--ink-400)]">💪 最强：</span>
-                  <span className="text-[var(--sage)]" style={{  fontWeight: 600 }}>
-                    {kpAnalysis.strongest.kpName}
-                  </span>
-                  <span className="text-[var(--ink-300)]"> — 继续保持</span>
-                </div>
-              )}
-              {kpAnalysis.weakest && (
-                <div>
-                  <span className="text-[var(--ink-400)]">⚠️ 最弱：</span>
-                  <span className="text-[var(--verm)]" style={{  fontWeight: 600 }}>
-                    {kpAnalysis.weakest.kpName}
-                  </span>
-                  <span className="text-[var(--ink-300)]"> — 建议回看相关课程</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <KpAnalysisCard kpAnalysis={kpAnalysis} sectionRef={kpSectionRef} />
         )}
 
         {/* ═══ 薄弱考点推荐课程 ═══ */}
         {recommendations?.recommendedCourses?.length > 0 && (
-          <div className="rounded-xl p-6 mb-8 bg-[var(--paper-bright)]" style={{
-            
-            border: '1px solid var(--ink-100)',
-            maxHeight: maxRecHeight > 0 ? maxRecHeight : undefined,
-            overflowY: 'auto',
-          }}>
-            <h3 className="text-sm font-semibold mb-4 text-[var(--ink-700)]">📺 针对薄弱考点推荐课程</h3>
-            {recommendations.recommendedCourses.map((group: any) => (
-              <div key={group.kpId} className="mb-4 last:mb-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-medium text-[var(--ink-700)]">{group.kpName}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{
-                    background: `color-mix(in srgb, ${(LEVEL_COLORS[group.level] || 'var(--gold)')} 10%, transparent)`,
-                    color: LEVEL_COLORS[group.level] || 'var(--gold)',
-                  }}>
-                    {group.level}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {group.courses.map((course: any) => (
-                    <div key={course.id} className="flex items-center justify-between p-2.5 rounded-lg text-xs bg-[var(--paper)]" style={{
-                      
-                      border: '1px solid var(--ink-100)',
-                    }}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="truncate text-[var(--ink-600)]">{course.title}</span>
-                        {course.duration != null && (
-                          <span className="flex-shrink-0 text-[var(--ink-300)]">{course.duration}分钟</span>
-                        )}
-                      </div>
-                      <button onClick={() => router.push(`/video/${course.id}`)}
-                        className="text-xs px-2.5 py-1 rounded-md border-none cursor-pointer font-medium flex-shrink-0 ml-2 bg-[var(--fox)] text-white">
-                        去学习
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <RecommendationsCard recommendations={recommendations} maxHeight={maxRecHeight} />
         )}
 
         {/* Answer Details */}
-        <div className="rounded-xl overflow-hidden card">
-          <div className="px-6 py-4 flex items-center justify-between border-b border-[var(--ink-100)]">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-sm text-[var(--ink-700)]">逐题解析</span>
-              <div className="flex gap-1">
-                {result.answers.map((a, i) => (
-                  <span key={i} className="w-5 h-5 rounded-full text-[9px] flex items-center justify-center font-medium" style={{
-                    background: a.isCorrect === true ? 'var(--sage-glow)' : a.isCorrect === false ? 'var(--verm-glow)' : 'var(--gold-glow)',
-                    color: a.isCorrect === true ? 'var(--sage)' : a.isCorrect === false ? 'var(--verm)' : 'var(--gold)',
-                  }}>{i + 1}</span>
-                ))}
-              </div>
-            </div>
-            <button onClick={() => setShowAll(!showAll)}
-              className="text-xs px-3 py-1.5 rounded-md border-none cursor-pointer font-medium bg-[var(--paper-dark)] text-[var(--ink-500)]">
-              {showAll ? '收起部分' : '展开全部'}
-            </button>
-          </div>
-
-          <div className="divide-y border-[var(--ink-100)]">
-            {result.answers.map((a, i) => {
-              const visible = showAll || a.isCorrect === false || a.isCorrect === null;
-              if (!visible) return null;
-
-              return (
-                <div key={a.questionId} className="p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Status badge */}
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm" style={{
-                      background: a.isCorrect === true ? 'var(--sage-glow)' : a.isCorrect === false ? 'var(--verm-glow)' : 'var(--gold-glow)',
-                    }}>
-                      {a.isCorrect === true ? '✅' : a.isCorrect === false ? '❌' : '⏳'}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      {/* Question header */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--ink-100)] text-[var(--ink-500)]" >
-                          #{i + 1}
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--fox-glow)] text-[var(--fox)]" >
-                          {TYPE_NAMES[a.questionType] || a.questionType}
-                        </span>
-                        {kpAnalysis?.questionKps?.[a.questionId]?.map(kp => (
-                          <span key={kp.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-[var(--fox-glow)] text-[var(--fox-dark)]"
-                            >
-                            {kp.code || kp.name}
-                          </span>
-                        ))}
-                        {a.score !== null && (
-                          <span className="text-[10px] text-[var(--ink-300)]">
-                            得分：{a.score}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Question content */}
-                      <p className="text-sm mb-4 leading-relaxed text-[var(--ink-700)]">{a.questionContent}</p>
-
-                      {/* Options display */}
-                      {a.options?.length > 0 && (
-                        <div className="space-y-1.5 mb-4">
-                          {a.options.map((o: any) => {
-                            const isUserAnswer = String(a.yourAnswer) === o.label ||
-                              (Array.isArray(a.yourAnswer) && a.yourAnswer.includes(o.label));
-                            const isCorrectOption = String(a.correctAnswer) === o.label ||
-                              (Array.isArray(a.correctAnswer) && a.correctAnswer.includes(o.label));
-                            let bg = 'transparent';
-                            let border = '1px solid transparent';
-                            if (isUserAnswer && isCorrectOption && a.isCorrect === true) { bg = 'var(--sage-glow)'; border = '1px solid var(--green)'; }
-                            else if (isUserAnswer && !isCorrectOption) { bg = 'var(--verm-glow)'; border = '1px solid var(--verm)'; }
-                            else if (!isUserAnswer && isCorrectOption && a.isCorrect === false) { bg = 'var(--sage-glow)'; border = '1px solid var(--green)'; }
-
-                            return (
-                              <div key={o.label} className="p-2.5 rounded-lg text-xs flex items-center gap-2"
-                                style={{ background: bg, border }}>
-                                <span className="w-5 h-5 rounded-full flex items-center justify-center font-medium flex-shrink-0 text-[10px]"
-                                  style={{ background: isUserAnswer ? 'var(--fox)' : 'var(--ink-50)', color: isUserAnswer ? 'white' : 'var(--ink-400)' }}>
-                                  {o.label}
-                                </span>
-                                <span style={{ color: isUserAnswer ? 'var(--ink-700)' : 'var(--ink-500)' }}>{o.content}</span>
-                                {isUserAnswer && <span className="text-[9px] text-[var(--ink-300)]">你的选择</span>}
-                                {!isUserAnswer && isCorrectOption && a.isCorrect === false && (
-                                  <span className="text-[var(--sage)] text-[9px]">正确答案</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Answers */}
-                      <div className="text-xs space-y-1 mb-3 text-[var(--ink-500)]">
-                        {a.yourAnswer !== null && (
-                          <p>
-                            <span className="font-medium">你的答案：</span>
-                            <span style={{ color: a.isCorrect === true ? 'var(--sage)' : a.isCorrect === false ? 'var(--verm)' : 'var(--ink-500)' }}>
-                              {formatAnswer(a)}
-                            </span>
-                          </p>
-                        )}
-                        {a.correctAnswer && a.isCorrect === false && (
-                          <p>
-                            <span className="font-medium">正确答案：</span>
-                            <span className="text-[var(--sage)]">{formatCorrect(a)}</span>
-                          </p>
-                        )}
-                        {a.graderNote && (
-                          <p className="bg-[var(--paper)] mt-1 p-2 rounded">
-                            <span className="font-medium">评语：</span>{a.graderNote}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Analysis */}
-                      {a.analysis && (
-                        <details className="group">
-                          <summary className="text-[var(--fox)] text-xs cursor-pointer inline-flex items-center gap-1 font-medium">
-                            <span className="transition-transform group-open:rotate-90">▶</span> 查看解析
-                          </summary>
-                          <div className="mt-2 p-3 rounded-lg text-xs bg-[var(--paper-alt)] text-[var(--ink-500)]" style={{  border: '1px solid var(--ink-100)',  }}>
-                            {a.analysis}
-                          </div>
-                        </details>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <AnswerDetailList answers={result.answers} questionKps={kpAnalysis?.questionKps} />
       </div>
     </div>
 
@@ -585,51 +244,11 @@ export default function ExamResult() {
 
       {/* 成绩变动记录 Modal（脱敏版，不含操作人） */}
       {showScoreChanges && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(0,0,0,0.45)]" 
-          onClick={() => setShowScoreChanges(false)}>
-          <div className="rounded-2xl p-6 max-w-md w-[90%] max-h-[80vh] overflow-y-auto" style={{ background: 'var(--paper-bright, #fff)' }}
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[var(--ink-700)] text-base font-bold m-0">📊 成绩变动记录</h3>
-              <button onClick={() => setShowScoreChanges(false)}
-                className="bg-transparent border-none cursor-pointer text-lg text-[var(--ink-300)]" >✕</button>
-            </div>
-
-            {loadingChanges ? (
-              <p className="text-[var(--ink-300)] text-sm text-center py-8">加载中…</p>
-            ) : scoreChanges.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-3xl mb-3">📭</p>
-                <p className="text-[var(--ink-400)] text-sm">暂无成绩变动记录</p>
-                <p className="text-[var(--ink-300)] text-xs mt-1">成绩未被调整过</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {scoreChanges.map((c, i) => (
-                  <div key={i} className="p-3 rounded-lg" style={{ background: 'var(--paper-dark, #f5f0eb)' }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[var(--fox)] text-sm font-mono font-bold">
-                        {c.fromScore ?? '?'} → {c.toScore ?? '?'}
-                      </span>
-                      <span className="text-[var(--ink-300)] text-[10px]">
-                        {new Date(c.timestamp).toLocaleString('zh-CN')}
-                      </span>
-                    </div>
-                    {c.reason && (
-                      <p className="text-[var(--ink-500)] text-xs mt-1">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded mr-1 bg-[var(--fox-glow)] text-[var(--fox)]" >{c.action}</span>
-                        {c.reason}
-                      </p>
-                    )}
-                  </div>
-                ))}
-                <p className="text-[var(--ink-300)] text-[10px] text-center pt-2">
-                  ※ 仅展示分数变化与原因，不显示操作人信息
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ScoreChangesModal
+          changes={scoreChanges}
+          loading={loadingChanges}
+          onClose={() => setShowScoreChanges(false)}
+        />
       )}
     </>
   );
