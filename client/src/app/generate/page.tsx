@@ -10,9 +10,9 @@ const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
   FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
 };
-const DIFFS = ['EASY', 'MEDIUM_EASY', 'MEDIUM_HARD', 'HARD'] as const;
-const DIFF_LABELS = ['易', '较易', '较难', '难'];
-const DIFF_COLORS = ['var(--info)', 'var(--warning)', 'var(--ink-500)', 'var(--error)'];
+import DifficultyConfig, { DIFFS, DIFF_LABELS } from './components/difficulty-config';
+import TypeConfigSection from './components/type-config-section';
+import TemplateManager from './components/template-manager';
 
 function GeneratePageContent() {
   const router = useRouter();
@@ -240,11 +240,6 @@ function GeneratePageContent() {
     setDifficulty(prev => ({ ...prev, [key]: clamped }));
   };
   const difficultyTotal = Object.values(difficulty).reduce((s, v) => s + v, 0);
-  const DIFF_PRESETS = [
-    { label: '均匀', value: { EASY: 25, MEDIUM_EASY: 25, MEDIUM_HARD: 25, HARD: 25 } },
-    { label: '偏易', value: { EASY: 40, MEDIUM_EASY: 30, MEDIUM_HARD: 20, HARD: 10 } },
-    { label: '偏难', value: { EASY: 10, MEDIUM_EASY: 20, MEDIUM_HARD: 30, HARD: 40 } },
-  ];
 
   const handleGenerate = async () => {
     if (difficultyTotal !== 100) { setError(`难度比例合计 ${difficultyTotal}% ≠ 100%，请调整`); return; }
@@ -379,145 +374,16 @@ function GeneratePageContent() {
             </select>
           </div>
 
-          {/* 题型选择 */}
-          <div className="section-title mt-6">选择考试题型</div>
-          <div className="grid grid-cols-3 gap-2.5 mb-5">
-            {allTypes.map(t => {
-              const checked = enabledTypes.includes(t);
-              return (
-                <div key={t}
-                  onClick={() => toggleType(t)}
-                  className={`flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg text-sm transition-all ${lockedTypes.includes(t) ? '' : 'cursor-pointer'}`}
-                  style={{
-                    borderColor: checked ? 'var(--fox)' : 'var(--ink-100)',
-                    background: checked ? 'var(--fox-glow)' : 'transparent',
-                    opacity: lockedTypes.includes(t) ? 1 : undefined,
-                  }}>
-                  <span className="w-4 h-4 rounded border flex items-center justify-center text-[7px] transition-all flex-shrink-0"
-                    style={{
-                      borderColor: checked ? 'var(--fox)' : 'var(--ink-100)',
-                      background: checked ? 'var(--fox)' : 'transparent',
-                      color: checked ? '#fff' : 'transparent',
-                    }}>
-                    ✓
-                  </span>
-                  <span>{TYPE_NAMES[t]}</span>
-                  {lockedTypes.includes(t) && (
-                    <span className="text-[var(--fox)] text-[10px] ml-auto whitespace-nowrap flex-shrink-0">
-                      📌 含必选题
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/* 题型选择 + 参数 + 分值校验（拆分组件） */}
+          <TypeConfigSection
+            allTypes={allTypes} typeNames={TYPE_NAMES}
+            enabledTypes={enabledTypes} typeConfigs={typeConfigs}
+            lockedTypes={lockedTypes} lockedCounts={lockedCounts}
+            totalScore={totalScore} totalFromTypes={totalFromTypes()}
+            onToggle={toggleType} onConfigChange={updateTypeConfig} subtotal={subtotal} />
 
-          {/* 题型参数 */}
-          {enabledTypes.map(t => (
-            <div key={t} className="border border-[var(--ink-100)] rounded-lg mb-2 overflow-hidden">
-              <div className="bg-[var(--paper)] flex items-center justify-between px-4 py-2.5">
-                <span className="text-[var(--ink-700)] text-sm font-medium">{TYPE_NAMES[t]}</span>
-                <span className="text-[var(--ink-400)] text-xs">小计 {subtotal(t)} 分</span>
-              </div>
-              <div className="grid grid-cols-[1fr_1fr_1fr_60px] gap-3 p-4 border-t border-[var(--ink-100)]">
-                <div>
-                  <label className="text-[var(--ink-400)] block text-xs mb-0.5">
-                    题数
-                    {lockedCounts[t] > 0 && (
-                      <span className="text-[var(--fox)] ml-1 text-[10px]">
-                        （最低 {lockedCounts[t]} 题）
-                      </span>
-                    )}
-                  </label>
-                  <input value={String(typeConfigs[t]?.count ?? 0)}
-                    onChange={e => updateTypeConfig(t, 'count', parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
-                    className="input" inputMode="numeric"
-                    style={lockedCounts[t] > 0 && (typeConfigs[t]?.count || 0) < lockedCounts[t] ? { borderColor: 'var(--verm)' } : {}} />
-                </div>
-                <div>
-                  <label className="text-[var(--ink-400)] block text-xs mb-0.5">
-                    {t === 'FILL_BLANK' ? '每空分值' : '每题分值'}
-                  </label>
-                  <input value={String(typeConfigs[t]?.score ?? 0)}
-                    onChange={e => updateTypeConfig(t, 'score', parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)} className="input" inputMode="numeric" />
-                </div>
-                {t === 'FILL_BLANK' && (
-                  <div>
-                    <label className="text-[var(--ink-400)] block text-xs mb-0.5">每空数</label>
-                    <input value={String(typeConfigs[t]?.blanksPerQ ?? 1)}
-                      onChange={e => updateTypeConfig(t, 'blanksPerQ', parseInt(e.target.value.replace(/\D/g, ''), 10) || 1)} className="input" inputMode="numeric" />
-                  </div>
-                )}
-                <div className="flex items-end pb-1.5">
-                  <span className="text-[var(--ink-300)] text-xs">
-                    {t === 'FILL_BLANK' ? '题×空×分' : '题×分'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* 分值校验 */}
-          <div className="mb-4">
-            {!scoreValid ? (
-              <div className="px-4 py-2.5 rounded-lg text-sm bg-[var(--verm-glow)] text-[var(--verm)]"
-                >
-                ⚠ 题型总分 {totalFromTypes()} 分 ≠ 试卷总分 {totalScore} 分
-              </div>
-            ) : (
-              <div className="px-4 py-2.5 rounded-lg text-sm bg-[var(--cyan-glow)] text-[var(--cyan)]"
-                >
-                ✓ 题型总分 {totalFromTypes()} 分 = 试卷总分 {totalScore} 分
-              </div>
-            )}
-          </div>
-
-          {/* 难度配置 */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[var(--ink-500)] block text-xs font-medium">
-                难度比例配置
-              </label>
-              <div className="flex gap-1.5">
-                {DIFF_PRESETS.map(p => (
-                  <button key={p.label} onClick={() => setDifficulty(p.value)}
-                    className="text-xs px-2 py-0.5 rounded border border-solid cursor-pointer hover:opacity-70 transition-opacity border-[var(--ink-200)] text-[var(--ink-500)] bg-[var(--paper)]"
-                    >{p.label}</button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-1.5 h-9 mb-2">
-              {DIFFS.map((d, i) => (
-                <div key={d}
-                  className="flex items-center justify-center text-white text-xs font-semibold rounded transition-all"
-                  style={{
-                    flex: Math.max(difficulty[d], 1),
-                    backgroundColor: DIFF_COLORS[i],
-                    height: 22 + difficulty[d] * 0.3,
-                    minWidth: '36px',
-                    opacity: difficulty[d] === 0 ? 0.35 : 1,
-                  }}>
-                  {DIFF_LABELS[i]} {difficulty[d]}%
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {DIFFS.map((d, i) => (
-                <div key={d} className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded flex-shrink-0" style={{ backgroundColor: DIFF_COLORS[i] }} />
-                  <span className="text-[var(--ink-500)] text-xs">{DIFF_LABELS[i]}</span>
-                  <input type="number" min={0} max={100} value={difficulty[d]}
-                    onChange={e => setDifficultyValue(d, Number(e.target.value))}
-                    className="w-14 text-xs text-center rounded border border-solid py-0.5 border-[var(--ink-200)] text-[var(--ink-700)] bg-[var(--paper)]"
-                    />
-                  <span className="text-[var(--ink-400)] text-xs">%</span>
-                </div>
-              ))}
-              <span className="text-xs font-semibold ml-1" style={{ color: difficultyTotal === 100 ? 'var(--cyan)' : 'var(--verm)' }}>
-                合计 {difficultyTotal}%{difficultyTotal !== 100 && '（须=100%）'}
-              </span>
-            </div>
-          </div>
+          {/* 难度配置（拆分组件） */}
+          <DifficultyConfig difficulty={difficulty} onChange={setDifficulty} onValueChange={setDifficultyValue} />
 
           {/* 来源比例 */}
           <div className="mb-5">
@@ -601,37 +467,9 @@ function GeneratePageContent() {
             </div>
           )}
 
-          {/* 模板管理 */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="section-title mb-0">模板管理</h3>
-              <button onClick={saveAsTemplate} disabled={savingTemplate}
-                className="btn btn-outline btn-xs">{savingTemplate ? '保存…' : '+ 保存当前'}</button>
-            </div>
-            {templates.length === 0 ? (
-              <p className="text-[var(--ink-300)] text-xs">暂无模板</p>
-            ) : (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {templates.map(t => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 p-2 rounded text-xs bg-[var(--paper)] text-[var(--ink-500)]"
-                    >
-                    <span className="truncate flex-1">{t.name}</span>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={() => applyTemplate(t)}
-                        className="btn btn-ghost btn-xs text-[var(--gold)]" >应用</button>
-                      <button onClick={() => deleteTemplate(t.id, t.name)}
-                        className="btn btn-ghost btn-xs text-[var(--ink-300)]" 
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--verm)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-300)')}>✕</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-[var(--ink-300)] text-xs mt-3">
-              模板不含试卷名称，应用后可按需调整。
-            </p>
-          </div>
+          {/* 模板管理（拆分组件） */}
+          <TemplateManager templates={templates} saving={savingTemplate}
+            onSave={saveAsTemplate} onApply={applyTemplate} onDelete={deleteTemplate} />
         </div>
       </div>
     </AppLayout>

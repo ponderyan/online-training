@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -12,6 +13,7 @@ const __dirname = dirname(__filename);
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useWebSocketAdapter(new WsAdapter(app)); // 监考大屏原生 WebSocket（/ws/proctoring）
   app.enableCors();
   // 结构化日志：请求日志中间件 + 全局异常记录（写 logs/foxlearn-YYYY-MM-DD.log）
   app.use(requestLogger);

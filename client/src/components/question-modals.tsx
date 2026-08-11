@@ -34,11 +34,16 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
 
   useEffect(() => {
     if (subjectId) {
-      fetch(`/api/chapters?subjectId=${subjectId}`).then(r => r.json()).then(data => {
-        if (Array.isArray(data)) setChapters(data);
+      // 走 api 封装（带 Authorization；裸 fetch 会被后端 401，章节列表恒空）
+      api.chapters.list(subjectId).then(data => {
+        if (Array.isArray(data)) {
+          setChapters(data);
+          // 新建时章节未选 → 自动默认首章（chapter_id 为必填字段，避免保存 400）
+          if (!editQuestion) setChapterId(prev => prev || data[0]?.id || 0);
+        }
       }).catch(() => {});
     }
-  }, [subjectId]);
+  }, [subjectId, editQuestion]);
 
   // Populate fields when editing
   useEffect(() => {
@@ -162,18 +167,13 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
         body.subQuestions = subQuestions.filter(s => s.content).map(s => ({ content: s.content, answer: s.answer || undefined }));
       }
 
-      const res = await fetch(`/api/questions/${editQuestion ? editQuestion.id : ''}`, {
-        method: editQuestion ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-      });
+      // 统一走 api 封装（携带 Authorization，失败抛错不静默关闭）
+      const saved = editQuestion
+        ? await api.questions.update(editQuestion.id, body)
+        : await api.questions.create(body);
 
       // Try to get saved question ID (needed for new questions)
-      let savedId = editQuestion?.id;
-      if (!savedId && res.ok) {
-        try {
-          const saved = await res.json();
-          savedId = saved?.id;
-        } catch {}
-      }
+      let savedId = editQuestion?.id ?? saved?.id;
 
       // Save KP associations（空数组=清空旧关联）
       if (savedId) {
@@ -181,6 +181,8 @@ export function AddQuestionModal({ open, onClose, subjects, editQuestion }: { op
       }
 
       onClose();
+    } catch (e: any) {
+      alert('保存失败：' + (e?.message || '未知错误'));
     } finally {
       setSaving(false);
     }
@@ -458,8 +460,7 @@ export function ViewQuestionModal({ open, onClose, question }: { open: boolean; 
   useEffect(() => {
     if (question && open) {
       setLoading(true);
-      fetch(`/api/questions/${question.id}/referenced-papers`)
-        .then(r => r.json())
+      api.questions.getReferencedPapers(question.id)
         .then(data => setPapers(data.papers || []))
         .catch(() => setPapers([]))
         .finally(() => setLoading(false));

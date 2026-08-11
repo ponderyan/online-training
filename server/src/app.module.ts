@@ -6,6 +6,7 @@ import { PrismaModule } from './modules/prisma/prisma.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { CertificateTemplatesModule } from './modules/certificate-templates/certificate-templates.module.js';
 import { ExamsModule } from './modules/exams/exams.module.js';
+import { ProctoringWsModule } from './modules/proctoring-ws/proctoring-ws.module.js';
 import { SubjectsModule } from './modules/subjects/subjects.module.js';
 import { ChaptersModule } from './modules/chapters/chapters.module.js';
 import { QuestionsModule } from './modules/questions/questions.module.js';
@@ -70,6 +71,7 @@ import { ExamAccessModule } from './common/services/exam-access.module.js';
     MaterialsModule,
     StudentsModule,
     ExamsModule,
+    ProctoringWsModule, // 监考大屏 WebSocket 实时推送
     CertificatesModule,
     AttachmentsModule,
     TrainingProgramsModule,

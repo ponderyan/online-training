@@ -130,8 +130,22 @@ export default function CreateExam() {
     setStep('settings');
   };
 
+  // ★ 考试窗口合理性提示（2026-08-11）：窗口倒挂/短于时长 → 阻断；窗口超长(>48h) → 警示
+  const windowHint = (() => {
+    if (!startTime || !endTime) return null;
+    const s = new Date(startTime).getTime();
+    const e = new Date(endTime).getTime();
+    if (!(e > s)) return { level: 'error' as const, text: '❌ 结束时间必须晚于开始时间，请检查考试窗口设置' };
+    const minutes = (e - s) / 60000;
+    if (minutes < durationMinutes) return { level: 'error' as const, text: `❌ 考试窗口（约 ${Math.round(minutes)} 分钟）短于答题时长 ${durationMinutes} 分钟，晚入场考生将无法答完` };
+    if (minutes > 48 * 60) return { level: 'warn' as const, text: `⚠️ 考试窗口约 ${(minutes / 1440).toFixed(1)} 天，偏长：参与入口长期有效会放大链接/邀请码泄露风险，建议收窄到必要范围` };
+    return null;
+  })();
+
   const handleCreate = async () => {
     if (!title || !paperId || !startTime) { setError('请填写必填项（考试名称、试卷、开考时间）'); return; }
+    if (endTime && new Date(endTime).getTime() <= new Date(startTime).getTime()) { setError('结束时间必须晚于开始时间'); return; }
+    if (startTime && endTime && (new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000 < durationMinutes) { setError('考试窗口短于答题时长，请调整时间设置'); return; }
     setLoading(true); setError('');
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -255,6 +269,12 @@ export default function CreateExam() {
                     <input type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)} className="input" />
                   </div>
                 </div>
+                {!endTime && startTime && <p className="text-[var(--ink-300)] text-[10px] mt-1">结束时间留空时默认为开考后 7 天窗口</p>}
+                {windowHint && (
+                  <div data-testid="exam-window-hint" className={`text-xs mt-2 px-3 py-2 rounded-lg border ${windowHint.level === 'error' ? 'text-red-600 bg-red-50 border-red-200' : 'text-amber-600 bg-amber-50 border-amber-200'}`}>
+                    {windowHint.text}
+                  </div>
+                )}
                 <div className="mt-3">
                   <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">答题时长（分钟）</label>
                   <input type="number" value={durationMinutes} onChange={e => setDurationMinutes(Number(e.target.value))} className="input" min={1} style={{ width: '120px' }} />

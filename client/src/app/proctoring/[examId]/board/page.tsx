@@ -3,11 +3,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import SessionDetailModal from './session-detail-modal';
 
 /**
  * 监考大屏 · 座舱模式
  * 深色全屏驾驶舱：考试概况 + 实时统计 + 全员宫格 + 违规动态流
- * 10 秒轮询，可全屏投放到监考大屏
+ * 数据通道：WebSocket 实时推送（/ws/proctoring），连接失败自动降级 10s 轮询
+ * 点击考生卡片可下钻查看详情并执行快捷监考操作
  */
 
 const EXAM_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -45,25 +47,94 @@ export default function ProctoringBoard() {
   const [error, setError] = useState('');
   const [lastRefresh, setLastRefresh] = useState('');
   const [clock, setClock] = useState(new Date());
+  const [wsMode, setWsMode] = useState<'connecting' | 'live' | 'polling'>('connecting');
+  const [drillSessionId, setDrillSessionId] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
+  const applyBoard = useCallback((data: any) => {
+    setBoard(data);
+    setError('');
+    setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
+  }, []);
+
+  const loadPolling = useCallback(async () => {
     try {
-      const data = await api.exams.proctoring.board(examId);
-      setBoard(data);
-      setError('');
-      setLastRefresh(new Date().toLocaleTimeString('zh-CN'));
+      applyBoard(await api.exams.proctoring.board(examId));
     } catch (e: any) {
       setError(e.message || '加载失败');
     }
-  }, [examId]);
+  }, [examId, applyBoard]);
+
+  // ══ WebSocket 实时通道（失败降级轮询） ══
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let closed = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let attempts = 0;
+
+    const startPollingFallback = () => {
+      setWsMode('polling');
+      if (pollTimer) return;
+      loadPolling();
+      pollTimer = setInterval(loadPolling, 10000);
+    };
+
+    const connect = () => {
+      if (closed) return;
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const url = `${proto}://${window.location.host}/ws/proctoring`;
+      try { ws = new WebSocket(url); } catch { startPollingFallback(); return; }
+      setWsMode(attempts === 0 ? 'connecting' : 'polling');
+
+      ws.onopen = () => {
+        const token = localStorage.getItem('token');
+        if (!token) { startPollingFallback(); return; }
+        ws?.send(JSON.stringify({ event: 'auth', data: { token } }));
+      };
+      ws.onmessage = (ev) => {
+        let msg: any;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.event === 'auth:ok') {
+          ws?.send(JSON.stringify({ event: 'subscribe', data: { examId } }));
+        } else if (msg.event === 'board:update') {
+          attempts = 0;
+          setWsMode('live');
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          applyBoard(msg.data);
+        } else if (msg.event === 'error') {
+          // 鉴权/权限失败 → 退回轮询（REST 有同样的守卫，体验一致）
+          startPollingFallback();
+        }
+      };
+      ws.onclose = () => {
+        if (closed) return;
+        startPollingFallback();
+        attempts += 1;
+        // 指数退避重连：2s → 4s → … 上限 30s
+        retryTimer = setTimeout(connect, Math.min(2000 * Math.pow(2, attempts - 1), 30000));
+      };
+      ws.onerror = () => { ws?.close(); };
+      // 心跳保活（25s < nginx 60s 超时余量充足）
+      pingTimer = setInterval(() => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'ping' })); }, 25000);
+    };
+
+    connect();
+
+    return () => {
+      closed = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (pingTimer) clearInterval(pingTimer);
+      if (pollTimer) clearInterval(pollTimer);
+      ws?.close();
+    };
+  }, [examId, applyBoard, loadPolling]);
 
   useEffect(() => {
-    load();
-    const t1 = setInterval(load, 10000);
-    const t2 = setInterval(() => setClock(new Date()), 1000);
-    return () => { clearInterval(t1); clearInterval(t2); };
-  }, [load]);
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -84,6 +155,12 @@ export default function ProctoringBoard() {
     else if (nowMs <= endMs) timeLine = `考试窗口剩余 ${Math.floor((endMs - nowMs) / 3600000)}h${Math.floor(((endMs - nowMs) % 3600000) / 60000)}m`;
     else timeLine = '考试窗口已截止';
   }
+
+  const wsBadge = wsMode === 'live'
+    ? { text: '● 实时推送', color: '#34d399' }
+    : wsMode === 'polling'
+      ? { text: '◌ 轮询模式', color: '#fbbf24' }
+      : { text: '◌ 连接中…', color: '#64748b' };
 
   return (
     <div ref={rootRef} style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0b1120 0%, #101a30 60%, #0b1120 100%)', color: '#e2e8f0', fontFamily: 'inherit' }}>
@@ -110,7 +187,9 @@ export default function ProctoringBoard() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: '#f1f5f9' }}>{clock.toLocaleTimeString('zh-CN')}</div>
-          <div style={{ fontSize: 10, color: '#64748b' }}>刷新于 {lastRefresh} · 10s 自动轮询</div>
+          <div style={{ fontSize: 10, color: '#64748b' }} data-testid="board-refresh-hint">
+            <span style={{ color: wsBadge.color }}>{wsBadge.text}</span> · 更新于 {lastRefresh}
+          </div>
         </div>
         <button onClick={toggleFullscreen}
           style={{ background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.4)', color: '#38bdf8', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
@@ -156,12 +235,16 @@ export default function ProctoringBoard() {
             </div>
           )}
 
-          {/* 考生宫格 */}
+          {/* 考生宫格（点击下钻） */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
             {board?.sessions?.map((s: any) => {
               const v = sessionVisual(s);
               return (
-                <div key={s.sessionId} style={{ background: v.bg, border: `1px solid ${v.color}44`, borderRadius: 12, padding: '10px 12px' }}>
+                <div key={s.sessionId} onClick={() => setDrillSessionId(s.sessionId)} data-testid="session-card"
+                  title="点击查看详情与监考操作"
+                  style={{ background: v.bg, border: `1px solid ${v.color}44`, borderRadius: 12, padding: '10px 12px', cursor: 'pointer', transition: 'transform 0.12s, border-color 0.12s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.borderColor = `${v.color}88`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; (e.currentTarget as HTMLDivElement).style.borderColor = `${v.color}44`; }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 999, background: v.dot, flexShrink: 0, boxShadow: s.status === 'ACTIVE' && s.online ? `0 0 6px ${v.dot}` : 'none' }} />
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.studentName}</span>
@@ -206,6 +289,13 @@ export default function ProctoringBoard() {
           </div>
         </div>
       </div>
+
+      {/* ══ 考生下钻弹窗 ══ */}
+      {drillSessionId != null && (
+        <SessionDetailModal examId={examId} sessionId={drillSessionId}
+          onClose={() => setDrillSessionId(null)}
+          onChanged={loadPolling} />
+      )}
     </div>
   );
 }

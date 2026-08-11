@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ExamsService } from './exams.service.js';
+import { emitExamChanged } from '../../common/events/app-events.js';
 
 const ONLINE_THRESHOLD_SECONDS = 30;
 
@@ -286,7 +287,9 @@ export class ProctoringService {
   }
 
   async warn(examId: number, sessionId: number, message: string, operatorName: string) {
-    return this.sendMessage(examId, sessionId, { messageType: 'WARN', content: message, senderName: operatorName });
+    const result = await this.sendMessage(examId, sessionId, { messageType: 'WARN', content: message, senderName: operatorName });
+    emitExamChanged(examId); // 监考大屏实时推送：警告
+    return result;
   }
 
   async getMessages(examId: number, sessionId: number) {
@@ -321,6 +324,7 @@ export class ProctoringService {
 
     // ★ 统一收口：重算 submittedCount（避免并发计数偏移）
     await this.examsService.syncExamProgress(examId);
+    emitExamChanged(examId); // 监考大屏实时推送：强制交卷
 
     return { success: true, finalScore: session.finalScore || session.totalScore };
   }
@@ -343,6 +347,7 @@ export class ProctoringService {
       },
     });
 
+    emitExamChanged(examId); // 监考大屏实时推送：延长作答时间
     return { success: true, newRemainingTime };
   }
 
@@ -393,6 +398,7 @@ export class ProctoringService {
       await this.examsService.syncExamProgress(examId);
     }
 
+    emitExamChanged(examId); // 监考大屏实时推送：标记/撤销缺考
     return { sessionId, absent };
   }
 }

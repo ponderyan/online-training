@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SUBJECTIVE_TYPES, getPassingScore } from '../../common/grading.utils.js';
+import { emitExamChanged } from '../../common/events/app-events.js';
 
 @Injectable()
 export class ExamsService {
@@ -115,6 +116,13 @@ export class ExamsService {
   }) {
     const paper = await this.prisma.paper.findUnique({ where: { id: data.paperId } });
     if (!paper) throw new NotFoundException('试卷不存在');
+
+    // ★ 考试窗口合理性硬校验（2026-08-11）：倒挂或短于答题时长直接拒绝
+    const startMs = new Date(data.startTime).getTime();
+    const endMs = new Date(data.endTime).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) throw new BadRequestException('考试时间格式无效');
+    if (endMs <= startMs) throw new BadRequestException('结束时间必须晚于开始时间');
+    if ((endMs - startMs) / 60000 < (data.durationMinutes || 0)) throw new BadRequestException('考试窗口不能短于答题时长');
 
     // 如果有 programId，从培训班学员中选取；否则不自动分配（后续手动添加）
     let students: { id: number }[] = [];
@@ -440,6 +448,8 @@ export class ExamsService {
       select: { id: true, displayName: true, studentNumber: true, avatar: true, gender: true },
     });
 
+    emitExamChanged(examId); // 监考大屏实时推送：考生开考
+
     // ★ A4: 返回考试规则供前端展示
     const earlyExitMinutes = exam.earlyExitMinutes ?? parseInt(await this.systemConfig.getConfig('exam_default_early_exit_minutes') || '30');
     const countdownWarningMinutes = parseInt(await this.systemConfig.getConfig('exam_countdown_warning_minutes') || '5');
@@ -513,6 +523,7 @@ export class ExamsService {
 
     // 统一收口：重算 submittedCount，并在全员交完时推进到 FINISHED
     await this.syncExamProgress(examId);
+    emitExamChanged(examId); // 监考大屏实时推送：交卷
 
     // P1-1: 返回交卷后的成绩概要（客观题已自动判分）
     const updatedSession = await this.prisma.examSession.findUnique({
@@ -643,6 +654,7 @@ export class ExamsService {
       await this.autoGrade(session.id);
       // 统一收口：重算 submittedCount 并在全员交完时推进 FINISHED
       await this.syncExamProgress(examId);
+      emitExamChanged(examId); // 监考大屏实时推送：超时自动交卷
       return {
         ok: false,
         remainingTime: 0,
@@ -702,6 +714,8 @@ export class ExamsService {
       orderBy: { sentAt: 'asc' },
       select: { id: true, messageType: true, content: true, senderName: true, sentAt: true },
     });
+
+    emitExamChanged(examId); // 监考大屏实时推送：心跳（在线状态/切屏违规）
 
     return {
       ok: true,

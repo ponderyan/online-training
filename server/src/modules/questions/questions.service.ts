@@ -219,6 +219,10 @@ export class QuestionsService {
   }) {
     const { options, blanks, subQuestions, tagIds, createdBy, orgId, minAnswerWords, rubric, ...questionData } = data;
 
+    // ── 必填校验（chapter_id NOT NULL）──
+    if (!data.chapterId || data.chapterId <= 0) {
+      throw new BadRequestException('请选择章节（chapterId 必填）');
+    }
     // ── 枚举校验 ──
     if (data.difficulty && !QuestionsService.VALID_DIFFICULTIES.includes(data.difficulty)) {
       throw new BadRequestException(`无效难度：${data.difficulty}（可选：${QuestionsService.VALID_DIFFICULTIES.join('/')}）`);

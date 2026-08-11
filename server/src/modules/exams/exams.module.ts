@@ -24,6 +24,6 @@ import { SystemConfigModule } from '../system-config/system-config.module.js';
   imports: [PrismaModule, SystemConfigModule, ScheduleModule.forRoot()],
   controllers: [ExamsController, StudentExamController, StudentLearningController, GradingController, TranscriptController, ScoreAppealController, ExamAnalysisController, ProctoringController, OfflineExamController],
   providers: [ExamsService, CertificatesService, ScoreAppealService, ExamAnalysisService, LearningReportService, ProctoringService, PublishSchedulerService, OfflineExamService],
-  exports: [ExamsService],
+  exports: [ExamsService, ProctoringService],
 })
 export class ExamsModule {}

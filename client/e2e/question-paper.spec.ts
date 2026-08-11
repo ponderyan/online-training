@@ -31,6 +31,45 @@ test.describe('出题与组卷 - 管理员视角', () => {
     await expectNoPageError(page);
   });
 
+  test('论文题表单：最低字数+采分点保存并落库（ESSAY增强e2e）', async ({ page, request }) => {
+    const stamp = Date.now();
+    await page.goto('/questions');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: '录入试题' }).click();
+    await page.waitForTimeout(800);
+
+    const modal = page.locator('.modal-card');
+    await modal.locator('select').first().selectOption('ESSAY');
+    // 题干
+    await modal.locator('textarea[placeholder*="输入试题题干"]').fill(`ESSAY增强E2E-${stamp}`);
+    // 作答要求：最低字数
+    await modal.locator('input[placeholder="如 800"]').fill('20');
+    // 采分点编辑器：加一条
+    await modal.getByText('+ 添加采分点').click();
+    await modal.locator('input[placeholder*="采分点描述"]').fill('论点明确');
+    // 保存
+    await modal.getByRole('button', { name: '保存试题' }).click();
+    await page.waitForTimeout(2000);
+    await expectNoPageError(page);
+
+    // 通过 API 校验字段已落库
+    const login = await request.post('http://localhost:3001/api/auth/login', { data: { username: 'admin', password: '123456' } });
+    const token = (await login.json()).accessToken;
+    const res = await request.get(`http://localhost:3001/api/questions?keyword=ESSAY增强E2E-${stamp}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await res.json();
+    const items = Array.isArray(body) ? body : body.items || [];
+    const created = items.find((q: any) => q.content?.includes(`ESSAY增强E2E-${stamp}`));
+    expect(created, '新创建的论文题应出现在题库列表').toBeTruthy();
+    expect(created.minAnswerWords).toBe(20);
+    expect(Array.isArray(created.rubric)).toBe(true);
+    expect(created.rubric[0].description).toBe('论点明确');
+
+    // 清理
+    if (created) await request.delete(`http://localhost:3001/api/questions/${created.id}`, { headers: { Authorization: `Bearer ${token}` } });
+  });
+
   test('题库页面有搜索和筛选功能', async ({ page }) => {
     await page.goto('/questions');
     await page.waitForLoadState('networkidle');

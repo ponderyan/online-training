@@ -56,6 +56,17 @@ test.describe('监考中心', () => {
     });
     examId = (await e.json()).id;
     expect(examId).toBeTruthy();
+
+    // 分配一名考生（供大屏下钻用例使用）
+    const stuRes = await request.get(`${API}/students?pageSize=1`, { headers: { Authorization: `Bearer ${token}` } });
+    const stuBody = await stuRes.json();
+    const studentId = stuBody?.items?.[0]?.id;
+    if (studentId) {
+      await request.post(`${API}/exams/${examId}/add-students`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { studentIds: [studentId] },
+      });
+    }
   });
 
   test.afterAll(async ({ request }) => {
@@ -104,5 +115,29 @@ test.describe('监考中心', () => {
     // 退出/全屏按钮
     await expect(page.getByRole('button', { name: /退出大屏/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /全屏/ })).toBeVisible();
+    // 数据通道徽标：实时推送（WS 生效）或轮询模式（降级兜底），两者必居其一
+    await expect(page.getByTestId('board-refresh-hint')).toContainText(/实时推送|轮询模式/);
+  });
+
+  test('大屏下钻：点击考生卡片打开详情弹窗（含快捷操作）', async ({ page }) => {
+    await page.goto(`/proctoring/${examId}/board`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2500);
+    await expectNoPageError(page);
+
+    const card = page.getByTestId('session-card').first();
+    const hasCard = await card.isVisible().catch(() => false);
+    if (!hasCard) {
+      // 无考生时跳过交互断言（数据环境差异兜底）
+      await expect(page.getByText('暂无考生')).toBeVisible();
+      return;
+    }
+    await card.click();
+    await expect(page.getByTestId('session-detail-modal')).toBeVisible();
+    // 快捷操作按钮齐备
+    await expect(page.getByTestId('btn-warn')).toBeVisible();
+    await expect(page.getByTestId('btn-force-submit')).toBeVisible();
+    // 监考留痕区存在
+    await expect(page.getByText('📋 监考操作留痕')).toBeVisible();
   });
 });
