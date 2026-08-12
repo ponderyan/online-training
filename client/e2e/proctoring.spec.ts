@@ -123,6 +123,15 @@ test.describe('监考中心', () => {
     await expect(page.getByTestId('board-timeline')).toContainText(/窗口剩余.*强制收卷|距开考|已截止/);
     // ★ 第 8 格：切屏违规（与"异常"区分）
     await expect(page.getByText('🔄 切屏违规')).toBeVisible();
+    // ★ 2026-08-12 红黄绿分级：统计条新增关注/高危格 + 红黄计数行 + 只看异常筛选
+    await expect(page.getByText('🟡 关注').first()).toBeVisible();
+    await expect(page.getByText('🔴 高危').first()).toBeVisible();
+    await expect(page.getByTestId('risk-count-line')).toBeVisible();
+    const filterBtn = page.getByTestId('btn-filter-abnormal');
+    await expect(filterBtn).toBeVisible();
+    await filterBtn.click();
+    await expect(page.getByText('✓ 只看异常中')).toBeVisible();
+    await filterBtn.click();
     // 违规动态面板
     await expect(page.getByText('⚠️ 违规动态')).toBeVisible();
     // 退出/全屏按钮

@@ -25,16 +25,18 @@ const EXAM_STATUS_LABELS: Record<string, { label: string; color: string }> = {
 const fmt = (d: string | Date) => new Date(d).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 const fmtClock = (secs: number) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
 
-function sessionVisual(s: any) {
-  if (s.absent) return { badge: '缺考', color: '#f87171', bg: 'rgba(248,113,113,0.10)', dot: '#f87171' };
+/**
+ * ★ 2026-08-12 红黄绿四态分级（竞品对齐：考试星四色 / 超星切屏阈值）
+ * 绿=正常作答 · 黄=切屏1~阈值-1次需关注 · 红=切屏≥阈值(高危,系统参数可配) · 橙=离线 · 深红=缺考 · 灰=未开考
+ * 红/绿不只靠色差，徽章文字+描边厚度辅助区分（色觉友好）
+ */
+function sessionVisual(s: any, threshold: number) {
+  if (s.absent) return { badge: '缺考', color: '#e11d48', bg: 'rgba(225,29,72,0.10)', dot: '#e11d48' };
   if (s.status === 'SUBMITTED') return { badge: '已交卷', color: '#34d399', bg: 'rgba(52,211,153,0.08)', dot: '#34d399' };
   if (s.status === 'ACTIVE' && s.online) {
-    const warn = s.suspicionLevel >= 3;
-    return warn
-      ? { badge: '高危作答', color: '#f87171', bg: 'rgba(248,113,113,0.14)', dot: '#f87171' }
-      : s.suspicionLevel > 0
-        ? { badge: '作答中·异常', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', dot: '#fbbf24' }
-        : { badge: '作答中', color: '#38bdf8', bg: 'rgba(56,189,248,0.10)', dot: '#38bdf8' };
+    if (s.suspicionLevel >= threshold) return { badge: '高危', color: '#f87171', bg: 'rgba(248,113,113,0.14)', dot: '#f87171' };
+    if (s.suspicionLevel > 0) return { badge: '切屏中', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', dot: '#fbbf24' };
+    return { badge: '作答中', color: '#34d399', bg: 'rgba(52,211,153,0.08)', dot: '#34d399' };
   }
   if (s.status === 'ACTIVE') return { badge: '离线作答', color: '#fb923c', bg: 'rgba(251,146,60,0.10)', dot: '#fb923c' };
   return { badge: '未开考', color: '#8b98ab', bg: 'rgba(139,152,171,0.08)', dot: '#8b98ab' };
@@ -86,14 +88,24 @@ export default function ProctoringBoard() {
   const exam = board?.exam;
   const stats = board?.stats;
   const statusInfo = exam ? (EXAM_STATUS_LABELS[exam.status] || { label: exam.status, color: '#8b98ab' }) : null;
+  // ★ 高危阈值（系统参数 exam_proctor_high_risk_threshold，board 接口带出，兜底 3）：切屏≥阈值标红
+  const threshold = board?.highRiskThreshold ?? 3;
   // ★ 切屏违规人数（tabSwitchCount>0，与"异常/可疑度"统计区分）
   const tabViolators = board?.sessions?.filter((s: any) => s.tabSwitchCount > 0).length || 0;
-  // ★ 宫格排序（2026-08-12）：可疑度降序 → 未交卷 → 已交卷，高危置顶
+  // ★ 红黄计数（2026-08-12）：高危=切屏≥阈值，关注=0<切屏<阈值
+  const highRiskCount = board?.sessions?.filter((s: any) => s.suspicionLevel >= threshold && !s.absent && s.status === 'ACTIVE').length || 0;
+  const warnCount = board?.sessions?.filter((s: any) => s.suspicionLevel > 0 && s.suspicionLevel < threshold).length || 0;
+  // ★ 只看异常筛选（2026-08-12，竞品对齐：考试星"只看异常"模式）
+  const [filterAbnormal, setFilterAbnormal] = useState(false);
+  // ★ 宫格排序（2026-08-12）：可疑度降序 → 未交卷 → 已交卷，高危置顶；只看异常时过滤出黄+红
   const sortedSessions = useMemo(() => {
     const done = (s: any) => (s.status === 'SUBMITTED' || s.absent ? 1 : 0);
-    return [...(board?.sessions || [])].sort((a: any, b: any) =>
+    const list = filterAbnormal
+      ? (board?.sessions || []).filter((s: any) => s.suspicionLevel > 0)
+      : (board?.sessions || []);
+    return [...list].sort((a: any, b: any) =>
       (b.suspicionLevel - a.suspicionLevel) || (done(a) - done(b)) || (a.sessionId - b.sessionId));
-  }, [board]);
+  }, [board, filterAbnormal]);
   const operatorName = (() => {
     try { return JSON.parse(localStorage.getItem('user') || '{}')?.displayName || '管理员'; } catch { return '管理员'; }
   })();
@@ -158,16 +170,17 @@ export default function ProctoringBoard() {
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 统计条 */}
           {stats && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 10, marginBottom: 14 }}>
               {[
                 { label: '总考生', value: stats.totalStudents, color: '#f1f5f9' },
-                { label: '🟢 在线作答', value: stats.onlineCount, color: '#38bdf8' },
-                { label: '🔴 离线', value: stats.offlineCount, color: stats.offlineCount > 0 ? '#fb923c' : '#64748b' },
-                { label: '⏳ 未开考', value: stats.notStartedCount, color: stats.notStartedCount > 0 ? '#fbbf24' : '#64748b' },
-                { label: '✅ 已交卷', value: stats.submittedCount, color: '#34d399' },
-                { label: '🚫 缺考', value: stats.absentCount, color: stats.absentCount > 0 ? '#f87171' : '#64748b' },
-                { label: '⚠️ 异常', value: stats.abnormalCount, color: stats.abnormalCount > 0 ? '#fbbf24' : '#64748b' },
+                { label: '🟢 在线作答', value: stats.onlineCount, color: stats.onlineCount > 0 ? '#34d399' : '#64748b' },
+                { label: '🟡 关注', value: warnCount, color: warnCount > 0 ? '#fbbf24' : '#64748b' },
+                { label: '🔴 高危', value: highRiskCount, color: highRiskCount > 0 ? '#f87171' : '#64748b' },
                 { label: '🔄 切屏违规', value: tabViolators, color: tabViolators > 0 ? '#fb923c' : '#64748b' },
+                { label: '⏳ 未开考', value: stats.notStartedCount, color: stats.notStartedCount > 0 ? '#fbbf24' : '#64748b' },
+                { label: '✅ 已交卷', value: stats.submittedCount, color: stats.submittedCount > 0 ? '#34d399' : '#64748b' },
+                { label: '🚫 缺考', value: stats.absentCount, color: stats.absentCount > 0 ? '#e11d48' : '#64748b' },
+                { label: '⚪ 离线', value: stats.offlineCount, color: stats.offlineCount > 0 ? '#fb923c' : '#64748b' },
               ].map((c, i) => (
                 <div key={i} style={{ background: 'rgba(148,163,184,0.07)', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
                   <div style={{ fontSize: 26, fontWeight: 700, color: c.color, fontVariantNumeric: 'tabular-nums' }}>{c.value}</div>
@@ -190,14 +203,31 @@ export default function ProctoringBoard() {
             </div>
           )}
 
+          {/* 宫格控制条：只看异常筛选 + 红黄计数（2026-08-12） */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>
+              考生 <span style={{ color: '#64748b', fontWeight: 400 }}>{sortedSessions.length}/{board?.sessions?.length ?? 0}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: '#94a3b8' }} data-testid="risk-count-line">
+                🟡 关注 <b style={{ color: '#fbbf24' }}>{warnCount}</b> · 🔴 高危 <b style={{ color: '#f87171' }}>{highRiskCount}</b>
+              </span>
+              <button onClick={() => setFilterAbnormal(v => !v)} data-testid="btn-filter-abnormal"
+                style={{ background: filterAbnormal ? 'rgba(248,113,113,0.16)' : 'rgba(148,163,184,0.08)', border: `1px solid ${filterAbnormal ? '#f87171aa' : 'rgba(148,163,184,0.25)'}`, color: filterAbnormal ? '#f87171' : '#94a3b8', borderRadius: 8, padding: '5px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                {filterAbnormal ? '✓ 只看异常中' : '👁 只看异常'}
+              </button>
+            </div>
+          </div>
+
           {/* 考生宫格（点击下钻） */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
             {sortedSessions.map((s: any) => {
-              const v = sessionVisual(s);
+              const v = sessionVisual(s, threshold);
+              const highRisk = s.suspicionLevel >= threshold && s.status === 'ACTIVE';
               return (
                 <div key={s.sessionId} onClick={() => setDrillSessionId(s.sessionId)} data-testid="session-card"
                   title="点击查看详情与监考操作"
-                  style={{ background: v.bg, border: `1px solid ${v.color}${s.suspicionLevel >= 3 && s.status === 'ACTIVE' ? 'aa' : '44'}`, borderRadius: 12, padding: '10px 12px', cursor: 'pointer', transition: 'transform 0.12s, border-color 0.12s', animation: s.suspicionLevel >= 3 && s.status === 'ACTIVE' ? 'fox-pulse 1.6s ease-in-out infinite' : undefined }}
+                  style={{ background: v.bg, border: `1px solid ${v.color}${highRisk ? 'aa' : '44'}`, borderRadius: 12, padding: '10px 12px', cursor: 'pointer', transition: 'transform 0.12s, border-color 0.12s', animation: highRisk ? 'fox-pulse 1.6s ease-in-out infinite' : undefined }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.borderColor = `${v.color}88`; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; (e.currentTarget as HTMLDivElement).style.borderColor = `${v.color}44`; }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -213,7 +243,7 @@ export default function ProctoringBoard() {
                     </span>
                   </div>
                   {(s.tabSwitchCount > 0 || s.suspicionLevel > 0) && (
-                    <div style={{ fontSize: 10, marginTop: 4, display: 'flex', gap: 8, color: s.suspicionLevel >= 3 ? '#f87171' : '#fbbf24' }}>
+                    <div style={{ fontSize: 10, marginTop: 4, display: 'flex', gap: 8, color: s.suspicionLevel >= threshold ? '#f87171' : '#fbbf24' }}>
                       {s.tabSwitchCount > 0 && <span data-testid="tab-switch-count">🔄 切屏 {s.tabSwitchCount}{exam?.tabSwitchLimit > 0 ? `/${exam.tabSwitchLimit}` : ''}</span>}
                       {s.suspicionLevel > 0 && <span>⚠️ 可疑度 {s.suspicionLevel}</span>}
                     </div>

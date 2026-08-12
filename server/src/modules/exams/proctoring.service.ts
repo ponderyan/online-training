@@ -1,15 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ExamsService } from './exams.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { emitExamChanged } from '../../common/events/app-events.js';
 
 const ONLINE_THRESHOLD_SECONDS = 30;
+const DEFAULT_HIGH_RISK_THRESHOLD = 3; // 监考大屏高危切屏阈值兜底（对齐超星主流口径）
 
 @Injectable()
 export class ProctoringService {
   constructor(
     private prisma: PrismaService,
     private examsService: ExamsService,
+    private systemConfig: SystemConfigService,
   ) {}
 
   async getOverview(examId: number) {
@@ -58,6 +61,11 @@ export class ProctoringService {
       include: { paper: { select: { name: true, totalScore: true } } },
     });
     if (!exam) throw new NotFoundException('考试不存在');
+
+    // ★ 2026-08-12：大屏高危切屏阈值（系统参数，可配置中心调整，兜底 3）
+    const highRiskThreshold = parseInt(
+      (await this.systemConfig.getConfig('exam_proctor_high_risk_threshold')) || String(DEFAULT_HIGH_RISK_THRESHOLD),
+    ) || DEFAULT_HIGH_RISK_THRESHOLD;
 
     const questionCount = await this.prisma.paperQuestion.count({ where: { paperId: exam.paperId } });
 
@@ -141,6 +149,7 @@ export class ProctoringService {
       sessions: items,
       recentViolations: recentViolations.slice(0, 20),
       serverTime: now,
+      highRiskThreshold,
     };
   }
 

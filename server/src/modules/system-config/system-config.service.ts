@@ -17,6 +17,7 @@ export class SystemConfigService implements OnModuleInit {
       { key: 'exam_grace_seconds', value: '120', desc: '考试结束后交卷宽限期（秒）', group: 'exam', inputType: 'number' },
       { key: 'exam_force_submit_on_end', value: 'true', desc: '考试时间到是否强制收卷', group: 'exam', inputType: 'boolean' },
       { key: 'exam_allow_pause_resume', value: 'true', desc: 'FLEXIBLE模式是否允许断点续考', group: 'exam', inputType: 'boolean' },
+      { key: 'exam_proctor_high_risk_threshold', value: '3', desc: '监考大屏高危切屏阈值（次），达到即标红预警', group: 'exam', inputType: 'number' },
     ];
     for (const cfg of examDefaults) {
       await this.prisma.systemConfig.upsert({
