@@ -25,6 +25,11 @@ export default function LearningHourCertificates() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 400);
 
+  // ★ 2026-08-12 分页（此前 limit=20 无翻页，total 显示了却看不了后面的）
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
@@ -47,12 +52,14 @@ export default function LearningHourCertificates() {
       const params: Record<string, string> = {};
       if (statusFilter) params.status = statusFilter;
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      params.page = String(page);
+      params.limit = String(PAGE_SIZE);
       const r = await api.learningHourCertificates.list(params);
       setItems(r.items || []);
       setTotal(r.total || 0);
     } catch {}
     setLoading(false);
-  }, [statusFilter, debouncedSearch]);
+  }, [statusFilter, debouncedSearch, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -71,6 +78,13 @@ export default function LearningHourCertificates() {
 
   const handleReview = async () => {
     if (!reviewItem || !reviewAction) return;
+    // ★ 2026-08-12 驳回必填原因 + 通过/驳回二次确认（此前无确认、驳回原因可选）
+    if (reviewAction === 'reject' && !reviewNote.trim()) {
+      toast.error('驳回必须填写原因');
+      return;
+    }
+    const label = reviewAction === 'approve' ? '通过' : '驳回';
+    if (!confirm(`确认${label} ${reviewItem.studentName} 的学时证明？${reviewAction === 'reject' ? '\n原因：' + reviewNote : ''}`)) return;
     setProcessing(true);
     try {
       await api.learningHourCertificates.review(reviewItem.id, reviewAction, reviewNote || undefined);
@@ -111,15 +125,15 @@ export default function LearningHourCertificates() {
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         {[['', '全部'], ['PENDING', '待审批'], ['APPROVED', '已通过'], ['REJECTED', '已驳回'], ['REVOKED', '已撤销']].map(([v, l]) => (
-          <button key={v} onClick={() => { setStatusFilter(v); setSelectedIds(new Set()); }}
+          <button key={v} onClick={() => { setStatusFilter(v); setSelectedIds(new Set()); setPage(1); }}
             className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all"
             style={{
               background: statusFilter === v ? 'var(--fox)' : 'var(--paper-dark)',
               color: statusFilter === v ? '#fff' : 'var(--ink-400)',
             }}>{l}</button>
         ))}
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="🔍 搜索学员/编号…"
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+          placeholder="🔍 搜索学员/编号/培训班…"
           className="input text-xs ml-auto" style={{ width: 200 }} />
       </div>
 
@@ -143,6 +157,7 @@ export default function LearningHourCertificates() {
                 <th>培训班</th>
                 <th>总学时</th>
                 <th>状态</th>
+                <th>审核人</th>
                 <th>申请时间</th>
                 <th style={{ width: 180 }}>操作</th>
               </tr>
@@ -169,6 +184,7 @@ export default function LearningHourCertificates() {
                         {st.text}
                       </span>
                     </td>
+                    <td className="text-[var(--ink-300)] text-xs">{item.reviewerName || '—'}</td>
                     <td className="text-[var(--ink-300)] text-xs">
                       {item.appliedAt ? new Date(item.appliedAt).toLocaleString('zh-CN') : '—'}
                     </td>
@@ -184,9 +200,9 @@ export default function LearningHourCertificates() {
                               className="btn btn-ghost btn-xs text-[var(--neutral-500)]" >撤销</button>
                           </>
                         )}
-                        {item.approvalStatus === 'PENDING' && (
+                        {(item.approvalStatus === 'PENDING' || item.approvalStatus === 'AUTO_APPROVED') && (
                           <button onClick={() => { setReviewItem(item); setReviewNote(''); setReviewAction(null); }}
-                            className="btn btn-ghost btn-xs text-[var(--fox)]" >审核</button>
+                            className="btn btn-ghost btn-xs text-[var(--fox)]" >{item.approvalStatus === 'AUTO_APPROVED' ? '复核' : '审核'}</button>
                         )}
                       </div>
                     </td>
@@ -195,6 +211,18 @@ export default function LearningHourCertificates() {
               })}
             </tbody>
           </table>
+          </div>
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-xs text-[var(--ink-300)]">
+          <span>共 {total} 条 · 第 {page} / {totalPages} 页</span>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+              className="btn btn-ghost btn-xs" style={{ opacity: page <= 1 ? 0.4 : 1 }}>上一页</button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+              className="btn btn-ghost btn-xs" style={{ opacity: page >= totalPages ? 0.4 : 1 }}>下一页</button>
           </div>
         </div>
       )}
@@ -297,8 +325,8 @@ export default function LearningHourCertificates() {
             <div className="modal-footer flex gap-2">
               <button onClick={() => setReviewItem(null)} className="btn btn-outline btn-sm flex-1">取消</button>
               <button onClick={() => { setReviewAction('reject'); handleReview(); }}
-                disabled={processing}
-                className="btn btn-sm bg-[var(--error)]" style={{  color: 'white', opacity: processing ? 0.5 : 1 }}>
+                disabled={processing || !reviewNote.trim()}
+                className="btn btn-sm bg-[var(--error)]" style={{  color: 'white', opacity: (processing || !reviewNote.trim()) ? 0.5 : 1 }}>
                 {processing ? '处理中…' : '驳回'}
               </button>
               <button onClick={() => { setReviewAction('approve'); handleReview(); }}

@@ -42,11 +42,17 @@ export class LearningHoursController {
     @Query('studentId') studentId?: string,
     @Query('status') status?: string,
     @Query('programId') programId?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.service.findAll({
       studentId: studentId ? parseInt(studentId) : undefined,
-      status,
+      statuses: status?.split(',').filter(Boolean),
       programId: programId ? parseInt(programId) : undefined,
+      search,
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
       userOrgId: req.user?.orgId ?? null,
       userRoles: req.user?.roles,
     });

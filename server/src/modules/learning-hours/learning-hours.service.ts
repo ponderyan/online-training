@@ -11,10 +11,12 @@ export class LearningHoursService {
     private resourceAccess: ResourceAccessService,
   ) {}
 
-  async findAll(params?: { studentId?: number; status?: string; programId?: number; userOrgId?: number | null; userRoles?: string[] }) {
+  async findAll(params?: { studentId?: number; status?: string; statuses?: string[]; programId?: number; search?: string; page?: number; limit?: number; userOrgId?: number | null; userRoles?: string[] }) {
     const where: any = {};
     if (params?.studentId) where.studentId = params.studentId;
-    if (params?.status) where.status = params.status;
+    // ★ 2026-08-12 支持多状态（已审核 tab 一次拉 APPROVED+REJECTED）与单状态，兼容旧调用
+    const statuses = (params?.statuses && params.statuses.length) ? params.statuses : (params?.status ? [params.status] : []);
+    if (statuses.length) where.status = { in: statuses };
     if (params?.programId) where.programId = params.programId;
     // org filter: non-SUPER sees only visible orgs students
     const lhRoles = params?.userRoles ?? [];
@@ -22,15 +24,37 @@ export class LearningHoursService {
       const visIds = await this.resourceAccess.getVisibleOrgIds(params!.userOrgId!);
       where.student = { orgId: { in: visIds } };
     }
+    // ★ 2026-08-12 search：学员/培训班/说明模糊
+    if (params?.search) {
+      const s = { contains: params.search } as any;
+      const searchOr = [
+        { student: { displayName: s } },
+        { program: { name: s } },
+        { description: s },
+        { note: s },
+      ];
+      if (where.student) {
+        const studentOrg = where.student;
+        delete where.student;
+        where.AND = [{ student: studentOrg }, { OR: searchOr }];
+      } else {
+        where.OR = searchOr;
+      }
+    }
 
+    const page = params?.page || 1;
+    const limit = params?.limit || 20;
     const [items, total] = await Promise.all([
       this.prisma.learningHourRecord.findMany({
         where,
         orderBy: { recordedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
         include: {
           student: { select: { id: true, displayName: true, studentNumber: true, organization: true } },
           program: { select: { id: true, name: true } },
           type: { select: { id: true, name: true, code: true } },
+          approvedBy: { select: { displayName: true } },
         },
       }),
       this.prisma.learningHourRecord.count({ where }),
@@ -49,7 +73,7 @@ export class LearningHoursService {
       return { ...r, videoName };
     }));
 
-    return { items: enriched, total };
+    return { items: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async stats(studentId: number) {
@@ -225,6 +249,13 @@ export class LearningHoursService {
     description?: string; note?: string; evidenceUrl?: string;
     operatorId?: number; operatorOrgId?: number | null;
   }) {
+    // ★ 2026-08-12 学时数合法性校验（此前无校验，负数/0 可入库污染统计与证明）
+    if (typeof data.hours !== 'number' || !(data.hours > 0)) {
+      throw new BadRequestException('学时数必须大于 0');
+    }
+    if (data.hours > 1000) {
+      throw new BadRequestException('单次申报学时数不能超过 1000 小时');
+    }
     // orgId 校验：申报人必须和学员在同一机构
     if (data.operatorOrgId) {
       const student = await this.prisma.user.findUnique({

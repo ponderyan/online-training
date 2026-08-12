@@ -628,7 +628,7 @@ export const api = {
 
   // ── Phase 1b: 学时记录 ──
   learningHours: {
-    list: (params?: { programId?: number; source?: string; status?: string; studentId?: number }) => {
+    list: (params?: { programId?: number; source?: string; status?: string; studentId?: number; search?: string; page?: number | string; limit?: number | string }) => {
       const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))).toString() : '';
       return request<{ items: any[]; total: number }>(`/learning-hours${qs}`);
     },

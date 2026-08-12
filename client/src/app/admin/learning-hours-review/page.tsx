@@ -16,6 +16,11 @@ export default function LearningHoursReviewPage() {
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  // ★ 2026-08-12 已审核分页（此前合并全量加载无分页）+ 证据预览
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const REVIEW_PAGE_SIZE = 20;
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const loadPending = useCallback(async () => {
     try {
@@ -29,16 +34,15 @@ export default function LearningHoursReviewPage() {
       const params: any = {};
       if (programFilter) params.programId = programFilter;
       if (sourceFilter) params.source = sourceFilter;
-      // 加载已审核记录（APPROVED + REJECTED）
-      const [approved, rejected] = await Promise.all([
-        api.learningHours.list({ ...params, status: 'APPROVED' }),
-        api.learningHours.list({ ...params, status: 'REJECTED' }),
-      ]);
-      const merged = [...(approved.items || []), ...(rejected.items || [])]
-        .sort((a, b) => new Date(b.approvedAt || b.recordedAt).getTime() - new Date(a.approvedAt || a.recordedAt).getTime());
-      setReviewedHours(merged);
+      // ★ 2026-08-12 一次拉 APPROVED+REJECTED + 分页（此前合并全量加载无分页）
+      params.status = 'APPROVED,REJECTED';
+      params.page = String(reviewPage);
+      params.limit = String(REVIEW_PAGE_SIZE);
+      const d = await api.learningHours.list(params);
+      setReviewedHours(d.items || []);
+      setReviewTotal(d.total || 0);
     } catch {}
-  }, [programFilter, sourceFilter]);
+  }, [programFilter, sourceFilter, reviewPage]);
 
   useEffect(() => {
     if (tab === 'pending') loadPending();
@@ -99,18 +103,18 @@ export default function LearningHoursReviewPage() {
 
       {/* 筛选栏 */}
       <div className="flex items-center gap-3 mb-4">
-        <select value={programFilter || ''} onChange={e => setProgramFilter(e.target.value ? parseInt(e.target.value) : undefined)}
+        <select value={programFilter || ''} onChange={e => { setProgramFilter(e.target.value ? parseInt(e.target.value) : undefined); setReviewPage(1); }}
           className="input select text-xs" style={{ maxWidth: 250 }}>
           <option value="">全部培训班</option>
           {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
+        <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setReviewPage(1); }}
           className="input select text-xs" style={{ maxWidth: 140 }}>
           <option value="">全部来源</option>
           <option value="OFFLINE">✏️ 人工申报</option>
         </select>
         <span className="text-[var(--ink-300)] text-xs">
-          {tab === 'pending' ? `共 ${pendingHours.length} 条待审核` : `共 ${reviewedHours.length} 条已审核`}
+          {tab === 'pending' ? `共 ${pendingHours.length} 条待审核` : `共 ${reviewTotal} 条已审核`}
         </span>
       </div>
 
@@ -135,7 +139,9 @@ export default function LearningHoursReviewPage() {
                       <td className="text-xs">{h.program?.name || '—'}</td>
                       <td className="text-[var(--ink-400)] text-xs">{h.type?.name || '—'}</td>
                       <td className="text-sm font-medium">{h.hours}h</td>
-                      <td>{h.evidenceUrl ? <a href={h.evidenceUrl} target="_blank" className="text-[var(--fox)] text-xs">查看附件</a> : '—'}</td>
+                      <td>{h.evidenceUrl
+                        ? <button onClick={() => setPreviewUrl(h.evidenceUrl)} className="text-[var(--fox)] text-xs underline bg-transparent border-none p-0 cursor-pointer">📎 预览</button>
+                        : '—'}</td>
                       <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.note || h.description || ''}>{h.note || h.description || '—'}</td>
                       <td className="text-[var(--ink-300)] text-xs">{new Date(h.recordedAt).toLocaleString('zh-CN')}</td>
                     </tr>
@@ -159,36 +165,71 @@ export default function LearningHoursReviewPage() {
         reviewedHours.length === 0 ? (
           <div className="card p-12 text-center"><p className="text-[var(--ink-300)]">暂无已审核记录</p></div>
         ) : (
-          <div className="card p-0 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="list-table">
-              <thead><tr>
-                <th>学员</th><th>培训班</th><th>学时</th><th>结果</th><th>审核意见</th><th>审核时间</th>
-              </tr></thead>
-              <tbody>
-                {reviewedHours.map(h => (
-                  <tr key={h.id}>
-                    <td><div className="text-sm font-medium">{h.student?.displayName || '—'}</div></td>
-                    <td className="text-xs">{h.program?.name || '—'}</td>
-                    <td className="text-sm font-medium">{h.hours}h</td>
-                    <td>
-                      {h.status === 'REJECTED'
-                        ? <span className="tag bg-[var(--verm-glow)] text-[var(--error)]" style={{   fontSize: '10px' }}>❌ 驳回</span>
-                        : <span className="tag bg-[var(--sage-glow)] text-[var(--sage)]" style={{   fontSize: '10px' }}>✅ 通过</span>}
-                    </td>
-                    <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
-                      {h.reviewComment || '—'}
-                    </td>
-                    <td className="text-[var(--ink-300)] text-xs">
-                      {h.approvedAt ? new Date(h.approvedAt).toLocaleString('zh-CN') : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <>
+            <div className="card p-0 overflow-hidden">
+              <div className="overflow-x-auto">
+              <table className="list-table">
+                <thead><tr>
+                  <th>学员</th><th>培训班</th><th>学时</th><th>结果</th><th>审核意见</th><th>审核人</th><th>审核时间</th>
+                </tr></thead>
+                <tbody>
+                  {reviewedHours.map(h => (
+                    <tr key={h.id}>
+                      <td><div className="text-sm font-medium">{h.student?.displayName || '—'}</div></td>
+                      <td className="text-xs">{h.program?.name || '—'}</td>
+                      <td className="text-sm font-medium">{h.hours}h</td>
+                      <td>
+                        {h.status === 'REJECTED'
+                          ? <span className="tag bg-[var(--verm-glow)] text-[var(--error)]" style={{   fontSize: '10px' }}>❌ 驳回</span>
+                          : <span className="tag bg-[var(--sage-glow)] text-[var(--sage)]" style={{   fontSize: '10px' }}>✅ 通过</span>}
+                      </td>
+                      <td className="text-xs text-[var(--ink-400)]" style={{  maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.reviewComment || ''}>
+                        {h.reviewComment || '—'}
+                      </td>
+                      <td className="text-[var(--ink-300)] text-xs">{h.approvedBy?.displayName || '—'}</td>
+                      <td className="text-[var(--ink-300)] text-xs">
+                        {h.approvedAt ? new Date(h.approvedAt).toLocaleString('zh-CN') : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            </div>
+            {/* ★ 2026-08-13 已审核分页 */}
+            <div className="flex items-center justify-between mt-4 text-xs text-[var(--ink-300)]">
+              <span>共 {reviewTotal} 条 · 第 {reviewPage} / {Math.max(1, Math.ceil(reviewTotal / REVIEW_PAGE_SIZE))} 页</span>
+              <div className="flex gap-2">
+                <button disabled={reviewPage <= 1} onClick={() => setReviewPage(p => p - 1)}
+                  className="btn btn-ghost btn-xs" style={{ opacity: reviewPage <= 1 ? 0.4 : 1 }}>上一页</button>
+                <button disabled={reviewPage >= Math.max(1, Math.ceil(reviewTotal / REVIEW_PAGE_SIZE))} onClick={() => setReviewPage(p => p + 1)}
+                  className="btn btn-ghost btn-xs" style={{ opacity: reviewPage >= Math.max(1, Math.ceil(reviewTotal / REVIEW_PAGE_SIZE)) ? 0.4 : 1 }}>下一页</button>
+              </div>
+            </div>
+          </>
+        )
+      )}
+
+      {/* 证据预览弹窗 */}
+      {previewUrl && (
+        <div className="modal-overlay" onClick={() => setPreviewUrl(null)}>
+          <div className="modal-card max-w-[760px] animate-fadeSlide" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="font-serif font-bold text-sm">📎 证据预览</h3>
+              <button onClick={() => setPreviewUrl(null)} className="text-lg bg-transparent border-none cursor-pointer text-[var(--ink-300)]">✕</button>
+            </div>
+            <div className="modal-body">
+              {/\.(png|jpe?g|gif|webp|svg)$/i.test(previewUrl) ? (
+                <img src={previewUrl} alt="证据" className="w-full max-h-[60vh] object-contain rounded-xl bg-[var(--paper-dark)]" />
+              ) : (
+                <iframe src={previewUrl} className="w-full h-[60vh] rounded-xl border-none bg-[var(--paper-dark)]" title="证据预览" />
+              )}
+              <div className="mt-3 flex justify-end">
+                <a href={previewUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">↗ 在新窗口打开</a>
+              </div>
             </div>
           </div>
-        )
+        </div>
       )}
 
       {/* 驳回弹窗 */}

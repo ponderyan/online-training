@@ -12,6 +12,7 @@ interface FindAllParams extends PaginationParams {
   studentId?: number;
   programId?: number;
   status?: string;
+  search?: string;
   userOrgId?: number | null;
   userRoles?: string[];
 }
@@ -74,9 +75,9 @@ export class LearningHourCertificatesService {
       throw new BadRequestException('您未报名该培训班，无法申请学时证明');
     }
 
-    // 2. 检查是否已有该培训班的学时证明
+    // 2. 检查是否已有该培训班的学时证明（★ 2026-08-12 驳回可重提：REJECTED 不算占用，允许重新申请）
     const existing = await this.prisma.learningHourCertificate.findFirst({
-      where: { studentId, programId, isRevoked: false },
+      where: { studentId, programId, isRevoked: false, approvalStatus: { not: 'REJECTED' } },
     });
     if (existing) {
       throw new BadRequestException('您已申请过该培训班的学时证明，请勿重复申请');
@@ -163,9 +164,9 @@ export class LearningHourCertificatesService {
         verificationCode,
         contentHash: sealHash || null,
         sealHash: sealHash || null,
-        approvalStatus: 'AUTO_APPROVED',
+        // ★ 2026-08-12 真审批流：申请进 PENDING，审批通过后才可下载 PDF（此前直接 AUTO_APPROVED 自动发证）
+        approvalStatus: 'PENDING',
         appliedAt: new Date(),
-        approvedAt: new Date(),
         orgId: program?.org?.id || null,
       },
     });
@@ -184,11 +185,31 @@ export class LearningHourCertificatesService {
     if (params.studentId) where.studentId = params.studentId;
     if (params.programId) where.programId = params.programId;
     if (params.status) where.approvalStatus = params.status;
+    // ★ 2026-08-12 search：学员/编号/培训班模糊（此前前端传了但后端忽略）
+    if (params.search) {
+      const s = { contains: params.search } as any;
+      const searchOr = [{ studentName: s }, { certificateNo: s }, { programName: s }];
+      if (where.OR) {
+        // 已有 org 隔离 OR → 与 search 组合为 AND
+        const orgOr = where.OR;
+        delete where.OR;
+        where.AND = [{ OR: orgOr }, { OR: searchOr }];
+      } else {
+        where.OR = searchOr;
+      }
+    }
     // org filter lhc
     const lhcRoles = params.userRoles ?? [];
     if (!lhcRoles.includes('SUPER_ADMIN') && (params.userOrgId ?? null) !== null) {
       const visIds = await this.resourceAccess.getVisibleOrgIds(params.userOrgId!);
-      where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
+      if (where.AND) {
+        where.AND.push({ OR: [{ orgId: { in: visIds } }, { orgId: null }] });
+      } else if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: [{ orgId: { in: visIds } }, { orgId: null }] }];
+        delete where.OR;
+      } else {
+        where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
+      }
     }
 
     const [items, total] = await Promise.all([
@@ -201,8 +222,14 @@ export class LearningHourCertificatesService {
       this.prisma.learningHourCertificate.count({ where }),
     ]);
 
+    // ★ 2026-08-13 批量查审核人姓名（approvedBy 是无 relation 的标量字段，无法 include）
+    const reviewerIds = [...new Set(items.map(i => i.approvedBy).filter(Boolean))] as number[];
+    const reviewers = reviewerIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: reviewerIds } }, select: { id: true, displayName: true } })
+      : [];
+    const reviewerMap = new Map(reviewers.map(u => [u.id, u.displayName]));
     return {
-      items,
+      items: items.map(i => ({ ...i, reviewerName: (i.approvedBy != null && reviewerMap.get(i.approvedBy)) || null })),
       total,
       page,
       limit,
@@ -351,8 +378,10 @@ export class LearningHourCertificatesService {
 
     const baseUrl = process.env.SITE_URL || 'https://foxlearn.cn';
 
+    // ★ 2026-08-12 verify 门控：待审批/已驳回/已撤销的证明不可验证通过
+    const passed = cert.approvalStatus === 'APPROVED' || cert.approvalStatus === 'AUTO_APPROVED';
     return {
-      valid: !cert.isRevoked,
+      valid: passed && !cert.isRevoked,
       certificate: {
         studentName: cert.studentName,
         idCardMasked: maskIdCard(cert.idCard),
@@ -381,6 +410,13 @@ export class LearningHourCertificatesService {
   async generatePdf(id: number): Promise<Buffer> {
     const cert = await this.prisma.learningHourCertificate.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('学时证明不存在');
+    // ★ 2026-08-12 下载门控：仅通过态（APPROVED/AUTO_APPROVED）且未撤销可下载
+    if (cert.approvalStatus !== 'APPROVED' && cert.approvalStatus !== 'AUTO_APPROVED') {
+      throw new BadRequestException('学时证明尚未审核通过，无法下载');
+    }
+    if (cert.isRevoked) {
+      throw new BadRequestException('学时证明已撤销，无法下载');
+    }
 
     const fs = await import('fs/promises');
     const path = await import('path');
