@@ -383,7 +383,7 @@ export default function CertificateTemplateEditor() {
                 <div
                   ref={canvasRef}
                   onClick={e => { if (e.target === e.currentTarget) setSelectedId(null); }}
-                  style={{ position: 'relative', width: canvas.width, height: canvas.height, background: canvas.background, backgroundImage: canvas.backgroundImage ? `url(${canvas.backgroundImage})` : undefined, backgroundSize: canvas.backgroundImageFit || 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', boxShadow: '0 2px 16px rgba(0,0,0,0.15)', overflow: 'hidden' }}
+                  style={{ position: 'relative', width: canvas.width, height: canvas.height, backgroundColor: canvas.background, backgroundImage: canvas.backgroundImage ? `url(${canvas.backgroundImage})` : undefined, backgroundSize: canvas.backgroundImageFit || 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', boxShadow: '0 2px 16px rgba(0,0,0,0.15)', overflow: 'hidden' }}
                 >
                   {canvas.elements.map(el => (
                     <div
