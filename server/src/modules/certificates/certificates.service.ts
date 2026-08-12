@@ -283,7 +283,13 @@ export class CertificatesService {
       this.prisma.certificate.count({ where }),
     ]);
 
-    return { items, total, page: params.page, totalPages: Math.ceil(total / params.limit) };
+    // ★ 2026-08-13 列表生成 QR data URL（此前只有学员自查询带 QR，后台列表缺 → 预览只能显示占位符）
+    const withQr = await Promise.all(items.map(async (cert) => {
+      const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
+      return { ...cert, qrDataUrl };
+    }));
+
+    return { items: withQr, total, page: params.page, totalPages: Math.ceil(total / params.limit) };
   }
 
   /** 获取学员的证书列表 */

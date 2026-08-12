@@ -57,6 +57,8 @@ function CertificatesContent() {
         certificateNo: cert.certificateNo,
         issueDate: cert.issueDate,
         verificationCode: cert.verificationCode || '',
+        // ★ 2026-08-13 列表接口已生成 qrDataUrl，预览展示真实二维码（此前只显示占位符）
+        qrDataUrl: cert.qrDataUrl || undefined,
       },
     });
   };
