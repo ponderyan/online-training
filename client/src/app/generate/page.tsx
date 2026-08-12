@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 
 const TYPE_NAMES: Record<string, string> = {
   SINGLE_CHOICE: '单选题', MULTIPLE_CHOICE: '多选题', TRUE_FALSE: '判断题',
-  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题',
+  FILL_BLANK: '填空题', SHORT_ANSWER: '简答题', CASE_STUDY: '案例题', ESSAY: '论文题',
 };
 import DifficultyConfig, { DIFFS, DIFF_LABELS } from './components/difficulty-config';
 import TypeConfigSection from './components/type-config-section';
@@ -37,6 +37,7 @@ function GeneratePageContent() {
     FILL_BLANK: { count: 5, score: 1, blanksPerQ: 2 },
     SHORT_ANSWER: { count: 0, score: 0 },
     CASE_STUDY: { count: 0, score: 0 },
+    ESSAY: { count: 0, score: 0 },
   });
 
   const [difficulty, setDifficulty] = useState<Record<string, number>>({

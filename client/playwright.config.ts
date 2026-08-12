@@ -42,6 +42,12 @@ export default defineConfig({
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
     {
+      name: 'generate',
+      testMatch: /generate\.spec\.ts/,
+      dependencies: ['setup-admin'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
+    {
       name: 'question-paper',
       testMatch: /question-paper\.spec\.ts/,
       dependencies: ['setup-admin', 'setup-lecturer'],

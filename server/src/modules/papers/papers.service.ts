@@ -1269,7 +1269,7 @@ export class PapersService {
     }
 
     // === 密封线（主观题前） ===
-    const hasSubjective = (typeGroups['SHORT_ANSWER']?.items?.length || 0) > 0 || (typeGroups['CASE_STUDY']?.items?.length || 0) > 0;
+    const hasSubjective = (typeGroups['SHORT_ANSWER']?.items?.length || 0) > 0 || (typeGroups['CASE_STUDY']?.items?.length || 0) > 0 || (typeGroups['ESSAY']?.items?.length || 0) > 0;
     if (hasSubjective) {
       children.push(p('┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  密 封 线  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈', { size: 9, align: 'center', spacing: { before: 200, after: 200 } }));
     }
@@ -1304,6 +1304,26 @@ export class PapersService {
         const subHint = subCount > 0 ? `（含${subCount}小题）` : '';
         children.push(p(`案例分析${i}${subHint}：`, { size: 10, bold: true, spacing: { before: 60, after: 20 } }));
         const lines = Math.max(8, Math.round(caseStudy.scorePerQ * 0.6));
+        for (let l = 0; l < lines; l++) {
+          children.push(new Paragraph({
+            spacing: { before: 20, after: 20 },
+            border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'AAAAAA', space: 2 } },
+            children: [new TextRun({ text: '', size: 20 })],
+          }));
+        }
+        children.push(p('', { spacing: { after: 80 } }));
+      }
+    }
+
+    // === 论文题区 ===
+    const essay = typeGroups['ESSAY'];
+    if (essay && essay.items.length > 0) {
+      const esCount = essay.items.length;
+      children.push(p(`论文题（每题${essay.scorePerQ}分，共${esCount}题，共${essay.totalScore}分，请在下方作答）        表${++tableNum}`, { size: 10, bold: true, spacing: { after: 40 } }));
+      for (let i = 1; i <= esCount; i++) {
+        children.push(p(`论文题${i}：`, { size: 10, bold: true, spacing: { before: 60, after: 20 } }));
+        // 论文题书写区比案例题更宽松：行数约等于分值
+        const lines = Math.max(10, Math.round(essay.scorePerQ * 0.8));
         for (let l = 0; l < lines; l++) {
           children.push(new Paragraph({
             spacing: { before: 20, after: 20 },
