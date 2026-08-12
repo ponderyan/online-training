@@ -559,7 +559,8 @@ export class ExamsService {
       const type = snap.type ?? pq.question?.type;
       if (!min || min <= 0 || (type !== 'ESSAY' && type !== 'SHORT_ANSWER')) continue;
       const raw = submittedMap.has(pq.id) ? submittedMap.get(pq.id) : savedAnswers.find((a: any) => a.paperQuestionId === pq.id)?.answer;
-      const text = String(raw ?? '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, '');
+      // 坑5：折叠空白为单空格 + trim（保留英文词间空格，避免英文答案被低估）；与前端 QuestionContent 字数统计保持一致
+      const text = String(raw ?? '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, ' ').trim();
       if (text.length < min) {
         const title = String(snap.content ?? pq.question?.content ?? '').replace(/<[^>]+>/g, '').trim().slice(0, 20);
         violations.push(`第${idx}题「${title}${title.length >= 20 ? '…' : ''}」要求不少于${min}字（当前${text.length}字）`);

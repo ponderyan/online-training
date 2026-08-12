@@ -173,4 +173,20 @@ describe('过期考试自动结算 + 监考大屏', () => {
       expect(s.status).toBe('SUBMITTED');
     }
   }, 120000);
+
+  it('Step 5: 已过期考试的缺考不可撤销（坑2 → 400）', async () => {
+    // Step 4 中 cron 已将过期考试（endTime 已过）的未开考学员自动标缺考、考试 FINISHED
+    const b = await api('GET', `/exams/${examId2}/proctoring/board`);
+    expect(b.status).toBe(200);
+    expect(b.data.exam.status).toBe('FINISHED');
+    const absentSession = b.data.sessions.find((s: any) => s.absent);
+    expect(absentSession).toBeTruthy();
+    // 坑2：endTime 已过 → 撤销缺考应被拒，并提示先延长考试时间
+    const revoke = await api('PUT', `/exams/${examId2}/proctoring/sessions/${absentSession.sessionId}/absent`, { absent: false, operatorName: '测试监考' });
+    expect(revoke.status).toBe(400);
+    expect(String(revoke.data.message ?? '')).toContain('考试已结束');
+    // 状态应保持缺考未变
+    const after = await api('GET', `/exams/${examId2}/proctoring/board`);
+    expect(after.data.sessions.find((s: any) => s.sessionId === absentSession.sessionId).absent).toBe(true);
+  }, 30000);
 });

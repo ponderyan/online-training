@@ -295,7 +295,7 @@ export default function GradingTab({ examId, exam, students, userRole, blind, vi
                     <p className="text-[var(--ink-500)] flex items-center gap-1">
                       {isSub ? '✍️ 学员答案：' : '☑️ 学员答案：'}
                     </p>
-                    <p className="mt-1 font-medium text-[var(--ink-700)]" style={{  maxHeight: isSub && String(a.yourAnswer ?? '').length > 200 ? undefined : undefined }}>
+                    <p className="mt-1 font-medium text-[var(--ink-700)]">
                       {(a.type === 'SHORT_ANSWER' || a.type === 'ESSAY') ? (a.yourAnswer || '未作答') : a.type === 'CASE_STUDY' ? (JSON.stringify(a.yourAnswer) || '未作答') : String(a.yourAnswer ?? '-')}
                     </p>
                   </div>

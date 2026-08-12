@@ -865,7 +865,7 @@ ${difficultyBlock}
 7. 判断题答案填 true 或 false
 8. 填空题需给出正确答案
 9. 简答题需给出参考答案要点（至少3个要点）
-10. 论文题给出论文题目，并在 answer 字段写写作要点（至少4条）、rubric 字段给3-5条采分点（{description, points, type:add|deduct}）、minAnswerWords 给最低字数要求（500-2000的整数）
+10. 论文题给出论文题目，并在 answer 字段写写作要点（至少4条）、rubric 字段给3-5条采分点（{description, points, type:add|deduct}）、minAnswerWords 给最低字数要求（500-4000的整数）
 11. 题目覆盖教材的重点和难点，避免重复考查同一知识点
 
 答案规范（极其重要）：

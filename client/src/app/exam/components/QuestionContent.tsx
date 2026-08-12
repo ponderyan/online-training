@@ -143,7 +143,7 @@ export default function QuestionContent({ question, currentAnswer, onAnswer, isM
       {(question.type === 'SHORT_ANSWER' || question.type === 'ESSAY') && (
         <div>
           {question.minAnswerWords ? (() => {
-            const len = String(currentAnswer || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, '').length;
+            const len = String(currentAnswer || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/\s+/g, ' ').trim().length;
             const ok = len >= question.minAnswerWords!;
             return (
               <div className={`flex items-center gap-1.5 mb-2 text-xs ${ok ? 'text-[var(--jade,#2e7d5b)]' : 'text-[var(--verm)]'}`}>

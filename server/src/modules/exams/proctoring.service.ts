@@ -412,6 +412,11 @@ export class ProctoringService {
       });
     } else {
       if (!session.absent) throw new BadRequestException('该考生未被标记缺考');
+      // 坑2：考试已结束（endTime 已过）时撤销缺考无意义——定期结算会再次将其标记缺考，且学员也无法重新作答
+      const examRow = await this.prisma.exam.findUnique({ where: { id: examId }, select: { endTime: true } });
+      if (examRow && examRow.endTime <= new Date()) {
+        throw new BadRequestException('考试已结束，请先延长考试时间再撤销缺考');
+      }
       await this.prisma.examSession.update({
         where: { id: sessionId },
         data: { absent: false, status: 'ASSIGNED', submittedAt: null, totalScore: null, finalScore: null, isPassed: null, scoringStatus: 'PENDING' },
@@ -430,12 +435,10 @@ export class ProctoringService {
     if (absent) {
       await this.examsService.syncExamProgress(examId);
     } else {
-      // 撤销缺考：syncExamProgress 只前进不回退，需显式将 FINISHED 回退为 IN_PROGRESS（学员重新可考）
-      const examRow = await this.prisma.exam.findUnique({ where: { id: examId }, select: { endTime: true } });
-      const backStatus = examRow && examRow.endTime <= new Date() ? 'IN_PROGRESS' : undefined;
+      // 坑1：撤销缺考需显式将 FINISHED 回退为 IN_PROGRESS（学员重新可考）；syncExamProgress 只前进不回退，故此处不能省略
       await this.prisma.exam.update({
         where: { id: examId },
-        data: { status: backStatus ?? 'IN_PROGRESS' },
+        data: { status: 'IN_PROGRESS' },
       });
       await this.examsService.syncExamProgress(examId);
     }
