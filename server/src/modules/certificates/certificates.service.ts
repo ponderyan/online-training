@@ -469,9 +469,32 @@ export class CertificatesService {
     const userIds = items.map(i => i.studentId);
     const users = userIds.length > 0 ? await this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, displayName: true, username: true, organization: true } }) : [];
     const userMap = new Map(users.map(u => [u.id, u]));
-    // Get session->exam mapping
+    // Get session->exam mapping（★ 2026-08-12 补决策信息：培训项目/成绩/违规，供审批人判断）
     const sessionIds = items.map(i => i.sessionId);
-    const sessions = sessionIds.length > 0 ? await this.prisma.examSession.findMany({ where: { id: { in: sessionIds } }, include: { exam: { select: { id: true, title: true } } } }) : [];
+    const sessions = sessionIds.length > 0 ? await this.prisma.examSession.findMany({
+      where: { id: { in: sessionIds } },
+      select: {
+        id: true,
+        status: true,
+        finalScore: true,
+        totalScore: true,
+        scoringStatus: true,
+        isPassed: true,
+        suspicionLevel: true,
+        violationLog: true,
+        submittedAt: true,
+        exam: {
+          select: {
+            id: true,
+            title: true,
+            passingScore: true,
+            startTime: true,
+            program: { select: { name: true, courseName: true } },
+            org: { select: { name: true } },
+          },
+        },
+      },
+    }) : [];
     const sessionMap = new Map(sessions.map(s => [s.id, s]));
     return { items: items.map(i => ({ ...i, student: userMap.get(i.studentId) || null, examSession: sessionMap.get(i.sessionId) || null })), total, page, pageSize: limit, totalPages: Math.ceil(total / limit) };
   }
@@ -480,9 +503,21 @@ export class CertificatesService {
     const app = await this.prisma.certificateApplication.findUnique({ where: { id } });
     if (!app) throw new NotFoundException('申请不存在');
     if (app.status !== 'PENDING') throw new BadRequestException('只有待审批的申请可以操作');
-    // Auto-generate certificate
-    try { await this.issueSingleCertificate(app.sessionId, app.studentId); } catch {}
-    const result = await this.prisma.certificateApplication.update({ where: { id }, data: { status: 'APPROVED' } });
+    // ★ 发证前置校验（2026-08-12 修复）：成绩未发布/未通过 → 抛错阻止批准，杜绝"批准了但证书没生成"
+    //   原实现 catch{} 吞掉发证异常，导致审批标记 APPROVED、学员收到通过通知但无证书
+    //   已有有效证书 → 直接关联（幂等，不重复发证）：覆盖"成绩确认已自动发证但申请残留 PENDING"等脏数据场景
+    let certificateId = app.certificateId;
+    if (!certificateId) {
+      const existing = await this.prisma.certificate.findFirst({
+        where: { examSessionId: app.sessionId, studentId: app.studentId, isRevoked: false },
+        select: { id: true },
+      });
+      certificateId = existing?.id ?? (await this.issueSingleCertificate(app.sessionId, app.studentId))?.id ?? null;
+    }
+    const result = await this.prisma.certificateApplication.update({
+      where: { id },
+      data: { status: 'APPROVED', certificateId, reviewedBy: operatorId, reviewedAt: new Date() },
+    });
     // ← 审批日志
     const operator = await this.prisma.user.findUnique({ where: { id: operatorId }, select: { displayName: true } });
     await this.prisma.certificateApprovalLog.create({
