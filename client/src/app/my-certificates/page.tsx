@@ -135,6 +135,7 @@ export default function MyCertificatesPage() {
           certificateNo: h.certificateNo,
           issueDate: h.appliedAt || h.createdAt,
           sealHash: h.sealHash,
+          qrDataUrl: h.qrDataUrl, // ★ 2026-08-13 findMy 已生成 qrDataUrl，预览显示真实二维码
         },
       });
     }

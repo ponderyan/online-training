@@ -17,6 +17,7 @@ export interface HoursCertificateData {
   certificateNo: string;
   issueDate?: string | null;
   sealHash?: string | null;
+  qrDataUrl?: string; // 真实 QR data URL（后端生成），为空时显示占位
 }
 
 function formatDate(d?: string | null): string {
@@ -81,9 +82,13 @@ export default function HoursCertificate({ data }: { data: HoursCertificateData 
           </div>
         </div>
         <div className="cert-qr-block">
-          <div className="cert-qr-placeholder" aria-hidden>
-            <span>扫码查验</span>
-          </div>
+          {data.qrDataUrl ? (
+            <img src={data.qrDataUrl} width="96" height="96" alt="QR Code" className="cert-qr-img" />
+          ) : (
+            <div className="cert-qr-placeholder" aria-hidden>
+              <span>扫码查验</span>
+            </div>
+          )}
           <div className="cert-qr-text">
             扫码查验真伪<br />
             <strong>FoxLearn</strong> 学时验证

@@ -240,11 +240,32 @@ export class LearningHourCertificatesService {
   /**
    * 获取当前学员的学时证明列表
    */
+  /**
+   * 生成学时证明防伪二维码（verify URL 动态化：使用 SITE_URL 环境变量）
+   * 预览 / 列表 / PDF 共用，保证所见即所得
+   */
+  private async buildVerifyQr(certificateNo: string): Promise<string> {
+    try {
+      const qrcode = await import('qrcode');
+      const baseUrl = process.env.SITE_URL || 'https://foxlearn.cn';
+      const verifyUrl = `${baseUrl}/verify-hours?no=${certificateNo}`;
+      return await qrcode.toDataURL(verifyUrl, { width: 120, margin: 2 });
+    } catch {
+      return '';
+    }
+  }
+
   async findMy(studentId: number) {
-    return this.prisma.learningHourCertificate.findMany({
+    const certs = await this.prisma.learningHourCertificate.findMany({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
     });
+    // 列表也生成 qrDataUrl，前端预览/展示直接用真实二维码（此前只有 PDF 有）
+    const withQr = await Promise.all(certs.map(async (c) => ({
+      ...c,
+      qrDataUrl: await this.buildVerifyQr(c.certificateNo),
+    })));
+    return withQr;
   }
 
   /**
@@ -424,16 +445,8 @@ export class LearningHourCertificatesService {
     // 动态导入 puppeteer
     const puppeteer = await import('puppeteer');
 
-    // 生成 QR 码（verify URL 动态化：使用 SITE_URL 环境变量）
-    let qrDataUrl = '';
-    try {
-      const qrcode = await import('qrcode');
-      const baseUrl = process.env.SITE_URL || 'https://foxlearn.cn';
-      const verifyUrl = `${baseUrl}/verify-hours?no=${cert.certificateNo}`;
-      qrDataUrl = await qrcode.toDataURL(verifyUrl, { width: 120, margin: 2 });
-    } catch {
-      qrDataUrl = '';
-    }
+    // 生成 QR 码（复用 buildVerifyQr，与列表/预览同一 URL）
+    const qrDataUrl = await this.buildVerifyQr(cert.certificateNo);
 
     // 读取印章 SVG → base64 data URL + SHA256
     const sealPath = path.resolve(process.cwd(), 'assets/seal-foxlearn.svg');
