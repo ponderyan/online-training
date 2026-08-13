@@ -101,7 +101,8 @@ export const api = {
       body: JSON.stringify({ username, password, captchaId, captchaAnswer }),
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    const errMsg = data.message || data.error;
+    if (errMsg) throw new Error(errMsg);
     if (!res.ok) throw new Error('登录失败');
     // 保存 token + 用户信息（refreshToken 用于 401 静默续期）
     localStorage.setItem('token', data.accessToken);

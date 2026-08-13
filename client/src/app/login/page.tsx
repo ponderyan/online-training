@@ -101,8 +101,9 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password, captchaId, captchaAnswer }),
       });
       const data = await res.json();
-      if (data.error) {
-        setError(data.error);
+      const errMsg = data.message || data.error;
+      if (errMsg) {
+        setError(errMsg);
         fetchCaptcha();
         setCaptchaAnswer('');
         return;

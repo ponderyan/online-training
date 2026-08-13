@@ -89,7 +89,8 @@ export default function RegisterPage() {
         }),
       });
       const data = await res.json();
-      if (data.error) { setError(data.error); setLoading(false); return; }
+      const errMsg = data.message || data.error;
+      if (errMsg) { setError(errMsg); setLoading(false); return; }
 
       // 注册成功，先展示反馈再跳转
       localStorage.setItem('token', data.accessToken);

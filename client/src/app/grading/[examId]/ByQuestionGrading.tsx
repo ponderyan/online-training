@@ -47,7 +47,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.error) { toast.error(data.error); setAnswers([]); return; }
+      if (data.message || data.error) { toast.error(data.message || data.error); setAnswers([]); return; }
       setAnswers(data.answers || []);
       setRubric(data.question?.rubric || []);
       const firstPending = (data.answers || []).findIndex((a: any) => !a.graded);
@@ -92,7 +92,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
         body: JSON.stringify({ rubric: rubricDraft }),
       });
       const data = await res.json();
-      if (data.error) { toast.error(data.error); return; }
+      if (data.message || data.error) { toast.error(data.message || data.error); return; }
       setRubric(rubricDraft);
       setShowRubricEditor(false);
       toast.success('评分标准已保存');
@@ -110,7 +110,7 @@ export default function ByQuestionGrading({ examId, exam, blind }: ByQuestionGra
         body: JSON.stringify({ score, graderNote: note }),
       });
       const data = await res.json();
-      if (data.error) { toast.error(data.error); return false; }
+      if (data.message || data.error) { toast.error(data.message || data.error); return false; }
       setAnswers(prev => prev.map(a => a.answerId === answerId ? { ...a, score, graderNote: note, graded: true } : a));
       return true;
     } catch (e: any) { toast.error('评分失败：' + e.message); return false; }

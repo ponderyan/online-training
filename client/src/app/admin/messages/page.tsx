@@ -141,7 +141,7 @@ export default function AdminMessagesPage() {
           toast.error('发送失败，请检查');
         }
         setTitle(''); setMessage(''); setSelectedIds([]);
-      } else { toast.error(data.error || '发送失败'); }
+      } else { toast.error(data.message || data.error || '发送失败'); }
     } catch { toast.error('发送失败'); }
     setSending(false);
   };

@@ -96,7 +96,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch('/api/user/password', { method: 'POST', headers, body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd }) });
       const data = await res.json();
-      if (data.error) { setPwdMsg(data.error); return; }
+      if (data.message || data.error) { setPwdMsg(data.message || data.error); return; }
       setPwdMsg('✅ 密码已修改'); setOldPwd(''); setNewPwd(''); setConfirmPwd('');
     } catch (e: any) { setPwdMsg('修改失败：' + e.message); }
   };

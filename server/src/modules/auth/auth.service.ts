@@ -25,8 +25,8 @@ export class AuthService {
 
     // ── 登录安全（★ 2026-08-13）：账号级锁定检查（连续输错 N 次锁定 M 分钟）──
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-      throw new UnauthorizedException(`账号已锁定，请在 ${minutes} 分钟后重试`);
+      const minutes = Math.max(1, Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000));
+      throw new UnauthorizedException(`你的账号因连续输错密码已被临时锁定，请在 ${minutes} 分钟后再试`);
     }
 
     // 密码校验：bcrypt → MD5 → 明文 三种兼容
@@ -58,7 +58,12 @@ export class AuthService {
         where: { id: user.id },
         data: { failedLoginCount: newCount, lockedUntil },
       });
-      throw new UnauthorizedException('用户名或密码错误');
+      if (lockedUntil) {
+        throw new UnauthorizedException(`连续输错 ${lockAttempts} 次，账号已锁定 ${lockMinutes} 分钟，请稍后再试`);
+      }
+      // 友好提示剩余尝试次数
+      const remaining = lockAttempts - newCount;
+      throw new UnauthorizedException(`用户名或密码错误，你还有 ${remaining} 次尝试机会`);
     }
 
     // 如果是旧格式密码，原地升级为 bcrypt hash
@@ -141,8 +146,8 @@ export class AuthService {
 
     // ── 登录安全（★ 2026-08-13）：锁定中的账号禁止通过 refresh 续期绕过锁定 ──
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-      throw new UnauthorizedException(`账号已锁定，请在 ${minutes} 分钟后重试`);
+      const minutes = Math.max(1, Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000));
+      throw new UnauthorizedException(`你的账号因连续输错密码已被临时锁定，请在 ${minutes} 分钟后再试`);
     }
 
     // 角色以数据库为准（refresh 期间角色可能变更）

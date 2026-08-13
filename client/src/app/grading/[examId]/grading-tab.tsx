@@ -77,7 +77,7 @@ export default function GradingTab({ examId, exam, students, userRole, blind, vi
         method: 'POST', headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.error) { toast.error('发布失败：' + data.error); return; }
+      if (data.message || data.error) { toast.error('发布失败：' + (data.message || data.error)); return; }
       const passScore = exam?.passingScore ?? 60;
       const passCount = students.filter(s => (s.finalScore ?? s.totalScore ?? 0) >= passScore).length;
       const failCount = students.length - passCount;
@@ -132,7 +132,7 @@ export default function GradingTab({ examId, exam, students, userRole, blind, vi
       body: JSON.stringify({ adjustedScore: parseInt(adjustScore), reason: adjustReason, operatorId: user.id || 1, operatorName: user.displayName || '管理员' }),
     });
     const data = await res.json();
-    if (data.error) { toast.error(data.error); return; }
+    if (data.message || data.error) { toast.error(data.message || data.error); return; }
     setAdjustOpen(false);
     loadStudentAnswers(selectedStudent);
   };
