@@ -1024,6 +1024,15 @@ async function main() {
   console.log(`   学员C:    stu003 / 123456 (中电标协招办)`);
   console.log(`   学员D:    stu004 / 123456 (北京数字人才培训中心)`);
   console.log(`   学员E:    stu005 / 123456 (北京数字人才培训中心)`);
+
+  // ── 站点设置（公开注册默认开启，供演示/CI 注册测试用；生产可由管理员在品牌页关闭）──
+  let setting = await prisma.siteSetting.findFirst();
+  if (setting) {
+    await prisma.siteSetting.update({ where: { id: setting.id }, data: { publicRegistration: true } });
+  } else {
+    await prisma.siteSetting.create({ data: { publicRegistration: true } });
+  }
+  console.log('✅ 站点设置: 公开注册已开启（publicRegistration=true）');
 }
 
 main()

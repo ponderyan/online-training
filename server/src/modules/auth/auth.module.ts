@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../prisma/prisma.module.js';
+import { SiteSettingsModule } from '../site-settings/site-settings.module.js';
 import { AuthController } from './auth.controller.js';
 import { UserProfileController } from './user-profile.controller.js';
 import { AuthService } from './auth.service.js';
@@ -19,6 +20,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'foxlearn-dev-secret-key-2026';
       signOptions: { expiresIn: (process.env.ACCESS_TOKEN_TTL || '2h') as any },
     }),
     PrismaModule,
+    SiteSettingsModule,
   ],
   controllers: [AuthController, UserProfileController],
   providers: [AuthService, CaptchaService, JwtStrategy, JwtAuthGuard],

@@ -163,10 +163,14 @@ export default function LoginPage() {
         {/* 品牌内容 */}
         <div className="relative z-10 text-center px-15">
           <div className="mb-7 flex justify-center">
-            <FoxLogo size={72} />
+            {settings?.siteLogo ? (
+              <img src={settings.siteLogo} alt="logo" className="h-[72px] w-auto object-contain" />
+            ) : (
+              <FoxLogo size={72} />
+            )}
           </div>
           <h1 className="font-serif text-[42px] font-black tracking-[0.08em] text-white mb-3">
-            狐学
+            {settings?.siteName || '狐学'}
           </h1>
           <p className="text-[15px] tracking-[0.2em] font-light text-[var(--fox-light)]">
             智能在线培训考试平台
@@ -198,7 +202,7 @@ export default function LoginPage() {
 
         {/* 底部版本/备案 */}
         <div className="absolute bottom-6 text-[11px] tracking-wider text-[var(--ink-500)] z-10">
-          © 2026 FoxLearn · 狐学智能培训考试系统
+          © 2026 {settings?.siteName || '狐学'} · 智能在线培训考试系统{settings?.icpBeian ? ` · ${settings.icpBeian}` : ''}
         </div>
       </div>
 
@@ -210,9 +214,13 @@ export default function LoginPage() {
           {/* 移动端品牌（lg:hidden） */}
           <div className="lg:hidden text-center mb-8">
             <div className="flex justify-center mb-3">
-              <FoxLogo.Light size={48} />
+              {settings?.siteLogo ? (
+                <img src={settings.siteLogo} alt="logo" className="h-[48px] w-auto object-contain" />
+              ) : (
+                <FoxLogo.Light size={48} />
+              )}
             </div>
-            <h1 className="font-serif text-2xl font-bold text-[var(--ink-800)]">狐学</h1>
+            <h1 className="font-serif text-2xl font-bold text-[var(--ink-800)]">{settings?.siteName || '狐学'}</h1>
             <p className="text-xs tracking-[0.15em] mt-1 text-[var(--fox)]">智能在线培训考试平台</p>
           </div>
 

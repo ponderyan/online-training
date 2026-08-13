@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const DEFAULTS = {
-  siteName: 'FoxLearn',
+  siteName: '狐学',
   siteTitle: 'FoxLearn · 狐学',
   footerText: '跟着小狐狸，知识不迷路 🐾',
   publicRegistration: false,

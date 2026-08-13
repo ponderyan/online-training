@@ -184,6 +184,10 @@ model User {
   lastLoginAt DateTime? @map("last_login_at")
   loginCount  Int       @default(0) @map("login_count")
 
+  // ── 登录安全（★ 2026-08-13 连续输错锁定）──
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until")
+
   // ── 标签 ──
   tags Json? // ["VIP学员","2026春季班"]
 

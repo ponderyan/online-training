@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SiteSettingsService } from '../site-settings/site-settings.service.js';
 
 const RAW_SECRET = process.env.JWT_SECRET;
 if (!RAW_SECRET) throw new Error('JWT_SECRET 环境变量未设置 — 请在 .env 中配置');
@@ -13,12 +14,19 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private siteSettings: SiteSettingsService,
   ) {}
 
   async login(username: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { username } });
     if (!user) {
       throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // ── 登录安全（★ 2026-08-13）：账号级锁定检查（连续输错 N 次锁定 M 分钟）──
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(`账号已锁定，请在 ${minutes} 分钟后重试`);
     }
 
     // 密码校验：bcrypt → MD5 → 明文 三种兼容
@@ -39,6 +47,17 @@ export class AuthService {
     }
 
     if (!isPasswordValid) {
+      // ── 登录安全：连续失败计数 → 达到阈值锁定（LOGIN_LOCK_ATTEMPTS / LOGIN_LOCK_MINUTES）──
+      const lockAttempts = Number(process.env.LOGIN_LOCK_ATTEMPTS ?? 5);
+      const lockMinutes = Number(process.env.LOGIN_LOCK_MINUTES ?? 10);
+      const newCount = (user.failedLoginCount || 0) + 1;
+      const lockedUntil = newCount >= lockAttempts
+        ? new Date(Date.now() + lockMinutes * 60000)
+        : null;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginCount: newCount, lockedUntil },
+      });
       throw new UnauthorizedException('用户名或密码错误');
     }
 
@@ -76,12 +95,14 @@ export class AuthService {
       { secret: JWT_SECRET, expiresIn: (process.env.REFRESH_TOKEN_TTL || '7d') as any },
     );
 
-    // 更新登录统计
+    // 更新登录统计 + 登录成功清零失败计数/解锁
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         lastLoginAt: new Date(),
         loginCount: { increment: 1 },
+        failedLoginCount: 0,
+        lockedUntil: null,
       },
     });
 
@@ -118,6 +139,12 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user?.isActive) throw new UnauthorizedException('用户不存在或已禁用');
 
+    // ── 登录安全（★ 2026-08-13）：锁定中的账号禁止通过 refresh 续期绕过锁定 ──
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(`账号已锁定，请在 ${minutes} 分钟后重试`);
+    }
+
     // 角色以数据库为准（refresh 期间角色可能变更）
     const roleAssignments = await this.prisma.userRoleAssignment.findMany({
       where: { userId: user.id },
@@ -142,9 +169,10 @@ export class AuthService {
     if (!data.username || !data.password || !data.displayName) {
       throw new BadRequestException('缺少必要参数：username, password, displayName');
     }
-    // 检查是否允许公开注册
-    const setting = await this.prisma.siteSetting.findFirst();
-    if (setting && !setting.publicRegistration) {
+    // 检查是否允许公开注册（★ 2026-08-13 统一策略：无 site_setting 行时默认关闭，
+    // 有效设置以 siteSettings.get() 为准 —— 该 get() 在无行时返回 DEFAULTS(publicRegistration=false)）
+    const siteSettings = await this.siteSettings.get();
+    if (!siteSettings.publicRegistration) {
       throw new UnauthorizedException('系统当前未开放公开注册');
     }
     const existing = await this.prisma.user.findUnique({ where: { username: data.username } });
