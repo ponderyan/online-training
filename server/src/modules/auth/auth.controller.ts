@@ -40,6 +40,13 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   login(@Body() data: { username: string; password: string; captchaId?: string; captchaAnswer?: string }) {
+    // ★ 2026-08-13 验证码先于密码校验（默认强制，LOGIN_REQUIRE_CAPTCHA=false 可关——本地测试脚本用）：
+    //   验证码缺失/错误一律先拦截，不进入 authService.login → 不触发密码失败计数与锁定。
+    //   此前验证码是「可选」——客户端不传 captchaId/captchaAnswer 即绕过验证码直接测密码（failedLoginCount 照常累加），洞已堵。
+    const requireCaptcha = process.env.LOGIN_REQUIRE_CAPTCHA !== 'false';
+    if (requireCaptcha && (!data.captchaId || !data.captchaAnswer)) {
+      return { error: '请输入验证码', captchaRequired: true };
+    }
     if (data.captchaId && data.captchaAnswer !== undefined) {
       if (!this.captchaService.validate(data.captchaId, data.captchaAnswer)) {
         return { error: '验证码错误', captchaRequired: true };

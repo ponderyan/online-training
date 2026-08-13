@@ -132,9 +132,11 @@ export class CertificateTemplatesService {
     if (!isSuperAdmin && !existing.orgId) {
       throw new ForbiddenException('无权删除平台级模板');
     }
+    // ★ 2026-08-13 停用同时清 isDefault：否则 isDefault 残留，重新启用即意外变回默认模板。
+    //   功能上 findDefaultTemplate 已按 isActive 过滤（残留无功能影响），这里修的是「停用→重启=默认」的隐患与 UI 标记。
     return this.prisma.certificateTemplate.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, isDefault: false },
     });
   }
 

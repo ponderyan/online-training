@@ -21,6 +21,7 @@ interface CertCard {
   verificationCode?: string;
   qrDataUrl?: string;     // 真实 QR data URL
   totalHours?: number;
+  previewHtml?: string;   // ★ 2026-08-13 结课证书 canvas 渲染预览（与 PDF 同源）；无模板为 undefined
   status: 'active' | 'revoked' | 'pending' | 'rejected';
   statusText: string;
 }
@@ -64,6 +65,7 @@ export default function MyCertificatesPage() {
             issueDate: c.issueDate,
             verificationCode: c.verificationCode,
             qrDataUrl: c.qrDataUrl,
+            previewHtml: c.previewHtml, // ★ 2026-08-13 模板渲染预览（my() 已附加）
             status: c.isRevoked ? 'revoked' : 'active',
             statusText: c.isRevoked ? '已撤销' : '有效',
           });
@@ -111,6 +113,7 @@ export default function MyCertificatesPage() {
           verificationCode: card.verificationCode || '',
           qrDataUrl: card.qrDataUrl,
         },
+        completionHtml: card.previewHtml || undefined, // ★ 2026-08-13 canvas 渲染预览（与 PDF 同源），无模板为 undefined → 静态组件回退
       });
     } else {
       // 学时证明：findMy 已返回完整记录，直接复用（get/:id 是管理端权限，学员无权调）

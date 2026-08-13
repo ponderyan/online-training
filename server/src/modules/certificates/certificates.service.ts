@@ -282,10 +282,11 @@ export class CertificatesService {
       this.prisma.certificate.count({ where }),
     ]);
 
-    // ★ 2026-08-13 列表生成 QR data URL（此前只有学员自查询带 QR，后台列表缺 → 预览只能显示占位符）
+    // ★ 2026-08-13 列表生成 QR data URL + 模板渲染预览 HTML（有 templateId 才渲染，控负载）
     const withQr = await Promise.all(items.map(async (cert) => {
       const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
-      return { ...cert, qrDataUrl };
+      const previewHtml = cert.templateId ? await this.buildPreviewHtml(cert) : null;
+      return { ...cert, qrDataUrl, previewHtml };
     }));
 
     return { items: withQr, total, page: params.page, totalPages: Math.ceil(total / params.limit) };
@@ -297,10 +298,11 @@ export class CertificatesService {
       where: { studentId },
       orderBy: { createdAt: 'desc' },
     });
-    // 为每条证书生成 QR data URL（供前端预览展示真实二维码）
+    // ★ 2026-08-13 为每条证书生成 QR data URL + previewHtml（与 PDF 同一渲染源）
     const results = await Promise.all(certs.map(async (cert) => {
       const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
-      return { ...cert, qrDataUrl };
+      const previewHtml = cert.templateId ? await this.buildPreviewHtml(cert) : null;
+      return { ...cert, qrDataUrl, previewHtml };
     }));
     return results;
   }
@@ -337,6 +339,58 @@ export class CertificatesService {
     }
   }
 
+  /** ★ 2026-08-13 构建证书模板渲染数据（PDF 与前端预览 previewHtml 共用）。
+   *  机构配置注入规则与下方静态 HTML 分支一致：签发单位/底部文字/Logo/印章 + 身份证脱敏。 */
+  private async buildTemplateData(cert: any, org: any = null): Promise<TemplateData> {
+    const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
+    // 查询学员身份证
+    const studentUser = await this.prisma.user.findUnique({
+      where: { id: cert.studentId },
+      select: { idCard: true },
+    });
+    const rawIdCard = studentUser?.idCard || '';
+    const maskedIdCard = rawIdCard.length >= 10
+      ? rawIdCard.slice(0, 3) + '***' + rawIdCard.slice(-4)
+      : rawIdCard;
+
+    // ★ 2026-08-13 机构配置注入模板：签发单位/底部文字/Logo/印章（useFoxLearnSeal=true → 印章不注入，seal 元素回退内置环形章）
+    const issuerName = cert.issuerName || org?.certIssuerName || org?.name || 'FoxLearn 狐学';
+    const footerText = org?.certFooterText || '本证书最终解释权归 ' + issuerName + ' 所有 · 扫描二维码可在线验证';
+    const logoSrc = org?.certLogoUrl ? await this.toDataUrl(org.certLogoUrl) : null;
+    const sealSrc = (!org?.useFoxLearnSeal && org?.sealUrl) ? await this.toDataUrl(org.sealUrl) : null;
+
+    return {
+      studentName: cert.studentName,
+      courseName: cert.courseName,
+      certificateNo: cert.certificateNo,
+      issueDate: cert.issueDate.toISOString().slice(0, 10),
+      orgName: issuerName, // 兼容旧模板 {{orgName}}，也吃签发单位
+      issuerName,
+      footerText,
+      orgLogoDataUrl: logoSrc ?? undefined,
+      orgSealDataUrl: sealSrc ?? undefined,
+      idCard: rawIdCard,
+      idCardMasked: maskedIdCard,
+      verificationCode: cert.verificationCode.slice(0, 8).toUpperCase(),
+      qrDataUrl,
+    };
+  }
+
+  /** ★ 2026-08-13 结课证书前端预览 HTML（canvas 渲染，与 PDF 同 data + 同模板选择逻辑）。
+   *  仅定格模板（templateId）的记录渲染以控负载；无模板返回 null → 前端回退静态组件。 */
+  private async buildPreviewHtml(cert: any): Promise<string | null> {
+    if (!cert.templateId) return null;
+    const tpl = await this.prisma.certificateTemplate.findUnique({ where: { id: cert.templateId } });
+    if (!tpl) return null;
+    const canvas = tpl.canvasJson as unknown as CanvasDef;
+    // 列表查询的 cert 无 org relation include，单独查机构证书配置（与 generatePdf 的 cert.org 同构）
+    const org = cert.orgId ? await this.prisma.organization.findUnique({
+      where: { id: cert.orgId },
+      select: { certIssuerName: true, certLogoUrl: true, certFooterText: true, sealUrl: true, useFoxLearnSeal: true, name: true },
+    }) : null;
+    return this.certTemplatesService.renderFragment(canvas, await this.buildTemplateData(cert, org), 1, 'preview');
+  }
+
   /** 生成证书 PDF */
   async generatePdf(id: number): Promise<Buffer> {
     const cert = await this.prisma.certificate.findUnique({
@@ -354,38 +408,8 @@ export class CertificatesService {
     }
     if (renderTemplate) {
       const canvas = renderTemplate.canvasJson as unknown as CanvasDef;
-      const qrDataUrl = await this.generateQrDataUrl(cert.certificateNo, cert.verificationCode);
-      // 查询学员身份证
-      const studentUser = await this.prisma.user.findUnique({
-        where: { id: cert.studentId },
-        select: { idCard: true },
-      });
-      const rawIdCard = studentUser?.idCard || '';
-      const maskedIdCard = rawIdCard.length >= 10
-        ? rawIdCard.slice(0, 3) + '***' + rawIdCard.slice(-4)
-        : rawIdCard;
-
-      // ★ 2026-08-13 机构配置注入模板（与静态分支同规则）：签发单位/底部文字/Logo/印章
-      const issuerName = cert.issuerName || cert.org?.certIssuerName || cert.org?.name || 'FoxLearn 狐学';
-      const footerText = cert.org?.certFooterText || '本证书最终解释权归 ' + issuerName + ' 所有 · 扫描二维码可在线验证';
-      const logoSrc = cert.org?.certLogoUrl ? await this.toDataUrl(cert.org.certLogoUrl) : null;
-      const sealSrc = (!cert.org?.useFoxLearnSeal && cert.org?.sealUrl) ? await this.toDataUrl(cert.org.sealUrl) : null;
-
-      const templateData: TemplateData = {
-        studentName: cert.studentName,
-        courseName: cert.courseName,
-        certificateNo: cert.certificateNo,
-        issueDate: cert.issueDate.toISOString().slice(0, 10),
-        orgName: issuerName, // 兼容旧模板 {{orgName}}，也吃签发单位
-        issuerName,
-        footerText,
-        orgLogoDataUrl: logoSrc ?? undefined,
-        orgSealDataUrl: sealSrc ?? undefined, // useFoxLearnSeal=true → undefined → seal 元素回退内置环形章
-        idCard: rawIdCard,
-        idCardMasked: maskedIdCard,
-        verificationCode: cert.verificationCode.slice(0, 8).toUpperCase(),
-        qrDataUrl,
-      };
+      // ★ 2026-08-13 抽公共 buildTemplateData：PDF 与前端预览 previewHtml 共用同一份渲染数据
+      const templateData = await this.buildTemplateData(cert, cert.org);
       return this.certTemplatesService.renderPdf(canvas, templateData);
     }
 

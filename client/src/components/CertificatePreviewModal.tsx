@@ -16,6 +16,8 @@ export interface PreviewTarget {
   hours?: HoursCertificateData;
   /** ★ 2026-08-13 学时证明 canvas 渲染预览 HTML（与 PDF 同源）。有值优先渲染，无值回退静态组件 */
   hoursHtml?: string;
+  /** ★ 2026-08-13 结课证书 canvas 渲染预览 HTML（与 PDF 同源）。有值优先渲染，无值回退静态组件 */
+  completionHtml?: string;
   title: string;
 }
 
@@ -74,7 +76,11 @@ export default function CertificatePreviewModal({
   return (
     <div className="cert-preview-overlay screen-only" onClick={onClose}>
       <div className="cert-preview-stage" onClick={e => e.stopPropagation()}>
-        {target.type === 'completion' && target.completion && (
+        {target.type === 'completion' && target.completionHtml && (
+          // ★ 2026-08-13 canvas 渲染预览（服务端产物，与 PDF 同源）；内容来自后端自己的渲染器（已 escapeHtml）
+          <div className="cert-canvas-stage screen-only" dangerouslySetInnerHTML={{ __html: target.completionHtml }} />
+        )}
+        {target.type === 'completion' && !target.completionHtml && target.completion && (
           <CompletionCertificate data={target.completion} />
         )}
         {target.type === 'hours' && target.hoursHtml && (
