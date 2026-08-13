@@ -569,10 +569,18 @@ export class GradingController {
       });
       if (!app) { certSkipped++; continue; }
       try {
-        await this.certService.issueSingleCertificate(s.id, s.studentId, { userOrgId: req.user?.orgId ?? null, userRoles: req.user?.roles || [] });
+        // ★ 抓取发证返回的证书并同步审批状态（2026-08-13 修复）：
+        //   申请自动 APPROVED 时证书表也必须 APPROVED，否则两页状态不一致
+        const issued = await this.certService.issueSingleCertificate(s.id, s.studentId, { userOrgId: req.user?.orgId ?? null, userRoles: req.user?.roles || [] });
+        if (issued?.id) {
+          await this.prisma.certificate.update({
+            where: { id: issued.id },
+            data: { approvalStatus: 'APPROVED', approvedBy: 0, approvedAt: new Date() },
+          });
+        }
         await this.prisma.certificateApplication.update({
           where: { id: app.id },
-          data: { status: 'APPROVED' },
+          data: { status: 'APPROVED', certificateId: issued?.id },
         });
         await this.prisma.certificateApprovalLog.create({
           data: {

@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ResourceAccessService } from '../../common/services/resource-access.service.js';
+import { CertificateTemplatesService } from '../certificate-templates/certificate-templates.service.js';
+import type { CanvasDef, TemplateData } from '../certificate-templates/renderer/canvas-types.js';
 import * as crypto from 'crypto';
 
 interface PaginationParams {
@@ -19,7 +21,11 @@ interface FindAllParams extends PaginationParams {
 
 @Injectable()
 export class LearningHourCertificatesService {
-  constructor(private prisma: PrismaService, private resourceAccess: ResourceAccessService) {}
+  constructor(
+    private prisma: PrismaService,
+    private resourceAccess: ResourceAccessService,
+    private certTemplatesService: CertificateTemplatesService,
+  ) {}
 
   /**
    * 生成证书编号
@@ -147,6 +153,9 @@ export class LearningHourCertificatesService {
     // 7. 计算印章哈希
     const { sealHash } = await this.loadSealData().catch(() => ({ sealHash: '' }));
 
+    // 7.5 ★ 2026-08-13 学时证书接入模板体系：发证时定格默认 HOURS 模板（机构级 → 平台级 fallback）
+    const hoursTemplate = await this.certTemplatesService.findDefaultTemplate(program?.org?.id ?? null, 'HOURS');
+
     // 8. 创建学时证明记录
     const certificate = await this.prisma.learningHourCertificate.create({
       data: {
@@ -164,6 +173,7 @@ export class LearningHourCertificatesService {
         verificationCode,
         contentHash: sealHash || null,
         sealHash: sealHash || null,
+        templateId: hoursTemplate?.id ?? null,
         // ★ 2026-08-12 真审批流：申请进 PENDING，审批通过后才可下载 PDF（此前直接 AUTO_APPROVED 自动发证）
         approvalStatus: 'PENDING',
         appliedAt: new Date(),
@@ -228,8 +238,14 @@ export class LearningHourCertificatesService {
       ? await this.prisma.user.findMany({ where: { id: { in: reviewerIds } }, select: { id: true, displayName: true } })
       : [];
     const reviewerMap = new Map(reviewers.map(u => [u.id, u.displayName]));
+    // ★ 2026-08-13 附加 previewHtml（canvas 渲染，与 PDF 同源）
+    const itemsWithPreview = await Promise.all(items.map(async (i) => ({
+      ...i,
+      reviewerName: (i.approvedBy != null && reviewerMap.get(i.approvedBy)) || null,
+      previewHtml: await this.buildPreviewHtml(i),
+    })));
     return {
-      items: items.map(i => ({ ...i, reviewerName: (i.approvedBy != null && reviewerMap.get(i.approvedBy)) || null })),
+      items: itemsWithPreview,
       total,
       page,
       limit,
@@ -260,10 +276,11 @@ export class LearningHourCertificatesService {
       where: { studentId },
       orderBy: { createdAt: 'desc' },
     });
-    // 列表也生成 qrDataUrl，前端预览/展示直接用真实二维码（此前只有 PDF 有）
+    // 列表也生成 qrDataUrl + ★ 2026-08-13 previewHtml（canvas 渲染，与 PDF 同源）
     const withQr = await Promise.all(certs.map(async (c) => ({
       ...c,
       qrDataUrl: await this.buildVerifyQr(c.certificateNo),
+      previewHtml: await this.buildPreviewHtml(c),
     })));
     return withQr;
   }
@@ -428,6 +445,101 @@ export class LearningHourCertificatesService {
   /**
    * 生成学时证明 PDF（含 QR 码 + 印章图片 + 哈希校验 + 盲水印）
    */
+  /** 将本地文件路径转为 base64 data URL（供 Puppeteer 渲染，与 certificates.service 同款） */
+  private async toDataUrl(filePath: string): Promise<string | null> {
+    try {
+      // 只处理本地上传路径
+      if (!filePath.startsWith('/uploads/')) return filePath; // 外部URL直接用
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const absPath = path.resolve(import.meta.dirname, '..', '..', '..', filePath.slice(1));
+      const buf = await fs.readFile(absPath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+      const mime = mimeMap[ext] || 'image/png';
+      return `data:${mime};base64,${buf.toString('base64')}`;
+    } catch {
+      return null; // 文件不存在时静默失败
+    }
+  }
+
+  /**
+   * ★ 学时证书模板渲染数据（PDF 与前端预览共用，2026-08-13）
+   * 机构配置（签发单位/底部文字/Logo/印章）经 orgId 查 organization 注入，
+   * 从结构上保证 PDF 与预览使用同一份 data + 同一份 canvas。
+   */
+  private async buildHoursTemplateData(cert: any): Promise<TemplateData> {
+    // LHC 无 org relation，用 orgId 单独查机构证书配置
+    const org = cert.orgId ? await this.prisma.organization.findUnique({
+      where: { id: cert.orgId },
+      select: { name: true, certIssuerName: true, certLogoUrl: true, sealUrl: true, certFooterText: true, useFoxLearnSeal: true },
+    }) : null;
+    const issuerName = org?.certIssuerName || org?.name || 'FoxLearn 狐学';
+    const footerText = org?.certFooterText || `本证明最终解释权归 ${issuerName} 所有 · 扫码可在线查验`;
+    const logoSrc = org?.certLogoUrl ? await this.toDataUrl(org.certLogoUrl) : null;
+    const sealSrc = (!org?.useFoxLearnSeal && org?.sealUrl) ? await this.toDataUrl(org.sealUrl) : null;
+    const maskIdCard = (idCard?: string | null) => {
+      if (!idCard || idCard.length < 10) return idCard || '';
+      return idCard.slice(0, 6) + '********' + idCard.slice(-4);
+    };
+    const hoursDetail = (Array.isArray(cert.hoursDetail) ? cert.hoursDetail : [])
+      .map((r: any) => ({ ...r, hours: typeof r.hours === 'number' ? Number(r.hours.toFixed(1)) : r.hours }));
+    return {
+      studentName: cert.studentName || '',
+      idCard: cert.idCard || '',
+      idCardMasked: maskIdCard(cert.idCard),
+      programName: cert.programName || '',
+      orgName: issuerName, // 兼容旧模板 {{orgName}}，也吃签发单位
+      issuerName,
+      footerText,
+      totalHours: typeof cert.totalHours === 'number' ? Number(cert.totalHours.toFixed(1)) : 0,
+      hoursDetail,
+      startDate: cert.startDate ? new Date(cert.startDate).toISOString().slice(0, 10) : '',
+      endDate: cert.endDate ? new Date(cert.endDate).toISOString().slice(0, 10) : '',
+      issueDate: new Date(cert.createdAt).toISOString().slice(0, 10),
+      certificateNo: cert.certificateNo,
+      verificationCode: (cert.verificationCode || '').slice(0, 8).toUpperCase(),
+      sealHash: cert.sealHash || cert.contentHash || '',
+      orgLogoDataUrl: logoSrc ?? undefined,
+      orgSealDataUrl: sealSrc ?? undefined, // useFoxLearnSeal=true → undefined → seal 元素回退内置环形章
+      qrDataUrl: await this.buildVerifyQr(cert.certificateNo),
+    };
+  }
+
+  /**
+   * ★ 学时证书前端预览 HTML（canvas 渲染，与 PDF 用同一份 data + canvas，2026-08-13）。
+   * 仅定格了模板（templateId）的记录渲染；无模板返回 null → 前端回退静态组件（兼容旧记录）。
+   */
+  private async buildPreviewHtml(cert: any): Promise<string | null> {
+    if (!cert.templateId) return null;
+    const tpl = await this.prisma.certificateTemplate.findUnique({ where: { id: cert.templateId } });
+    if (!tpl) return null;
+    const canvas = tpl.canvasJson as unknown as CanvasDef;
+    return this.certTemplatesService.renderFragment(canvas, await this.buildHoursTemplateData(cert), 1, 'preview');
+  }
+
+  /** 嵌入盲水印（失败静默回退原始 PDF）—— 2026-08-13 抽出，canvas/静态两分支共用 */
+  private async applyWatermark(pdf: Buffer, certificateNo: string, id: number): Promise<Buffer> {
+    try {
+      const { execSync } = await import('child_process');
+      const path = await import('path');
+      const fs = await import('fs/promises');
+      const tempPdfPath = path.resolve('/tmp', `hours-cert-${id}-${Date.now()}.pdf`);
+      await fs.writeFile(tempPdfPath, pdf);
+      execSync(`python3 scripts/embed_watermark.py "${tempPdfPath}" "${certificateNo}"`, {
+        timeout: 10000,
+        cwd: import.meta.dirname + '/../../',
+        stdio: 'pipe',
+      });
+      const watermarked = await fs.readFile(tempPdfPath);
+      await fs.unlink(tempPdfPath).catch(() => {});
+      return Buffer.from(watermarked);
+    } catch {
+      console.warn('[LearningHourCertificate] 盲水印嵌入失败，返回原始PDF');
+      return Buffer.from(pdf);
+    }
+  }
+
   async generatePdf(id: number): Promise<Buffer> {
     const cert = await this.prisma.learningHourCertificate.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('学时证明不存在');
@@ -437,6 +549,21 @@ export class LearningHourCertificatesService {
     }
     if (cert.isRevoked) {
       throw new BadRequestException('学时证明已撤销，无法下载');
+    }
+
+    // ── 优先模板渲染（★ 2026-08-13 学时证书接入模板体系）──
+    // 先证上定格模板，无则查当前默认（机构级 → 平台级 fallback）
+    let renderTemplate = cert.templateId
+      ? await this.prisma.certificateTemplate.findUnique({ where: { id: cert.templateId } })
+      : null;
+    if (!renderTemplate) {
+      renderTemplate = await this.certTemplatesService.findDefaultTemplate(cert.orgId ?? null, 'HOURS');
+    }
+    if (renderTemplate) {
+      const canvas = renderTemplate.canvasJson as unknown as CanvasDef;
+      const templateData = await this.buildHoursTemplateData(cert);
+      const pdf = await this.certTemplatesService.renderPdf(canvas, templateData);
+      return await this.applyWatermark(pdf, cert.certificateNo, id); // 盲水印保留
     }
 
     const fs = await import('fs/promises');
@@ -525,23 +652,8 @@ export class LearningHourCertificatesService {
         margin: { top: '0', right: '0', bottom: '0', left: '0' },
       });
 
-      // 尝试嵌入盲水印（失败不阻塞）
-      try {
-        const { execSync } = await import('child_process');
-        const tempPdfPath = path.resolve('/tmp', `hours-cert-${id}-${Date.now()}.pdf`);
-        await fs.writeFile(tempPdfPath, pdf);
-        execSync(`python3 scripts/embed_watermark.py "${tempPdfPath}" "${cert.certificateNo}"`, {
-          timeout: 10000,
-          cwd: import.meta.dirname + '/../../',
-          stdio: 'pipe',
-        });
-        const watermarked = await fs.readFile(tempPdfPath);
-        await fs.unlink(tempPdfPath).catch(() => {});
-        return Buffer.from(watermarked);
-      } catch {
-        console.warn('[LearningHourCertificate] 盲水印嵌入失败，返回原始PDF');
-        return Buffer.from(pdf);
-      }
+      // 盲水印（失败静默回退原始 PDF）
+      return await this.applyWatermark(Buffer.from(pdf), cert.certificateNo, id);
     } finally {
       await browser.close();
     }

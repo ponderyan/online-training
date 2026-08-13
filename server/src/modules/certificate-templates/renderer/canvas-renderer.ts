@@ -106,11 +106,15 @@ function renderVariableText(el: VariableTextElement, data: TemplateData): string
   return `<div style="${positionStyle(el)};overflow:hidden"><div style="${textStyle(el.props)}">${html}</div></div>`;
 }
 
-function renderImage(el: ImageElement): string {
+function renderImage(el: ImageElement, data: TemplateData): string {
+  // ★ src 支持 {{var}} 插值（如 {{orgLogoDataUrl}}）。interpolate 已转义替换值；
+  // 注：escapeHtml 只转义 & < > " '，与 base64 字母表 {A-Za-z0-9+/=} 不相交，dataURL 透传安全。
+  const src = interpolate(el.props.src, data);
+  if (!src) return ''; // 变量未注入（如机构未配 logo）时不渲染，避免破图
   const fit = el.props.fit || 'contain';
   const radius = el.props.radius ? `border-radius:${el.props.radius}px` : '';
   const objectFit = fit === 'fill' ? 'fill' : fit === 'cover' ? 'cover' : 'contain';
-  return `<div style="${positionStyle(el)};overflow:hidden;${radius}"><img src="${escapeHtml(el.props.src)}" style="width:100%;height:100%;object-fit:${objectFit};display:block;${radius}" alt="" /></div>`;
+  return `<div style="${positionStyle(el)};overflow:hidden;${radius}"><img src="${src}" style="width:100%;height:100%;object-fit:${objectFit};display:block;${radius}" alt="" /></div>`;
 }
 
 function renderRect(el: RectElement): string {
@@ -178,8 +182,14 @@ function renderQrCode(el: CanvasElement & { type: 'qrcode' }, data: TemplateData
 }
 
 /** 印章渲染：纯 SVG 环形文字 */
-function renderSeal(el: CanvasElement & { type: 'seal' }): string {
+function renderSeal(el: CanvasElement & { type: 'seal' }, data: TemplateData): string {
   const p = el.props as any;
+  // ★ seal 支持可选 props.src（URL/dataURL，支持 {{var}} 插值，如 {{orgSealDataUrl}}）。
+  //   有 src 时渲染机构印章整图；为空（未配置）回退内置 SVG 环形文字。
+  const srcVal = p.src ? interpolate(p.src, data) : '';
+  if (srcVal) {
+    return `<div style="${positionStyle(el)}"><img src="${srcVal}" style="width:100%;height:100%;object-fit:contain" alt="seal" /></div>`;
+  }
   const color = p.color || '#d32f2f';
   const text = p.text || '';
   const subText = p.subText || '';
@@ -231,13 +241,13 @@ export function renderElement(el: CanvasElement, data: TemplateData): string {
   switch (el.type) {
     case 'text': return renderText(el);
     case 'variable-text': return renderVariableText(el, data);
-    case 'image': return renderImage(el);
+    case 'image': return renderImage(el, data);
     case 'rect': return renderRect(el);
     case 'divider': return renderDivider(el);
     case 'auto-field': return renderAutoField(el, data);
     case 'table': return renderTable(el, data);
     case 'qrcode': return renderQrCode(el as any, data);
-    case 'seal': return renderSeal(el as any);
+    case 'seal': return renderSeal(el as any, data);
     case 'barcode': return renderBarcode(el as any, data);
     default: return renderPlaceholder(el);
   }

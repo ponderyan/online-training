@@ -595,6 +595,8 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
 }
 .cert-preview-stage { flex-shrink: 0; }
 .cert-preview-stage .cert-paper { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
+/* ★ 2026-08-13 学时证明 canvas 渲染预览（与 PDF 同源）的屏幕呈现 */
+.cert-canvas-stage .cert-canvas { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
 .cert-preview-actions {
   position: sticky; bottom: 0; margin-top: 24px;
   display: flex; gap: 10px; justify-content: center;
@@ -618,6 +620,13 @@ html { scrollbar-width: thin; scrollbar-color: var(--color-ink-100) transparent;
   }
   .cert-preview-actions, .screen-only { display: none !important; }
   .cert-paper { box-shadow: none !important; margin: 0 auto; border-color: var(--gold-dark) !important; }
+  /* ★ 2026-08-13 canvas 渲染预览打印：去阴影、适配 A4 横向版式（HOURS 模板画布 1123×794） */
+  .cert-canvas-stage .cert-canvas {
+    box-shadow: none !important;
+    margin: 0 auto;
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
   .print-only { display: revert; }
 }
 

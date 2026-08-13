@@ -141,6 +141,8 @@ export interface SealElement extends BaseElement {
     subText?: string; // 中心横排文字
     color?: string;
     fontSize?: number;
+    /** 机构印章图片 URL/dataURL，支持 {{var}} 插值（如 {{orgSealDataUrl}}）。为空则用内置 SVG 环形文字 */
+    src?: string;
   };
 }
 
@@ -238,5 +240,18 @@ export interface TemplateData {
   endDate?: string;
   verificationCode?: string;
   qrDataUrl?: string; // 预生成的 QR data URL
+  // ── 机构配置注入（2026-08-13）──
+  /** 签发单位（= certIssuerName || org.name），旧模板 {{orgName}} 也用它 */
+  issuerName?: string;
+  /** 底部说明文字（certFooterText） */
+  footerText?: string;
+  /** 机构 Logo dataURL（toDataUrl 产物，base64） */
+  orgLogoDataUrl?: string;
+  /** 机构印章 dataURL；机构勾选 useFoxLearnSeal 时为 undefined（seal 元素回退内置环形章） */
+  orgSealDataUrl?: string;
+  /** 培训班名称（学时专用） */
+  programName?: string;
+  /** 学时防伪指纹 */
+  sealHash?: string;
   [key: string]: any;
 }

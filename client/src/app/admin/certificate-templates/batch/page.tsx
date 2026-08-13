@@ -18,6 +18,12 @@ const VAR_FIELDS = [
   { key: 'totalHours', label: '总学时' },
   { key: 'startDate', label: '开始日期' },
   { key: 'endDate', label: '结束日期' },
+  // ★ 2026-08-13 机构配置注入变量（与编辑器 AVAILABLE_VARS 同步）
+  { key: 'issuerName', label: '签发单位' },
+  { key: 'footerText', label: '底部说明' },
+  { key: 'programName', label: '培训班' },
+  { key: 'orgLogoDataUrl', label: '机构Logo' },
+  { key: 'orgSealDataUrl', label: '机构印章' },
 ];
 
 export default function BatchGeneratePage() {

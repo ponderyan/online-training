@@ -117,10 +117,9 @@ export class CertificatesService {
     }
 
     // 确定本次发证使用的模板（组织默认模板，与 PDF 渲染逻辑一致），用于"使用次数"统计
-    const issueTemplate = await this.prisma.certificateTemplate.findFirst({
-      where: { orgId: certOrgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
-      select: { id: true },
-    });
+    // ★ 2026-08-13 修复断裂点 C：orgId ?? undefined 在无机构时会去掉过滤条件误命中他机构模板；
+    //   改用 findDefaultTemplate（机构级 → 平台级 fallback）
+    const issueTemplate = await this.certTemplatesService.findDefaultTemplate(certOrgId, 'COMPLETION');
     const issueTemplateId = issueTemplate?.id ?? null;
 
     const results: any[] = [];
@@ -351,9 +350,7 @@ export class CertificatesService {
       ? await this.prisma.certificateTemplate.findUnique({ where: { id: cert.templateId } })
       : null;
     if (!renderTemplate) {
-      renderTemplate = await this.prisma.certificateTemplate.findFirst({
-        where: { orgId: cert.orgId ?? undefined, type: 'COMPLETION', isDefault: true, isActive: true },
-      });
+      renderTemplate = await this.certTemplatesService.findDefaultTemplate(cert.orgId, 'COMPLETION');
     }
     if (renderTemplate) {
       const canvas = renderTemplate.canvasJson as unknown as CanvasDef;
@@ -368,12 +365,22 @@ export class CertificatesService {
         ? rawIdCard.slice(0, 3) + '***' + rawIdCard.slice(-4)
         : rawIdCard;
 
+      // ★ 2026-08-13 机构配置注入模板（与静态分支同规则）：签发单位/底部文字/Logo/印章
+      const issuerName = cert.issuerName || cert.org?.certIssuerName || cert.org?.name || 'FoxLearn 狐学';
+      const footerText = cert.org?.certFooterText || '本证书最终解释权归 ' + issuerName + ' 所有 · 扫描二维码可在线验证';
+      const logoSrc = cert.org?.certLogoUrl ? await this.toDataUrl(cert.org.certLogoUrl) : null;
+      const sealSrc = (!cert.org?.useFoxLearnSeal && cert.org?.sealUrl) ? await this.toDataUrl(cert.org.sealUrl) : null;
+
       const templateData: TemplateData = {
         studentName: cert.studentName,
         courseName: cert.courseName,
         certificateNo: cert.certificateNo,
         issueDate: cert.issueDate.toISOString().slice(0, 10),
-        orgName: cert.org?.name || '',
+        orgName: issuerName, // 兼容旧模板 {{orgName}}，也吃签发单位
+        issuerName,
+        footerText,
+        orgLogoDataUrl: logoSrc ?? undefined,
+        orgSealDataUrl: sealSrc ?? undefined, // useFoxLearnSeal=true → undefined → seal 元素回退内置环形章
         idCard: rawIdCard,
         idCardMasked: maskedIdCard,
         verificationCode: cert.verificationCode.slice(0, 8).toUpperCase(),
@@ -524,6 +531,15 @@ export class CertificatesService {
       where: { id },
       data: { status: 'APPROVED', certificateId, reviewedBy: operatorId, reviewedAt: new Date() },
     });
+    // ★ 同步证书审批状态（2026-08-13 修复）：申请已批准 → 关联证书必须同步 APPROVED
+    //   原实现只更新申请状态；cert_approval_required=true 时证书仍是 PENDING
+    //   → /certificates（读证书表）显示「待审批」而 /certificates/applications（读申请表）显示「已批准」，两页状态不一致
+    if (certificateId) {
+      await this.prisma.certificate.update({
+        where: { id: certificateId },
+        data: { approvalStatus: 'APPROVED', approvedBy: operatorId, approvedAt: new Date() },
+      }).catch(() => {});
+    }
     // ← 审批日志
     const operator = await this.prisma.user.findUnique({ where: { id: operatorId }, select: { displayName: true } });
     await this.prisma.certificateApprovalLog.create({

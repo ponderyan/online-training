@@ -177,6 +177,23 @@ export class CertificateTemplatesService {
     });
   }
 
+  /**
+   * ★ 选默认模板（发证/学时 apply/generatePdf 共用，2026-08-13）
+   * 优先机构级默认（orgId 非空），无则回退平台级默认（orgId=null）。
+   * 修复断裂点 C：旧逻辑 orgId ?? undefined 会去掉过滤条件误命中他机构模板。
+   */
+  async findDefaultTemplate(orgId: number | null | undefined, type: string) {
+    if (orgId != null) {
+      const orgTpl = await this.prisma.certificateTemplate.findFirst({
+        where: { orgId, type, isDefault: true, isActive: true },
+      });
+      if (orgTpl) return orgTpl;
+    }
+    return this.prisma.certificateTemplate.findFirst({
+      where: { orgId: null, type, isDefault: true, isActive: true },
+    });
+  }
+
   /** 异步生成缩略图并更新 DB（fire-and-forget） */
   async regenerateThumbnail(id: number) {
     try {

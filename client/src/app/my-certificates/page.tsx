@@ -125,7 +125,8 @@ export default function MyCertificatesPage() {
         title: card.title,
         hours: {
           studentName: h.studentName || user?.displayName || '—',
-          idCardMasked: h.idCard,
+          // ★ 2026-08-13 身份证泄漏修复：此前误把原始 idCard 当脱敏字段传给 HoursCertificate（直接显示全号）。
+          //   删掉该字段，改用后端 findMy 的 previewHtml（canvas 渲染，已脱敏）或静态组件自身逻辑
           programName: h.programName,
           orgName: h.orgName,
           totalHours: h.totalHours,
@@ -137,6 +138,7 @@ export default function MyCertificatesPage() {
           sealHash: h.sealHash,
           qrDataUrl: h.qrDataUrl, // ★ 2026-08-13 findMy 已生成 qrDataUrl，预览显示真实二维码
         },
+        hoursHtml: h.previewHtml || undefined, // ★ 2026-08-13 canvas 渲染预览（与 PDF 同源），无模板时为 undefined → 静态组件回退
       });
     }
   };

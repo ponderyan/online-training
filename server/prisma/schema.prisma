@@ -1479,6 +1479,10 @@ model LearningHourCertificate {
   sealUrl      String?  @map("seal_url") @db.VarChar(500)
   sealHash     String?  @map("seal_hash") @db.VarChar(64)
 
+  // ── 使用的证书模板（2026-08-13 学时证书接入模板体系）──
+  templateId   Int?     @map("template_id")
+  template     CertificateTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
   // ── 审批状态 ──
   approvalStatus String @default("AUTO_APPROVED") @map("approval_status") @db.VarChar(20)
 
@@ -1501,6 +1505,7 @@ model LearningHourCertificate {
   @@index([programId])
   @@index([approvalStatus])
   @@index([certificateNo])
+  @@index([templateId])
   @@map("learning_hour_certificates")
 }
 
@@ -2249,6 +2254,7 @@ model CertificateTemplate {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   certificates Certificate[]
+  learningHourCertificates LearningHourCertificate[]
 
   @@index([orgId])
   @@index([type])

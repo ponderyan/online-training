@@ -32,7 +32,15 @@ export function PropertyPanel({ el, updateProp, onToggleLayer }: { el: CanvasEle
       {p.stroke !== undefined && <PropRow label="边框色"><input type="color" value={p.stroke} onChange={e => updateProp('stroke', e.target.value)} style={{ width: 28, height: 22, border: 'none' }} /></PropRow>}
       {p.strokeWidth !== undefined && <PropRow label="边框宽"><input type="number" value={p.strokeWidth} onChange={e => updateProp('strokeWidth', Number(e.target.value))} style={{ ...inputStyle, width: 50 }} /></PropRow>}
       {p.fill !== undefined && <PropRow label="填充"><input value={p.fill} onChange={e => updateProp('fill', e.target.value)} style={inputStyle} /></PropRow>}
-      {p.src !== undefined && <PropRow label="URL"><input value={p.src} onChange={e => updateProp('src', e.target.value)} style={inputStyle} placeholder="图片地址" /></PropRow>}
+      {p.src !== undefined && <div>
+        <PropRow label="图片源"><input value={p.src} onChange={e => updateProp('src', e.target.value)} style={inputStyle} placeholder="图片地址 或 {{机构变量}}" /></PropRow>
+        {/* ★ 2026-08-13 机构图片变量芯片：点击追加到 src，支持 {{orgLogoDataUrl}}/{{orgSealDataUrl}} */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>
+          {[{ key: 'orgLogoDataUrl', label: '机构Logo' }, { key: 'orgSealDataUrl', label: '机构印章' }].map(v => (
+            <button key={v.key} onClick={() => updateProp('src', p.src + '{{' + v.key + '}}')} className="bg-[var(--neutral-50)]" style={{ fontSize: 10, padding: '1px 5px', border: '1px solid var(--ink-100)', borderRadius: 3, cursor: 'pointer' }} title={'{{' + v.key + '}}'}>{v.label}</button>
+          ))}
+        </div>
+      </div>}
     </div>
   );
 }

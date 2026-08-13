@@ -12,7 +12,7 @@ export const DEFAULT_CANVAS: CanvasDef = {
   ],
 };
 
-export const DEFAULT_DATA: TemplateData = { studentName: '张三', courseName: '人工智能应用', certificateNo: 'CERT-2026-001', issueDate: '2026-07-30', orgName: '示例机构', verificationCode: 'FXV-DEMO-2026-0001' };
+export const DEFAULT_DATA: TemplateData = { studentName: '张三', courseName: '人工智能应用', certificateNo: 'CERT-2026-001', issueDate: '2026-07-30', orgName: '示例机构', issuerName: '示例签发单位', footerText: '本证书由示例机构签发 · 扫码可在线查验', programName: '示例培训班', verificationCode: 'FXV-DEMO-2026-0001' };
 
 export const AVAILABLE_VARS = [
   { key: 'studentName', label: '姓名' },
@@ -26,10 +26,16 @@ export const AVAILABLE_VARS = [
   { key: 'startDate', label: '开始日期' },
   { key: 'endDate', label: '结束日期' },
   { key: 'verificationCode', label: '防伪验证码' },
+  // ★ 2026-08-13 机构配置注入变量
+  { key: 'issuerName', label: '签发单位' },
+  { key: 'footerText', label: '底部说明' },
+  { key: 'programName', label: '培训班' },
+  { key: 'orgLogoDataUrl', label: '机构Logo' },
+  { key: 'orgSealDataUrl', label: '机构印章' },
 ];
 
 /** 变量芯片渲染用的中文标签表 */
-export const VAR_LABELS: Record<string, string> = { studentName: '姓名', courseName: '课程', certificateNo: '编号', issueDate: '日期', orgName: '机构', idCard: '身份证', idCardMasked: '身份证(脱敏)', totalHours: '学时', startDate: '开始', endDate: '结束', verificationCode: '防伪验证码' };
+export const VAR_LABELS: Record<string, string> = { studentName: '姓名', courseName: '课程', certificateNo: '编号', issueDate: '日期', orgName: '机构', idCard: '身份证', idCardMasked: '身份证(脱敏)', totalHours: '学时', startDate: '开始', endDate: '结束', verificationCode: '防伪验证码', issuerName: '签发单位', footerText: '底部说明', programName: '培训班', orgLogoDataUrl: '机构Logo', orgSealDataUrl: '机构印章' };
 
 let idCounter = 200;
 export function genId() { return `el_${++idCounter}_${Date.now().toString(36)}`; }
