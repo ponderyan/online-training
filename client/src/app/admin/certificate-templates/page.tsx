@@ -270,6 +270,28 @@ export default function CertificateTemplatesPage() {
           </div>
         </div>
 
+        {/* ═══ 默认模板引导（★ 2026-08-15：某类型有启用模板但无默认时提示，解决「哪个是默认/有没有默认」看不出来） ═══ */}
+        {(() => {
+          const noDefaultTypes = Object.keys(TYPE_META).filter(k => {
+            const act = templates.filter(t => t.type === k && t.isActive);
+            return act.length > 0 && !act.some(t => t.isDefault);
+          });
+          if (noDefaultTypes.length === 0) return null;
+          const labels = noDefaultTypes.map(k => TYPE_META[k].label).join('、');
+          return (
+            <div className="ct-nodflt-banner" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px',
+              background: 'var(--fox-pale)', border: '1px solid var(--fox)', borderRadius: 12 }}>
+              <span style={{ fontSize: 22 }}>⭐</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fox-dark)' }}>「{labels}」还没设置默认模板</div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-500)', marginTop: 2 }}>
+                  发证时会优先用默认模板；没设默认就走系统兜底版式。把鼠标移到模板卡片上，点「设为默认」即可指定（同类型、同归属下只会有一个默认）。
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ═══ 内容区 ═══ */}
         {loading ? (
           <div className="text-[var(--color-ink-300)]" style={{ textAlign: 'center', padding: 70,  }}>
@@ -313,11 +335,14 @@ export default function CertificateTemplatesPage() {
                     ) : (
                       <span className="text-[var(--color-ink-200)]" style={{  fontSize: 13 }}>暂无缩略图</span>
                     )}
-                    {/* hover 快捷操作 */}
+                    {/* hover 快捷操作（★ 2026-08-15 网格视图补「设为默认」入口，此前只能切列表/开预览弹窗设） */}
                     <div className="ct-overlay" onClick={e => e.stopPropagation()}>
                       <button className="ct-ovbtn" onClick={() => setPreviewTpl(tpl)}>👁 预览</button>
                       <button className="ct-ovbtn" onClick={() => openEditor(tpl.id)}>✏️ 编辑</button>
                       <button className="ct-ovbtn" onClick={() => openBatch(tpl.id)}>📦 批量</button>
+                      {tpl.isActive && !tpl.isDefault && (
+                        <button className="ct-ovbtn" onClick={() => handleSetDefault(tpl.id)} title="设为该类型的默认模板">设为默认</button>
+                      )}
                     </div>
                   </div>
                   {/* 信息 */}
@@ -327,7 +352,10 @@ export default function CertificateTemplatesPage() {
                       {tpl.description || '暂无描述'}
                     </p>
                     <div className="text-[var(--color-ink-300)]" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11.5,  }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>👤 {tpl.creatorName || `用户#${tpl.createdBy}`}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {/* ★ 2026-08-15 归属标注：默认模板按「归属 + 类型」分级（组织级优先于平台级），让用户一眼看懂 */}
+                        {tpl.orgId ? `🏢 组织#${tpl.orgId}` : '🌐 平台级'} · 👤 {tpl.creatorName || `用户#${tpl.createdBy}`}
+                      </span>
                       <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span title="使用次数（已签发证书数）" style={{ color: (tpl.usageCount ?? 0) > 0 ? 'var(--color-fox)' : undefined }}>📄 {tpl.usageCount ?? 0}</span>
                         <span>{fmtDate(tpl.updatedAt)}</span>

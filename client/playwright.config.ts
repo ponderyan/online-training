@@ -95,5 +95,11 @@ export default defineConfig({
       dependencies: ['setup-admin', 'setup-student'],
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
+    {
+      name: 'cert-template-default',
+      testMatch: /cert-template-default\.spec\.ts/,
+      dependencies: ['setup-admin'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
   ],
 });

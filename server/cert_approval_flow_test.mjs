@@ -195,7 +195,8 @@ async function main() {
   else await writeCfg('cert_org_self_issue', origSelfIssue);
 
   console.log(`\n════ 结果：${pass} 通过 / ${fail} 失败 ════`);
-  process.exit(fail === 0 ? 0 : 1);
+  // ★ 2026-08-15 修复：不能 process.exit（会跳过 then(cleanupAll) 清理，残留 certflow_* 测试数据）。改用 exitCode，等清理完成自然退出。
+  process.exitCode = fail === 0 ? 0 : 1;
 }
 
 async function cleanupAll() {
@@ -210,5 +211,5 @@ async function cleanupAll() {
 main().then(cleanupAll).catch(async (e) => {
   console.error('❌ 测试异常：', e.message);
   await cleanupAll();
-  process.exit(1);
+  process.exitCode = 1;
 });
