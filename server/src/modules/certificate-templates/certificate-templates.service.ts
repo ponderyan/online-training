@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { renderCanvasToDocument, renderCanvasToHtml } from './renderer/canvas-renderer.js';
 import type { CanvasDef, TemplateData, RenderMode } from './renderer/canvas-types.js';
@@ -140,12 +140,44 @@ export class CertificateTemplatesService {
     });
   }
 
-  /** 硬删除 */
-  async hardRemove(id: number, userOrgId: number | null, isSuperAdmin: boolean) {
+  /**
+   * 硬删除（★ 2026-08-15 接线：仅已停用 + 未被引用的模板，废弃原因写审计日志留痕）
+   * 用户需求：停用废弃模板若能确认未被引用且说明废弃原因，应可真正删除。
+   * 保护：isSystem 不可删；未停用先停用；被已发证书/学时证明引用时拒绝（保护版式定格可追溯）。
+   * 审计：changeReason 由 controller 显式传入（不依赖 requestContext——CertificateTemplate 不在
+   *       MODEL_TO_ENTITY，$extends 自动审计不触发，手动写 auditLog 时直接传参最可靠）。
+   */
+  async hardRemove(id: number, userOrgId: number | null, isSuperAdmin: boolean,
+                   operator?: { id: number; name: string }, changeReason?: string) {
     const existing = await this.findById(id, userOrgId, isSuperAdmin);
     if (existing.isSystem) {
       throw new ForbiddenException('系统内置模板不可删除');
     }
+    if (!isSuperAdmin && !existing.orgId) {
+      throw new ForbiddenException('无权删除平台级模板');
+    }
+    if (existing.isActive) {
+      throw new BadRequestException('请先停用模板，再执行删除');
+    }
+    // 引用检查：已发证书 + 学时证明（两者 templateId 外键均为 onDelete:SetNull，此处业务拒绝而非依赖置空）
+    const certCount = await this.prisma.certificate.count({ where: { templateId: id } });
+    const lhcCount = await this.prisma.learningHourCertificate.count({ where: { templateId: id } });
+    if (certCount + lhcCount > 0) {
+      throw new BadRequestException(`模板已被 ${certCount} 张证书、${lhcCount} 份学时证明引用，无法删除`);
+    }
+    // 废弃原因留痕（controller 显式传入，写入 audit_logs.changeReason）
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'CertificateTemplate',
+        entityId: id,
+        action: 'DELETE',
+        before: { name: existing.name, type: existing.type, orgId: existing.orgId },
+        operatorId: operator?.id ?? null,
+        operatorName: operator?.name ?? null,
+        changeReason: changeReason ?? null,
+        eventSource: 'MANUAL',
+      },
+    });
     return this.prisma.certificateTemplate.delete({ where: { id } });
   }
 

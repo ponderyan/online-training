@@ -101,5 +101,11 @@ export default defineConfig({
       dependencies: ['setup-admin'],
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
+    {
+      name: 'cert-template-delete',
+      testMatch: /cert-template-delete\.spec\.ts/,
+      dependencies: ['setup-admin'],
+      use: { storageState: 'e2e/auth/.auth/admin.json' },
+    },
   ],
 });

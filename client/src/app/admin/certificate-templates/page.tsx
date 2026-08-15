@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { useToast } from '@/components/Toast';
+import ReasonConfirmModal from '@/components/ReasonConfirmModal';
 import { TEMPLATE_PRESETS, type TemplatePreset } from '@/lib/canvas-renderer/template-presets';
 import { renderCanvasToHtml } from '@/lib/canvas-renderer/renderer';
 import type { TemplateData } from '@/lib/canvas-renderer/types';
@@ -64,6 +65,7 @@ export default function CertificateTemplatesPage() {
   const [sortBy, setSortBy] = useState('default');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [previewTpl, setPreviewTpl] = useState<TemplateItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TemplateItem | null>(null); // ★ 2026-08-15 硬删除目标（仅已停用模板）
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [creatingPreset, setCreatingPreset] = useState('');
 
@@ -114,6 +116,26 @@ export default function CertificateTemplatesPage() {
     const res = await fetch(`/api/certificate-templates/${id}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) { toast.success('已停用'); setPreviewTpl(null); fetchTemplates(); }
     else toast.error('操作失败');
+  };
+
+  // ★ 2026-08-15 硬删除（仅已停用模板；废弃原因必填，后端校验未引用后真正删除）
+  const handleDeletePermanent = async (reason: string) => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`/api/certificate-templates/${deleteTarget.id}/permanent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ reason }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.message || '删除失败');
+      toast.success('模板已删除');
+      setDeleteTarget(null);
+      fetchTemplates();
+    } catch (e: any) {
+      toast.error('删除失败：' + (e.message || ''));
+      setDeleteTarget(null);
+    }
   };
 
   const handleDuplicate = async (id: number) => {
@@ -335,13 +357,16 @@ export default function CertificateTemplatesPage() {
                     ) : (
                       <span className="text-[var(--color-ink-200)]" style={{  fontSize: 13 }}>暂无缩略图</span>
                     )}
-                    {/* hover 快捷操作（★ 2026-08-15 网格视图补「设为默认」入口，此前只能切列表/开预览弹窗设） */}
+                    {/* hover 快捷操作（★ 2026-08-15 网格视图补「设为默认」入口，此前只能切列表/开预览弹窗设；已停用模板补「删除」硬删入口） */}
                     <div className="ct-overlay" onClick={e => e.stopPropagation()}>
                       <button className="ct-ovbtn" onClick={() => setPreviewTpl(tpl)}>👁 预览</button>
                       <button className="ct-ovbtn" onClick={() => openEditor(tpl.id)}>✏️ 编辑</button>
                       <button className="ct-ovbtn" onClick={() => openBatch(tpl.id)}>📦 批量</button>
                       {tpl.isActive && !tpl.isDefault && (
                         <button className="ct-ovbtn" onClick={() => handleSetDefault(tpl.id)} title="设为该类型的默认模板">设为默认</button>
+                      )}
+                      {!tpl.isActive && (
+                        <button className="ct-ovbtn" onClick={() => setDeleteTarget(tpl)} title="删除模板（不可恢复）">🗑 删除</button>
                       )}
                     </div>
                   </div>
@@ -395,12 +420,25 @@ export default function CertificateTemplatesPage() {
                     <button className="ct-act" onClick={() => handleDuplicate(tpl.id)}>复制</button>
                     {!tpl.isDefault && tpl.isActive && <button className="ct-act" onClick={() => handleSetDefault(tpl.id)}>设为默认</button>}
                     {tpl.isActive && !tpl.isSystem && <button className="ct-act danger" onClick={() => handleDelete(tpl.id)}>停用</button>}
+                    {!tpl.isActive && <button className="ct-act danger" onClick={() => setDeleteTarget(tpl)} title="真正删除，不可恢复">删除</button>}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
+
+        {/* ═══ 硬删除确认（★ 2026-08-15：仅已停用模板；废弃原因必填，删除不可恢复） ═══ */}
+        <ReasonConfirmModal
+          open={deleteTarget !== null}
+          title="🗑 删除模板"
+          message={`删除「${deleteTarget?.name || ''}」后不可恢复，且要求该模板未被任何证书/学时证明引用。确定继续？`}
+          required
+          presetReasons={['模板已废弃，不再使用', '版式已重构，旧模板下线', '误建模板，需要清理', '机构不再需要该证书类型']}
+          confirmText="确认删除"
+          onConfirm={handleDeletePermanent}
+          onCancel={() => setDeleteTarget(null)}
+        />
 
         {/* ═══ 快速预览弹窗 ═══ */}
         {previewTpl && (

@@ -84,6 +84,17 @@ export class CertificateTemplatesController {
     return this.service.remove(id, orgId, isSuperAdmin);
   }
 
+  /** 硬删除（★ 2026-08-15：仅已停用 + 未被引用的模板；废弃原因经 changeReason 写审计日志） */
+  @Post(':id/permanent')
+  @RequirePermission(Permissions.TEMPLATE_MANAGE)
+  async permanentDelete(@Param('id', ParseIntPipe) id: number, @Body() data: { reason: string }, @Req() req: any) {
+    const orgId = req.user?.orgId || null;
+    const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
+    // 操作人：displayName 为空时回退 username（admin 等账号可能无 displayName）
+    const operator = { id: req.user?.id, name: req.user?.displayName || req.user?.username };
+    return this.service.hardRemove(id, orgId, isSuperAdmin, operator, data?.reason);
+  }
+
   @Post(':id/duplicate')
   @RequirePermission(Permissions.TEMPLATE_MANAGE)
   duplicate(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
