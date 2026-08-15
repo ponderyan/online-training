@@ -209,14 +209,17 @@ export class CertificatesService {
       },
     }).catch(() => {});
 
+    // ★ 2026-08-14 审批门控：PENDING（待审批）证书对外验证返回未生效；撤销或未批准均不算有效
+    const effective = !cert.isRevoked && cert.approvalStatus !== 'PENDING';
     return {
-      valid: !cert.isRevoked,
+      valid: effective,
       certificate: {
         studentName: cert.studentName,
         courseName: cert.courseName,
         issueDate: cert.issueDate,
         certificateNo: cert.certificateNo,
         isRevoked: cert.isRevoked,
+        approvalStatus: cert.approvalStatus,
         revokedAt: cert.revokedAt,
         revokeReason: cert.revokeReason,
         verificationUrl: `${process.env.SITE_URL || 'https://foxlearn.cn'}/verify-certificate?no=${cert.certificateNo}&code=${cert.verificationCode}`,
@@ -257,6 +260,7 @@ export class CertificatesService {
   async listCertificates(params: {
     examSessionId?: number;
     studentId?: number;
+    status?: string;
     page: number;
     limit: number;
     userOrgId?: number | null;
@@ -271,6 +275,21 @@ export class CertificatesService {
       where.OR = [{ orgId: { in: visIds } }, { orgId: null }];
     }
     if (params.studentId) where.studentId = params.studentId;
+    // ★ 2026-08-14 状态筛选（此前前端传 status 被忽略，筛选形同虚设）：
+    //   ACTIVE=有效(已批准且未撤销)、PENDING=待审批、REJECTED=已拒绝、REVOKED=已撤销
+    //   用 AND 包裹避免与上面的 org 过滤 OR 冲突
+    if (params.status) {
+      const st = params.status;
+      if (st === 'ACTIVE') {
+        where.AND = [{ isRevoked: false, approvalStatus: 'APPROVED' }];
+      } else if (st === 'PENDING') {
+        where.approvalStatus = 'PENDING';
+      } else if (st === 'REJECTED') {
+        where.approvalStatus = 'REJECTED';
+      } else if (st === 'REVOKED') {
+        where.isRevoked = true;
+      }
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.certificate.findMany({
@@ -295,7 +314,8 @@ export class CertificatesService {
   /** 获取学员的证书列表 */
   async getStudentCertificates(studentId: number) {
     const certs = await this.prisma.certificate.findMany({
-      where: { studentId },
+      // ★ 2026-08-14 学员端只显示已生效证书（APPROVED），PENDING（待审批）/DRAFT 对外不可见
+      where: { studentId, approvalStatus: 'APPROVED' },
       orderBy: { createdAt: 'desc' },
     });
     // ★ 2026-08-13 为每条证书生成 QR data URL + previewHtml（与 PDF 同一渲染源）
@@ -398,6 +418,11 @@ export class CertificatesService {
       include: { org: { select: { certIssuerName: true, certLogoUrl: true, certFooterText: true, sealUrl: true, useFoxLearnSeal: true, name: true } } },
     });
     if (!cert) throw new NotFoundException('证书不存在');
+
+    // ★ 2026-08-14 审批门控（模型 A：确认出证 + 审批解锁）：PENDING 证书不可下载，批准后才对外生效
+    if (cert.approvalStatus === 'PENDING') {
+      throw new BadRequestException('证书尚未审批通过，无法下载');
+    }
 
     // ── 优先使用证书记录的模板，其次组织默认模板（平滑过渡） ──
     let renderTemplate = cert.templateId
@@ -564,10 +589,10 @@ export class CertificatesService {
         data: { approvalStatus: 'APPROVED', approvedBy: operatorId, approvedAt: new Date() },
       }).catch(() => {});
     }
-    // ← 审批日志
+    // ← 审批日志（★ 2026-08-14 修正：此前误存 app.id，应存真实证书 id）
     const operator = await this.prisma.user.findUnique({ where: { id: operatorId }, select: { displayName: true } });
     await this.prisma.certificateApprovalLog.create({
-      data: { certificateId: app.id || 0, action: 'APPROVED', operatorId, operatorName: operator?.displayName || '系统', note: null },
+      data: { certificateId: certificateId || 0, action: 'APPROVED', operatorId, operatorName: operator?.displayName || '系统', note: null },
     }).catch(() => {});
     // ← 通知学员
     void this.notificationService.create(
@@ -594,10 +619,22 @@ export class CertificatesService {
     if (!app) throw new NotFoundException('申请不存在');
     if (app.status !== 'PENDING') throw new BadRequestException('只有待审批的申请可以操作');
     const result = await this.prisma.certificateApplication.update({ where: { id }, data: { status: 'REJECTED' } });
-    // ← 审批日志
+    // ★ 2026-08-14 反向同步：驳回时若该申请已自动发过证（模型 A 下证书 PENDING 待审批），必须撤销，
+    //   否则申请页「已驳回」而证书管理页证书仍在 → 两页状态分裂
+    const certId = app.certificateId || null;
+    if (certId) {
+      const cert = await this.prisma.certificate.findUnique({ where: { id: certId }, select: { approvalStatus: true, isRevoked: true } });
+      if (cert && !cert.isRevoked && cert.approvalStatus === 'PENDING') {
+        await this.prisma.certificate.update({
+          where: { id: certId },
+          data: { isRevoked: true, revokedAt: new Date(), revokeReason: reason || '申请被驳回' },
+        });
+      }
+    }
+    // ← 审批日志（★ 2026-08-14 修正：此前误存 app.id，应存真实证书 id）
     const operator = await this.prisma.user.findUnique({ where: { id: operatorId }, select: { displayName: true } });
     await this.prisma.certificateApprovalLog.create({
-      data: { certificateId: app.id || 0, action: 'REJECTED', operatorId, operatorName: operator?.displayName || '系统', note: reason || null },
+      data: { certificateId: certId || 0, action: 'REJECTED', operatorId, operatorName: operator?.displayName || '系统', note: reason || null },
     }).catch(() => {});
     // ← 通知学员
     void this.notificationService.create(

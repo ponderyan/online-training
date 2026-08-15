@@ -90,6 +90,7 @@ export class CertificatesController {
   async list(
     @Query('examSessionId') examSessionId?: string,
     @Query('studentId') studentId?: string,
+    @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Req() req?: any,
@@ -97,6 +98,7 @@ export class CertificatesController {
     return this.service.listCertificates({
       examSessionId: examSessionId ? parseInt(examSessionId) : undefined,
       studentId: studentId ? parseInt(studentId) : undefined,
+      status,
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 20,
       userOrgId: req?.user?.orgId ?? null,

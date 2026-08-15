@@ -182,7 +182,9 @@ function CertificatesContent() {
             <TH style={{ width: 120 }}>操作</TH>
           </THead>
           <TBody>
-            {certificates.map((cert: any) => (
+            {certificates.map((cert: any) => {
+              const isPending = cert.approvalStatus === 'PENDING';
+              return (
               <TR key={cert.id}>
                 <TD className="font-mono text-xs font-medium text-[var(--ink-600)]">
                   {cert.certificateNo}
@@ -204,21 +206,29 @@ function CertificatesContent() {
                 <TD className="font-mono text-xs text-[var(--ink-300)]">
                   {cert.verificationCode ? cert.verificationCode.slice(0, 8) + '…' : '—'}
                 </TD>
-                <TD>{renderStatus(cert)}</TD>
+                <TD title={isPending ? '待审批：需在「证书申请审批」页批准后生效' : undefined}>{renderStatus(cert)}</TD>
                 <TD>
+                  {/* ★ 2026-08-14 PENDING（待审批）证书不可预览/下载/撤销——去申请审批页处理，后端同时有门控 */}
                   <div className="flex gap-1">
-                    <button onClick={() => openPreview(cert)}
-                      className="btn btn-ghost btn-xs"><Eye size={12} className="inline mr-0.5" />预览</button>
-                    <button onClick={() => downloadPdf(cert.id)}
-                      className="btn btn-ghost btn-xs"><FileDown size={12} className="inline mr-0.5" />PDF</button>
-                    {!cert.isRevoked && cert.approvalStatus !== 'REJECTED' && (
-                      <button onClick={() => setRevokeTarget(cert.id)}
-                        className="btn btn-ghost btn-xs text-[var(--verm)]">撤销</button>
-                    )}
+                      <button onClick={() => openPreview(cert)} disabled={isPending}
+                        title={isPending ? '审批通过后可用' : undefined}
+                        className="btn btn-ghost btn-xs"
+                        style={{ opacity: isPending ? 0.4 : 1, cursor: isPending ? 'not-allowed' : 'pointer' }}>
+                        <Eye size={12} className="inline mr-0.5" />预览</button>
+                      <button onClick={() => downloadPdf(cert.id)} disabled={isPending}
+                        title={isPending ? '审批通过后可用' : undefined}
+                        className="btn btn-ghost btn-xs"
+                        style={{ opacity: isPending ? 0.4 : 1, cursor: isPending ? 'not-allowed' : 'pointer' }}>
+                        <FileDown size={12} className="inline mr-0.5" />PDF</button>
+                      {!cert.isRevoked && !isPending && cert.approvalStatus !== 'REJECTED' && (
+                        <button onClick={() => setRevokeTarget(cert.id)}
+                          className="btn btn-ghost btn-xs text-[var(--verm)]">撤销</button>
+                      )}
                   </div>
                 </TD>
               </TR>
-            ))}
+              );
+            })}
           </TBody>
         </Table>
       )}

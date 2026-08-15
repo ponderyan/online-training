@@ -7,10 +7,11 @@ import { Permissions, ROLE_PERMISSIONS } from '../../common/permissions.constant
 import { requestContext } from '../../common/utils/request-context.js';
 import { SUBJECTIVE_TYPES, recalculateSessionScore, getPassingScore } from '../../common/grading.utils.js';
 import { ExamAccessService } from '../../common/services/exam-access.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 
 @Controller('api/grading')
 export class GradingController {
-  constructor(private prisma: PrismaService, private certService: CertificatesService, private notificationService: NotificationsService, private examAccess: ExamAccessService) {}
+  constructor(private prisma: PrismaService, private certService: CertificatesService, private notificationService: NotificationsService, private examAccess: ExamAccessService, private systemConfig: SystemConfigService) {}
 
   /** 获取某场考试的所有待阅卷学员（按分派隔离） */
   @Get(':examId')
@@ -556,8 +557,16 @@ export class GradingController {
       );
     })();
 
-    // 自动发证：找到通过的学员，审批 PENDING 证书申请并生成证书
-    let certIssued = 0, certSkipped = 0;
+    // ★ 2026-08-14 模型 A（确认出证 + 审批解锁）：统一发证路径遵守系统配置，堵两处绕过
+    //   1. cert_org_self_issue=false（机构不能自行发证）时，机构用户确认 → 不自动发证，申请留 PENDING 等协会审批
+    //   2. cert_approval_required=true（发证需审批）时，确认自动发证但证书/申请都留 PENDING，审批页批准后才解锁
+    //      （此前无条件 APPROVED，审批环节被成绩确认流程整个绕过）
+    const approvalRequired = await this.systemConfig.getBoolean('cert_approval_required');
+    const orgSelfIssue = await this.systemConfig.getBoolean('cert_org_self_issue');
+    const isSuperAdmin = (req.user?.roles || []).includes('SUPER_ADMIN');
+    const canAutoIssue = isSuperAdmin || !!orgSelfIssue;
+
+    let certIssued = 0, certPendingApproval = 0, certSkipped = 0;
     const passedSessions = await this.prisma.examSession.findMany({
       where: { examId, status: 'SUBMITTED', isPassed: true, scoringStatus: 'CONFIRMED' },
       select: { id: true, studentId: true },
@@ -568,30 +577,40 @@ export class GradingController {
         where: { sessionId: s.id, status: 'PENDING' },
       });
       if (!app) { certSkipped++; continue; }
+      if (!canAutoIssue) { certSkipped++; continue; } // 机构不能自行发证：不自动发，等协会审批页批准
       try {
-        // ★ 抓取发证返回的证书并同步审批状态（2026-08-13 修复）：
-        //   申请自动 APPROVED 时证书表也必须 APPROVED，否则两页状态不一致
         const issued = await this.certService.issueSingleCertificate(s.id, s.studentId, { userOrgId: req.user?.orgId ?? null, userRoles: req.user?.roles || [] });
         if (issued?.id) {
-          await this.prisma.certificate.update({
-            where: { id: issued.id },
-            data: { approvalStatus: 'APPROVED', approvedBy: 0, approvedAt: new Date() },
-          });
+          if (approvalRequired) {
+            // 发证但待审批：证书 PENDING + 申请保持 PENDING（关联证书 id，供驳回时撤销），审批页统一批准解锁
+            await this.prisma.certificate.update({
+              where: { id: issued.id },
+              data: { approvalStatus: 'PENDING' },
+            });
+            await this.prisma.certificateApplication.update({
+              where: { id: app.id },
+              data: { certificateId: issued.id },
+            });
+            await this.prisma.certificateApprovalLog.create({
+              data: { certificateId: issued.id, action: 'AUTO_ISSUED', operatorId: 0, operatorName: '系统自动', note: '成绩确认自动发证，待审批' },
+            });
+            certPendingApproval++;
+          } else {
+            // 全自动：证书直接 APPROVED（create 时已是 APPROVED，补审批人时间戳）
+            await this.prisma.certificate.update({
+              where: { id: issued.id },
+              data: { approvalStatus: 'APPROVED', approvedBy: 0, approvedAt: new Date() },
+            });
+            await this.prisma.certificateApplication.update({
+              where: { id: app.id },
+              data: { status: 'APPROVED', certificateId: issued.id },
+            });
+            await this.prisma.certificateApprovalLog.create({
+              data: { certificateId: issued.id, action: 'AUTO_APPROVED', operatorId: 0, operatorName: '系统自动', note: '成绩确认后自动审批发证' },
+            });
+            certIssued++;
+          }
         }
-        await this.prisma.certificateApplication.update({
-          where: { id: app.id },
-          data: { status: 'APPROVED', certificateId: issued?.id },
-        });
-        await this.prisma.certificateApprovalLog.create({
-          data: {
-            certificateId: app.id,
-            action: 'AUTO_APPROVED',
-            operatorId: 0,
-            operatorName: '系统自动',
-            note: '成绩确认后自动审批发证',
-          },
-        });
-        certIssued++;
       } catch { certSkipped++; }
     }
 
@@ -599,6 +618,7 @@ export class GradingController {
       success: true,
       message: `已确认 ${result.count} 份成绩`,
       certIssued,
+      certPendingApproval,
       certSkipped,
     };
   }
