@@ -209,8 +209,10 @@ export class CertificatesService {
       },
     }).catch(() => {});
 
-    // ★ 2026-08-14 审批门控：PENDING（待审批）证书对外验证返回未生效；撤销或未批准均不算有效
-    const effective = !cert.isRevoked && cert.approvalStatus !== 'PENDING';
+    // ★ 2026-08-16 审批门控（语义收紧）：仅 APPROVED 且未撤销才算有效。
+    //   此前 `!isRevoked && approvalStatus !== 'PENDING'` 会把 REJECTED（审批拒绝）误判为有效，
+    //   而驳回后证书 approvalStatus=REJECTED（2026-08-16 起）。PENDING 待审批 / REJECTED 已拒绝 / 已撤销均无效。
+    const effective = cert.approvalStatus === 'APPROVED' && !cert.isRevoked;
     return {
       valid: effective,
       certificate: {
@@ -227,11 +229,18 @@ export class CertificatesService {
     };
   }
 
-  /** 撤销证书 */
+  /** 撤销证书（★ 2026-08-16：审批态门控 + 审批日志 + 学员通知，此前撤销静默无痕） */
   async revokeCertificate(id: number, reason: string, operatorId?: number) {
     const cert = await this.prisma.certificate.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('证书不存在');
     if (cert.isRevoked) throw new BadRequestException('证书已被撤销');
+    // ★ 审批态门控：待审批/已驳回的证书不应「撤销」，应走审批驳回/无需操作
+    if (cert.approvalStatus === 'PENDING') {
+      throw new BadRequestException('证书待审批中，如需不通过请在「证书申请审批」页驳回');
+    }
+    if (cert.approvalStatus === 'REJECTED') {
+      throw new BadRequestException('证书已被驳回，无需撤销');
+    }
 
     const result = await this.prisma.certificate.update({
       where: { id },
@@ -241,6 +250,20 @@ export class CertificatesService {
     await this.prisma.certificateTrace.create({
       data: { certificateId: id, traceType: 'REVOKE', snapshotData: cert as any, operatorId: operatorId || 1, reason },
     }).catch(() => {});
+
+    // ← 审批日志留痕
+    const operator = operatorId ? await this.prisma.user.findUnique({ where: { id: operatorId }, select: { displayName: true } }) : null;
+    await this.prisma.certificateApprovalLog.create({
+      data: { certificateId: id, action: 'REVOKED', operatorId: operatorId || 0, operatorName: operator?.displayName || '系统', note: reason || null },
+    }).catch(() => {});
+    // ← 通知学员
+    void this.notificationService.create(
+      cert.studentId,
+      'CERT_REVOKED' as any,
+      `证书已撤销`,
+      `你的证书「${cert.courseName}」已撤销，如有疑问请联系管理员`,
+      id, 'certificate',
+    );
 
     return result;
   }
@@ -561,7 +584,7 @@ export class CertificatesService {
     return { items: items.map(i => ({ ...i, student: userMap.get(i.studentId) || null, examSession: sessionMap.get(i.sessionId) || null })), total, page, pageSize: limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async approveApplication(id: number, operatorId: number) {
+  async approveApplication(id: number, operatorId: number, caller?: { userOrgId?: number | null; userRoles?: string[] }) {
     const app = await this.prisma.certificateApplication.findUnique({ where: { id } });
     if (!app) throw new NotFoundException('申请不存在');
     if (app.status !== 'PENDING') throw new BadRequestException('只有待审批的申请可以操作');
@@ -574,7 +597,8 @@ export class CertificatesService {
         where: { examSessionId: app.sessionId, studentId: app.studentId, isRevoked: false },
         select: { id: true },
       });
-      certificateId = existing?.id ?? (await this.issueSingleCertificate(app.sessionId, app.studentId))?.id ?? null;
+      // ★ 2026-08-16 带 caller 上下文发证：机构审批人同样受 cert_org_self_issue 约束，防绕过自行发证
+      certificateId = existing?.id ?? (await this.issueSingleCertificate(app.sessionId, app.studentId, caller))?.id ?? null;
     }
     const result = await this.prisma.certificateApplication.update({
       where: { id },
@@ -619,15 +643,15 @@ export class CertificatesService {
     if (!app) throw new NotFoundException('申请不存在');
     if (app.status !== 'PENDING') throw new BadRequestException('只有待审批的申请可以操作');
     const result = await this.prisma.certificateApplication.update({ where: { id }, data: { status: 'REJECTED' } });
-    // ★ 2026-08-14 反向同步：驳回时若该申请已自动发过证（模型 A 下证书 PENDING 待审批），必须撤销，
-    //   否则申请页「已驳回」而证书管理页证书仍在 → 两页状态分裂
+    // ★ 2026-08-16 反向同步（语义分离）：驳回 = 审批拒绝 → 关联证书 approvalStatus=REJECTED（not isRevoked 撤销）。
+    //   此前用 isRevoked=true 表达驳回，导致申请页「已驳回」而证书管理页显示「已撤销」、REJECTED 筛选永远为空。
     const certId = app.certificateId || null;
     if (certId) {
       const cert = await this.prisma.certificate.findUnique({ where: { id: certId }, select: { approvalStatus: true, isRevoked: true } });
       if (cert && !cert.isRevoked && cert.approvalStatus === 'PENDING') {
         await this.prisma.certificate.update({
           where: { id: certId },
-          data: { isRevoked: true, revokedAt: new Date(), revokeReason: reason || '申请被驳回' },
+          data: { approvalStatus: 'REJECTED', rejectReason: reason || '申请被驳回', approvedBy: operatorId, approvedAt: new Date() },
         });
       }
     }

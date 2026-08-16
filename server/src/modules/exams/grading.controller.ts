@@ -459,6 +459,7 @@ export class GradingController {
             },
           },
         },
+        program: { select: { orgId: true } }, // ★ 2026-08-16 解析证书申请机构归属（orgId 数据隔离）
       },
     });
     const subjectivePQIds = exam?.paper?.questions
@@ -517,6 +518,8 @@ export class GradingController {
       where: { examId, status: 'SUBMITTED', isPassed: true },
       select: { id: true, studentId: true, finalScore: true },
     });
+    // ★ 2026-08-16 机构归属：申请按 exam→program 归属解析，供审批列表 org 隔离
+    const certOrgId = exam?.orgId ?? exam?.program?.orgId ?? null;
     let certDraftCount = 0;
     for (const s of passedSessions) {
       const existing = await this.prisma.certificateApplication.findFirst({
@@ -524,7 +527,7 @@ export class GradingController {
       });
       if (existing) continue;
       await this.prisma.certificateApplication.create({
-        data: { sessionId: s.id, studentId: s.studentId, status: 'PENDING' },
+        data: { sessionId: s.id, studentId: s.studentId, status: 'PENDING', orgId: certOrgId },
       });
       certDraftCount++;
     }

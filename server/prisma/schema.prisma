@@ -977,6 +977,7 @@ enum NotificationType {
   CERT_ISSUED
   CERT_APPROVED
   CERT_REJECTED
+  CERT_REVOKED       // 证书撤销通知（2026-08-16 撤销与驳回语义分离后新增）
   CERT_APPLICATION
   CERT_EXPIRING      // 证书到期提醒
   PROGRAM_ENROLLED   // 培训班报名成功
@@ -1417,6 +1418,10 @@ model CertificateApplication {
   session   ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   studentId Int         @map("student_id")
 
+  // ★ 2026-08-16 机构归属（数据隔离修复）：创建申请时从 exam/program 解析，listApplications 按 org 过滤
+  //   此前申请表无 orgId，非超管访问申请列表直接 500（Unknown argument orgId）
+  orgId Int? @map("org_id")
+
   status    String   @default("PENDING") @db.VarChar(20)
   applyNote String?  @map("apply_note") @db.Text
   appliedAt DateTime @default(now()) @map("applied_at")
@@ -1433,6 +1438,7 @@ model CertificateApplication {
   @@unique([sessionId, studentId])
   @@index([studentId])
   @@index([status])
+  @@index([orgId])
   @@map("certificate_applications")
 }
 

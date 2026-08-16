@@ -32,8 +32,12 @@ export class CertificatesController {
   /** 审批单个申请 */
   @Post('applications/:id/approve')
   @RequirePermission(Permissions.CERT_ISSUE)
-  async approveApplication(@Param('id', ParseIntPipe) id: number, @Body() data: { operatorId: number }) {
-    return this.service.approveApplication(id, data.operatorId);
+  async approveApplication(@Param('id', ParseIntPipe) id: number, @Body() data: { operatorId: number }, @Req() req: any) {
+    // ★ 2026-08-16 带 caller 上下文：审批触发的发证同样受机构自行发证开关约束（防绕过）
+    return this.service.approveApplication(id, data.operatorId, {
+      userOrgId: req.user?.orgId ?? null,
+      userRoles: req.user?.roles || [],
+    });
   }
 
   /** 驳回申请 */
@@ -106,6 +110,20 @@ export class CertificatesController {
     });
   }
 
+  /** 撤销证书（★ 2026-08-16 必须声明在 :examSessionId/:studentId 之前，否则被两段参数化路由截获 → ParseIntPipe 400） */
+  @Post(':id/revoke')
+  @RequirePermission(Permissions.CERT_REVOKE)
+  async revoke(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { reason: string; operatorId?: number },
+    @Req() req: any,
+  ) {
+    await this.resourceAccess.assertCertificateAccess(id, req.user?.orgId ?? null, req.user?.roles);
+    const store = requestContext.getStore();
+    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
+    return this.service.revokeCertificate(id, data.reason, data.operatorId);
+  }
+
   /** 单个发证/补发 */
   @Post(':examSessionId/:studentId')
   @RequirePermission(Permissions.CERT_ISSUE)
@@ -118,20 +136,6 @@ export class CertificatesController {
       userOrgId: req?.user?.orgId ?? null,
       userRoles: req?.user?.roles || [],
     });
-  }
-
-  /** 撤销证书 */
-  @Post(':id/revoke')
-  @RequirePermission(Permissions.CERT_REVOKE)
-  async revoke(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() data: { reason: string; operatorId?: number },
-    @Req() req: any,
-  ) {
-    await this.resourceAccess.assertCertificateAccess(id, req.user?.orgId ?? null, req.user?.roles);
-    const store = requestContext.getStore();
-    if (store) requestContext.enterWith({ ...store, changeReason: data.reason });
-    return this.service.revokeCertificate(id, data.reason, data.operatorId);
   }
 
   /** 证书追溯链 */

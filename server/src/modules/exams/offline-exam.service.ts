@@ -90,13 +90,15 @@ export class OfflineExamService {
       where: { examId, isPassed: true, absent: false },
       select: { id: true, studentId: true },
     });
+    // ★ 2026-08-16 机构归属：从 exam→program 解析，供审批列表 org 隔离
+    const certOrgId = exam?.orgId ?? (exam as any)?.program?.orgId ?? null;
     for (const s of passedSessions) {
       const existing = await this.prisma.certificateApplication.findFirst({
         where: { sessionId: s.id, status: { not: 'REJECTED' } },
       });
       if (existing) continue;
       await this.prisma.certificateApplication.create({
-        data: { sessionId: s.id, studentId: s.studentId, status: 'PENDING' },
+        data: { sessionId: s.id, studentId: s.studentId, status: 'PENDING', orgId: certOrgId },
       });
     }
 
@@ -702,7 +704,10 @@ export class OfflineExamService {
   // ═══════════════════════════════════════════
 
   private async getOfflineExam(examId: number) {
-    const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: { program: { select: { orgId: true } } }, // ★ 2026-08-16 证书申请机构归属解析
+    });
     if (!exam) throw new NotFoundException('考试不存在');
     if (exam.examMode !== 'OFFLINE') throw new BadRequestException('该考试不是线下笔试');
     return exam;
