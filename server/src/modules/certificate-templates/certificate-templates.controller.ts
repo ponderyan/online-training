@@ -112,6 +112,14 @@ export class CertificateTemplatesController {
     return this.service.setDefault(id, orgId, isSuperAdmin);
   }
 
+  @Post(':id/clear-default')
+  @RequirePermission(Permissions.TEMPLATE_MANAGE)
+  clearDefault(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const orgId = req.user?.orgId || null;
+    const isSuperAdmin = req.user?.roles?.includes('SUPER_ADMIN') || false;
+    return this.service.clearDefault(id, orgId, isSuperAdmin);
+  }
+
   @Post(':id/regenerate-thumbnail')
   @RequirePermission(Permissions.TEMPLATE_MANAGE)
   async regenerateThumbnail(@Param('id', ParseIntPipe) id: number) {

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator.js';
+import { APP_VERSION } from '../../common/app.version.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Controller('api/health')
@@ -22,7 +23,7 @@ export class HealthController {
       uptime: process.uptime(),
       db: dbStatus,
       responseTime: Date.now() - start,
-      version: '0.9.4',
+      version: APP_VERSION,
     };
   }
 }

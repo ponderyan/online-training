@@ -212,6 +212,20 @@ export class CertificateTemplatesService {
   }
 
   /**
+   * 取消模板的默认标识（2026-08-20）
+   * 产品语义：「设为默认」的逆操作——某类型允许回到「无默认模板」状态（banner 重新引导）。
+   * 幂等：非默认模板调用直接原样返回。
+   */
+  async clearDefault(id: number, userOrgId: number | null, isSuperAdmin: boolean) {
+    const tpl = await this.findById(id, userOrgId, isSuperAdmin);
+    if (!tpl.isDefault) return tpl;
+    return this.prisma.certificateTemplate.update({
+      where: { id },
+      data: { isDefault: false },
+    });
+  }
+
+  /**
    * ★ 选默认模板（发证/学时 apply/generatePdf 共用，2026-08-13）
    * 优先机构级默认（orgId 非空），无则回退平台级默认（orgId=null）。
    * 修复断裂点 C：旧逻辑 orgId ?? undefined 会去掉过滤条件误命中他机构模板。
