@@ -10,6 +10,9 @@ import { test, expect } from '@playwright/test';
  *   - 测前：API 快照当前所有 COMPLETION 默认模板 → 全部 clear-default（保证「无默认」前置态）
  *   - 测试：API 自建一个 COMPLETION 测试模板，全部 UI 断言针对测试模板卡片（不碰基线模板）
  *   - 测后：finally 中停用+硬删测试模板、还原测前默认快照 —— 任意失败也不留污染
+ * ★ 2026-08-20 二修（基线漂移：seed demo 模板已为自定义/学时证明设了默认，全局徽标定位瞬时伪通过）：
+ *   - 徽标等待改为「测试卡片内的 ★ 默认」（refetch 后才出现，天然等到状态同步）
+ *   - 徽标计数断言收敛到测试卡片，不再假设全局默认数量
  *
  * 前置：LOGIN_REQUIRE_CAPTCHA=false + 节流放宽；dev server 3000 在跑。
  */
@@ -65,26 +68,23 @@ test.describe('证书模板默认标识', () => {
       const setDefaultBtn = gridCard.locator('.ct-ovbtn:has-text("设为默认")').first();
       await expect(setDefaultBtn).toBeVisible({ timeout: 5000 });
 
-      // ③ 点击设为默认 → toast + banner 消失 + ★ 默认徽标出现
+      // ③ 点击设为默认 → toast + 测试卡片出现 ★ 默认徽标（refetch 后才渲染，天然等到状态同步；
+      //    若用全局 badge 定位会被其他类型的既有默认徽标瞬时伪通过）
       await setDefaultBtn.click();
-      await page.waitForSelector('.ct-badge:has-text("★ 默认"), .tag:has-text("★ 默认")', { timeout: 8000 });
-      const defaultBadge = page.locator('.ct-badge:has-text("★ 默认")').first();
-      await expect(defaultBadge).toBeVisible({ timeout: 8000 });
+      const testCardBadge = gridCard.locator('.ct-badge:has-text("★ 默认")');
+      await expect(testCardBadge).toBeVisible({ timeout: 8000 });
 
-      // banner 中「结业证书」应移除（该类型已有默认）；学时证明/自定义仍无默认，banner 保留属正确行为
+      // banner 中「结业证书」应移除（该类型已有默认）；学时证明/自定义仍无默认时 banner 保留属正确行为
       const bannerTextAfter = await banner.first().innerText().catch(() => '');
       expect(bannerTextAfter).not.toContain('结业证书');
 
-      // ④ 默认徽标：COMPLETION 类型只有 1 个默认
-      const defaultBadgeCount = await page.locator('.ct-badge:has-text("★ 默认"), .tag:has-text("★ 默认")').count();
-      expect(defaultBadgeCount).toBeGreaterThanOrEqual(1);
-      expect(defaultBadgeCount).toBeLessThanOrEqual(2); // 至多 COMPLETION 的默认出现
+      // ④ 测试卡片徽标唯一（只收敛到测试卡片，不假设全局默认数量 —— seed demo 模板可能已为其他类型设默认）
+      expect(await gridCard.locator('.ct-badge:has-text("★ 默认")').count()).toBe(1);
 
       // ⑤ 已设默认的卡片 hover 不应再显示「设为默认」（防止重复设置）
-      const defaultCard = defaultBadge.locator('xpath=ancestor::div[contains(@class,"ct-card")]');
-      await defaultCard.hover();
+      await gridCard.hover();
       await page.waitForTimeout(400);
-      expect(await defaultCard.locator('.ct-ovbtn:has-text("设为默认")').count()).toBe(0);
+      expect(await gridCard.locator('.ct-ovbtn:has-text("设为默认")').count()).toBe(0);
 
       console.log(`✅ 模板默认标识全链路通过（banner 引导 → 设默认 → 徽标 → 互斥唯一）`);
     } finally {

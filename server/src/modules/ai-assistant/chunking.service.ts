@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RetrievalService } from './agent/retrieval.service.js';
 
 /**
  * 知识块自动分块服务
@@ -11,7 +12,7 @@ export class ChunkingService {
   private readonly CHUNK_SIZE = 500;   // 每块目标字符数
   private readonly OVERLAP = 50;       // 块间重叠字符数
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private retrieval: RetrievalService) {}
 
   /**
    * 为指定教材重建知识块
@@ -24,9 +25,15 @@ export class ChunkingService {
     });
     if (!material) return { chunks: 0 };
 
-    // 清除旧块（按 source 匹配文件名）
+    // 清除旧块：优先按 materialId 精确删除；历史行（无关联）回退按 source 匹配文件名
+    // ★ 2026-08-20 链路补洞：原仅按 source contains fileName 删除，同名文件跨教材会误删他教材块
     await this.prisma.knowledgeChunk.deleteMany({
-      where: { source: { contains: material.fileName } },
+      where: {
+        OR: [
+          { materialId },
+          { materialId: null, source: { contains: material.fileName } },
+        ],
+      },
     }).catch(() => {});
 
     let totalChunks = 0;
@@ -37,11 +44,13 @@ export class ChunkingService {
       const chunks = this.splitText(chapter.content);
       if (chunks.length === 0) continue;
 
-      // 批量创建
+      // 批量创建（★ 2026-08-20：补填 materialId/materialChapterId，检索来源可反查）
       await this.prisma.knowledgeChunk.createMany({
         data: chunks.map((text, idx) => ({
           subjectId: material.subjectId,
           chapterId: null, // MaterialChapter ≠ Chapter，留空
+          materialId: material.id,
+          materialChapterId: chapter.id,
           title: `${material.name} - ${chapter.title}`,
           content: text,
           chunkIndex: idx,
@@ -53,6 +62,8 @@ export class ChunkingService {
     }
 
     this.logger.log(`[分块] 教材「${material.name}」生成 ${totalChunks} 个知识块`);
+    // ★ 2026-08-20 链路补洞：通知检索服务清空旧索引，新块下次查询自动补算向量
+    this.retrieval.notifyChunksChanged();
     return { chunks: totalChunks };
   }
 
@@ -80,8 +91,9 @@ export class ChunkingService {
    * 保持语义完整性，块间有重叠防止断裂
    */
   private splitText(text: string): string[] {
-    // 清理多余空白
-    const cleaned = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    // 清理多余空白（CR 统一剔除，连续 3+ 个 LF 折叠为双 LF）
+    const NL = String.fromCharCode(10);
+    const cleaned = text.split(String.fromCharCode(13)).join('').replace(new RegExp(NL + '{3,}', 'g'), NL + NL).trim();
     if (cleaned.length <= this.CHUNK_SIZE) return [cleaned];
 
     const chunks: string[] = [];

@@ -50,7 +50,13 @@ export class RetrievalService {
     if (top.length === 0) return [];
     const chunks = await this.prisma.knowledgeChunk.findMany({
       where: { id: { in: top } },
-      select: { id: true, content: true, title: true, source: true, document: { select: { name: true } } },
+      select: {
+        id: true, content: true, title: true, source: true,
+        document: { select: { name: true } },
+        // ★ 2026-08-20 链路补洞：来源优先取关联字段，title split 仅作旧数据兑底
+        material: { select: { name: true } },
+        materialChapter: { select: { title: true } },
+      },
     });
     const byId = new Map(chunks.map((c) => [c.id, c]));
     return scored
@@ -58,8 +64,8 @@ export class RetrievalService {
       .map((s) => byId.get(s.id))
       .filter((c): c is NonNullable<typeof c> => !!c)
       .map((c) => ({
-        materialName: c.document?.name || c.title?.split(' - ')[0] || '',
-        chapterTitle: c.title?.split(' - ')[1] || c.title || '',
+        materialName: c.material?.name || c.document?.name || c.title?.split(' - ')[0] || '',
+        chapterTitle: c.materialChapter?.title || c.title?.split(' - ')[1] || c.title || '',
         content: (c.content || '').slice(0, 300),
         source: c.source || c.document?.name || '教材',
         type: 'chunk' as const,
@@ -94,6 +100,16 @@ export class RetrievalService {
     this.index = null; // 强制下次查询重建
     await this.ensureIndexed();
     return { status: 'ok' };
+  }
+
+  /**
+   * chunk 数据变更后刷新内存索引（★ 2026-08-20 链路补洞）
+   * 背景：ensureIndexed 有缓存短路，chunk 重建后旧索引不清空则新块永不补算向量。
+   * 由 ChunkingService 重建完成后调用：清空索引 → 下次查询重新加载并后台补算缺失向量。
+   */
+  notifyChunksChanged(): void {
+    this.index = null;
+    this.ensureIndexed().catch((e) => this.logger.warn(`chunk 变更后索引重建失败：${(e as Error)?.message}`));
   }
 
   /** 索引状态（health 用） */
@@ -197,9 +213,13 @@ export class RetrievalService {
     const sql = `
       SELECT kc.id, kc.content, kc.source, kc.title,
              kd.name as document_name,
+             mt.name as material_name_rel,
+             mch.title as chapter_title_rel,
              MATCH(kc.content) AGAINST('${ftQuery.replace(/'/g, "''")}' IN BOOLEAN MODE) as relevance
       FROM knowledge_chunks kc
       LEFT JOIN knowledge_documents kd ON kc.document_id = kd.id
+      LEFT JOIN materials mt ON kc.material_id = mt.id
+      LEFT JOIN material_chapters mch ON kc.material_chapter_id = mch.id
       WHERE MATCH(kc.content) AGAINST('${ftQuery.replace(/'/g, "''")}' IN BOOLEAN MODE)
       ORDER BY relevance DESC
       LIMIT ${limit};
@@ -208,8 +228,8 @@ export class RetrievalService {
       const rows: any[] = await this.prisma.$queryRawUnsafe(sql);
       if (rows.length > 0) {
         return rows.map((r) => ({
-          materialName: r.document_name || r.title?.split(' - ')[0] || '',
-          chapterTitle: r.title?.split(' - ')[1] || r.title || '',
+          materialName: r.material_name_rel || r.document_name || r.title?.split(' - ')[0] || '',
+          chapterTitle: r.chapter_title_rel || r.title?.split(' - ')[1] || r.title || '',
           content: (r.content || '').slice(0, 300),
           source: r.source || r.document_name || '教材',
           type: 'chunk' as const,
@@ -218,9 +238,13 @@ export class RetrievalService {
     } catch {}
     const fallbackSql = `
       SELECT kc.id, kc.content, kc.source, kc.title,
-             kd.name as document_name
+             kd.name as document_name,
+             mt.name as material_name_rel,
+             mch.title as chapter_title_rel
       FROM knowledge_chunks kc
       LEFT JOIN knowledge_documents kd ON kc.document_id = kd.id
+      LEFT JOIN materials mt ON kc.material_id = mt.id
+      LEFT JOIN material_chapters mch ON kc.material_chapter_id = mch.id
       WHERE ${conditions.map((c) => c.replace('kc.', 'kc.')).join(' OR ')}
       ORDER BY LENGTH(kc.content) ASC
       LIMIT ${limit};
@@ -228,8 +252,8 @@ export class RetrievalService {
     try {
       const rows: any[] = await this.prisma.$queryRawUnsafe(fallbackSql);
       return rows.map((r) => ({
-        materialName: r.document_name || r.title?.split(' - ')[0] || '',
-        chapterTitle: r.title?.split(' - ')[1] || r.title || '',
+        materialName: r.material_name_rel || r.document_name || r.title?.split(' - ')[0] || '',
+        chapterTitle: r.chapter_title_rel || r.title?.split(' - ')[1] || r.title || '',
         content: (r.content || '').slice(0, 300),
         source: r.source || r.document_name || '教材',
         type: 'chunk' as const,

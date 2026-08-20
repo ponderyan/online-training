@@ -737,6 +737,9 @@ model KnowledgeChunk {
   subjectId  Int      @map("subject_id")
   chapterId  Int?     @map("chapter_id")
   documentId Int?     @map("document_id")
+  // ★ 2026-08-20 链路补洞：chunk 直连教材与教材章节，检索来源不再靠 title 脆弱解析
+  materialId        Int? @map("material_id")
+  materialChapterId Int? @map("material_chapter_id")
   title      String   @db.VarChar(500)
   content    String   @db.Text
   chunkIndex Int      @map("chunk_index")
@@ -750,9 +753,12 @@ model KnowledgeChunk {
   subject  Subject            @relation(fields: [subjectId], references: [id])
   chapter  Chapter?           @relation(fields: [chapterId], references: [id])
   document KnowledgeDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  material        Material?        @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialChapter MaterialChapter? @relation(fields: [materialChapterId], references: [id], onDelete: Cascade)
   knowledgePoints ChunkKnowledgePoint[]
 
   @@index([documentId])
+  @@index([materialId])
   @@map("knowledge_chunks")
 }
 
@@ -836,6 +842,7 @@ model Material {
   chapters  MaterialChapter[]
   questions MaterialQuestion[]
   questionPlans MaterialQuestionPlan[]
+  knowledgeChunks KnowledgeChunk[]
 
   @@map("materials")
 }
@@ -862,6 +869,7 @@ model MaterialChapter {
 
   questions MaterialQuestion[]
   planConfigs MaterialQuestionPlanConfig[]
+  chunks KnowledgeChunk[]
 
   @@map("material_chapters")
 }

@@ -1195,10 +1195,12 @@ ${
     if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可编辑');
     if (!data.title?.trim()) throw new BadRequestException('标题不能为空');
 
-    return this.prisma.materialChapter.update({
+    const updated = await this.prisma.materialChapter.update({
       where: { id: chapterId },
       data: { title: data.title.trim() },
     });
+    this.triggerChunkRebuild(materialId);
+    return updated;
   }
 
   /**
@@ -1246,10 +1248,12 @@ ${
       });
     }
 
-    return this.prisma.materialChapter.findMany({
+    const merged = await this.prisma.materialChapter.findMany({
       where: { materialId },
       orderBy: { sortOrder: 'asc' },
     });
+    this.triggerChunkRebuild(materialId);
+    return merged;
   }
 
   /**
@@ -1307,10 +1311,12 @@ ${
       });
     }
 
-    return this.prisma.materialChapter.findMany({
+    const split = await this.prisma.materialChapter.findMany({
       where: { materialId },
       orderBy: { sortOrder: 'asc' },
     });
+    this.triggerChunkRebuild(materialId);
+    return split;
   }
 
   /**
@@ -1324,6 +1330,7 @@ ${
     if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可删除');
 
     await this.prisma.materialChapter.delete({ where: { id: chapterId } });
+    this.triggerChunkRebuild(materialId);
 
     // 重新整理 sortOrder
     const remaining = await this.prisma.materialChapter.findMany({
@@ -1340,6 +1347,16 @@ ${
     return this.prisma.materialChapter.findMany({
       where: { materialId },
       orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  /**
+   * 章节编辑（改标题/合并/分割/删除）后触发知识块重建（fire-and-forget）
+   * ★ 2026-08-20 链路补洞：原章节编辑不触发重建，检索内容与教材正文脱节
+   */
+  private triggerChunkRebuild(materialId: number) {
+    this.chunking.rebuildForMaterial(materialId).catch((e: any) => {
+      this.logger.warn(`[分块] 章节编辑后重建知识块失败（material ${materialId}）：${e?.message}`);
     });
   }
 
