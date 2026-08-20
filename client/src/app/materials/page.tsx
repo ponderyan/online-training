@@ -68,6 +68,21 @@ export default function MaterialsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // ★ 2026-08-20 P1 后台化：存在后台处理中教材（OCR 异步）时每 3s 静默轮询状态，全部完成后自动停止
+  const hasActiveJob = materials.some(m => m.status === 'UPLOADED' || m.status === 'PROCESSING');
+  useEffect(() => {
+    if (!hasActiveJob) return;
+    const timer = setInterval(async () => {
+      try {
+        const params: Record<string, string> = {};
+        if (subjectIdParam) params.subjectId = subjectIdParam;
+        const data = await api.materials.list(params);
+        setMaterials(data.items || []);
+      } catch { /* 轮询失败静默，下轮重试 */ }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [hasActiveJob, subjectIdParam]);
+
   // ── 统计 ──
   const pendingReview = materials.filter(m => m.status === 'GENERATED').length;
   const pendingStructure = materials.filter(m => m.status === 'STRUCTURED').length;

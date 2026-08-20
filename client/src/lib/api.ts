@@ -517,6 +517,8 @@ export const api = {
     batchReview: (materialId: number, data: { action: 'approve' | 'reject'; questionIds?: number[] }) =>
       request<any>(`/materials/${materialId}/batch-review`, { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/materials/${id}`, { method: 'DELETE' }),
+    /** ★ 2026-08-20 P1 后台化：失败/卡住教材重试（无需重新上传） */
+    reprocess: (id: number) => request<any>(`/materials/${id}/reprocess`, { method: 'POST' }),
     create: (data: { name: string; subjectId: number; content: string; batchNote?: string }) =>
       request<any>('/materials', { method: 'POST', body: JSON.stringify(data) }),
     // ── 章节编辑 ──

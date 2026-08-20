@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import PipelineProgress from '@/components/pipeline-progress';
+import { api } from '@/lib/api';
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   UPLOADED: { label: '待处理', cls: 'tag-ink' },
@@ -25,13 +26,26 @@ export default function MaterialCard({ m, showArchivedBadge = false, onArchive, 
   onDelete: (m: any) => void;
 }) {
   const router = useRouter();
+    // ★ 2026-08-20 P1 后台化：失败教材重试（重新入队，轮询会自动跟进状态）
+    const handleReprocess = async () => {
+      try {
+        await api.materials.reprocess(m.id);
+      } catch { /* 错误已由后端写入 errorMessage，轮询会展示 */ }
+    };
     const actionBtn = (() => {
       switch (m.status) {
         case 'UPLOADED':
           return m.errorMessage
-            ? <button className="btn btn-verm btn-xs" onClick={() => onDelete(m)}>删除</button>
-            : <span className="text-[var(--ink-300)] text-xs">⏳ 等待处理…</span>;
+            ? (
+              <>
+                <button className="btn btn-fox btn-xs" onClick={handleReprocess}>🔁 重试识别</button>
+                <button className="btn btn-verm btn-xs" onClick={() => onDelete(m)}>删除</button>
+              </>
+            )
+            : <span className="text-[var(--ink-300)] text-xs">⏳ 排队中…</span>;
         case 'PROCESSING':
+          // ★ 后台化后展示真实进度（后端里程碑：5入队/30提取/40OCR/100完成）
+          return <span className="text-[var(--gold)] text-xs">⏳ 识别中… {typeof m.processingProgress === 'number' ? `${m.processingProgress}%` : ''}</span>;
         case 'GENERATING':
           return <span className="text-[var(--gold)] text-xs">⏳ 处理中…</span>;
         case 'OCR_DONE':

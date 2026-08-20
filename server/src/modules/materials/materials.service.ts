@@ -16,6 +16,8 @@ const execFileAsync = util.promisify(execFile);
 export class MaterialsService {
   private readonly logger = new Logger(MaterialsService.name);
   private uploadDir = path.resolve('uploads');
+  /** ★ 2026-08-20 P1 后台化：进程内串行处理队列（OCR 为 CPU 密集 Python 子进程，串行避免资源打满） */
+  private processingChain: Promise<void> = Promise.resolve();
 
   constructor(private prisma: PrismaService, private chunking: ChunkingService, private systemConfig: SystemConfigService) {
     fs.mkdir(this.uploadDir, { recursive: true }).catch(() => {});
@@ -251,25 +253,74 @@ export class MaterialsService {
       },
     });
 
-    // ── 根据格式路由到不同提取管线 ──
-    if (detectedType === 'pptx') {
-      await this.processPptx(material.id, filePath);
-    } else if (detectedType === 'pdf') {
-      await this.processPdf(material.id, filePath, file.originalname);
-    } else if (detectedType === 'docx') {
-      await this.processDocx(material.id, filePath);
-    } else if (detectedType === 'doc') {
-      await this.processDoc(material.id, filePath);
-    } else if (detectedType === 'image') {
-      await this.processImage(material.id, filePath, file.originalname);
-    } else {
-      await this.prisma.material.update({
-        where: { id: material.id },
-        data: { errorMessage: '未能识别文件格式，请上传 PDF、PPTX、DOCX 或图片（PNG/JPG）文件' },
-      });
-    }
+    // ── 根据格式路由到不同提取管线（★ 2026-08-20 P1 后台化：入队后台串行处理，接口立即返回） ──
+    // 前端轮询 GET /materials/:id 看 status/processingProgress；失败可 POST :id/reprocess 重试
+    this.enqueueProcessing(material.id, filePath, detectedType, file.originalname);
 
     return this.findOne(material.id);
+  }
+
+  /**
+   * ★ 2026-08-20 P1 后台化：串行队列执行提取管线（上传接口不再阻塞等待 OCR）
+   * 状态机：UPLOADED → PROCESSING(+进度) → OCR_DONE / 失败(errorMessage，进度置 null)
+   */
+  private enqueueProcessing(materialId: number, filePath: string, detectedType: string, originalName: string) {
+    this.processingChain = this.processingChain
+      .then(async () => {
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { status: 'PROCESSING', processingProgress: 5, errorMessage: null },
+        }).catch(() => {});
+        if (detectedType === 'pptx') await this.processPptx(materialId, filePath);
+        else if (detectedType === 'pdf') await this.processPdf(materialId, filePath, originalName);
+        else if (detectedType === 'docx') await this.processDocx(materialId, filePath);
+        else if (detectedType === 'doc') await this.processDoc(materialId, filePath);
+        else if (detectedType === 'image') await this.processImage(materialId, filePath, originalName);
+        else {
+          await this.prisma.material.update({
+            where: { id: materialId },
+            data: { errorMessage: '未能识别文件格式，请上传 PDF、PPTX、DOCX 或图片（PNG/JPG）文件' },
+          });
+        }
+        // 收尾：成功补满进度；失败回退 UPLOADED（前端卡片才会显示「重试识别」入口，轮询也会停止）
+        const after = await this.prisma.material.findUnique({ where: { id: materialId }, select: { status: true } });
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: after?.status === 'OCR_DONE'
+            ? { processingProgress: 100 }
+            : { status: 'UPLOADED', processingProgress: null },
+        }).catch(() => {});
+      })
+      .catch((e) => {
+        this.logger.error(`教材 ${materialId} 后台处理失败：${(e as Error)?.message}`);
+        this.prisma.material.update({
+          where: { id: materialId },
+          data: { status: 'UPLOADED', errorMessage: '处理失败：' + (e as Error)?.message, processingProgress: null },
+        }).catch(() => {});
+      });
+  }
+
+  /** 进度里程碑（失败静默，不阻断主管线） */
+  private async setProgress(materialId: number, pct: number) {
+    await this.prisma.material.update({ where: { id: materialId }, data: { processingProgress: pct } }).catch(() => {});
+  }
+
+  /**
+   * ★ 2026-08-20 P1 后台化：失败/卡住教材重试（无需重新上传）
+   */
+  async reprocess(id: number) {
+    const m = await this.prisma.material.findUnique({ where: { id } });
+    if (!m || m.archivedAt) throw new BadRequestException('教材不存在或已归档');
+    const filePath = path.join(this.uploadDir, m.filePath);
+    await fs.access(filePath).catch(() => {
+      throw new BadRequestException('源文件已丢失，无法重试，请重新上传');
+    });
+    await this.prisma.material.update({
+      where: { id },
+      data: { status: 'UPLOADED', errorMessage: null, processingProgress: 0 },
+    });
+    this.enqueueProcessing(id, filePath, m.fileType || 'unknown', m.fileName);
+    return this.findOne(id);
   }
 
   /**
@@ -278,10 +329,12 @@ export class MaterialsService {
   private async processPdf(materialId: number, filePath: string, originalName: string) {
     try {
       const { text, numPages } = await this.extractPdfText(filePath);
+      await this.setProgress(materialId, 30); // 文本提取完成
       // 有效文本判定：pdf-parse 对纯图片/扫描 PDF 会输出 "-- N of M --" 分页标记垃圾，
       // 需剔除后再判断是否走 OCR，否则 ≥10 字符的标记会绕过 OCR 触发
       if (this.meaningfulTextLen(text) < 10) {
         console.warn(`PDF text extraction too little for ${originalName}, trying OCR...`);
+        await this.setProgress(materialId, 40); // OCR 开始
         // 走 OCR 兜底
         try {
           const ocrText = await this.ocrPdfFallback(filePath);
@@ -327,6 +380,7 @@ export class MaterialsService {
   private async processPptx(materialId: number, filePath: string) {
     try {
       const { text, totalSlides, images } = await this.extractPptxText(filePath);
+      await this.setProgress(materialId, 30); // 幻灯片文本提取完成
       if (text.trim().length < 10) {
         // 纯图片 PPTX：导出幻灯片图片 → OCR 兜底
         if (images && images.length > 0) {
@@ -376,6 +430,7 @@ export class MaterialsService {
    */
   private async processImage(materialId: number, filePath: string, originalName: string) {
     try {
+      await this.setProgress(materialId, 40); // OCR 开始
       const ocrText = await this.ocrImageFallback(filePath);
       if (this.meaningfulTextLen(ocrText) > 20) {
         const chapters = this.parseTextToChapters(ocrText);

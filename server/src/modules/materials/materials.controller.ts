@@ -212,6 +212,13 @@ export class MaterialsController {
     return this.service.generateFromBatchNote(id);
   }
 
+  /** ★ 2026-08-20 P1 后台化：失败/卡住教材重试（重新入队，无需重新上传） */
+  @Post(':id/reprocess')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  reprocess(@Param('id', ParseIntPipe) id: number) {
+    return this.service.reprocess(id);
+  }
+
   @Post(':id/archive')
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   archive(@Param('id', ParseIntPipe) id: number) {
