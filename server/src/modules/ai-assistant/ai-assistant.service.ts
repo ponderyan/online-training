@@ -1,35 +1,46 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AiSessionService } from './agent/ai-session.service.js';
+import { AgentKernelService } from './agent/agent-kernel.service.js';
+import { RetrievalService } from './agent/retrieval.service.js';
+import { AgentStreamEvent, ChatMessage, SourceInfo } from './agent/types.js';
 
-export interface SourceInfo {
-  materialName: string;
-  chapterTitle: string;
-  content: string;
-  source: string;
-  type: 'chunk' | 'chapter';
-}
-
-export interface ChatMessage {
+export interface ChatMessageInput {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+/** agent 流式问答入参 */
+export interface AgentAskInput {
+  question: string;
+  userId: number;
+  /** 已有会话（前端传入则忽略 history） */
+  sessionId?: number;
+  /** 前端历史（无 sessionId 时用于回放种子） */
+  history?: ChatMessageInput[];
 }
 
 @Injectable()
 export class AiAssistantService {
   private readonly logger = new Logger(AiAssistantService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private retrieval: RetrievalService,
+    private sessions: AiSessionService,
+    private kernel: AgentKernelService,
+  ) {}
 
   /**
-   * 非流式问答（兼容旧接口）
+   * 非流式问答（兼容旧接口，走混合检索 + 单轮）
    */
-  async ask(question: string, userId: number, history: ChatMessage[] = []) {
+  async ask(question: string, userId: number, history: ChatMessageInput[] = []) {
     const config = await this.getActiveConfig();
     if (!config) {
       return { answer: '⚠️ AI 配置未设置。请先联系管理员在「系统管理 > AI 配置」中配置 API 密钥。', sources: [] };
     }
 
-    const { context, sources } = await this.retrieveContext(question);
+    const { context, sources } = await this.retrieval.buildContext(question);
     if (sources.length === 0) {
       return { answer: '教材中未找到与您问题相关的信息。请尝试换个问法或咨询您的培训老师。', sources: [] };
     }
@@ -41,103 +52,82 @@ export class AiAssistantService {
   }
 
   /**
-   * 流式问答（SSE）— 返回 ReadableStream 给 controller 转发
+   * Agent 化流式问答（SSE）—— 事件溯源会话 + turn/step 循环 + 领域工具
+   * 返回已格式化的 `data: {...}\n\n` 字节流，controller 原样转发
    */
-  async askStream(question: string, userId: number, history: ChatMessage[] = []): Promise<{
-    stream: ReadableStream<Uint8Array> | null;
-    sources: SourceInfo[];
-    error?: string;
-  }> {
-    const config = await this.getActiveConfig();
-    if (!config) {
-      return { stream: null, sources: [], error: 'AI 配置未设置，请联系管理员。' };
-    }
+  async askAgentStream(input: AgentAskInput): Promise<ReadableStream<Uint8Array>> {
+    const encoder = new TextEncoder();
+    let cancelled = false;
 
-    const { context, sources } = await this.retrieveContext(question);
-    if (sources.length === 0) {
-      return { stream: null, sources: [], error: '教材中未找到与您问题相关的信息。请尝试换个问法或咨询您的培训老师。' };
-    }
-
-    const studentProfile = await this.getStudentProfile(userId);
-    const messages = this.buildMessages(config, question, context, history, studentProfile);
-
-    const baseUrl = config.apiBaseUrl || 'https://api.deepseek.com';
-    const apiKey = config.apiKey;
-    const model = config.modelVersion || 'deepseek-chat';
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: config.temperature ?? 0.7,
-          max_tokens: 2000,
-          stream: true,
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => '未知错误');
-        return { stream: null, sources, error: `AI 请求失败 (${res.status})：${errText.slice(0, 100)}` };
-      }
-
-      // 将 OpenAI SSE 流转换为简单 text 流给前端
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      const stream = new ReadableStream<Uint8Array>({
-        async pull(ctrl) {
-          try {
-            const { done, value } = await reader.read();
-            if (done) {
-              ctrl.enqueue(new TextEncoder().encode('[DONE]'));
-              ctrl.close();
-              return;
-            }
-            const text = decoder.decode(value, { stream: true });
-            // 解析 SSE data 行，提取 content delta
-            const lines = text.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
-                if (data === '[DONE]') {
-                  ctrl.enqueue(new TextEncoder().encode('[DONE]'));
-                  ctrl.close();
-                  return;
-                }
-                try {
-                  const json = JSON.parse(data);
-                  const delta = json.choices?.[0]?.delta?.content;
-                  if (delta) {
-                    ctrl.enqueue(new TextEncoder().encode(delta));
-                  }
-                } catch {}
-              }
-            }
-          } catch (e: any) {
-            ctrl.error(e);
-          }
-        },
-      });
-
-      return { stream, sources };
-    } catch (e: any) {
-      if (e.name === 'AbortError') {
-        return { stream: null, sources, error: 'AI 请求超时，请稍后重试。' };
-      }
-      return { stream: null, sources, error: `AI 请求出错：${e.message || '未知错误'}` };
-    }
+    return new ReadableStream<Uint8Array>({
+      start: async (controller) => {
+        const emit = (e: AgentStreamEvent) => {
+          if (cancelled) return;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
+        };
+        try {
+          await this.runAgent(input, emit);
+        } catch (e) {
+          this.logger.error(`agent 运行失败：${(e as Error)?.message}`);
+          emit({ type: 'error', error: '服务器处理出错，请稍后重试。' });
+        }
+        if (!cancelled) {
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        }
+      },
+      cancel: () => {
+        cancelled = true;
+      },
+    });
   }
 
-  // ── 私有方法 ──
+  /** 检索状态（health/管理员用） */
+  async retrievalStatus() {
+    return this.retrieval.status();
+  }
+
+  /** 重建嵌入索引（管理员） */
+  async rebuildEmbeddings() {
+    return this.retrieval.rebuildEmbeddings();
+  }
+
+  // ── 私有 ──
+
+  private async runAgent(input: AgentAskInput, emit: (e: AgentStreamEvent) => void): Promise<void> {
+    const config = await this.getActiveConfig();
+    if (!config) {
+      emit({ type: 'error', error: 'AI 配置未设置，请联系管理员。' });
+      return;
+    }
+
+    // 会话解析：已有会话 → 直接用（忽略前端 history）；无会话 → 新建 + 历史种子回放
+    let sessionId = input.sessionId;
+    if (sessionId) {
+      await this.sessions.assertOwned(input.userId, sessionId);
+    } else {
+      sessionId = (await this.sessions.create(input.userId)).id;
+      const history = input.history || [];
+      for (const m of history) {
+        if (m.role === 'user' || m.role === 'assistant') {
+          await this.sessions.appendEvent(sessionId, { type: m.role, content: m.content });
+        }
+      }
+    }
+
+    const result = await this.kernel.runTurn({
+      sessionId,
+      userId: input.userId,
+      input: input.question,
+      config,
+      emit,
+    });
+
+    // 无工具调用且未流式输出时（降级路径），兜底 emit
+    if (result.error && !input.sessionId) {
+      // 错误已在 kernel 内 emit
+    }
+  }
 
   private async getActiveConfig() {
     return this.prisma.aiConfig.findFirst({
@@ -147,29 +137,9 @@ export class AiAssistantService {
   }
 
   /**
-   * 检索相关上下文：知识块 + 章节内容
+   * 构建 LLM messages（legacy 单轮：多轮历史 + P2-2 学员画像）
    */
-  private async retrieveContext(question: string): Promise<{ context: string; sources: SourceInfo[] }> {
-    const keywords = this.extractKeywords(question);
-    if (keywords.length === 0) return { context: '', sources: [] };
-
-    const [chunkResults, chapterResults] = await Promise.all([
-      this.searchChunks(keywords, 6),
-      this.searchChapters(keywords, 3),
-    ]);
-
-    const allSources = [...chunkResults, ...chapterResults];
-    const context = allSources
-      .map((s, i) => `【来源 ${i + 1}】${s.materialName ? `《${s.materialName}》` : ''}${s.chapterTitle ? ` - ${s.chapterTitle}` : ''}\n${s.content}`)
-      .join('\n\n');
-
-    return { context, sources: allSources };
-  }
-
-  /**
-   * 构建 LLM messages（含多轮历史 + P2-2 学员画像）
-   */
-  private buildMessages(config: any, question: string, context: string, history: ChatMessage[], studentProfile?: string): ChatMessage[] {
+  private buildMessages(config: any, question: string, context: string, history: ChatMessageInput[], studentProfile?: string): ChatMessage[] {
     let systemPrompt = `你是"🦊 狐学 AI 助教"，一个智能教材助教。
 请基于以下教材内容回答用户的问题。
 
@@ -196,7 +166,6 @@ ${studentProfile}
 
     const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }];
 
-    // 加入历史对话（最多保留最近 10 轮）
     const recentHistory = history.slice(-20);
     for (const msg of recentHistory) {
       if (msg.role === 'user' || msg.role === 'assistant') {
@@ -204,17 +173,15 @@ ${studentProfile}
       }
     }
 
-    // 当前问题
     messages.push({ role: 'user', content: question });
     return messages;
   }
 
   /**
-   * P2-2: 获取学员画像（薄弱知识点 + 最近错题）
+   * P2-2: 获取学员画像（薄弱知识点 + 最近错题）—— legacy 路径
    */
   private async getStudentProfile(userId: number): Promise<string | undefined> {
     try {
-      // 最近错题的知识点
       const recentWrong = await this.prisma.practiceRecord.findMany({
         where: { studentId: userId, isCorrect: false },
         orderBy: { createdAt: 'desc' },
@@ -243,110 +210,6 @@ ${studentProfile}
       return profile;
     } catch {
       return undefined;
-    }
-  }
-
-  /**
-   * 关键词提取（中文优化：去停用词 + bigram）
-   */
-  private extractKeywords(question: string): string[] {
-    const STOPWORDS = ['什么','怎么','如何','为什么','哪些','哪个','怎样','几时','多少','为何','是否','可否',
-      '是','的','了','在','有','和','与','或','就','不','都','一','上','也','很','到','要','去',
-      '会','着','没有','看','好','自己','这','那','她','它','们','吗','呢','吧','啊','哦','嗯',
-      '请问','请教','帮忙','帮','我','你','他','能','可以','应该','需要','一下','这个','那个'];
-    let cleaned = question;
-    for (const sw of STOPWORDS) {
-      cleaned = cleaned.replace(new RegExp(sw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ');
-    }
-    let keywords: string[] = cleaned
-      .replace(/[，。！？、；：""''（）【】《》\s,;:!?.'"()【】《》\t\n\r]+/g, ' ')
-      .split(/\s+/)
-      .filter(k => k.length >= 2);
-
-    // 中文 bigram
-    const bigrams = new Set<string>();
-    for (const word of keywords) {
-      if (/^[\u4e00-\u9fff]+$/.test(word) && word.length >= 4) {
-        for (let i = 0; i <= word.length - 2; i++) {
-          bigrams.add(word.substring(i, i + 2));
-        }
-      }
-    }
-    keywords = [...new Set([...keywords, ...bigrams])];
-    return keywords.slice(0, 15); // 限制关键词数量
-  }
-
-  private async searchChunks(keywords: string[], limit: number): Promise<SourceInfo[]> {
-    // P1-3: 优先使用 FULLTEXT 索引（ngram），降级 LIKE
-    const ftQuery = keywords.join(' ');
-    const conditions = keywords.map(k => `kc.content LIKE '%${k.replace(/'/g, "''")}%'`);
-    const sql = `
-      SELECT kc.id, kc.content, kc.source, kc.title,
-             kd.name as document_name,
-             MATCH(kc.content) AGAINST('${ftQuery.replace(/'/g, "''")}' IN BOOLEAN MODE) as relevance
-      FROM knowledge_chunks kc
-      LEFT JOIN knowledge_documents kd ON kc.document_id = kd.id
-      WHERE MATCH(kc.content) AGAINST('${ftQuery.replace(/'/g, "''")}' IN BOOLEAN MODE)
-      ORDER BY relevance DESC
-      LIMIT ${limit};
-    `;
-    try {
-      const rows: any[] = await this.prisma.$queryRawUnsafe(sql);
-      if (rows.length > 0) {
-        return rows.map(r => ({
-          materialName: r.document_name || r.title?.split(' - ')[0] || '',
-          chapterTitle: r.title?.split(' - ')[1] || r.title || '',
-          content: (r.content || '').slice(0, 300),
-          source: r.source || r.document_name || '教材',
-          type: 'chunk' as const,
-        }));
-      }
-    } catch {}
-    // 降级：LIKE 搜索
-    const fallbackSql = `
-      SELECT kc.id, kc.content, kc.source, kc.title,
-             kd.name as document_name
-      FROM knowledge_chunks kc
-      LEFT JOIN knowledge_documents kd ON kc.document_id = kd.id
-      WHERE ${conditions.map(c => c.replace('kc.', 'kc.')).join(' OR ')}
-      ORDER BY LENGTH(kc.content) ASC
-      LIMIT ${limit};
-    `;
-    try {
-      const rows: any[] = await this.prisma.$queryRawUnsafe(fallbackSql);
-      return rows.map(r => ({
-        materialName: r.document_name || r.title?.split(' - ')[0] || '',
-        chapterTitle: r.title?.split(' - ')[1] || r.title || '',
-        content: (r.content || '').slice(0, 300),
-        source: r.source || r.document_name || '教材',
-        type: 'chunk' as const,
-      }));
-    } catch {
-      return [];
-    }
-  }
-
-  private async searchChapters(keywords: string[], limit: number): Promise<SourceInfo[]> {
-    const conditions = keywords.map(k => `mc.content LIKE '%${k.replace(/'/g, "''")}%'`);
-    const sql = `
-      SELECT mc.id, mc.content, mc.title as chapter_title, m.name as material_name
-      FROM material_chapters mc
-      JOIN materials m ON mc.material_id = m.id
-      WHERE mc.status = 'GENERATED' AND m.archived_at IS NULL AND (${conditions.join(' OR ')})
-      ORDER BY LENGTH(mc.content) ASC
-      LIMIT ${limit};
-    `;
-    try {
-      const rows: any[] = await this.prisma.$queryRawUnsafe(sql);
-      return rows.map(r => ({
-        materialName: r.material_name || '',
-        chapterTitle: r.chapter_title || '',
-        content: (r.content || '').slice(0, 300),
-        source: r.material_name || '教材',
-        type: 'chapter' as const,
-      }));
-    } catch {
-      return [];
     }
   }
 

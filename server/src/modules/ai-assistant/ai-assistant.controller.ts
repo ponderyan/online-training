@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Req, Res, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, UseGuards, HttpException, HttpStatus, Get, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import type { Response } from 'express';
-import { AiAssistantService, ChatMessage } from './ai-assistant.service.js';
+import { AiAssistantService, ChatMessageInput } from './ai-assistant.service.js';
+import { AiSessionService } from './agent/ai-session.service.js';
 import { ChunkingService } from './chunking.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 
@@ -25,13 +26,14 @@ function checkRateLimit(userId: number): boolean {
 export class AiAssistantController {
   constructor(
     private service: AiAssistantService,
+    private sessions: AiSessionService,
     private chunking: ChunkingService,
   ) {}
 
-  /** 非流式问答（兼容） */
+  /** 非流式问答（兼容旧接口） */
   @Post('ask')
   @UseGuards(JwtAuthGuard)
-  async ask(@Body() body: { question: string; history?: ChatMessage[] }, @Req() req: any) {
+  async ask(@Body() body: { question: string; history?: ChatMessageInput[] }, @Req() req: any) {
     const userId = req.user?.id || req.user?.sub || 0;
     if (!checkRateLimit(userId)) {
       throw new HttpException('请求过于频繁，请稍后再试', HttpStatus.TOO_MANY_REQUESTS);
@@ -39,11 +41,15 @@ export class AiAssistantController {
     return this.service.ask(body.question, userId, body.history || []);
   }
 
-  /** 流式问答（SSE） */
+  /**
+   * Agent 化流式问答（SSE）
+   * 事件：session / thinking / step / delta / sources / error / done
+   * 兼容旧前端（sources/delta/error/[DONE] 契约不变）
+   */
   @Post('ask/stream')
   @UseGuards(JwtAuthGuard)
   async askStream(
-    @Body() body: { question: string; history?: ChatMessage[] },
+    @Body() body: { question: string; history?: ChatMessageInput[]; sessionId?: number },
     @Req() req: any,
     @Res() res: Response,
   ) {
@@ -52,51 +58,87 @@ export class AiAssistantController {
       res.status(429).json({ error: '请求过于频繁，请稍后再试' });
       return;
     }
+    if (!body.question?.trim()) {
+      res.status(400).json({ error: '问题不能为空' });
+      return;
+    }
 
-    const { stream, sources, error } = await this.service.askStream(body.question, userId, body.history || []);
-
-    // 设置 SSE 头
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    if (error) {
-      res.write(`data: ${JSON.stringify({ type: 'error', content: error })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: 'sources', sources })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-      return;
-    }
-
-    // 先发送 sources
-    res.write(`data: ${JSON.stringify({ type: 'sources', sources })}\n\n`);
-
-    // 转发流
-    if (!stream) {
-      res.write('data: [DONE]\n\n');
-      res.end();
-      return;
-    }
+    const stream = await this.service.askAgentStream({
+      question: body.question,
+      userId,
+      sessionId: body.sessionId,
+      history: body.history,
+    });
 
     const reader = stream.getReader();
     const decoder = new TextDecoder();
-
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const text = decoder.decode(value, { stream: true });
-        if (text === '[DONE]') break;
-        res.write(`data: ${JSON.stringify({ type: 'delta', content: text })}\n\n`);
+        res.write(decoder.decode(value));
       }
     } catch {}
-
-    res.write('data: [DONE]\n\n');
     res.end();
   }
 
-  /** 重建知识块（管理员） */
+  // ── 会话管理 ──
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  async listSessions(@Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || 0;
+    return this.sessions.list(userId);
+  }
+
+  @Post('sessions')
+  @UseGuards(JwtAuthGuard)
+  async createSession(@Body() body: { title?: string }, @Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || 0;
+    return this.sessions.create(userId, body.title || '新对话');
+  }
+
+  @Get('sessions/:id')
+  @UseGuards(JwtAuthGuard)
+  async getSession(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || 0;
+    return this.sessions.get(userId, id);
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteSession(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || 0;
+    await this.sessions.remove(userId, id);
+    return { success: true };
+  }
+
+  // ── 嵌入/检索管理 ──
+
+  /** 检索状态（嵌入可用性/索引覆盖） */
+  @Get('status')
+  @UseGuards(JwtAuthGuard)
+  async aiStatus() {
+    return this.service.retrievalStatus();
+  }
+
+  /** 重建嵌入索引（管理员） */
+  @Post('embedding/rebuild')
+  @UseGuards(JwtAuthGuard)
+  async rebuildEmbeddings(@Req() req: any) {
+    const roles: string[] = req.user?.roles || [];
+    if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+      throw new HttpException('仅管理员可操作', HttpStatus.FORBIDDEN);
+    }
+    return this.service.rebuildEmbeddings();
+  }
+
+  /** 重建知识块（管理员，保留旧接口） */
   @Post('rebuild-chunks')
   @UseGuards(JwtAuthGuard)
   async rebuildChunks(@Body() body: { materialId?: number }, @Req() req: any) {

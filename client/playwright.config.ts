@@ -107,5 +107,11 @@ export default defineConfig({
       dependencies: ['setup-admin'],
       use: { storageState: 'e2e/auth/.auth/admin.json' },
     },
+    {
+      name: 'ai-assistant',
+      testMatch: /ai-assistant\.spec\.ts/,
+      dependencies: ['setup-student'],
+      use: { storageState: 'e2e/auth/.auth/student.json' },
+    },
   ],
 });
