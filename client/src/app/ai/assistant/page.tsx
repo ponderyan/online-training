@@ -261,6 +261,13 @@ export default function AiAssistantPage() {
 
   function handleStop() {
     abortRef.current?.abort();
+    // ★ 2026-08-20：除断开 SSE fetch 外，显式通知后端终止（双保险，确保后台 LLM 调用一定停掉）
+    if (activeSessionId) {
+      fetch(`/api/ai/sessions/${activeSessionId}/stop`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+      }).catch(() => {});
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

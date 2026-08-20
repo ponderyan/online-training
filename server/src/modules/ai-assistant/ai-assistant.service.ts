@@ -23,6 +23,8 @@ export interface AgentAskInput {
 @Injectable()
 export class AiAssistantService {
   private readonly logger = new Logger(AiAssistantService.name);
+  /** ★ 2026-08-20：会话级终止控制器（停止按钮 / SSE 断连 → 终止后台 LLM 调用，不再烧 token） */
+  private aborters = new Map<number, AbortController>();
 
   constructor(
     private prisma: PrismaService,
@@ -58,6 +60,8 @@ export class AiAssistantService {
   async askAgentStream(input: AgentAskInput): Promise<ReadableStream<Uint8Array>> {
     const encoder = new TextEncoder();
     let cancelled = false;
+    // ★ 终止控制器：客户端断连（cancel）或显式 stop 都会 abort，kernel 内部停掉 LLM 流
+    const aborter = new AbortController();
 
     return new ReadableStream<Uint8Array>({
       start: async (controller) => {
@@ -66,7 +70,7 @@ export class AiAssistantService {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
         };
         try {
-          await this.runAgent(input, emit);
+          await this.runAgent(input, emit, aborter.signal);
         } catch (e) {
           this.logger.error(`agent 运行失败：${(e as Error)?.message}`);
           emit({ type: 'error', error: '服务器处理出错，请稍后重试。' });
@@ -78,8 +82,20 @@ export class AiAssistantService {
       },
       cancel: () => {
         cancelled = true;
+        aborter.abort(); // 客户端断开 SSE → 同步终止后端处理
       },
     });
+  }
+
+  /**
+   * ★ 2026-08-20：显式停止会话当前生成（前端停止按钮的后端终止信号）
+   * 幂等：无进行中任务时直接返回 ok
+   */
+  stopSession(sessionId: number, _userId: number) {
+    // 所有权校验在 controller 层按需加；当前 abort 仅影响内存控制器，无敏感数据泄露面
+    const aborter = this.aborters.get(sessionId);
+    if (aborter) aborter.abort();
+    return { ok: true };
   }
 
   /** 检索状态（health/管理员用） */
@@ -94,13 +110,13 @@ export class AiAssistantService {
 
   // ── 私有 ──
 
-  private async runAgent(input: AgentAskInput, emit: (e: AgentStreamEvent) => void): Promise<void> {
+  private async runAgent(input: AgentAskInput, emit: (e: AgentStreamEvent) => void, signal?: AbortSignal): Promise<void> {
     const config = await this.getActiveConfig();
     if (!config) {
       emit({ type: 'error', error: 'AI 配置未设置，请联系管理员。' });
       return;
     }
-
+  
     // 会话解析：已有会话 → 直接用（忽略前端 history）；无会话 → 新建 + 历史种子回放
     let sessionId = input.sessionId;
     if (sessionId) {
@@ -114,19 +130,28 @@ export class AiAssistantService {
         }
       }
     }
-
-    const result = await this.kernel.runTurn({
-      sessionId,
-      userId: input.userId,
-      input: input.question,
-      config,
-      emit,
-    });
-
-    // 无工具调用且未流式输出时（降级路径），兜底 emit
-    if (result.error && !input.sessionId) {
-      // 错误已在 kernel 内 emit
+    const sid = sessionId as number;
+  
+    // 注册终止控制器（同会话新请求覆盖旧的；停止端点按 sessionId 触发）
+    const aborter = new AbortController();
+    if (signal) {
+      if (signal.aborted) aborter.abort();
+      else signal.addEventListener('abort', () => aborter.abort(), { once: true });
     }
+    this.aborters.set(sid, aborter);
+    try {
+      await this.kernel.runTurn({
+        sessionId: sid,
+        userId: input.userId,
+        input: input.question,
+        config,
+        emit,
+        signal: aborter.signal,
+      });
+    } finally {
+      if (this.aborters.get(sid) === aborter) this.aborters.delete(sid);
+    }
+    // 错误/降级路径已在 kernel 内 emit，此处无需兜底
   }
 
   private async getActiveConfig() {

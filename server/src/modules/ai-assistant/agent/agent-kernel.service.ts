@@ -56,11 +56,13 @@ export class AgentKernelService {
     input: string;
     config: { apiBaseUrl?: string; apiKey: string; modelVersion?: string; temperature?: number | null };
     emit: (e: AgentStreamEvent) => void;
+    /** ★ 2026-08-20：后端终止信号（前端停止按钮 / SSE 断连触发） */
+    signal?: AbortSignal;
   }): Promise<AgentTurnResult> {
-    const { sessionId, userId, input, config, emit } = opts;
+    const { sessionId, userId, input, config, emit, signal } = opts;
     const sources: SourceInfo[] = [];
 
-    await this.session.maybeSetTitle(sessionId, input);
+    const firstTitleSet = await this.session.maybeSetTitle(sessionId, input);
     await this.session.appendEvent(sessionId, { type: 'user', content: input });
     emit({ type: 'session', sessionId });
 
@@ -68,13 +70,16 @@ export class AgentKernelService {
     let retries = 0;
 
     for (let step = 0; step < MAX_STEPS; step++) {
+      // ★ 终止检查：每步开始前检查，避免用户已停止后继续烧 token
+      if (signal?.aborted) return this.handleAbort(sessionId, emit);
       await this.session.appendEvent(sessionId, { type: 'step', meta: { phase: 'start', step } });
       try {
-        const llm = await this.executeStep({ sessionId, userId, input, config });
+        const llm = await this.executeStep({ sessionId, userId, input, config, signal });
 
         if (llm.toolCalls.length > 0) {
           // 工具调用步：模型"思考"内容发 thinking 事件（前端可单独展示），不进答案气泡
           if (llm.content) emit({ type: 'thinking', content: llm.content });
+          if (signal?.aborted) return this.handleAbort(sessionId, emit);
           // 有工具调用 → 执行并回填，继续循环
           const executed = await this.executeTools({ sessionId, userId, toolCalls: llm.toolCalls, emit, sources });
           await this.session.appendEvent(sessionId, { type: 'step', meta: { phase: 'end', step, toolExecuted: executed } });
@@ -94,8 +99,12 @@ export class AgentKernelService {
         this.emitDeltas(answer, emit);
         await this.session.appendEvent(sessionId, { type: 'step', meta: { phase: 'end', step, toolExecuted: false } });
         emit({ type: 'done' });
+        // ★ 2026-08-20：首轮回答完成后 fire-and-forget 用 AI 精化会话标题（不阻塞 done）
+        if (firstTitleSet) this.generateTitle(sessionId, input, answer, config);
         return { answer, sources };
       } catch (e) {
+        // ★ 用户主动终止（LLM 流被 abort）：不当错误处理，优雅收尾
+        if (signal?.aborted) return this.handleAbort(sessionId, emit);
         lastError = e instanceof LlmError ? e : new LlmError('other', (e as Error)?.message || '未知错误');
         await this.session.appendEvent(sessionId, { type: 'error', content: `step ${step}: ${lastError.message}` });
 
@@ -131,15 +140,16 @@ export class AgentKernelService {
     userId: number;
     input: string;
     config: { apiBaseUrl?: string; apiKey: string; modelVersion?: string; temperature?: number | null };
+    signal?: AbortSignal;
   }): Promise<{ content: string; toolCalls: ChatToolCall[] }> {
-    const { sessionId, userId, input, config } = opts;
+    const { sessionId, userId, input, config, signal } = opts;
 
     const history = await this.session.deriveMessages(sessionId);
     const systemPrompt = this.buildSystemPrompt(userId);
     const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: input }];
     const tools = this.registry.schemas();
 
-    const result = await this.callLLMStream(config, messages, tools);
+    const result = await this.callLLMStream(config, messages, tools, signal);
 
     // 记录 assistant 事件（工具调用或纯文本）——OpenAI 序列完整性依赖此事件
     if (result.toolCalls.length > 0) {
@@ -220,10 +230,17 @@ export class AgentKernelService {
     config: { apiBaseUrl?: string; apiKey: string; modelVersion?: string; temperature?: number | null },
     messages: ChatMessage[],
     tools: { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> } }[],
+    externalSignal?: AbortSignal,
   ): Promise<{ content: string; toolCalls: ChatToolCall[] }> {
     const baseUrl = (config.apiBaseUrl || 'https://api.deepseek.com').replace(/\/$/, '');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
+    // ★ 2026-08-20：外部终止信号（用户停止/断连）与 60s 超时共用一个 controller
+    const onExternalAbort = () => controller.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) controller.abort();
+      else externalSignal.addEventListener('abort', onExternalAbort);
+    }
 
     let res: Response;
     try {
@@ -242,10 +259,16 @@ export class AgentKernelService {
       });
     } catch (e) {
       clearTimeout(timeout);
-      if ((e as { name?: string }).name === 'AbortError') throw new LlmError('timeout', 'AI 请求超时');
+      externalSignal?.removeEventListener('abort', onExternalAbort);
+      if ((e as { name?: string }).name === 'AbortError') {
+        // 区分用户终止与超时：外部信号已触发 → 用户停止，由 runTurn 统一收尾
+        if (externalSignal?.aborted) throw e;
+        throw new LlmError('timeout', 'AI 请求超时');
+      }
       throw new LlmError('network', (e as Error)?.message || '网络错误');
     }
     clearTimeout(timeout);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
 
     if (!res.ok || !res.body) {
       const errText = await res.text().catch(() => '');
@@ -350,5 +373,47 @@ export class AgentKernelService {
   private trimOutput(output: unknown): unknown {
     const s = typeof output === 'string' ? output : JSON.stringify(output ?? '');
     return s.length > MAX_TOOL_OUTPUT_CHARS ? s.slice(0, MAX_TOOL_OUTPUT_CHARS) + '…[已截断]' : output;
+  }
+
+  /** ★ 2026-08-20：用户终止后的优雅收尾（事件留痕，不发 done —— 前端已自行处理停止态） */
+  private async handleAbort(sessionId: number, emit: (e: AgentStreamEvent) => void): Promise<AgentTurnResult> {
+    await this.session.appendEvent(sessionId, { type: 'assistant', content: '（用户停止了本次回答）' }).catch(() => {});
+    emit({ type: 'error', error: '已停止生成' });
+    return { answer: '', sources: [], error: 'aborted' };
+  }
+
+  /**
+   * ★ 2026-08-20：AI 生成会话标题（fire-and-forget）
+   * 首轮问答完成后异步调用；失败静默，保留问题截断版标题
+   */
+  private generateTitle(
+    sessionId: number,
+    question: string,
+    answer: string,
+    config: { apiBaseUrl?: string; apiKey: string; modelVersion?: string; temperature?: number | null },
+  ): void {
+    const baseUrl = (config.apiBaseUrl || 'https://api.deepseek.com').replace(/\/$/, '');
+    fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+      body: JSON.stringify({
+        model: config.modelVersion || 'deepseek-chat',
+        messages: [
+          { role: 'system', content: '你是标题生成器。根据用户问题与回答摘要，生成一个不超过12字的简短中文会话标题，只输出标题本身，不加引号、标点或任何解释。' },
+          { role: 'user', content: `问题：${question.slice(0, 200)}\n回答摘要：${answer.slice(0, 200)}` },
+        ],
+        temperature: 0.3,
+        // ★ 推理型模型（如 deepseek reasoning 系）会先消耗 token 输出思考过程，max_tokens 过小会导致 content 为空
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(30000),
+    })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const j: any = await r.json();
+        const t = j.choices?.[0]?.message?.content?.trim();
+        if (t) await this.session.setAiTitle(sessionId, t);
+      })
+      .catch(() => { /* 标题生成失败静默，保留问题截断版 */ });
   }
 }

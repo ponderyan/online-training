@@ -77,8 +77,23 @@ export class AiAssistantController {
 
     const reader = stream.getReader();
     const decoder = new TextDecoder();
+
+    // ★ 客户端断连 → cancel 上游 stream → 触发 aborter.abort()，终止后台 LLM 调用（不再烧 token）
+    // 双触发：req close 事件 + res finish/close 事件（兼容不同中间件层包装），另在读取循环内轮询 res 状态兜底
+    const onDisconnect = () => {
+      reader.cancel().catch(() => {});
+    };
+    req.on('close', onDisconnect);
+    res.on('finish', onDisconnect);
+    res.on('close', onDisconnect);
+
     try {
       while (true) {
+        // 兜底：客户端已断开但事件未触发时，主动终止上游
+        if ((res as any).writableEnded || (res as any).destroyed) {
+          onDisconnect();
+          break;
+        }
         const { done, value } = await reader.read();
         if (done) break;
         res.write(decoder.decode(value));
@@ -108,6 +123,14 @@ export class AiAssistantController {
   async getSession(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user?.id || req.user?.sub || 0;
     return this.sessions.get(userId, id);
+  }
+
+  /** ★ 停止会话当前回答（双保险：前端停止按钮断连 SSE 之外，显式终止后台 LLM 调用） */
+  @Post('sessions/:id/stop')
+  @UseGuards(JwtAuthGuard)
+  async stopSession(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || 0;
+    return this.service.stopSession(id, userId);
   }
 
   @Delete('sessions/:id')

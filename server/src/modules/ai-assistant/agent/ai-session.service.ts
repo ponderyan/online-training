@@ -100,13 +100,22 @@ export class AiSessionService {
     });
   }
 
-  /** 首问设标题 */
-  async maybeSetTitle(sessionId: number, firstQuestion: string) {
+  /** 首轮提问时先用问题截断做即时标题（后续由 kernel 异步 AI 精化）；返回是否设置了新标题 */
+  async maybeSetTitle(sessionId: number, firstQuestion: string): Promise<boolean> {
     const session = await this.prisma.aiSession.findUnique({ where: { id: sessionId }, select: { title: true } });
     if (session && session.title === DEFAULT_TITLE) {
       const title = firstQuestion.trim().replace(/\s+/g, ' ').slice(0, 40);
       await this.prisma.aiSession.update({ where: { id: sessionId }, data: { title } });
+      return true;
     }
+    return false;
+  }
+
+  /** ★ 2026-08-20：AI 精化标题（fire-and-forget 完成后回写，失败保留问题截断版） */
+  async setAiTitle(sessionId: number, title: string) {
+    const clean = title.trim().replace(/^[「『"'【\s]+|[」』"'】\s]+$/g, '').slice(0, 24);
+    if (!clean) return;
+    await this.prisma.aiSession.update({ where: { id: sessionId }, data: { title: clean } }).catch(() => {});
   }
 
   /**
