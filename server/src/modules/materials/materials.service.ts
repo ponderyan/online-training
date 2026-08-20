@@ -75,18 +75,32 @@ export class MaterialsService {
    * 将文本按章节标题分割成章节数组
    */
   private parseTextToChapters(text: string): Array<{ title: string; content: string }> {
-    const lines = text.split('\n').filter(l => l.trim());
-    const sectionPattern = /^(第[一二三四五六七八九十百千]+章|第\d+章|\d+\.\d+(?!\.\d)\s+|#+\s*|Chapter\s+\d+|Part\s+\d+|[一二三四五六七八九十]+、)/i;
+    // 剔除 OCR 多页合并时的页分隔标记（"=== 第 N 页 ==="），避免混入章节正文
+    const lines = text.split('\n').filter(l => l.trim() && !/^=== 第 \d+ 页 ===$/.test(l.trim()));
+    // 章级标题：第X章 / 第N章 / Chapter / Part / Markdown标题 / "一、"
+    const chapterPattern = /^(第[一二三四五六七八九十百千]+章|第\d+章|Chapter\s+\d+|Part\s+\d+|#+\s*|[一二三四五六七八九十]+、)/i;
+    // 节级标题（如 "1.1 "）：仅在整篇未出现章级标题时充当章节，
+    // 避免"第二章标题 + 2.1 标题"紧邻时，空内容的章级标题被节级标题覆盖吞掉
+    const sectionPattern = /^\d+\.\d+(?!\.\d)\s+/;
     const chapters: Array<{ title: string; content: string }> = [];
     let currentTitle = '全文';
     let currentContent: string[] = [];
+    let sawChapter = false;
 
     for (const line of lines) {
-      if (sectionPattern.test(line.trim())) {
+      const trimmed = line.trim();
+      if (chapterPattern.test(trimmed)) {
+        sawChapter = true;
         if (currentContent.length > 0) {
           chapters.push({ title: currentTitle, content: currentContent.join('\n') });
         }
-        currentTitle = line.trim().replace(/^#+\s*/, '');
+        currentTitle = trimmed.replace(/^#+\s*/, '');
+        currentContent = [];
+      } else if (sectionPattern.test(trimmed) && !sawChapter) {
+        if (currentContent.length > 0) {
+          chapters.push({ title: currentTitle, content: currentContent.join('\n') });
+        }
+        currentTitle = trimmed;
         currentContent = [];
       } else {
         currentContent.push(line);
@@ -211,6 +225,10 @@ export class MaterialsService {
       detectedType = detected.type;
     } else if (headerHex.startsWith('d0cf11e0')) {
       detectedExt = '.doc'; detectedType = 'doc';
+    } else if (headerHex.startsWith('89504e47')) {
+      detectedExt = '.png'; detectedType = 'image';
+    } else if (headerHex.startsWith('ffd8ff')) {
+      detectedExt = '.jpg'; detectedType = 'image';
     } else {
       detectedExt = '.pdf'; detectedType = 'unknown';
     }
@@ -242,10 +260,12 @@ export class MaterialsService {
       await this.processDocx(material.id, filePath);
     } else if (detectedType === 'doc') {
       await this.processDoc(material.id, filePath);
+    } else if (detectedType === 'image') {
+      await this.processImage(material.id, filePath, file.originalname);
     } else {
       await this.prisma.material.update({
         where: { id: material.id },
-        data: { errorMessage: '未能识别文件格式，请上传 PDF、PPTX 或 DOCX 文件' },
+        data: { errorMessage: '未能识别文件格式，请上传 PDF、PPTX、DOCX 或图片（PNG/JPG）文件' },
       });
     }
 
@@ -258,12 +278,14 @@ export class MaterialsService {
   private async processPdf(materialId: number, filePath: string, originalName: string) {
     try {
       const { text, numPages } = await this.extractPdfText(filePath);
-      if (text.trim().length < 10) {
+      // 有效文本判定：pdf-parse 对纯图片/扫描 PDF 会输出 "-- N of M --" 分页标记垃圾，
+      // 需剔除后再判断是否走 OCR，否则 ≥10 字符的标记会绕过 OCR 触发
+      if (this.meaningfulTextLen(text) < 10) {
         console.warn(`PDF text extraction too little for ${originalName}, trying OCR...`);
         // 走 OCR 兜底
         try {
           const ocrText = await this.ocrPdfFallback(filePath);
-          if (ocrText.length > 20) {
+          if (this.meaningfulTextLen(ocrText) > 20) {
             const chapters = this.parseTextToChapters(ocrText);
             await this.saveChapters(materialId, chapters, originalName);
             await this.prisma.material.update({
@@ -300,12 +322,34 @@ export class MaterialsService {
   }
 
   /**
-   * 处理 PPTX 教材：调用 Python 脚本提取幻灯片文字
+   * 处理 PPTX 教材：调用 Python 脚本提取幻灯片文字；纯图片 PPTX 走图片 OCR 兜底
    */
   private async processPptx(materialId: number, filePath: string) {
     try {
-      const { text, totalSlides } = await this.extractPptxText(filePath);
+      const { text, totalSlides, images } = await this.extractPptxText(filePath);
       if (text.trim().length < 10) {
+        // 纯图片 PPTX：导出幻灯片图片 → OCR 兜底
+        if (images && images.length > 0) {
+          const ocrParts: string[] = [];
+          for (const img of images) {
+            try {
+              const t = await this.ocrImageFallback(img.path);
+              if (t.trim()) ocrParts.push(`\n\n=== 第 ${img.slide} 页 ===\n\n${t.trim()}`);
+            } catch {}
+            await fs.unlink(img.path).catch(() => {});
+          }
+          await fs.rmdir(path.dirname(images[0].path)).catch(() => {});
+          const ocrText = ocrParts.join('');
+          if (this.meaningfulTextLen(ocrText) > 20) {
+            const chapters = this.parseTextToChapters(ocrText);
+            await this.saveChapters(materialId, chapters);
+            await this.prisma.material.update({
+              where: { id: materialId },
+              data: { status: 'OCR_DONE', totalPages: totalSlides, errorMessage: null },
+            });
+            return;
+          }
+        }
         await this.prisma.material.update({
           where: { id: materialId },
           data: { totalPages: totalSlides, errorMessage: 'PPTX 中未找到文字内容，PPT 可能为纯图片' },
@@ -323,6 +367,34 @@ export class MaterialsService {
       await this.prisma.material.update({
         where: { id: materialId },
         data: { errorMessage: 'PPTX 文字提取失败：' + e.message },
+      }).catch(() => {});
+    }
+  }
+
+  /**
+   * 处理图片教材（png/jpg）：直接 OCR 提取文本
+   */
+  private async processImage(materialId: number, filePath: string, originalName: string) {
+    try {
+      const ocrText = await this.ocrImageFallback(filePath);
+      if (this.meaningfulTextLen(ocrText) > 20) {
+        const chapters = this.parseTextToChapters(ocrText);
+        await this.saveChapters(materialId, chapters, originalName);
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { status: 'OCR_DONE', totalPages: 1, errorMessage: null },
+        });
+      } else {
+        await this.prisma.material.update({
+          where: { id: materialId },
+          data: { totalPages: 1, errorMessage: '未能识别图片中的文字，请确认图片清晰或改用 PDF/文本方式录入' },
+        });
+      }
+    } catch (e: any) {
+      console.error('Image OCR failed:', e.message);
+      await this.prisma.material.update({
+        where: { id: materialId },
+        data: { errorMessage: '图片 OCR 失败：' + e.message },
       }).catch(() => {});
     }
   }
@@ -347,7 +419,7 @@ export class MaterialsService {
   /**
    * 通过 Python 脚本提取 PPTX 幻灯片文字
    */
-  private async extractPptxText(filePath: string): Promise<{ text: string; totalSlides: number }> {
+  private async extractPptxText(filePath: string): Promise<{ text: string; totalSlides: number; images: { slide: number; path: string }[] }> {
     const scriptPath = path.resolve('scripts/extract-pptx-text.py');
     try {
       const { stdout } = await execFileAsync('python3', [scriptPath, filePath], {
@@ -357,15 +429,27 @@ export class MaterialsService {
       const result = JSON.parse(stdout);
       if (result.error) throw new Error(result.error);
       const text = result.slides.map((s: any) => s.text).filter(Boolean).join('\n\n');
-      return { text, totalSlides: result.total };
+      return { text, totalSlides: result.total, images: result.images || [] };
     } catch (e: any) {
       throw new Error(`PPTX 文字提取失败: ${e.message}`);
     }
   }
 
   /**
-   * OCR 兜底 — 调用 Python ocr-pdf.py 脚本
+   * OCR 兜底 — 调用 Python ocr-pdf.py 脚本（RapidOCR 主引擎，tesseract 降级）
    */
+  /**
+   * 有效文本长度：剔除 pdf-parse 对无文本层 PDF 输出的分页标记（"-- 1 of 2 --"）
+   * 与 OCR 页分隔符（"=== 第 N 页 ==="），仅返回真实正文长度。
+   * 用于 OCR 触发判定与 OCR 成功判定，避免垃圾标记绕过阈值。
+   */
+  private meaningfulTextLen(text: string): number {
+    return text
+      .replace(/--\s*\d+\s+of\s+\d+\s*--/g, '')
+      .replace(/=== 第 \d+ 页 ===/g, '')
+      .trim().length;
+  }
+
   private async ocrPdfFallback(filePath: string): Promise<string> {
     const scriptPath = path.resolve('scripts/ocr-pdf.py');
     const outPath = filePath + '_ocr.txt';
@@ -379,6 +463,25 @@ export class MaterialsService {
       return text.trim();
     } catch (e: any) {
       throw new Error(`OCR 识别失败: ${e.message}`);
+    }
+  }
+
+  /**
+   * 图片 OCR — 调用 Python ocr-pdf.py image 模式（RapidOCR 主引擎，tesseract 降级）
+   */
+  private async ocrImageFallback(imagePath: string): Promise<string> {
+    const scriptPath = path.resolve('scripts/ocr-pdf.py');
+    const outPath = imagePath + '_ocr.txt';
+    try {
+      await execFileAsync('python3', [scriptPath, 'image', imagePath, outPath], {
+        timeout: 120000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      const text = await fs.readFile(outPath, 'utf-8');
+      await fs.unlink(outPath).catch(() => {});
+      return text.trim();
+    } catch (e: any) {
+      throw new Error(`图片 OCR 失败: ${e.message}`);
     }
   }
 

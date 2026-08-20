@@ -66,8 +66,9 @@ export class MaterialsController {
     limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
     fileFilter: (req, file, cb) => {
       const ext = extname(file.originalname).toLowerCase();
-      if (ext !== '.pdf' && ext !== '.pptx' && ext !== '.docx') {
-        cb(new BadRequestException('仅支持 PDF / PPTX / DOCX 格式'), false);
+      const allowed = ['.pdf', '.pptx', '.docx', '.png', '.jpg', '.jpeg'];
+      if (!allowed.includes(ext)) {
+        cb(new BadRequestException('仅支持 PDF / PPTX / DOCX / 图片(PNG/JPG) 格式'), false);
       } else {
         cb(null, true);
       }

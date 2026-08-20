@@ -35,7 +35,7 @@ export default function UploadModal({ subjects, onClose }: { subjects: any[]; on
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx)$/i, ''));
+      formData.append('name', materialName || file.name.replace(/\.(pdf|pptx|docx|png|jpg|jpeg)$/i, ''));
       formData.append('subjectId', String(subjectId));
       formData.append('batchNote', batchNote);
       // P1-1: createdBy 由后端从认证token取，不再前端传入
@@ -75,14 +75,15 @@ export default function UploadModal({ subjects, onClose }: { subjects: any[]; on
               className="input textarea" rows={5} />
           </div>
           <div>
-            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">教材文件（PDF / PPTX / DOCX）</label>
+            <label className="text-[var(--ink-500)] block text-xs font-medium mb-1.5">教材文件（PDF / PPTX / DOCX / 图片PNG·JPG）</label>
             <div className="border-2 border-dashed rounded-lg p-8 text-center transition-all"
               style={{ borderColor: file ? 'var(--fox)' : 'var(--ink-100)', background: file ? 'var(--fox-pale)' : 'var(--paper)' }}
               onDragOver={e => e.preventDefault()}
               onDrop={e => {
                 e.preventDefault();
                 const f = e.dataTransfer.files[0];
-                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx') || f.name.endsWith('.docx'))) setFile(f);
+                if (f && (f.type === 'application/pdf' || f.name.endsWith('.pptx') || f.name.endsWith('.docx')
+                  || f.type.startsWith('image/'))) setFile(f);
               }}>
               {file ? (
                 <div>
@@ -95,7 +96,7 @@ export default function UploadModal({ subjects, onClose }: { subjects: any[]; on
                 <label className="cursor-pointer block">
                   <div className="text-3xl mb-2">📂</div>
                   <p className="text-[var(--ink-500)] text-sm">拖拽或点击上传</p>
-                  <input type="file" accept=".pdf,.pptx,.docx" className="hidden"
+                  <input type="file" accept=".pdf,.pptx,.docx,.png,.jpg,.jpeg" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                 </label>
               )}
