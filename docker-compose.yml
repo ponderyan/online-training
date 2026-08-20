@@ -54,6 +54,8 @@ services:
       - "3001:3001"
     volumes:
       - uploads_data:/app/uploads
+      # ★ 2026-08-21：嵌入模型缓存持久化（避免容器重建后重下 bge-small-zh-v1.5）
+      - model_cache:/app/node_modules/.cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 30s
@@ -81,6 +83,8 @@ services:
       HOSTNAME: "0.0.0.0"
       PORT: 3000
       NODE_ENV: production
+      # ★ 2026-08-21：3000 直连兜底的 rewrites 目标（生产流量由 nginx 直代 /api）
+      API_INTERNAL_BASE: http://server:3001
     ports:
       - "3000:3000"
 
@@ -122,3 +126,4 @@ services:
 volumes:
   mysql_data:
   uploads_data:
+  model_cache:
