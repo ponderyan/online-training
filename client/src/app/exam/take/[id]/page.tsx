@@ -85,6 +85,8 @@ export default function ExamTake() {
   const dismissedMessagesRef = useRef<Set<number>>(new Set());
   const heartbeatRef = useRef<any>(null);
   const heartbeatFailCount = useRef(0);
+  // ★ 2026-08-21：切屏日志心跳增量上报水位（服务端据此做切屏超限强制收卷兜底）
+  const tabSwitchReportedRef = useRef(0);
 
   const TAB_SWITCH_MAX = exam?.tabSwitchLimit || 5;
   const examActive = !loading && !submitted && !!exam && examReady;
@@ -185,7 +187,19 @@ export default function ExamTake() {
       });
       if (!res.ok) {
         let msg = `交卷失败（HTTP ${res.status}）`;
-        try { const err = await res.json(); if (err?.message) msg = `交卷失败：${err.message}`; } catch {}
+        try {
+          const err = await res.json();
+          if (err?.message) msg = `交卷失败：${err.message}`;
+          // ★ 服务端已先行强收（如切屏超限）→ 视为已交卷，直接进结果页
+          if (typeof err?.message === 'string' && err.message.includes('已提交')) {
+            setSubmitted(true);
+            if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+            stopTimer();
+            localStorage.removeItem(`exam_${params.id}_answers`);
+            router.push(`/exam/result/${params.id}`);
+            return;
+          }
+        } catch {}
         toast.error(msg + '，请检查网络后重试');
         setSubmitting(false);
         return;
@@ -302,15 +316,22 @@ export default function ExamTake() {
     const token = localStorage.getItem('token');
     heartbeatRef.current = setInterval(async () => {
       try {
+        // ★ 切屏日志增量上报：服务端累计达 tabSwitchLimit 会强制收卷（防前端绕过）
+        const log = getTabSwitchLog();
+        const fresh = log.slice(tabSwitchReportedRef.current);
         const res = await fetch(`/api/student/exams/${params.id}/heartbeat`, {
-          method: 'POST', headers: { Authorization: `Bearer ${token}` },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(fresh.length > 0 ? { tabSwitchData: fresh } : {}),
         });
         if (res.ok) {
           heartbeatFailCount.current = 0;
+          tabSwitchReportedRef.current = log.length;
           const data = await res.json();
           if (data.sessionStatus && data.sessionStatus !== 'ACTIVE') {
-            alertConfirmRef.current = () => { setSubmitted(true); stopTimer(); router.push('/exam'); };
-            setAlertModal({ type: 'FORCE_END', message: '考试已被监考员结束，系统将退出答题页面。' });
+            const forcedByTabSwitch = data.reason === 'TAB_SWITCH_LIMIT';
+            alertConfirmRef.current = () => { setSubmitted(true); stopTimer(); router.push(forcedByTabSwitch ? `/exam/result/${params.id}` : '/exam'); };
+            setAlertModal({ type: 'FORCE_END', message: forcedByTabSwitch ? '⚠️ 切屏次数已超限，系统已强制收卷。' : '考试已被监考员结束，系统将退出答题页面。' });
             return;
           }
           if (typeof data.remainingTime === 'number') syncServerTime(data.remainingTime);

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -7,6 +7,8 @@ import { emitExamChanged } from '../../common/events/app-events.js';
 
 @Injectable()
 export class ExamsService {
+  private readonly logger = new Logger(ExamsService.name);
+
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
@@ -622,7 +624,7 @@ export class ExamsService {
   async heartbeat(examId: number, studentId: number, tabSwitchData?: any[]) {
     const session = await this.prisma.examSession.findUnique({
       where: { examId_studentId: { examId, studentId } },
-      include: { exam: { select: { endTime: true } } },
+      include: { exam: { select: { endTime: true, tabSwitchLimit: true } } },
     });
     if (!session || session.status !== 'ACTIVE') {
       return {
@@ -696,12 +698,41 @@ export class ExamsService {
       }
     }
 
-    // 追加切屏数据到 violationLog
+    // 追加切屏数据到 violationLog（按 time 去重，容忍前端重复上报）
     if (tabSwitchData && tabSwitchData.length > 0) {
       const existingLog = Array.isArray(session.violationLog) ? session.violationLog : [];
-      updateData.violationLog = [...existingLog, ...tabSwitchData];
+      const existingTimes = new Set(existingLog.map((e: any) => e?.time).filter(Boolean));
+      const fresh = tabSwitchData.filter((e: any) => !e?.time || !existingTimes.has(e.time));
+      updateData.violationLog = [...existingLog, ...fresh];
       // 累计切屏次数到 suspicionLevel
-      updateData.suspicionLevel = (session.suspicionLevel || 0) + tabSwitchData.length;
+      updateData.suspicionLevel = (session.suspicionLevel || 0) + fresh.length;
+    }
+
+    // ★ 2026-08-21：切屏达阈值自动强制收卷（服务端兜底，防前端绕过；答案已由 auto-save 落库）
+    const limit = session.exam?.tabSwitchLimit ?? 0;
+    const mergedLog: any[] = updateData.violationLog ?? session.violationLog ?? [];
+    if (limit > 0 && Array.isArray(mergedLog) && mergedLog.length >= limit) {
+      await this.prisma.examSession.update({
+        where: { id: session.id },
+        data: {
+          status: 'SUBMITTED',
+          submittedAt: new Date(),
+          scoringStatus: 'PENDING',
+          violationLog: mergedLog,
+          suspicionLevel: updateData.suspicionLevel ?? session.suspicionLevel,
+          lastHeartbeatAt: now,
+        },
+      });
+      await this.autoGrade(session.id);
+      await this.syncExamProgress(examId);
+      emitExamChanged(examId); // 监考大屏实时推送：切屏超限自动强收
+      this.logger.warn(`切屏超限自动强收: exam=${examId} student=${studentId} violations=${mergedLog.length}/${limit}`);
+      return {
+        ok: false,
+        remainingTime: updateData.remainingTime ?? session.remainingTime,
+        sessionStatus: 'SUBMITTED',
+        reason: 'TAB_SWITCH_LIMIT',
+      };
     }
 
     await this.prisma.examSession.update({
