@@ -4,7 +4,7 @@
  * 覆盖：学员作答页心跳 → 服务端累计 violationLog → 达 tabSwitchLimit 服务端兜底强制收卷
  *      （防前端绕过；答案由 auto-save 落库，强收后 autoGrade + syncExamProgress）
  *
- * ★ 2026-08-22 自容化改造（qwen）：原版依赖外部预置考试 id=450 且清理段会删掉该考试，
+ * ★ 2026-08-21 自容化改造（qwen）：原版依赖外部预置考试 id=450 且清理段会删掉该考试，
  *   导致第二次运行必挂（不可重复）。现改为测试开头自建 papers/paper_questions/exams/exam_sessions，
  *   结尾全量清理，可无限重跑。造时间窗口用 UTC_TIMESTAMP()（Prisma 按 UTC 读 DATETIME）。
  *
