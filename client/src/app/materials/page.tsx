@@ -219,7 +219,7 @@ export default function MaterialsPage() {
                   {g.label} · {g.items.length} 份
                 </h3>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
-                  {g.items.map(m => <MaterialCard m={m} onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
+                  {g.items.map(m => <MaterialCard key={m.id} m={m} onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                 </div>
               </div>
             ))}
@@ -234,7 +234,7 @@ export default function MaterialsPage() {
                 </button>
                 {showArchived && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3">
-                    {archivedMaterials.map(m => <MaterialCard m={m} showArchivedBadge onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
+                    {archivedMaterials.map(m => <MaterialCard key={m.id} m={m} showArchivedBadge onArchive={handleArchive} onUnarchive={handleUnarchive} onDelete={handleDelete} />)}
                   </div>
                 )}
               </div>

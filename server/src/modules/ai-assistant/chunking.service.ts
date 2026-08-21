@@ -51,7 +51,7 @@ export class ChunkingService {
           chapterId: null, // MaterialChapter ≠ Chapter，留空
           materialId: material.id,
           materialChapterId: chapter.id,
-          title: `${material.name} - ${chapter.title}`,
+          title: `${material.name} - ${chapter.title}`.slice(0, 490), // ★ 2026-08-22：title 列 varchar(500)，超长触发 P2000 导致整个知识块批量创建失败
           content: text,
           chunkIndex: idx,
           source: material.fileName,

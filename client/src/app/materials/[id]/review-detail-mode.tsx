@@ -155,6 +155,24 @@ export default function ReviewDetailMode({
               </div>
             )}
 
+            {current.subQuestions && Array.isArray(current.subQuestions) && current.subQuestions.length > 0 && (
+              <div className="space-y-2 mb-4">
+                <div className="text-[var(--ink-500)] text-xs font-semibold">案例小问 · {current.subQuestions.length} 问</div>
+                {current.subQuestions.map((sq: any, i: number) => (
+                  <div key={i} className="p-3 rounded-lg bg-[var(--paper)] text-sm" style={{ border: '1px solid var(--ink-100)' }}>
+                    <div className="text-[var(--ink-700)]">
+                      <span className="font-mono font-bold text-[var(--fox)] mr-1">{i + 1}.</span>
+                      {sq.content}
+                      {sq.score != null && <span className="ml-2 text-xs text-[var(--gold)]">（{sq.score}分）</span>}
+                    </div>
+                    {sq.answer && (
+                      <div className="text-xs text-[var(--ink-400)] mt-1.5 pl-5">参考答案：{sq.answer}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {current.answer && (
               <div className="mb-3">
                 <div className="text-[var(--cyan)] text-xs font-semibold mb-1">参考答案</div>

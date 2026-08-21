@@ -10,6 +10,7 @@ const TYPE_OPTIONS = [
   { value: 'SHORT_ANSWER', label: '简答题' },
   { value: 'MULTIPLE_CHOICE', label: '多选题' },
   { value: 'FILL_BLANK', label: '填空题' },
+  { value: 'CASE_STUDY', label: '案例题' },
   { value: 'ESSAY', label: '论文题' },
 ];
 

@@ -131,7 +131,12 @@ export class MaterialsService {
       await this.prisma.materialChapter.create({
         data: {
           materialId,
-          title: chapters[i].title,
+          // ★ 2026-08-22 修复：AI 分章可能返回超长标题，title 列 varchar(500) 超限触发 P2000 导致整份教材章节保存失败；
+          // 顺手去除目录点线引导符（如 "6.4 工艺设计……123"）
+          title: (String(chapters[i].title || `第${i + 1}章`)
+            .replace(/[.．…·]{4,}\s*\d*\s*$/, '')
+            .trim()
+            .slice(0, 490)) || `第${i + 1}章`,
           chapterIndex: i,
           content: chapters[i].content,
           contentLength: Buffer.byteLength(chapters[i].content, 'utf-8'),
@@ -315,6 +320,16 @@ export class MaterialsService {
     await fs.access(filePath).catch(() => {
       throw new BadRequestException('源文件已丢失，无法重试，请重新上传');
     });
+    // ★ 2026-08-22 修复：重试识别 = 重建章节结构，先清旧章节与未审核题目，
+    // 否则会追加重复章节；已入库题目仅断开章节关联（外键无 onDelete）
+    await this.prisma.materialQuestion.deleteMany({
+      where: { materialId: id, reviewStatus: { in: ['PENDING', 'REJECTED'] } },
+    });
+    await this.prisma.materialQuestion.updateMany({
+      where: { materialId: id },
+      data: { chapterId: null },
+    });
+    await this.prisma.materialChapter.deleteMany({ where: { materialId: id } });
     await this.prisma.material.update({
       where: { id },
       data: { status: 'UPLOADED', errorMessage: null, processingProgress: 0 },
@@ -331,13 +346,19 @@ export class MaterialsService {
       const { text, numPages } = await this.extractPdfText(filePath);
       await this.setProgress(materialId, 30); // 文本提取完成
       // 有效文本判定：pdf-parse 对纯图片/扫描 PDF 会输出 "-- N of M --" 分页标记垃圾，
-      // 需剔除后再判断是否走 OCR，否则 ≥10 字符的标记会绕过 OCR 触发
-      if (this.meaningfulTextLen(text) < 10) {
-        console.warn(`PDF text extraction too little for ${originalName}, trying OCR...`);
+      // 需剔除后再判断是否走 OCR，否则 ≥10 字符的标记会绕过 OCR 触发。
+      // ★ 2026-08-22 修复：仅有少量文字层的扫描件（如只提到目录）还需按"字/页"密度判定，
+      // 否则少量垃圾文本绕过 OCR 导致章节结构为空（教材#19 根因）
+      const meaningful = this.meaningfulTextLen(text);
+      // ★ 2026-08-22 密度阈值提到 100字/页：仅有目录文字层的扫描件（教材#19，184页只提到3.8KB）
+      // 在 20字/页阈值下会绕过 OCR；真实文字层教材页均≥150字，不会误伤
+      const minExpected = Math.max(500, (numPages || 1) * 100);
+      if (meaningful < minExpected) {
+        console.warn(`PDF text too little for ${originalName} (${meaningful} chars / ${numPages} pages, expected ≥${minExpected}), trying OCR...`);
         await this.setProgress(materialId, 40); // OCR 开始
         // 走 OCR 兜底
         try {
-          const ocrText = await this.ocrPdfFallback(filePath);
+          const ocrText = await this.ocrPdfFallback(filePath, numPages);
           if (this.meaningfulTextLen(ocrText) > 20) {
             const chapters = this.parseTextToChapters(ocrText);
             await this.saveChapters(materialId, chapters, originalName);
@@ -347,11 +368,14 @@ export class MaterialsService {
             });
             return;
           }
-        } catch {}
+        } catch (ocrErr: any) {
+          // ★ 2026-08-22 修复：不再静默吞错 — 此前 OCR 超时被 catch{} 吞掉，完全看不到失败原因
+          console.error(`OCR fallback failed for ${originalName}: ${ocrErr.message}`);
+        }
         // OCR 也失败，保持 UPLOADED + 提示
         await this.prisma.material.update({
           where: { id: materialId },
-          data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字，PDF 可能为扫描件，建议手动录入正文' },
+          data: { totalPages: numPages || 1, errorMessage: '未能提取到有效文字（OCR 未成功），PDF 可能为扫描件或页数过多，建议重试或手动录入正文' },
         });
       } else {
         const chapters = this.parseTextToChapters(cleanPdfText(text));
@@ -369,8 +393,11 @@ export class MaterialsService {
       console.error('PDF text extraction failed:', e.message);
       await this.prisma.material.update({
         where: { id: materialId },
-        data: { errorMessage: 'PDF 文字提取失败：' + e.message },
+        data: { errorMessage: 'PDF 文字提取失败：' + (e.message || '未知错误') },
       }).catch(() => {});
+      // ★ 2026-08-22 修复：向上抛出，让后台队列回退 UPLOADED；
+      // 否则教材卡在中间态，前端不显示「重试识别」入口（教材#19 卡死根因）
+      throw e;
     }
   }
 
@@ -505,13 +532,16 @@ export class MaterialsService {
       .trim().length;
   }
 
-  private async ocrPdfFallback(filePath: string): Promise<string> {
+  private async ocrPdfFallback(filePath: string, numPages = 0): Promise<string> {
     const scriptPath = path.resolve('scripts/ocr-pdf.py');
     const outPath = filePath + '_ocr.txt';
     try {
+      // ★ 2026-08-22 动态超时：RapidOCR 实测 ~2秒/页，预算 5秒/页 + 2分钟缓冲，下限5分钟。
+      // 此前写死 300s：184 页扫描教材（约6分钟）被中途杀掉，导致 OCR 永远完不成
+      const timeoutMs = Math.max(300000, (numPages || 0) * 5000 + 120000);
       await execFileAsync('python3', [scriptPath, filePath, outPath], {
-        timeout: 300000,
-        maxBuffer: 10 * 1024 * 1024,
+        timeout: timeoutMs,
+        maxBuffer: 50 * 1024 * 1024,
       });
       const text = await fs.readFile(outPath, 'utf-8');
       await fs.unlink(outPath).catch(() => {});
@@ -612,6 +642,7 @@ export class MaterialsService {
         question.sourceChunk,
         { materialName: question.material.name, chapterTitle: chapter?.title, orgId: subject?.orgId },
         { minAnswerWords: question.minAnswerWords, rubric: question.rubric },
+        (question.subQuestions as any) || undefined,
       );
 
       updateData.questionId = imported.id;
@@ -672,6 +703,7 @@ export class MaterialsService {
         q.sourceChunk,
         { materialName: material.name, chapterTitle: chTitle, orgId: material.subject?.orgId },
         { minAnswerWords: q.minAnswerWords, rubric: q.rubric },
+        (q.subQuestions as any) || undefined,
       );
       await this.prisma.materialQuestion.update({
         where: { id: q.id },
@@ -699,6 +731,7 @@ export class MaterialsService {
     sourceChunk: string | null,
     context?: { materialName?: string; chapterTitle?: string | null; orgId?: number | null },
     essayExtras?: { minAnswerWords?: number | null; rubric?: any },
+    subQuestions?: Array<{ content: string; answer?: string; score?: number }>,
   ) {
     // P0-1: 智能匹配 Subject 的 Chapter（按名称模糊匹配，兜底取第一个）
     const chapterId = await this.resolveSubjectChapter(subjectId, context?.chapterTitle || undefined);
@@ -759,6 +792,19 @@ export class MaterialsService {
           questionId: question.id,
           blankIndex: b.position || i,
           answer: b.answer,
+          sortOrder: i,
+        })),
+      });
+    }
+
+    // 处理案例题小问（CASE_STUDY）
+    if (Array.isArray(subQuestions) && subQuestions.length > 0) {
+      await this.prisma.questionSubQuestion.createMany({
+        data: subQuestions.map((s: any, i: number) => ({
+          questionId: question.id,
+          content: String(s.content || ''),
+          answer: s.answer ? String(s.answer) : null,
+          score: Number.isInteger(s.score) ? s.score : null,
           sortOrder: i,
         })),
       });
@@ -956,6 +1002,7 @@ export class MaterialsService {
                 content: q.content || '',
                 options: q.options || undefined,
                 blanks: q.blanks || undefined,
+                subQuestions: Array.isArray(q.subQuestions) && q.subQuestions.length > 0 ? q.subQuestions : undefined,
                 answer: q.answer || null,
                 explanation: q.explanation || null,
                 minAnswerWords: Number.isInteger(q.minAnswerWords) ? q.minAnswerWords : null,
@@ -1014,7 +1061,7 @@ export class MaterialsService {
 
 核心要求：
 1. 严格基于教材内容出题，不要编造教材中没有的知识点
-2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)、论文题(ESSAY)
+2. 题型包括：单选题(SINGLE_CHOICE)、多选题(MULTIPLE_CHOICE)、判断题(TRUE_FALSE)、填空题(FILL_BLANK)、简答题(SHORT_ANSWER)、案例题(CASE_STUDY)、论文题(ESSAY)
 3. 难度标注必须严格遵循以下标准：
 ${difficultyBlock}
 4. 标注所属知识点(knowledgePoint)
@@ -1023,8 +1070,9 @@ ${difficultyBlock}
 7. 判断题答案填 true 或 false
 8. 填空题需给出正确答案
 9. 简答题需给出参考答案要点（至少3个要点）
-10. 论文题给出论文题目，并在 answer 字段写写作要点（至少4条）、rubric 字段给3-5条采分点（{description, points, type:add|deduct}）、minAnswerWords 给最低字数要求（500-4000的整数）
-11. 题目覆盖教材的重点和难点，避免重复考查同一知识点
+10. 案例题的 content 写完整案例材料（150-400字，基于教材知识点构造真实工作情境）+作答要求，subQuestions 给2-4个小问，每问包含 content（小问）、answer（参考答案要点）、score（分值）
+11. 论文题给出论文题目，并在 answer 字段写写作要点（至少4条）、rubric 字段给3-5条采分点（{description, points, type:add|deduct}）、minAnswerWords 给最低字数要求（500-4000的整数）
+12. 题目覆盖教材的重点和难点，避免重复考查同一知识点
 
 答案规范（极其重要）：
 - 选择题的 answer 字段必须填写正确选项的 label，如单选 "A"，多选 "A,B,C"
@@ -1033,13 +1081,16 @@ ${difficultyBlock}
 - sourceChunk 必须是从教材中直接引用的20-50字原文
 
 返回严格的 JSON 数组格式，不要包含任何其他文字。每道题必须包含以下所有字段：
-type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")
+type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), subQuestions(案例题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")
 
 示例（单选题）：
 {"type":"SINGLE_CHOICE","difficulty":"MEDIUM_EASY","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"数字化转型的核心目标是？","options":[{"label":"A","content":"降低人力成本","isCorrect":false},{"label":"B","content":"重塑业务流程和组织架构","isCorrect":true},{"label":"C","content":"增加IT设备采购","isCorrect":false},{"label":"D","content":"实现无纸化办公","isCorrect":false}],"answer":"B","explanation":"教材明确指出数字化转型是企业利用数字技术重塑业务流程和组织架构的过程，而非简单的成本削减或设备采购。","suggestedGroup":"EXAM_GROUP"}
 
 示例（填空题）：
 {"type":"FILL_BLANK","difficulty":"EASY","knowledgePoint":"云计算","sourceChunk":"云计算的三大服务模式为IaaS、PaaS和SaaS","content":"云计算的三大服务模式为____、____和____。","blanks":[{"blankIndex":0,"answer":"IaaS"},{"blankIndex":1,"answer":"PaaS"},{"blankIndex":2,"answer":"SaaS"}],"answer":"IaaS,PaaS,SaaS","explanation":"教材原文：云计算的三大服务模式为IaaS（基础设施即服务）、PaaS（平台即服务）和SaaS（软件即服务）。","suggestedGroup":"EXAM_GROUP"}
+
+示例（案例题）：
+{"type":"CASE_STUDY","difficulty":"MEDIUM_HARD","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"【案例材料】某传统制造企业近三年利润持续下滑，管理层决定启动数字化转型，但在推进过程中遭遇了员工抵触、数据孤岛和投入产出失衡等问题。\n请结合教材相关内容，回答下列小问。","subQuestions":[{"content":"该企业数字化转型受阻的主要原因有哪些？","answer":"要点：1)组织变革滞后于技术引入；2)数据孤岛导致协同困难；3)缺乏顶层设计与投入规划","score":8},{"content":"请结合教材提出针对性的改进建议。","answer":"要点：1)战略层面顶层设计；2)打通数据治理；3)分阶段投入与评估","score":12}],"answer":"各小问参考答案见 subQuestions","explanation":"案例情境对应教材中数字化转型的实施路径与常见风险章节，小问分别考查归因分析与对策应用能力。","suggestedGroup":"EXAM_GROUP"}
 
 示例（论文题）：
 {"type":"ESSAY","difficulty":"MEDIUM_HARD","knowledgePoint":"数字化转型","sourceChunk":"数字化转型是企业利用数字技术重塑业务流程和组织架构的过程","content":"结合教材内容，论述企业数字化转型的实施路径与关键风险。","answer":"写作要点：1)战略定位与顶层设计；2)技术选型与数据治理；3)组织变革与人才培养；4)风险识别与合规管控","minAnswerWords":800,"rubric":[{"description":"论点明确、结构完整","points":6,"type":"add"},{"description":"论据充分且引用教材观点","points":6,"type":"add"},{"description":"结合实际案例分析","points":5,"type":"add"},{"description":"逻辑混乱或偏离主题","points":5,"type":"deduct"}],"explanation":"教材从战略、技术、组织、风险四个维度阐述了数字化转型的实施框架，论文应围绕该框架展开论述。","suggestedGroup":"EXAM_GROUP"}`;
@@ -1068,13 +1119,14 @@ ${
 返回格式（严格 JSON 数组，不要有任何其他文字）：
 [
   {
-    "type": "SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|FILL_BLANK|SHORT_ANSWER|ESSAY",
+    "type": "SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|FILL_BLANK|SHORT_ANSWER|CASE_STUDY|ESSAY",
     "difficulty": "EASY|MEDIUM_EASY|MEDIUM_HARD|HARD",
     "knowledgePoint": "知识点名称",
     "sourceChunk": "引用的原文片段(20-50字)",
     "content": "题目内容",
     "options": [ { "label": "A", "content": "选项内容", "isCorrect": false } ],
     "blanks": [ { "blankIndex": 0, "answer": "正确答案" } ],
+    "subQuestions": [ { "content": "小问内容", "answer": "参考答案要点", "score": 10 } ],
     "answer": "参考答案（填空题逗号分隔多空，简答题写要点）",
     "explanation": "答案解析",
     "suggestedGroup": "EXAM_GROUP"
@@ -1206,6 +1258,7 @@ ${
       '判断题': 'TRUE_FALSE',
       '填空题': 'FILL_BLANK',
       '简答题': 'SHORT_ANSWER',
+      '案例题': 'CASE_STUDY',
       '论文题': 'ESSAY',
     };
     const counts: Record<string, number> = {};
@@ -1224,6 +1277,7 @@ ${
       'TRUE_FALSE': '判断题',
       'FILL_BLANK': '填空题',
       'SHORT_ANSWER': '简答题',
+      'CASE_STUDY': '案例题',
       'ESSAY': '论文题',
     };
     const parts: string[] = [];
@@ -1585,6 +1639,7 @@ ${
                       content: q.content || '',
                       options: q.options || undefined,
                       blanks: q.blanks || undefined,
+                      subQuestions: Array.isArray(q.subQuestions) && q.subQuestions.length > 0 ? q.subQuestions : undefined,
                       answer: q.answer || null,
                       explanation: q.explanation || null,
                       minAnswerWords: Number.isInteger(q.minAnswerWords) ? q.minAnswerWords : null,
@@ -1677,6 +1732,7 @@ ${
       'TRUE_FALSE': '判断题',
       'FILL_BLANK': '填空题',
       'SHORT_ANSWER': '简答题',
+      'CASE_STUDY': '案例题',
       'ESSAY': '论文题',
     };
 
@@ -1685,6 +1741,7 @@ ${
       cfg.type === 'TRUE_FALSE' ? '答案填true或false' :
       cfg.type === 'FILL_BLANK' ? '给出正确答案及填空位置' :
       cfg.type === 'SHORT_ANSWER' ? '给出参考答案要点' :
+      cfg.type === 'CASE_STUDY' ? 'content写完整案例材料(150-400字真实工作情境)+作答要求，subQuestions提供2-4个小问，每问含content、answer(参考答案要点)、score(分值)' :
       cfg.type === 'ESSAY' ? '给出论文题目、写作要点(answer)、评分标准rubric与最低字数minAnswerWords' : '';
 
     // 3级难度映射到4级：易->EASY, 中->MEDIUM_EASY+MEDIUM_HARD(各半), 难->HARD
@@ -1716,7 +1773,7 @@ ${difficultyBlock}
 - sourceChunk 必须是从教材中直接引用的20-50字原文
 
 返回严格的JSON数组格式，不要有任何其他文字。每道题必须包含以下所有字段：
-type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")`;
+type, difficulty, knowledgePoint, sourceChunk, content, options(选择题必填), blanks(填空题必填), subQuestions(案例题必填), answer, explanation, suggestedGroup(默认"EXAM_GROUP")`;
 
     const userPrompt = `教材名称：${material.name}
 ${material.batchNote ? '教材说明：' + material.batchNote + '\n' : ''}
@@ -1738,6 +1795,7 @@ ${content.slice(0, 15000)}
     "content": "题目内容",
     "options": [ { "label": "A", "content": "选项内容", "isCorrect": false } ],
     "blanks": [ { "blankIndex": 0, "answer": "正确答案" } ],
+    "subQuestions": [ { "content": "小问内容", "answer": "参考答案要点", "score": 10 } ],
     "answer": "参考答案",
     "explanation": "答案解析",
     "suggestedGroup": "EXAM_GROUP"
@@ -2142,7 +2200,7 @@ function validateAndFixQuestion(q: any): { question: any; warnings: string[]; va
   }
 
   // 1. 类型验证
-  const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'ESSAY'];
+  const VALID_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK', 'SHORT_ANSWER', 'CASE_STUDY', 'ESSAY'];
   if (!VALID_TYPES.includes(fixed.type)) {
     warnings.push(`无效题型: ${fixed.type}，回退至 SINGLE_CHOICE`);
     fixed.type = 'SINGLE_CHOICE';

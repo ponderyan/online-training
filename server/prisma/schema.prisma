@@ -935,6 +935,7 @@ model MaterialQuestion {
   content     String  @db.Text // 题干
   options     Json? // [{label, content, isCorrect}]
   blanks      Json? // [{position, answer}]
+  subQuestions Json? // 案例题小问: [{content, answer, score}]（2026-08-22）
   answer      String? @db.Text // 简答/案例参考答案
   explanation String? @db.Text // 解析
 
