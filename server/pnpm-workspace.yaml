@@ -2,7 +2,9 @@ allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
   esbuild: true
-  onnxruntime-node: true
+  # ★ 2026-08-21：false = 显式拒绝运行 postinstall。onnxruntime-node 的 postinstall 从 NuGet 下载 CUDA EP
+  #   （CPU 推理用不到，腾讯云访问超时）；CPU 二进制（libonnxruntime.so + onnxruntime_binding.node）已捆绑在 npm 包内
+  onnxruntime-node: false
   prisma: true
   protobufjs: true
   puppeteer: true

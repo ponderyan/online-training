@@ -1,9 +1,15 @@
 # ── Build stage ──
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 RUN corepack enable pnpm
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# ★ 2026-08-21：国内镜像 registry（腾讯云/阿里云到 npmjs 不稳，大包反复失败）
+#   ONNXRUNTIME_NODE_INSTALL=skip —— CPU 二进制已捆绑在 npm 包内，仅跳过从 NuGet 拉 CUDA EP（腾讯云访问超时）
+ENV npm_config_registry=https://registry.npmmirror.com \
+    ONNXRUNTIME_NODE_INSTALL=skip
+# pnpm-workspace.yaml 必须带上：pnpm 11 只从它读 allowBuilds，缺失会 ERR_PNPM_IGNORED_BUILDS
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# pnpm store cache mount：跨构建复用下载，避免腾讯云反复从 npmjs 拉 654 个包
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 COPY . .
 RUN npx prisma generate
 RUN pnpm run build
@@ -11,7 +17,7 @@ RUN pnpm run build
 # ── Production stage ──
 # ★ 2026-08-21：基镜固定 glibc（bookworm）——onnxruntime-node（本地嵌入）无 musl 预编译，
 #   alpine 会使语义检索静默降级为关键词检索；验证脚本 scripts/docker/check-alpine-compat.sh
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 # 跳过 puppeteer 自带 Chrome 下载（prod 安装阶段也生效），证书渲染改用系统 chromium
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
@@ -27,36 +33,10 @@ RUN corepack enable pnpm && apt-get update && apt-get install -y --no-install-re
 # OCR 主引擎 RapidOCR（bookworm glibc 环境轮子完整，不再需要降级兜底，仍保留容错）
 COPY scripts/requirements.txt ./scripts/requirements.txt
 RUN pip3 install --break-system-packages --no-cache-dir -r scripts/requirements.txt || echo "⚠️ RapidOCR 安装失败，将使用 Tesseract 降级"
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY prisma ./prisma
-COPY scripts ./scripts
-RUN mkdir -p uploads
-
-EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
-# ── Build stage ──
-FROM node:20-alpine AS builder
-WORKDIR /app
-RUN corepack enable pnpm
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-COPY . .
-RUN npx prisma generate
-RUN pnpm run build
-
-# ── Production stage ──
-FROM node:20-alpine
-WORKDIR /app
-# 文档解析/OCR 运行依赖：Python3 + Tesseract(chi_sim) + catdoc
-RUN corepack enable pnpm && apk add --no-cache curl python3 py3-pip tesseract-ocr tesseract-ocr-chi-sim catdoc
-# OCR 主引擎 RapidOCR（尽力安装；alpine/musl 若无轮子则跳过，运行时自动降级 Tesseract）
-COPY scripts/requirements.txt ./scripts/requirements.txt
-RUN pip3 install --break-system-packages --no-cache-dir -r scripts/requirements.txt 2>/dev/null || echo "⚠️ RapidOCR 安装失败，将使用 Tesseract 降级"
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+ENV npm_config_registry=https://registry.npmmirror.com \
+    ONNXRUNTIME_NODE_INSTALL=skip
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
