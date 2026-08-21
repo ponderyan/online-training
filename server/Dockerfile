@@ -26,7 +26,10 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true \
 #   python3+pip → RapidOCR 主引擎（glibc 轮子齐全）
 #   tesseract-ocr(chi_sim)+catdoc → OCR 降级引擎
 #   chromium+fonts-noto-cjk → puppeteer 证书 PDF 渲染 + 中文字体
-RUN corepack enable pnpm && apt-get update && apt-get install -y --no-install-recommends \
+# ★ 2026-08-21：apt 源切阿里云镜像（腾讯云到 deb.debian.org 每个包 10-30s，30 分钟没装完）
+RUN corepack enable pnpm && \
+    sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g; s|http://security.debian.org|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list 2>/dev/null; \
+    apt-get update && apt-get install -y --no-install-recommends \
     curl python3 python3-pip tesseract-ocr tesseract-ocr-chi-sim catdoc \
     chromium fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
