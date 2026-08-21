@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 /**
- * 切屏达阈值强制收卷端到端测试（2026-08-21）
+ * 切屏达阈值强制收卷端到端测试（2026-08-21，自容版）
  * 覆盖：学员作答页心跳 → 服务端累计 violationLog → 达 tabSwitchLimit 服务端兜底强制收卷
  *      （防前端绕过；答案由 auto-save 落库，强收后 autoGrade + syncExamProgress）
  *
- * 前置：DB 已建隔离测试考试（tab_switch_limit=3, PUBLISHED）+ ASSIGNED 会话（admin 为学员）
+ * ★ 2026-08-22 自容化改造（qwen）：原版依赖外部预置考试 id=450 且清理段会删掉该考试，
+ *   导致第二次运行必挂（不可重复）。现改为测试开头自建 papers/paper_questions/exams/exam_sessions，
+ *   结尾全量清理，可无限重跑。造时间窗口用 UTC_TIMESTAMP()（Prisma 按 UTC 读 DATETIME）。
+ *
+ * 前置：本地 server 宽松态（LOGIN_REQUIRE_CAPTCHA=false），admin/123456，题库有 ≥10 题
  * 验证点：
  *  A. 进入考试 → 会话转为 ACTIVE
  *  B. 心跳上报 2 条切屏 → 仍 ACTIVE（未达阈值），remainingTime 递减 30
  *  C. 心跳再报 1 条 → 累计 3 达阈值 → 强制收卷 reason=TAB_SWITCH_LIMIT
  *  D. DB 校验：状态 SUBMITTED、violation_log 3 条、scoringStatus 已推进（autoGrade 跑过）
- *  E. 零残留清理
+ *  E. 零残留清理（session/exam/paper_questions/paper）
  */
 
 const API = 'http://localhost:3001';
-const EXAM_ID = Number(process.env.TEST_EXAM_ID || 450);
+const RUN_ID = Date.now();
 const results = [];
 let pass = 0, fail = 0;
 function check(name, cond, detail = '') {
@@ -42,10 +46,44 @@ function ts(offsetSec) {
   return new Date(Date.now() + offsetSec * 1000).toISOString();
 }
 
+/** 自建测试数据：试卷(10题) + 考试(tab_switch_limit=3, PUBLISHED) + ASSIGNED 会话(admin) */
+function setup() {
+  const paperTitle = `切屏自容测试试卷-${RUN_ID}`;
+  db(`INSERT INTO papers (name, paper_number, subject_id, total_score, duration_minutes, status, created_by, updated_at) VALUES ('${paperTitle}', 'TS-${RUN_ID}', 1, 100, 60, 'FINALIZED', 1, UTC_TIMESTAMP(3))`);
+  // LAST_INSERT_ID() 是连接会话级的，db() 每次新连接会丢 → 按唯一 paper_number 反查
+  const paperId = Number(db(`SELECT id FROM papers WHERE paper_number='TS-${RUN_ID}'`));
+  if (!paperId) throw new Error('setup: 试卷创建失败');
+  const qids = db('SELECT id FROM questions ORDER BY id LIMIT 10').split('\n').map(Number).filter(Boolean);
+  qids.forEach((qid, i) => {
+    db(`INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES (${paperId}, ${qid}, ${i + 1}, 10)`);
+  });
+  db(`INSERT INTO exams (title, paper_id, start_time, end_time, duration_minutes, tab_switch_limit, late_entry_minutes, status, created_by, updated_at) VALUES ('切屏自容测试考试-${RUN_ID}', ${paperId}, UTC_TIMESTAMP() - INTERVAL 1 HOUR, UTC_TIMESTAMP() + INTERVAL 2 HOUR, 60, 3, 3600, 'PUBLISHED', 1, UTC_TIMESTAMP(3))`);
+  const examId = Number(db(`SELECT id FROM exams WHERE paper_id=${paperId} AND title='切屏自容测试考试-${RUN_ID}'`));
+  if (!examId) throw new Error('setup: 考试创建失败');
+  db(`INSERT INTO exam_sessions (exam_id, student_id, status, remaining_time, updated_at) VALUES (${examId}, 1, 'ASSIGNED', 3600, UTC_TIMESTAMP(3))`);
+  return { paperId, examId };
+}
+
+function cleanup({ paperId, examId }) {
+  try {
+    db(`DELETE FROM exam_answers WHERE session_id IN (SELECT id FROM (SELECT id FROM exam_sessions WHERE exam_id=${examId}) t)`);
+    db(`DELETE FROM exam_sessions WHERE exam_id=${examId}`);
+    db(`DELETE FROM exams WHERE id=${examId}`);
+    db(`DELETE FROM paper_questions WHERE paper_id=${paperId}`);
+    db(`DELETE FROM papers WHERE id=${paperId}`);
+  } catch {}
+  const left = Number(db(`SELECT (SELECT COUNT(*) FROM exams WHERE id=${examId}) + (SELECT COUNT(*) FROM papers WHERE id=${paperId}) + (SELECT COUNT(*) FROM exam_sessions WHERE exam_id=${examId})`));
+  check('测试数据零残留', left === 0, `残留=${left}`);
+}
+
 let token;
+let ctx = null;
 try {
   token = await login();
   check('登录 admin', !!token);
+
+  ctx = setup();
+  const EXAM_ID = ctx.examId;
 
   // A. 进入考试 → ACTIVE（会话 id 由 exam+student 唯一确定，从 DB 取）
   const startRes = await fetch(`${API}/api/student/exams/${EXAM_ID}`, {
@@ -95,24 +133,10 @@ try {
   check('violation_log 共 3 条', Number(vl) === 3, `violation=${vl}`);
   check('autoGrade 已推进 scoringStatus', scoring === 'GRADED' || scoring === 'GRADING' || scoring === 'PENDING', `scoring=${scoring}`);
   check('suspicionLevel 累计 3', Number(susp) === 3, `suspicion=${susp}`);
-
-  // E. 清理
-  await fetch(`${API}/api/student/exams/${EXAM_ID}/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ answers: [], tabSwitchLog: [] }),
-  }).catch(() => {});
-  db(`DELETE FROM exam_sessions WHERE id=${sessionId}`);
-  db(`DELETE FROM exams WHERE id=${EXAM_ID}`);
-  const left = db(`SELECT COUNT(*) FROM exams WHERE id=${EXAM_ID}`);
-  check('测试数据零残留', Number(left) === 0, `残留=${left}`);
 } catch (e) {
   console.error('⚠️ 测试异常中断:', e.message);
-  // 兜底清理
-  try {
-    db(`DELETE FROM exam_sessions WHERE exam_id=${EXAM_ID}`);
-    db(`DELETE FROM exams WHERE id=${EXAM_ID}`);
-  } catch {}
+} finally {
+  if (ctx) cleanup(ctx);
 }
 
 console.log(`\n════ 结果 ${pass} 通过 / ${fail} 失败 ════`);
