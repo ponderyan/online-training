@@ -124,9 +124,31 @@ export class MaterialsController {
   updateChapter(
     @Param('id', ParseIntPipe) id: number,
     @Param('chapterId', ParseIntPipe) chapterId: number,
-    @Body() data: { title: string },
+    @Body() data: { title: string; content?: string },
   ) {
     return this.service.updateChapter(id, chapterId, data);
+  }
+
+  // ★ 2026-08-22 A2：大章 AI 再分章 / 碎片章清理；A3：目录驱动分章（注意：放在 ':id/chapters/:chapterId' 前先匹配无参路由不适用，NestJS 按静态段优先，此处用不同子路径避免冲突）
+  @Post(':id/chapters/clean-fragments')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  cleanFragmentChapters(@Param('id', ParseIntPipe) id: number) {
+    return this.service.cleanFragmentChapters(id);
+  }
+
+  @Post(':id/chapters/:chapterId/ai-resplit')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  aiResplitChapter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chapterId', ParseIntPipe) chapterId: number,
+  ) {
+    return this.service.aiResplitChapter(id, chapterId);
+  }
+
+  @Post(':id/split-by-toc')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  splitByToc(@Param('id', ParseIntPipe) id: number) {
+    return this.service.splitByToc(id);
   }
 
   @Post(':id/chapters/merge')
@@ -160,6 +182,13 @@ export class MaterialsController {
   @RequirePermission(Permissions.MATERIAL_UPLOAD)
   confirmStructure(@Param('id', ParseIntPipe) id: number) {
     return this.service.confirmStructure(id);
+  }
+
+  // ★ 2026-08-22：解锁章节结构（确认后重新整理的出口）
+  @Post(':id/reopen-structure')
+  @RequirePermission(Permissions.MATERIAL_UPLOAD)
+  reopenStructure(@Param('id', ParseIntPipe) id: number) {
+    return this.service.reopenStructure(id);
   }
 
   @Get(':id/chapters/:chapterId/content')

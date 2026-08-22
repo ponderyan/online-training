@@ -522,8 +522,17 @@ export const api = {
     create: (data: { name: string; subjectId: number; content: string; batchNote?: string }) =>
       request<any>('/materials', { method: 'POST', body: JSON.stringify(data) }),
     // ── 章节编辑 ──
-    updateChapter: (materialId: number, chapterId: number, data: { title: string }) =>
+    updateChapter: (materialId: number, chapterId: number, data: { title: string; content?: string }) =>
       request<any>(`/materials/${materialId}/chapters/${chapterId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    /** ★ 2026-08-22 A2：大章 AI 再分章 */
+    aiResplitChapter: (materialId: number, chapterId: number) =>
+      request<any>(`/materials/${materialId}/chapters/${chapterId}/ai-resplit`, { method: 'POST' }),
+    /** ★ 2026-08-22 A2：碎片章（<200字）合并进相邻章 */
+    cleanFragmentChapters: (materialId: number) =>
+      request<any>(`/materials/${materialId}/chapters/clean-fragments`, { method: 'POST' }),
+    /** ★ 2026-08-22 A3：目录驱动分章（AI提取目录条目→正文锚点切章） */
+    splitByToc: (materialId: number) =>
+      request<any>(`/materials/${materialId}/split-by-toc`, { method: 'POST' }),
     mergeChapters: (materialId: number, data: { chapterIds: number[] }) =>
       request<any>(`/materials/${materialId}/chapters/merge`, { method: 'POST', body: JSON.stringify(data) }),
     splitChapter: (materialId: number, data: { chapterId: number; splitPosition: number }) =>
@@ -532,6 +541,9 @@ export const api = {
       request<any>(`/materials/${materialId}/chapters/${chapterId}`, { method: 'DELETE' }),
     confirmStructure: (materialId: number) =>
       request<any>(`/materials/${materialId}/confirm-structure`, { method: 'POST' }),
+    /** ★ 2026-08-22：解锁章节结构（确认后反悔的出口） */
+    reopenStructure: (materialId: number) =>
+      request<any>(`/materials/${materialId}/reopen-structure`, { method: 'POST' }),
     getChapterContent: (materialId: number, chapterId: number) =>
       request<any>(`/materials/${materialId}/chapters/${chapterId}/content`),
     listForFilter: () => request<any[]>('/materials/list-for-filter'),

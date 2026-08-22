@@ -886,11 +886,14 @@ model MaterialQuestionPlan {
   material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
   name       String   @default("") @db.VarChar(200)     // 计划名称，自动生成
   status     String   @default("DRAFT") @map("status") // DRAFT / EXECUTING / COMPLETED / FAILED
+  // ★ 2026-08-22 计划溯源：执行时实际产出的题数（计划列表展示用，避免"僵尸承诺"）
+  generatedCount Int @default(0) @map("generated_count")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  configs MaterialQuestionPlanConfig[]
+  configs   MaterialQuestionPlanConfig[]
+  questions MaterialQuestion[]
 
   @@map("material_question_plans")
 }
@@ -949,6 +952,11 @@ model MaterialQuestion {
   // 审核
   reviewStatus ReviewStatus @default(PENDING) @map("review_status")
   reviewNote   String?      @map("review_note") @db.Text
+
+  // ★ 2026-08-22 计划溯源：记录试题由哪个出题计划生成（旧版/历史题为 NULL），
+  // SetNull：计划删除不连坐试题，审核池保持"一教材一池"
+  planId Int?                  @map("plan_id")
+  plan   MaterialQuestionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
 
   // 如果通过入库，关联到正式试题
   questionId Int?      @map("question_id")

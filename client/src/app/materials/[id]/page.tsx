@@ -154,6 +154,7 @@ export default function MaterialDetailPage() {
           materialId={materialId}
           materialStatus={material.status}
           chapters={material.chapters || []}
+          pendingCount={(reviewCounts.pending || 0) + (reviewCounts.rejected || 0)}
           onGenerate={load}
         />
       )}

@@ -65,7 +65,11 @@ export class MaterialsService {
         chapters: { orderBy: { chapterIndex: 'asc' } },
         questions: {
           orderBy: [{ chapterId: 'asc' }, { id: 'asc' }],
-          include: { chapter: { select: { id: true, title: true } } },
+          // ★ 2026-08-22：带出来源计划（审核页按计划筛选/来源展示）
+          include: {
+            chapter: { select: { id: true, title: true } },
+            plan: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -1294,9 +1298,9 @@ ${
   // ═══════════════════════════════════════════════
 
   /**
-   * 编辑章节标题
+   * 编辑章节标题/正文（★ 2026-08-22：支持 content，修正 OCR 错误/噪声）
    */
-  async updateChapter(materialId: number, chapterId: number, data: { title: string }) {
+  async updateChapter(materialId: number, chapterId: number, data: { title: string; content?: string }) {
     const chapter = await this.prisma.materialChapter.findFirst({
       where: { id: chapterId, materialId },
     });
@@ -1304,9 +1308,16 @@ ${
     if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可编辑');
     if (!data.title?.trim()) throw new BadRequestException('标题不能为空');
 
+    const updateData: any = { title: data.title.trim().slice(0, 490) };
+    if (data.content !== undefined) {
+      const content = String(data.content);
+      updateData.content = content;
+      updateData.contentLength = Buffer.byteLength(content, 'utf-8');
+    }
+
     const updated = await this.prisma.materialChapter.update({
       where: { id: chapterId },
-      data: { title: data.title.trim() },
+      data: updateData,
     });
     this.triggerChunkRebuild(materialId);
     return updated;
@@ -1391,20 +1402,22 @@ ${
     });
 
     // 创建新章节（后半段）
-    const maxSortOrder = await this.prisma.materialChapter.aggregate({
-      where: { materialId },
-      _max: { sortOrder: true },
+    // ★ 2026-08-22 修复：原实现把后半段插到全书末尾（maxSortOrder+1），normalize 后顺序错乱；
+    // 改为紧跟原章节：后续章统一后移 1 位腾出空位（与 aiResplitChapter 同模式）
+    const base = chapter.sortOrder || 0;
+    await this.prisma.materialChapter.updateMany({
+      where: { materialId, sortOrder: { gt: base } },
+      data: { sortOrder: { increment: 1 } },
     });
-    const newSortOrder = (maxSortOrder._max.sortOrder || 0) + 1;
 
     await this.prisma.materialChapter.create({
       data: {
         materialId,
         title: chapter.title + '(续)',
-        chapterIndex: newSortOrder + 1,
+        chapterIndex: base + 1,
         content: after,
         contentLength: Buffer.byteLength(after, 'utf-8'),
-        sortOrder: newSortOrder,
+        sortOrder: base + 1,
       },
     });
 
@@ -1470,6 +1483,406 @@ ${
   }
 
   /**
+   * ★ 2026-08-22 A2：大章 AI 再分章（不再限"单章"场景）
+   * 思路：正则从全章提取候选标题行（行号+标题）→ 紧凑列表送 AI 裁决真实章节边界 → 按行号切分替换原章节。
+   * 相比旧 aiSplitChapters（只喂前 12000 字符）能处理 10 万字级大章。
+   */
+  async aiResplitChapter(materialId: number, chapterId: number) {
+    const chapter = await this.prisma.materialChapter.findFirst({ where: { id: chapterId, materialId } });
+    if (!chapter) throw new NotFoundException('章节不存在');
+    if (chapter.status === 'STRUCTURED') throw new BadRequestException('章节已确认结构化，不可编辑');
+    const content = chapter.content || '';
+    if (content.length < 3000) throw new BadRequestException('章节内容过短（<3000字），无需再分章');
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material) throw new NotFoundException('教材不存在');
+    const aiConfig = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
+    if (!aiConfig) throw new BadRequestException('请先在系统设置中配置大模型');
+
+    const lines = content.split('\n');
+    const headingPattern = /^(第[一二三四五六七八九十百千0-9]+[章篇节]|第\d+章|Chapter\s+\d+|Part\s+\d+|#{1,3}\s*\S|[一二三四五六七八九十]+、|\d+(\.\d+){0,2}\s+\S)/i;
+    const candidates: Array<{ line: number; text: string }> = [];
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (t && t.length <= 60 && headingPattern.test(t)) candidates.push({ line: i, text: t });
+    }
+    if (candidates.length < 2) throw new BadRequestException('未识别到足够的候选章节标题，无法 AI 分章，请手动分割');
+
+    // 去除相邻过密的候选（保留前者），控制送 AI 的列表长度（最多200条）
+    const thinned: Array<{ line: number; text: string }> = [];
+    for (const c of candidates) {
+      if (thinned.length && c.line - thinned[thinned.length - 1].line < 3) continue;
+      thinned.push(c);
+    }
+    const list = thinned.slice(0, 200);
+
+    const url = (aiConfig.apiBaseUrl?.replace(/\/+$/, '') || 'https://api.deepseek.com') + '/chat/completions';
+    let picked: Array<{ line: number; title: string }> = [];
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiConfig.apiKey}` },
+        body: JSON.stringify({
+          model: aiConfig.modelVersion,
+          messages: [
+            { role: 'system', content: '你是教材编辑。下面是一本教材某个大章节内识别出的候选标题行（编号|行号|文字）。请从中选出真正构成章节划分的标题（去掉目录残留、页眉、正文内引用）。只返回JSON数组：[{"idx":编号,"title":"章节标题"}]，选2-15个，按顺序。不要输出任何解释。' },
+            { role: 'user', content: `教材：${material.name}\n候选标题列表：\n${list.map((c, i) => `${i}|行${c.line}|${c.text}`).join('\n')}` },
+          ],
+          temperature: 0.2,
+          max_tokens: 2048,
+          // ★ 2026-08-22：推理模型（deepseek-v4-flash）会把 token 耗在推理链导致 content 截断为空（实测 8192 仍不够），
+          // 分类式任务直接关闭思考模式（thinking 参数对非推理模型无害）
+          thinking: { type: 'disabled' },
+        }),
+        signal: AbortSignal.timeout(90000),
+      });
+      if (!response.ok) throw new Error(`AI 接口 ${response.status}`);
+      const body: any = await response.json();
+      const reply = body.choices?.[0]?.message?.content || body.choices?.[0]?.message?.reasoning_content || '';
+      if (!reply.trim()) throw new Error('AI 返回内容为空（模型可能受限），请稍后重试');
+      const arr = parseAIJsonResponse(reply);
+      if (Array.isArray(arr)) {
+        picked = arr
+          .map((x: any) => ({ idx: Number(x.idx), title: String(x.title || '') }))
+          .filter((x: any) => Number.isInteger(x.idx) && x.idx >= 0 && x.idx < list.length)
+          .map((x: any) => ({ line: list[x.idx].line, title: x.title || list[x.idx].text }))
+          .sort((a: any, b: any) => a.line - b.line);
+      }
+    } catch (e: any) {
+      throw new BadRequestException(`AI 分章失败：${e.message}`);
+    }
+    if (picked.length < 2) throw new BadRequestException('AI 未能识别出有效章节边界，请手动分割');
+    // 去重（同一行多次命中）
+    const uniq = picked.filter((p, i) => i === 0 || p.line > picked[i - 1].line);
+    if (uniq.length < 2) throw new BadRequestException('AI 识别的章节边界不足，请手动分割');
+
+    // 按边界切段；过短段（<200字）并入上一段；末段过短也并入上一段（保证≥ 2 章）
+    const segments: Array<{ title: string; content: string }> = [];
+    for (let i = 0; i < uniq.length; i++) {
+      const start = uniq[i].line;
+      const end = i < uniq.length - 1 ? uniq[i + 1].line : lines.length;
+      const seg = lines.slice(start, end).join('\n').trim();
+      if (!seg) continue;
+      if (seg.length < 200 && segments.length > 0) {
+        segments[segments.length - 1].content += '\n\n' + seg;
+      } else {
+        segments.push({ title: uniq[i].title.slice(0, 490) || `分章${i + 1}`, content: seg });
+      }
+    }
+    if (segments.length < 2) throw new BadRequestException('切分后章节数不足，请手动分割');
+    // 首个边界前的内容（章节开头杂讯）并入第一段，避免丢失
+    if (uniq[0].line > 0) {
+      const prefix = lines.slice(0, uniq[0].line).join('\n').trim();
+      if (prefix) segments[0].content = prefix + '\n\n' + segments[0].content;
+    }
+
+    // 落库：首段替换原章节，其余插入其后；原章节挂的草稿题保留并挂到首段（章内再分不影响题归属）
+    // ★ 2026-08-22 修复：新章 sortOrder=原值+i 会与后续章节撞号，normalize 后新章散到全书各处；
+    // 先把后续章统一后移腾出连续空位再插入（实测教训：教材19 再分章后 1.2/1.3 插到其他章之间）
+    const base = chapter.sortOrder || 0;
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.materialChapter.updateMany({
+        where: { materialId, sortOrder: { gt: base } },
+        data: { sortOrder: { increment: segments.length - 1 } },
+      });
+      await tx.materialChapter.update({
+        where: { id: chapter.id },
+        data: { title: segments[0].title, content: segments[0].content, contentLength: Buffer.byteLength(segments[0].content, 'utf-8') },
+      });
+      for (let i = 1; i < segments.length; i++) {
+        await tx.materialChapter.create({
+          data: {
+            materialId,
+            title: segments[i].title,
+            chapterIndex: 0,
+            content: segments[i].content,
+            contentLength: Buffer.byteLength(segments[i].content, 'utf-8'),
+            status: chapter.status,
+            sortOrder: base + i,
+          },
+        });
+      }
+    });
+    await this.normalizeChapterOrder(materialId);
+    this.triggerChunkRebuild(materialId);
+    const result = await this.prisma.materialChapter.findMany({ where: { materialId }, orderBy: { sortOrder: 'asc' } });
+    return { chapters: result.length, splitInto: segments.length };
+  }
+
+  /**
+   * ★ 2026-08-22 A2：清理碎片章（<200字）——合并进相邻章（首章碎片并进后一章，其余并进前一章）
+   * 碎片章上挂的草稿题一并迁移到目标章，不丢题。
+   */
+  async cleanFragmentChapters(materialId: number) {
+    const chapters = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    if (chapters.length < 2) throw new BadRequestException('章节数不足，无需清理');
+    if (chapters.some(c => c.status === 'STRUCTURED')) throw new BadRequestException('章节已确认结构化，不可编辑');
+    if (chapters.every(c => (c.content || '').length < 200)) throw new BadRequestException('所有章节均为碎片，无法自动合并，请手动处理');
+    const isFragment = (c: any) => (c.content || '').length < 200;
+    let mergedCount = 0;
+
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      if (!isFragment(ch)) continue;
+      // 首章碎片 → 并进后一个非碎片章；其余 → 并进前一个非碎片章；都找不到则跳过（避免全碎片互并）
+      let target: any = null;
+      if (i === 0) {
+        target = chapters.slice(i + 1).find(c => !isFragment(c)) || null;
+      } else {
+        for (let j = i - 1; j >= 0; j--) { if (!isFragment(chapters[j])) { target = chapters[j]; break; } }
+      }
+      if (!target) continue;
+
+      const merged = i === 0
+        ? (ch.content || '') + '\n\n' + (target.content || '')
+        : (target.content || '') + '\n\n' + (ch.content || '');
+      await this.prisma.materialChapter.update({
+        where: { id: target.id },
+        data: { content: merged, contentLength: Buffer.byteLength(merged, 'utf-8') },
+      });
+      await this.prisma.materialQuestion.updateMany({ where: { chapterId: ch.id }, data: { chapterId: target.id } });
+      await this.prisma.materialChapter.delete({ where: { id: ch.id } });
+      mergedCount++;
+    }
+    if (mergedCount === 0) throw new BadRequestException('没有可合并的碎片章节（<200字）');
+    await this.normalizeChapterOrder(materialId);
+    this.triggerChunkRebuild(materialId);
+    const remaining = await this.prisma.materialChapter.findMany({ where: { materialId }, orderBy: { sortOrder: 'asc' } });
+    return { merged: mergedCount, chapters: remaining.length };
+  }
+
+  /**
+   * ★ 2026-08-22 A3：目录驱动分章——AI 从正文头部提取目录条目 → 条目在全文锚点定位 → 替换全部章节。
+   * 适用于教材 19 这类"正则分章失真"的扫描件：比纯正则强一个量级。
+   * 注意：重建章节会使草稿题的 chapterId 置空（重新出题前先整理结构是预期流程）。
+   */
+  async splitByToc(materialId: number) {
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material) throw new NotFoundException('教材不存在');
+    const chapters = await this.prisma.materialChapter.findMany({ where: { materialId }, orderBy: { sortOrder: 'asc' } });
+    if (chapters.length === 0) throw new BadRequestException('暂无章节');
+    if (chapters.some(c => c.status === 'STRUCTURED')) throw new BadRequestException('章节已确认结构化，不可重建');
+    const fullText = chapters.map(c => c.content || '').join('\n');
+    if (fullText.trim().length < 2000) throw new BadRequestException('正文过短，无法目录分章');
+    const aiConfig = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
+    if (!aiConfig) throw new BadRequestException('请先在系统设置中配置大模型');
+
+    // 1) AI 提取目录条目（喂正文前 6000 字，目录通常在头部几页）
+    const url = (aiConfig.apiBaseUrl?.replace(/\/+$/, '') || 'https://api.deepseek.com') + '/chat/completions';
+    let entries: string[] = [];
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${aiConfig.apiKey}` },
+        body: JSON.stringify({
+          model: aiConfig.modelVersion,
+          messages: [
+            { role: 'system', content: '你是教材编辑。下面是教材正文开头部分，请提取其中目录的节级条目（形如"1.1标题"/"6.4标题"的条目；不要只给"第X部分"这类部分级大标题）。只返回JSON数组，每项为条目文字（保留原编号与标题，去掉页码与点线引导符），按目录顺序，最多30项。没有目录则返回[]。不要输出任何解释。' },
+            { role: 'user', content: fullText.slice(0, 6000) },
+          ],
+          temperature: 0.1,
+          max_tokens: 2048,
+          // ★ 2026-08-22：同上，关闭思考模式防 content 被推理链耗尽（实测推理模式 8192 token 仍截断）
+          thinking: { type: 'disabled' },
+        }),
+        signal: AbortSignal.timeout(90000),
+      });
+      if (!response.ok) throw new Error(`AI 接口 ${response.status}`);
+      const body: any = await response.json();
+      // ★ 2026-08-22：推理模型可能把输出全放在 reasoning_content，content 为空时用 reasoning 尾部兜底提取 JSON
+      const reply = body.choices?.[0]?.message?.content || body.choices?.[0]?.message?.reasoning_content || '';
+      if (!reply.trim()) throw new Error('AI 返回内容为空（模型可能受限），请稍后重试');
+      const arr = parseAIJsonResponse(reply);
+      if (Array.isArray(arr)) entries = arr.map((x: any) => String(x).replace(/[.．…·]+\s*\d+\s*$/, '').trim()).filter(s => s.length >= 2 && s.length <= 60);
+    } catch (e: any) {
+      throw new BadRequestException(`目录提取失败：${e.message}`);
+    }
+    if (entries.length < 2) throw new BadRequestException('未能从正文头部提取到目录条目（至少2项）');
+    entries = entries.slice(0, 30);
+
+    // 2) 逐条在全文锚点定位（去空白归一化后整行包含匹配；失败降级编号行首匹配）
+    // ★ 关键：目录条目在开头的目录区也会命中，必须跳过目录区再从正文锚定，
+    // 否则全部锚点挤在目录里只能切出 2 章（教材19 实测教训）：
+    // 目录区末尾 = 各条目首次命中位置的最大值，锚点从其后开始找（保持顺序）
+    const normLines = fullText.split('\n').map(l => l.replace(/\s+/g, ''));
+    // 提取条目编号前缀："1.1"/"6.4.2"（数字点分）或 "一、"（中文编号）
+    const entryNum = (entry: string): string | null => {
+      const n = entry.replace(/\s+/g, '');
+      const m = n.match(/^([0-9]+(?:[.．][0-9]+)+)/);
+      if (m) return m[1].replace(/[.．]/g, '.');
+      const c = n.match(/^([一二三四五六七八九十]+)[、.．]/);
+      return c ? c[1] + '、' : null;
+    };
+    // ★ 2026-08-22：OCR 正文标题常把编号与文字分离成两行（如单独一行 "1.1"，标题在下一行，
+    // 教材19 实测），全串匹配会全部落空 → 降级：行首匹配编号（后不跟数字/点，排除 1.1.2 子级），
+    // 命中行若只剩编号（尾随≤2字），取下一非空行文字拼接为标题；返回自定义标题供章节命名
+    const findLine = (entry: string, fromLine: number): { line: number; title?: string } => {
+      const normEntry = entry.replace(/\s+/g, '');
+      for (let i = fromLine; i < normLines.length; i++) {
+        if (normLines[i] && normLines[i].includes(normEntry)) return { line: i };
+      }
+      const num = entryNum(normEntry);
+      if (num) {
+        const numRe = new RegExp('^' + num.replace(/\./g, '[.．]') + '(?![0-9.．])');
+        for (let i = fromLine; i < normLines.length; i++) {
+          const l = normLines[i];
+          if (!l || !numRe.test(l)) continue;
+          if (l.replace(/[.．]/g, '.').length <= num.length + 2) {
+            // 编号单独成行：向下 3 行内找首个非空行拼接标题（忽略空行）
+            for (let j = i + 1; j < Math.min(i + 4, normLines.length); j++) {
+              if (normLines[j]) return { line: i, title: l + normLines[j] };
+            }
+          }
+          return { line: i };
+        }
+      }
+      return { line: -1 };
+    };
+    let tocEnd = 0;
+    for (const entry of entries) {
+      const firstHit = findLine(entry, 0);
+      if (firstHit.line >= 0 && firstHit.line + 1 > tocEnd) tocEnd = firstHit.line + 1;
+    }
+    let anchors: Array<{ title: string; line: number }> = [];
+    let cursor = tocEnd;
+    for (const entry of entries) {
+      const hit = findLine(entry, cursor);
+      if (hit.line >= 0) { anchors.push({ title: (hit.title || entry).slice(0, 490), line: hit.line }); cursor = hit.line + 1; }
+    }
+    // ★ 2026-08-22 降级：幻灯片式教材（PPT 转扫描件，教材19 实测）节标题只出现在各节 CONTENTS 页、
+    // 正文中完全不存在，目录锚点法会命中少量伪锚点（如正文中残留的孤立编号行）导致切章畸形；
+    // 两法都跑，CONTENTS 频次投票法（纯规则无 AI）胜出条件：toc 法锚点<2，或 toc 法锚点<4 且 CONTENTS 法更多
+    let method = 'toc';
+    if (anchors.length < 4) {
+      const slideAnchors = this.contentsSlideAnchors(normLines);
+      if (slideAnchors.length >= 2 && slideAnchors.length > anchors.length) { anchors = slideAnchors; method = 'contents'; }
+    }
+    if (anchors.length < 2) throw new BadRequestException(`目录提取了${entries.length}条，但正文中仅定位到${anchors.length}条（目录区已排除），且未检测到幻灯片式 CONTENTS 结构，无法分章`);
+
+    // 3) 按锚点重建章节；锚点间过短段（<200字）并入上一段；首锚点前的内容并入第一段（通常是目录/前言）
+    const lines = fullText.split('\n');
+    const newChapters: Array<{ title: string; content: string }> = [];
+    for (let i = 0; i < anchors.length; i++) {
+      const start = anchors[i].line;
+      const end = i < anchors.length - 1 ? anchors[i + 1].line : lines.length;
+      const seg = lines.slice(start, end).join('\n').trim();
+      if (!seg) continue;
+      if (seg.length < 200 && newChapters.length > 0) {
+        newChapters[newChapters.length - 1].content += '\n\n' + seg;
+      } else {
+        newChapters.push({ title: anchors[i].title, content: seg });
+      }
+    }
+    if (newChapters.length < 2) throw new BadRequestException('锚点切分后章节数不足');
+    if (anchors[0].line > 0) {
+      const prefix = lines.slice(0, anchors[0].line).join('\n').trim();
+      if (prefix) newChapters[0].content = prefix + '\n\n' + newChapters[0].content;
+    }
+
+    // 4) 替换全部章节（草稿题 chapterId 置空保留，已入库题不受影响）
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.materialQuestion.updateMany({ where: { materialId }, data: { chapterId: null } });
+      await tx.materialChapter.deleteMany({ where: { materialId } });
+      for (let i = 0; i < newChapters.length; i++) {
+        await tx.materialChapter.create({
+          data: {
+            materialId,
+            title: newChapters[i].title,
+            chapterIndex: i,
+            content: newChapters[i].content,
+            contentLength: Buffer.byteLength(newChapters[i].content, 'utf-8'),
+            status: 'GENERATED',
+            sortOrder: i,
+          },
+        });
+      }
+    });
+    this.triggerChunkRebuild(materialId);
+    return { tocEntries: entries.length, matched: anchors.length, chapters: newChapters.length, method };
+  }
+
+  /**
+   * ★ 2026-08-22 A3 降级策略：幻灯片式教材的 CONTENTS 频次投票锚点（纯规则，无 AI）。
+   * 特征：每节开头有一页 CONTENTS 目录页，块内重复列出本部分全部节标题；节标题在正文中不单独出现。
+   * 算法：① 每个 CONTENTS 行 ±12 行窗口收集"0N序号+标题"对；
+   * ② 标题出现在 ≥3 个页面窗口 → 真目录块条目（幻灯片起始噪音对只出现一次）；
+   * ③ 按首条目标题变化分组（= 各部分）；④ 组内第 k 个 CONTENTS 页 = 第 k 节起点。
+   * 教材19 实测：21 页 CONTENTS → 21 节，标题与书头目录完全一致。
+   */
+  private contentsSlideAnchors(normLines: string[]): Array<{ title: string; line: number }> {
+    const N = normLines.length;
+    const clean = (t: string) => t.replace(/[（(].*$/, '').replace(/[.．…·]+$/, '').trim();
+    const contentsLines: number[] = [];
+    for (let i = 0; i < N; i++) if (normLines[i] === 'CONTENTS') contentsLines.push(i);
+    if (contentsLines.length < 2) return [];
+    const pages = contentsLines.map(c => {
+      const lo = Math.max(0, c - 12), hi = Math.min(N - 1, c + 12);
+      const items: Array<{ num: string; title: string }> = [];
+      for (let i = lo; i <= hi; i++) {
+        if (!/^0[1-9]$/.test(normLines[i])) continue;
+        for (let j = i + 1; j <= Math.min(i + 2, hi); j++) {
+          const t = normLines[j];
+          if (t && t.length >= 3 && t.length <= 30 && !/^0[1-9]$/.test(t) && t !== 'CONTENTS' && t !== '目录') {
+            items.push({ num: normLines[i], title: clean(t) });
+            break;
+          }
+        }
+      }
+      return { line: c, items };
+    });
+    // 频次投票：≥3 页重复 = 目录块条目；阈值随页数自适应（防页数少时误杀）
+    const threshold = Math.min(3, Math.max(2, Math.floor(contentsLines.length / 3)));
+    const freq = new Map<string, number>();
+    for (const pg of pages) for (const t of new Set(pg.items.map(i => i.title))) freq.set(t, (freq.get(t) || 0) + 1);
+    const canon = new Set([...freq.entries()].filter(([, n]) => n >= threshold).map(([t]) => t));
+    if (canon.size < 2) return [];
+    // 分组：首条目标题变化 → 新部分；空块页并入上一组（继承）
+    const groups: Array<{ first: string; pages: Array<{ line: number; block: Array<{ num: string; title: string }> }> }> = [];
+    for (const pg of pages) {
+      const seen = new Set<string>();
+      const block = pg.items.filter(i => canon.has(i.title) && (seen.has(i.num) ? false : (seen.add(i.num), true)));
+      const first = block[0]?.title || '';
+      const last = groups[groups.length - 1];
+      if (!last || (first && first !== last.first)) groups.push({ first, pages: [{ line: pg.line, block }] });
+      else last.pages.push({ line: pg.line, block });
+    }
+    const anchors: Array<{ title: string; line: number }> = [];
+    for (const g of groups) {
+      // 组内块 = 各页条目并集（按序号去重保先），页→节按顺序对齐；缺条目页继承前一页节名（防 OCR 缺行错位）
+      const union = new Map<string, string>();
+      for (const pg of g.pages) for (const b of pg.block) if (!union.has(b.num)) union.set(b.num, b.title);
+      const block = [...union.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, title]) => title);
+      if (block.length === 0) continue;
+      let prev: string | null = null;
+      for (let k = 0; k < g.pages.length; k++) {
+        const entry: string | null = block[k] || prev;
+        if (!entry) continue;
+        prev = entry;
+        anchors.push({ line: g.pages[k].line, title: entry.slice(0, 490) });
+      }
+    }
+    return anchors.sort((a, b) => a.line - b.line);
+  }
+
+  /**
+   * ★ 2026-08-22：章节增删后统一重排 sortOrder / chapterIndex（原各方法重复实现，收敛为一）
+   */
+  private async normalizeChapterOrder(materialId: number) {
+    const remaining = await this.prisma.materialChapter.findMany({
+      where: { materialId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    for (let i = 0; i < remaining.length; i++) {
+      await this.prisma.materialChapter.update({
+        where: { id: remaining[i].id },
+        data: { sortOrder: i, chapterIndex: i },
+      });
+    }
+  }
+
+  /**
    * 确认章节结构
    */
   async confirmStructure(materialId: number) {
@@ -1493,6 +1906,24 @@ ${
       data: { status: 'STRUCTURED' },
     });
 
+    return this.findOne(materialId);
+  }
+
+  /**
+   * ★ 2026-08-22：解锁章节结构（确认后反悔的出口）——章节回到可编辑态，
+   * 教材退回 OCR_DONE，用户可重新分章/再确认。已入库试题不受影响。
+   */
+  async reopenStructure(materialId: number) {
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material) throw new NotFoundException('教材不存在');
+    await this.prisma.materialChapter.updateMany({
+      where: { materialId, status: 'STRUCTURED' },
+      data: { status: 'GENERATED' },
+    });
+    await this.prisma.material.update({
+      where: { id: materialId },
+      data: { status: 'OCR_DONE' },
+    });
     return this.findOne(materialId);
   }
 
@@ -1531,7 +1962,12 @@ ${
     return this.prisma.materialQuestionPlan.findMany({
       where: { materialId },
       include: {
-        configs: { orderBy: { sortOrder: 'asc' } },
+        // ★ 2026-08-22：configs 带章节信息（前端标记<20字短章配置）；_count.questions = 现存题数（溯源展示）
+        configs: {
+          orderBy: { sortOrder: 'asc' },
+          include: { chapter: { select: { id: true, title: true, contentLength: true } } },
+        },
+        _count: { select: { questions: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -1609,11 +2045,20 @@ ${
       data: { status: 'PROCESSING' },
     });
 
-    // P0-2: 仅删除未审核/已拒绝的试题，保留已入库记录
+    // P0-2: 仅删除未审核/已拒绝的试题，保留已入库记录（★ 2026-08-22：前端执行前已确认清除警告）
     await this.prisma.materialQuestion.deleteMany({ where: { materialId, reviewStatus: { in: ["PENDING", "REJECTED"] } } });
 
     // 过滤有内容且 count > 0 的配置
     const validConfigs = plan.configs.filter(c => c.count > 0 && c.chapter?.content && c.chapter.content.trim().length >= 20);
+
+    // ★ 2026-08-22 B4：<20字短章配置不再静默跳过，写入显式错误信息（前端计划详情可见）
+    const skippedConfigs = plan.configs.filter(c => c.count > 0 && !(c.chapter?.content && c.chapter.content.trim().length >= 20));
+    for (const cfg of skippedConfigs) {
+      await this.prisma.materialQuestionPlanConfig.update({
+        where: { id: cfg.id },
+        data: { errorMessage: `章节内容不足20字（当前 ${cfg.chapter?.content?.trim().length || 0} 字），本次未出题` },
+      });
+    }
 
     let totalGenerated = 0;
     let totalFailed = 0;
@@ -1631,6 +2076,7 @@ ${
                   await this.prisma.materialQuestion.create({
                     data: {
                       materialId,
+                      planId, // ★ 2026-08-22 B1：试题溯源到出题计划（旧版出题无计划时为 NULL）
                       chapterId: cfg.chapterId,
                       type: q.type || cfg.type,
                       difficulty: q.difficulty || 'MEDIUM_EASY',
@@ -1692,10 +2138,11 @@ ${
       });
     }
 
-    // 完成 — 只更新素材状态到 GENERATED（有题时），0题时不降级
+    // 完成 — 只更新素材状态到 GENERATED（有题时），0题时不降级；
+    // ★ 2026-08-22 B3：记录实际产出题数，消灭"僵尸承诺"（前端展示 产出/现存）
     await this.prisma.materialQuestionPlan.update({
       where: { id: planId },
-      data: { status: totalGenerated > 0 ? 'COMPLETED' : 'FAILED' },
+      data: { status: totalGenerated > 0 ? 'COMPLETED' : 'FAILED', generatedCount: totalGenerated },
     });
     if (totalGenerated > 0) {
       await this.prisma.material.update({
@@ -1709,6 +2156,7 @@ ${
       total: totalGenerated,
       failed: totalFailed,
       configs: validConfigs.length,
+      skipped: skippedConfigs.length, // ★ 2026-08-22 B4：短章跳过数回传前端提示
       chapters: chaptersProcessed,
       status: totalGenerated > 0 ? 'GENERATED' : 'FAILED',
     };

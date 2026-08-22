@@ -20,11 +20,31 @@ export default function ReviewTab({ materialId, material, reviewCounts, onReload
   const [editData, setEditData] = useState<any>({});
   const [reviewMode, setReviewMode] = useState<'detail' | 'list'>('detail');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // ★ 2026-08-22 B1：按来源出题计划筛选（'all' 全部 / 'none' 无来源旧题 / 计划id）
+  const [filterPlan, setFilterPlan] = useState<string>('all');
   const navRef = useRef<HTMLDivElement>(null);
 
-  const filteredQuestions = material?.questions?.filter(
+  // ★ 2026-08-22 B1：来源计划选项（从题集里去重，旧题无计划归入"无来源"）
+  const planOptions = (() => {
+    const map = new Map<number, string>();
+    let hasLegacy = false;
+    for (const q of material?.questions || []) {
+      if (q.planId && q.plan) map.set(q.plan.id, q.plan.name || `计划#${q.plan.id}`);
+      else if (!q.planId) hasLegacy = true;
+    }
+    return { plans: [...map.entries()], hasLegacy };
+  })();
+
+  // ★ 2026-08-22 B1：先按计划筛，再按章节筛（审核池仍是"一教材一池"，筛选只是视图）
+  const baseQuestions = (material?.questions || []).filter((q: any) => {
+    if (filterPlan === 'all') return true;
+    if (filterPlan === 'none') return !q.planId;
+    return q.planId === Number(filterPlan);
+  });
+
+  const filteredQuestions = baseQuestions.filter(
     (q: any) => q.chapterId === activeChapter
-  ) || [];
+  );
   const current = filteredQuestions[currentIndex];
 
   // 当前章节的待审/可选题
@@ -119,16 +139,28 @@ export default function ReviewTab({ materialId, material, reviewCounts, onReload
   };
 
   const chapterQuestionCount = (chId: number) =>
-    material.questions?.filter((q: any) => q.chapterId === chId && q.reviewStatus !== 'REJECTED').length || 0;
+    baseQuestions.filter((q: any) => q.chapterId === chId && q.reviewStatus !== 'REJECTED').length || 0;
   const chapterPendingCount = (chId: number) =>
-    material.questions?.filter((q: any) => q.chapterId === chId && q.reviewStatus === 'PENDING').length || 0;
+    baseQuestions.filter((q: any) => q.chapterId === chId && q.reviewStatus === 'PENDING').length || 0;
   const chapterReviewedCount = (chId: number) =>
-    material.questions?.filter((q: any) => q.chapterId === chId && q.reviewStatus !== 'PENDING').length || 0;
+    baseQuestions.filter((q: any) => q.chapterId === chId && q.reviewStatus !== 'PENDING').length || 0;
 
   return (
     <div className="flex gap-6 items-start">
       {/* Chapter sidebar */}
       <div className="w-[200px] flex-shrink-0 space-y-1">
+        {/* ★ 2026-08-22 B1：来源计划筛选（试题溯源到出题计划） */}
+        {(planOptions.plans.length > 0 || planOptions.hasLegacy) && (
+          <select value={filterPlan}
+            onChange={e => { setFilterPlan(e.target.value); setCurrentIndex(0); setSelectedIds(new Set()); }}
+            className="input text-xs w-full mb-2">
+            <option value="all">全部来源</option>
+            {planOptions.plans.map(([pid, name]) => (
+              <option key={pid} value={String(pid)}>📋 {name}</option>
+            ))}
+            {planOptions.hasLegacy && <option value="none">旧版/无来源</option>}
+          </select>
+        )}
         <div className="text-[var(--ink-400)] text-xs font-semibold mb-2 px-2">章节列表</div>
         {material.chapters?.map((ch: any) => {
           const total = chapterQuestionCount(ch.id);

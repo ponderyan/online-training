@@ -36,11 +36,14 @@ export default function QuestionPlanTab({
   materialId,
   materialStatus,
   chapters,
+  pendingCount,
   onGenerate,
 }: {
   materialId: number;
   materialStatus: string;
   chapters: Chapter[];
+  /** ★ 2026-08-22 B2：当前未审核+已拒绝题数，执行前警告将被清除 */
+  pendingCount: number;
   onGenerate: () => void;
 }) {
   const [plans, setPlans] = useState<any[]>([]);
@@ -131,6 +134,10 @@ export default function QuestionPlanTab({
 
   // ── 执行出题计划 ──
   const handleExecute = async (planId: number) => {
+    // ★ 2026-08-22 B2：执行会先清空未审核/已拒绝试题，必须显式确认，不再静默覆盖
+    if (pendingCount > 0) {
+      if (!confirm(`⚠ 执行计划将先清除当前 ${pendingCount} 道未入库试题（待审核/已拒绝），已入库试题不受影响。确认执行？`)) return;
+    }
     setExecutingPlanId(planId);
     setExecProgress({ planStatus: 'EXECUTING', totalConfigs: 0, completedConfigs: 0, failedConfigs: 0, totalQuestions: 0, generatedQuestions: 0 });
 
@@ -237,6 +244,11 @@ export default function QuestionPlanTab({
               return c > 0 ? `${t.label}${c}题` : '';
             }).filter(Boolean).join(' + ');
             const canExecute = plan.status === 'DRAFT';
+            // ★ 2026-08-22 B4：配置指向<20字短章（contentLength 为字节，中文≈3字节/字）或章节已删除时显式标记，不再静默跳过
+            const shortConfigs = (plan.configs || []).filter((cfg: any) => cfg.count > 0 && (!cfg.chapter || (cfg.chapter.contentLength || 0) < 60));
+            // ★ 2026-08-22 B3：已执行计划展示 实际产出/现存题数，消灭"僵尸承诺"
+            const isDone = plan.status === 'COMPLETED' || plan.status === 'FAILED';
+            const surviving = plan._count?.questions ?? 0;
 
             return (
               <div key={plan.id} className="card p-4 flex items-center justify-between">
@@ -250,6 +262,14 @@ export default function QuestionPlanTab({
                     }}>
                       {plan.status === 'DRAFT' ? '草稿' : plan.status === 'EXECUTING' ? '执行中' : plan.status === 'COMPLETED' ? '已完成' : '失败'}
                     </span>
+                    {isDone && (
+                      <span className="ml-2">产出 {plan.generatedCount || 0} 题 · 现存 {surviving} 题</span>
+                    )}
+                    {shortConfigs.length > 0 && (
+                      <span className="text-[var(--gold)] ml-2" title="这些配置指向内容不足20字的章节（或章节已删除），执行时不会出题">
+                        ⚠ {shortConfigs.length} 项配置指向过短/缺失章节
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -284,6 +304,10 @@ export default function QuestionPlanTab({
                   <span className="text-[var(--ink-300)] text-xs">
                     {(ch.contentLength / 1000).toFixed(1)}k 字
                   </span>
+                  {/* ★ 2026-08-22 B4：<20字短章显式标记（contentLength 字节数，中文≈3字节/字） */}
+                  {ch.contentLength < 60 && (
+                    <span className="tag tag-ink" style={{ color: 'var(--gold)' }} title="章节内容不足20字，执行时不会出题，请先在章节结构Tab补充/合并内容">⚠ 内容过短不会出题</span>
+                  )}
                 </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
                   {TYPE_OPTIONS.map((type) => {
